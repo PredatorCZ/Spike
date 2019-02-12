@@ -133,3 +133,7 @@ Usage is in data.cpp.
 ### xorenc
 XOR encoder.
 Usage is in data.cpp.
+
+## MAXEx
+Extension classes for 3ds max objects.
+Compatibility header for multiple 3ds max versions
