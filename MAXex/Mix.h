@@ -27,7 +27,7 @@ public:
 		params = tmapRef->GetParamBlock(0);
 	}
 
-	ES_FORCEINLINE Mix(Texmap *map1, Texmap *map2, float mix = 50.f) : Mix()
+	ES_FORCEINLINE Mix(Texmap *map1, Texmap *map2, float mix = 0.5f) : Mix()
 	{
 		Map1(map1);
 		Map2(map2);

@@ -46,3 +46,9 @@ typedef char     TCHAR;
 template<class T>using UniString = std::basic_string<T, std::char_traits<T>, std::allocator<T>>;
 
 typedef UniString<TCHAR> TSTRING;
+
+#ifdef _UNICODE
+#define ToTSTRING std::to_wstring
+#else
+#define ToTSTRING std::to_string
+#endif

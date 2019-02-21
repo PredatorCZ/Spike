@@ -137,7 +137,7 @@ public:
 		SSSColorMap,
 		SSSScaleMap,
 		EmissionMap,
-		EmisionColorMap,
+		EmissionColorMap,
 		CoatingMap,
 		CoatingColorMap,
 		CoatingRoughnessMap,

@@ -48,6 +48,7 @@ public:
 	void FlushAll();
 	void operator >> (int endWay);
 	void PrintThreadID(bool yn);
+	void Locale(const char *localeName) { _masterstream->imbue(std::locale(localeName)); }
 	MasterPrinterThread();
 	~MasterPrinterThread();
 }printer;

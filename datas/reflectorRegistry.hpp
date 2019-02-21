@@ -100,6 +100,9 @@ void EnumMultiDestructor_t(std::string &output, int value)
 
 			output.append(enumInstance._reflected[i]);
 		}
+
+	if (!output.size())
+		output = "NULL";
 }
 
 template<class E>

@@ -110,6 +110,7 @@ protected:
 		return GetReflectedType(hash);
 	}
 public:
+	Reflector() : _types(nullptr), _typeNames(nullptr), thisAddr(nullptr), _nTypes(0) {}
 
 	using IReflector::GetReflectedValue;
 	using IReflector::SetReflectedValue;
