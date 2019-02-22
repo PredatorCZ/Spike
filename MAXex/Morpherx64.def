@@ -103,3 +103,5 @@ EXPORTS
 ?buildFromNode@morphChannel@@QEAAXPEAVINode@@HHHH@Z
 ?getMemSize@morphChannel@@QEAAMXZ
 ?rebuildChannel@morphChannel@@QEAAXXZ
+?SetName@MaxMorphChannel@@QEAAXPEBD@Z
+?GetName@MaxMorphChannel@@QEBAPEBDXZ
