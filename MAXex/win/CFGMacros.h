@@ -24,3 +24,18 @@
 
 #define MSGCheckbox(itemid) case itemid: imp->##itemid##_checked = IsDlgButtonChecked(hWnd,itemid) != 0;
 #define MSGEnable(itemid, itemenable) imp->##itemenable##_enabled = imp->##itemid##_checked; EnableWindow(GetDlgItem(hWnd, itemenable), imp->##itemid##_checked);
+
+static const TCHAR hkpresetgroup[] = _T("HK_PRESET");
+static const TCHAR _cormatElements[] = { 'X', 'Y', 'Z' };
+
+#define SetCFGHKMatrix int bufferPos = 0;\
+for (int r = 0; r < 3; r++)\
+	for (int e = 0; e < 3; e++)\
+		if (corMat[r][e] != 0.0f)\
+		{\
+			if (corMat[r][e] < 0.0f)\
+				buffer[bufferPos++] = '-';\
+			buffer[bufferPos++] = _cormatElements[e];\
+		}\
+buffer[bufferPos] = 0;\
+SetCFGString(hkpresetgroup, _T("Matrix"), buffer);
