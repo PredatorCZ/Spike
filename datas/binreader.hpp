@@ -53,7 +53,7 @@ class BinReader : public _BinCore<_BinCoreIn>
 
 	ES_FORCEINLINE void SetFileSize()
 	{
-		currentFileSize = FileStream.tellg();
+		currentFileSize = static_cast<size_t>(FileStream.tellg());
 		FileStream.seekg(0);
 	}
 

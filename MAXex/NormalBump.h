@@ -1,6 +1,8 @@
 #pragma once
 #include "MapsCore.h"
-
+#ifndef GNORMAL_CLASS_ID
+#define GNORMAL_CLASS_ID	Class_ID(0x243e22c6, 0x63f6a014)
+#endif
 class NormalBump : public MapBase
 {
 	enum Params_e

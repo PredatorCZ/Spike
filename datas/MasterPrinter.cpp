@@ -42,7 +42,7 @@ void MasterPrinterThread::FlushAll()
 	TCHAR *tempOut = static_cast<TCHAR*>(malloc(buffsize * sizeof(TCHAR)));
 	_masterstream->read(tempOut, buffsize);
 
-	if (buffsize > maximumStreamSize)
+	if (buffsize > static_cast<size_t>(maximumStreamSize))
 		_masterstream->str(StringType(_T("")));
 
 	_masterstream->clear();

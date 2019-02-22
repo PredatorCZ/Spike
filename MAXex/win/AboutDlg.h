@@ -104,10 +104,10 @@ static INT_PTR CALLBACK AboutCallbacks(HWND hWnd, UINT message, WPARAM wParam, L
 			switch (LOWORD(wParam))
 			{
 			case IDC_SYSLINK1:
-				ShellExecute(NULL, L"open", _homePage, NULL, NULL, SW_SHOWNORMAL);
+				ShellExecute(NULL, _T("open"), _homePage, NULL, NULL, SW_SHOWNORMAL);
 				break;
 			case IDC_SYSLINK2:
-				ShellExecute(NULL, L"open", _T("https://lukascone.wordpress.com/support/"), NULL, NULL, SW_SHOWNORMAL);
+				ShellExecute(NULL, _T("open"), _T("https://lukascone.wordpress.com/support/"), NULL, NULL, SW_SHOWNORMAL);
 				break;
 			}	
 			break;

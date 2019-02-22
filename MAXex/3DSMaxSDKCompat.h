@@ -66,3 +66,9 @@
 #if VERSION_3DSMAX_B <= VERSION_3DSMAX_E(2010)
 #include "max.h"
 #endif
+
+#if VERSION_3DSMAX_B <= VERSION_3DSMAX_E(2012)
+#define ToBoneName(_tstring) const_cast<char*>(_tstring.c_str())
+#else
+#define ToBoneName(_tstring) _tstring.c_str()
+#endif

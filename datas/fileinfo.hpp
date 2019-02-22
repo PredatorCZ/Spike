@@ -97,5 +97,5 @@ typedef _FileInfo_t<wchar_t> WFileInfo;
 #ifdef _UNICODE
 typedef WFileInfo TFileInfo;
 #else
-typedef AfileInfo TFileInfo;
+typedef AFileInfo TFileInfo;
 #endif
