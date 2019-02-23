@@ -30,8 +30,8 @@ public:
 	}
 
 	ES_FORCEINLINE void UseNormals() { normals = true; }
-	ES_FORCEINLINE void UseSkin() { normals = true; }
-	ES_FORCEINLINE void UseMorph() { normals = true; }
+	ES_FORCEINLINE void UseSkin() { skin = true; }
+	ES_FORCEINLINE void UseMorph() { morph = true; }
 
 	ES_INLINE TSTRING Generate(TSTRING *className = nullptr)
 	{

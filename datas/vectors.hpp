@@ -51,6 +51,16 @@ public:
 	t_Vector2 operator*(const T& input) const { return t_Vector2(X * input, Y * input); }
 	t_Vector2 operator/(const T& input) const { return t_Vector2(X / input, Y / input); }
 
+	t_Vector2 operator&(const T& input) const { return t_Vector2(X & input, Y & input); }
+	t_Vector2 operator|(const T& input) const { return t_Vector2(X | input, Y | input); }
+	t_Vector2 operator>>(const int input) const { return t_Vector2(X >> input, Y >> input); }
+	t_Vector2 operator<<(const int input) const { return t_Vector2(X << input, Y << input); }
+
+	t_Vector2& operator&=(const T& input) { X &= input; Y &= input; return *this; }
+	t_Vector2& operator|=(const T& input) { X |= input; Y |= input; return *this; }
+	t_Vector2& operator>>=(const int& input) { X >>= input; Y >>= input; return *this; }
+	t_Vector2& operator<<=(const int& input) { X <<= input; Y <<= input; return *this; }
+
 	t_Vector2& operator-() { X *= -1; Y *= -1; return *this; }
 
 	ES_FORCEINLINE T& operator [](char pos) { return *(reinterpret_cast<T*>(this) + pos); }
@@ -137,8 +147,8 @@ public:
 
 	t_Vector operator&(const T& input) const { return t_Vector(X & input, Y & input, Z & input); }
 	t_Vector operator|(const T& input) const { return t_Vector(X | input, Y | input, Z | input); }
-	t_Vector operator>>(const int input) { return t_Vector(X >> input, Y >> input, Z >> input); }
-	t_Vector operator<<(const int input) { return t_Vector(X << input, Y << input, Z << input); }
+	t_Vector operator>>(const int input) const { return t_Vector(X >> input, Y >> input, Z >> input); }
+	t_Vector operator<<(const int input) const { return t_Vector(X << input, Y << input, Z << input); }
 
 	t_Vector& operator&=(const T& input) { X &= input; Y &= input; Z &= input; return *this; }
 	t_Vector& operator|=(const T& input) { X |= input; Y |= input; Z |= input; return *this; }
@@ -232,6 +242,19 @@ public:
 	t_Vector4 operator+(const T& input) const { return t_Vector4(X + input, Y + input, Z + input, W + input); }
 	t_Vector4 operator/(const T& input) const { return t_Vector4(X / input, Y / input, Z / input, W / input); }
 	t_Vector4 operator-(const T& input) const { return t_Vector4(X - input, Y - input, Z - input, W - input); }
+
+	t_Vector4 operator&(const T& input) const { return t_Vector4(X & input, Y & input, Z & input, W & input); }
+	t_Vector4 operator|(const T& input) const { return t_Vector4(X | input, Y | input, Z | input, W | input); }
+	t_Vector4 operator >> (const int input) const { return t_Vector4(X >> input, Y >> input, Z >> input, W >> input); }
+	t_Vector4 operator<<(const int input) const { return t_Vector4(X << input, Y << input, Z << input, W << input); }
+
+	t_Vector4& operator&=(const T& input) { X &= input; Y &= input; Z &= input; W &= input; return *this; }
+	t_Vector4& operator|=(const T& input) { X |= input; Y |= input; Z |= input; W |= input; return *this; }
+	t_Vector4& operator>>=(const int& input) { X >>= input; Y >>= input; Z >>= input; W >>= input; return *this; }
+	t_Vector4& operator<<=(const int& input) { X <<= input; Y <<= input; Z <<= input; W <<= input; return *this; }
+
+
+	t_Vector4& operator-() { X *= -1; Y *= -1; Z *= -1; W *= -1; return *this; }
 
 	template<typename _T = T>
 	typename std::enable_if<std::is_integral<_T>::value, bool>::type operator==(const t_Vector4 &input) const { return (X == input.X && Y == input.Y && Z == input.Z && W == input.W); }

@@ -1,3 +1,4 @@
+LIBRARY Morpher.dlm
 EXPORTS
 ??0MaxMorphModifier@@QEAA@PEAVModifier@@@Z
 ??0MaxMorphModifier@@QEAA@XZ
