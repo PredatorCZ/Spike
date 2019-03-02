@@ -17,143 +17,73 @@
 */
 
 #pragma once
-#pragma warning(push)
-#pragma warning(disable:4293)
 namespace std {
 
-	// TEMPLATE CLASS allocator_hybrid
-	template<class _Ty>
-	class allocator_hybrid
-	{	// generic allocator for objects of class _Ty
-	public:
-		static_assert(!is_const<_Ty>::value,
-			"The C++ Standard forbids containers of const elements "
-			"because allocator<const T> is ill-formed.");
-
-		typedef void _Not_user_specialized;
-
+	template <class _Ty> struct allocator_hybrid
+	{
 		typedef _Ty value_type;
-
 		typedef value_type *pointer;
 		typedef const value_type *const_pointer;
-
-		typedef value_type& reference;
-		typedef const value_type& const_reference;
-
-		typedef size_t size_type;
-		typedef ptrdiff_t difference_type;
-
+		typedef value_type &reference;
+		typedef const value_type &const_reference;
+		typedef true_type propagate_on_container_copy_assignment;
 		typedef true_type propagate_on_container_move_assignment;
-		typedef true_type is_always_equal;
 
-		template<class _Other>
-		struct rebind
-		{	// convert this type to allocator<_Other>
-			typedef allocator_hybrid<_Other> other;
-		};
+		const static uintptr_t isDestroyed = static_cast<uintptr_t>(1) << (sizeof(uintptr_t) * 8 - 1);
 
-		pointer address(reference _Val) const _NOEXCEPT
-		{	// return address of mutable _Val
-			return (_STD addressof(_Val));
-		}
+		pointer buffer;
 
-		const_pointer address(const_reference _Val) const _NOEXCEPT
-		{	// return address of nonmutable _Val
-			return (_STD addressof(_Val));
-		}
-
-		allocator_hybrid() _THROW0()
-		{	// construct default allocator (do nothing)
-		}
-
-		allocator_hybrid(const allocator_hybrid<_Ty>&) _THROW0()
-		{	// construct by copying (do nothing)
-		}
-
-		template<class _Other>
-		allocator_hybrid(const allocator_hybrid<_Other>&) _THROW0()
-		{	// construct from a related allocator (do nothing)
-		}
-
-		template<class _Other>
-		allocator_hybrid<_Ty>& operator=(const allocator_hybrid<_Other>&)
-		{	// assign from a related allocator (do nothing)
-			return (*this);
-		}
-
-		void deallocate(pointer _Ptr, size_type _Count)
-		{	// deallocate object at _Ptr
-			if (!_buffer)
-				_Deallocate(_Ptr, _Count, sizeof(_Ty));
+		allocator_hybrid() : buffer(nullptr) {}
+		
+		template<class _Uty> void destroy(_Uty *ptr)
+		{
+			if (!buffer)
+				ptr->~_Uty();
 			else
-				_buffer = nullptr;
-
+				reinterpret_cast<uintptr_t&>(buffer) = isDestroyed;
 		}
 
-		_DECLSPEC_ALLOCATOR pointer allocate(size_type _Count)
-		{	// allocate array of _Count elements
-			if (!CheckBuffer())
-				return (static_cast<pointer>(_Allocate(_Count, sizeof(_Ty))));
+		allocator_hybrid(pointer iBuff) : buffer(iBuff) {};
+
+		template<class U> allocator_hybrid(const allocator_hybrid<U> &) : allocator_hybrid() {}
+		
+		allocator_hybrid(const _Container_proxy &p)
+		{
+			const _Container_proxy &puh = p;
+
+			return;
+		}
+
+		allocator_hybrid(const allocator_hybrid<value_type>& input)
+		{
+			buffer = input.buffer;
+		}
+
+		_DECLSPEC_ALLOCATOR pointer allocate(size_t count)
+		{
+			if (!buffer || isDestroyed & reinterpret_cast<uintptr_t>(buffer))
+				return (static_cast<pointer>(_Allocate(count, sizeof(value_type))));
 			else
-				return _buffer;
+				return buffer;
 		}
 
-		_DECLSPEC_ALLOCATOR pointer allocate(size_type _Count, const void *)
-		{	// allocate array of _Count elements, ignore hint
-			return (allocate(_Count));
-		}
-
-		template<class _Objty, class... _Types>
-		void construct(_Objty *_Ptr, _Types&&... _Args)
-		{	// construct _Objty(_Types...) at _Ptr
-			if (!CheckBuffer())
-				::new ((void *)_Ptr) _Objty(_STD forward<_Types>(_Args)...);
-		}
-
-
-		template<class _Uty>
-		void destroy(_Uty *_Ptr)
-		{	// destroy object at _Ptr
-			if (!_buffer)
-				_Ptr->~_Uty();
-		}
-
-		size_t max_size() const _NOEXCEPT
-		{	// estimate maximum array size
-			return ((size_t)(-1) / sizeof(_Ty));
-		}
-	private:
-		pointer _buffer = nullptr;
-		const static uintptr_t _reallocflag = static_cast<uintptr_t>(1) << (sizeof(uintptr_t)*8-1);
-		const static uintptr_t _reallocmask = ~_reallocflag;
-		inline bool CheckBuffer()
+		void deallocate(pointer ptr, size_t count)
 		{
-			return (reinterpret_cast<uintptr_t&>(_buffer)&_reallocmask)!=0;
-		}
-	public:
-		void SetBuffer(pointer buffer)
-		{
-			_buffer = buffer;
-		}
-		void FreeBuffer()
-		{
-			reinterpret_cast<uintptr_t&>(_buffer) = _reallocflag;
+			if (isDestroyed & reinterpret_cast<uintptr_t>(buffer))
+			{
+				buffer = nullptr;
+				return;
+			}
+
+			if (buffer != ptr)
+				_Deallocate(ptr, count, sizeof(value_type));
+			else
+				buffer = nullptr;
 		}
 	};
-	template<class _Ty,
-		class _Other> inline
-		bool operator==(const allocator_hybrid<_Ty>&,
-			const allocator_hybrid<_Other>&) _THROW0()
-	{	// test for allocator equality
-		return (true);
-	}
 
-	template<class _Ty,
-		class _Other> inline
-		bool operator!=(const allocator_hybrid<_Ty>& _Left,
-			const allocator_hybrid<_Other>& _Right) _THROW0()
-	{	// test for allocator inequality
-		return (false);
-	}
+	template <class T, class O>
+	bool operator==(const allocator_hybrid<T> &t, const allocator_hybrid<O> &o) { return t.buffer == o.buffer; }
+	template <class T, class O>
+	bool operator!=(const allocator_hybrid<T> &t, const allocator_hybrid<O> &o) { return !(t == o) }
 }
-#pragma warning(pop)

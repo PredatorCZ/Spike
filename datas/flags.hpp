@@ -37,8 +37,8 @@ public:
 template<class T, class E> class EnumFlags : public t_Flags<T>
 {
 public:
-	EnumFlags() { t_Flags<T>::t_Flags(); }
-	EnumFlags(T inval) { t_Flags<T>::t_Flags(inval); }
+	EnumFlags() {}
+	EnumFlags(T inval) : t_Flags(inval) {}
 	typedef E EnumClass;
 	typedef T ValueType;
 };

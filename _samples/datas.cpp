@@ -230,19 +230,23 @@ void HybridVector()
 	std::vector<char, std::allocator_hybrid<char>> vectr;
 	vectr.resize(85);
 
-	//Make sure that vector is destroyed before applying external buffer, 
-	//if there is already allocated space, to prevent some nasty memory leaks
-	vectr.~vector(); 
-
-	vectr._Getal().SetBuffer(externalBuffer); //Use _Getal() to get non-const allocator ref
-	vectr.resize(125); // resize is here for iterators only, buffer will not change
+	//assigning externalBuffer as internal buffer for vector
+	//equivalent to: vectr = std::vector<char, std::allocator_hybrid<char>>(externalBuffer, externalBuffer + 125, std::allocator_hybrid<char>(externalBuffer));
+	vectr = decltype(vectr)(externalBuffer, externalBuffer + 125, decltype(vectr)::allocator_type(externalBuffer));
+	
 
 	vectr[12] = 12;
 
-	//setting back to normal vector
-	vectr.get_allocator().FreeBuffer();
-	vectr.~vector(); //reseting vector
-	vectr.push_back(75); //doing normal vector stuff
+	//NOTE: this will still use externalBuffer!!
+	vectr.clear();
+	// but if vector is resized with size greater than sizeof externalBuffer, then externalBuffer will be dropped
+	vectr.resize(200);
+
+	//This is a great alternative to drop externalBuffer, it'll just reset the whole vector
+	vectr.~vector();
+
+	//doing normal vector stuff afterwards
+	vectr.push_back(75); 
 
 	free(externalBuffer);
 }

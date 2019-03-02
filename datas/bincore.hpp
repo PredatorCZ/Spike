@@ -73,7 +73,6 @@ protected:
 	}
 public:
 	typedef typename std::remove_pointer<decltype(_driverClass::BaseStream)>::type::_Myt StreamType;
-	template<class T>using UniString = std::basic_string<T, std::char_traits<T>, std::allocator<T>>;
 
 	enum EndianSwap
 	{

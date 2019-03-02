@@ -42,7 +42,7 @@ typedef wchar_t     TCHAR;
 typedef char     TCHAR;
 #endif
 #endif
-#include <xstring>
+#include <string>
 template<class T>using UniString = std::basic_string<T, std::char_traits<T>, std::allocator<T>>;
 
 typedef UniString<TCHAR> TSTRING;
