@@ -16,7 +16,7 @@
 	limitations under the License.
 */
 
-#pragma warning(disable: 4267)
+#pragma warning(disable: 4244)
 #include "binreader.hpp"
 #include "BinWritter.hpp"
 #include "esString.h"

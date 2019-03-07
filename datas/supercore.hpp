@@ -20,7 +20,9 @@
 #define uint					unsigned int
 #define ushort					unsigned short
 #define uchar					unsigned char
-#define ulong					unsigned long long
+#define uint64					unsigned long long
+#define int64					long long
+
 
 #if defined(__GNUC__) || defined(__GNUG__)
 #define ES_FORCEINLINE __attribute__((always_inline))

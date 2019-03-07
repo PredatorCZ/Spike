@@ -163,7 +163,7 @@ template <> struct _getType<char> {
 template <> struct _getType<signed char> {
 	static const char TYPE = 2; static const JenHash HASH = 0; static const unsigned char SUBSIZE = 0;
 };
-template <> struct _getType<unsigned char> {
+template <> struct _getType<uchar> {
 	static const char TYPE = 3; static const JenHash HASH = 0; static const unsigned char SUBSIZE = 0;
 };
 
@@ -176,7 +176,7 @@ template <> struct _getType<char16_t> {
 template <> struct _getType<short> {
 	static const char TYPE = 4; static const JenHash HASH = 0; static const unsigned char SUBSIZE = 0;
 };
-template <> struct _getType<unsigned short> {
+template <> struct _getType<ushort> {
 	static const char TYPE = 5; static const JenHash HASH = 0; static const unsigned char SUBSIZE = 0;
 };
 
@@ -186,7 +186,7 @@ template <> struct _getType<char32_t> {
 template <> struct _getType<int> {
 	static const char TYPE = 6; static const JenHash HASH = 0; static const unsigned char SUBSIZE = 0;
 };
-template <> struct _getType<unsigned int> {
+template <> struct _getType<uint> {
 	static const char TYPE = 7; static const JenHash HASH = 0; static const unsigned char SUBSIZE = 0;
 };
 template <> struct _getType<long> {
@@ -196,10 +196,10 @@ template <> struct _getType<unsigned long> {
 	static const char TYPE = 7; static const JenHash HASH = 0; static const unsigned char SUBSIZE = 0;
 };
 
-template <> struct _getType<_LONGLONG> {
+template <> struct _getType<int64> {
 	static const char TYPE = 8; static const JenHash HASH = 0; static const unsigned char SUBSIZE = 0;
 };
-template <> struct _getType<_ULONGLONG> {
+template <> struct _getType<uint64> {
 	static const char TYPE = 9; static const JenHash HASH = 0; static const unsigned char SUBSIZE = 0;
 };
 

@@ -72,7 +72,7 @@ protected:
 		encCreated = false;
 	}
 public:
-	typedef typename std::remove_pointer<decltype(_driverClass::BaseStream)>::type::_Myt StreamType;
+	typedef typename std::remove_pointer<decltype(_driverClass::BaseStream)>::type StreamType;
 
 	enum EndianSwap
 	{

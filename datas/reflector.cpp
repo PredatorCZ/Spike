@@ -63,10 +63,10 @@ static ES_INLINE void SetReflectedPrimitive(char *objAddr, JenHash type, const c
 		break;
 
 	case 8:
-		*reinterpret_cast<_LONGLONG*>(objAddr) = std::atoll(value);
+		*reinterpret_cast<int64*>(objAddr) = std::atoll(value);
 		break;
 	case 9:
-		*reinterpret_cast<_ULONGLONG*>(objAddr) = std::strtoull(value, nullptr, 10);
+		*reinterpret_cast<uint64*>(objAddr) = std::strtoull(value, nullptr, 10);
 		break;
 
 	case 10:
@@ -189,9 +189,9 @@ ES_INLINE std::string GetReflectedPrimitive(const char *objAddr, JenHash type)
 		return std::to_string(*reinterpret_cast<const unsigned int*>(objAddr));
 
 	case 8:
-		return std::to_string(*reinterpret_cast<const _LONGLONG*>(objAddr));
+		return std::to_string(*reinterpret_cast<const int64*>(objAddr));
 	case 9:
-		return std::to_string(*reinterpret_cast<const _ULONGLONG*>(objAddr));
+		return std::to_string(*reinterpret_cast<const uint64*>(objAddr));
 
 	case 10:
 		return std::to_string(*reinterpret_cast<const float*>(objAddr));
@@ -269,7 +269,7 @@ std::string Reflector::GetReflectedValue(int id) const
 
 		for (int i = 0; i < numItems; i++)
 		{
-			outVal += GetReflectedPrimitive(thisAddr + valueOffset + (reflValue.subSize * i), reflValue.subtypeHash) + ((i + 1 < numItems) ? ", " : "");
+			outVal += GetReflectedPrimitive(thisAddr + valueOffset + (static_cast<intptr_t>(reflValue.subSize) * i), reflValue.subtypeHash) + ((i + 1 < numItems) ? ", " : "");
 		}
 
 		return outVal + "]";

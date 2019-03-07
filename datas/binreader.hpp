@@ -21,7 +21,7 @@
 class _BinCoreIn
 {
 protected:
-	_BinCoreIn() : localseek(0) {}
+	_BinCoreIn() : localseek(0), BaseStream(nullptr){}
 	size_t localseek;
 	std::istream *BaseStream;
 	static const uint MODE = std::ios::binary | std::ios::in | std::ios::ate;

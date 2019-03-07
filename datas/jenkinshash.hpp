@@ -17,12 +17,16 @@
 */
 
 #pragma once
+
 typedef unsigned int JenHash;
+typedef unsigned long long _SuperJenHash;
+#define _SuperResVal static_cast<_SuperJenHash>(resval)
+
 constexpr JenHash JenkinsHash(const char* str, const int strlen, const JenHash resval = 0, const int index = 0)
 {
 	return index < strlen ? JenkinsHash(str, strlen,
-		((resval + static_cast<const JenHash>(reinterpret_cast<const unsigned char&>(str[index]))) + ((resval + static_cast<const JenHash>(reinterpret_cast<const unsigned char&>(str[index]))) << 10)) ^
-		(((resval + static_cast<const JenHash>(reinterpret_cast<const unsigned char&>(str[index]))) + ((resval + static_cast<const JenHash>(reinterpret_cast<const unsigned char&>(str[index]))) << 10)) >> 6),
+		((_SuperResVal + static_cast<JenHash>(static_cast<const unsigned char>(str[index]))) + ((_SuperResVal + static_cast<JenHash>(static_cast<const unsigned char>(str[index]))) << 10)) ^
+		(((_SuperResVal + static_cast<JenHash>(static_cast<const unsigned char>(str[index]))) + ((_SuperResVal + static_cast<JenHash>(static_cast<const unsigned char>(str[index]))) << 10)) >> 6),
 		index + 1) :
-		((resval + (resval << 3)) ^ ((resval + (resval << 3)) >> 11)) + (((resval + (resval << 3)) ^ ((resval + (resval << 3)) >> 11)) << 15);
+		((_SuperResVal + (_SuperResVal << 3)) ^ ((_SuperResVal + (_SuperResVal << 3)) >> 11)) + (((_SuperResVal + (_SuperResVal << 3)) ^ ((_SuperResVal + (_SuperResVal << 3)) >> 11)) << 15);
 }
