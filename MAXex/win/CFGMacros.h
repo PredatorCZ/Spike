@@ -23,13 +23,16 @@ template<class T, class E>
 ES_FORCEINLINE void Enabled(const TCHAR *name, EnumFlags<T,E> &storage, E item, const TCHAR *CFGFile, TCHAR *buffer, HWND hWnd)
 {
 	GetBufferValue(name, CFGFile, _T("enabled"), buffer);
+	
+	bool value = storage[item];
 
-	if (!*buffer)
-		return;
-
-	bool value = *buffer == 't';
-	EnableWindow(hWnd, value);
-	storage(item, value);
+	if (*buffer)
+	{
+		value = *buffer == 't';
+		storage(item, value);
+	}
+	
+	EnableWindow(hWnd, value);	
 }
 
 template<class T, class E>
@@ -37,12 +40,15 @@ ES_FORCEINLINE void Checked(const TCHAR *name, EnumFlags<T, E> &storage, E item,
 {
 	GetBufferValue(name, CFGFile, _T("checked"), buffer);
 
-	if (!*buffer)
-		return;
+	bool value = storage[item];
 
-	bool value = *buffer == 't';
+	if (*buffer)
+	{
+		value = *buffer == 't';
+		storage(item, value);
+	}
+	
 	CheckDlgButton(hWnd, dlgItem, value);
-	storage(item, value);
 }
 
 ES_FORCEINLINE void GetValue(const TCHAR *name, float &value, const TCHAR *CFGFile, TCHAR *buffer, const TCHAR *kVal = _T("value"))
@@ -99,7 +105,7 @@ ES_FORCEINLINE void WriteIndex(const TCHAR *name, int value, const TCHAR *CFGFil
 	WritePrivateProfileString(name, kVal, buffer, CFGFile);
 }
 
-ES_FORCEINLINE void SetText(const TCHAR *name, const TSTRING value, const TCHAR *CFGFile, const TCHAR *kVal = _T("text"))
+ES_FORCEINLINE void WriteText(const TCHAR *name, const TSTRING value, const TCHAR *CFGFile, const TCHAR *kVal = _T("text"))
 {
 	const int strSize = static_cast<int>(value.size() + 3);
 
@@ -135,7 +141,7 @@ ES_FORCEINLINE void SetText(const TCHAR *name, const TSTRING value, const TCHAR 
 #define SetCFGChecked(name) SetCFGString(_T(# name),_T("checked"), flags[name##_checked] ? _T("true"):_T("false"))
 #define SetCFGValue(name) WriteValue(_T(# name), name##_value, CFGFile, buffer)
 #define SetCFGIndex(name) WriteIndex(_T(# name), name##_index, CFGFile, buffer)
-#define SetCFGText(name) SetText(_T(# name), name, CFGFile)
+#define SetCFGText(name) WriteText(_T(# name), name, CFGFile)
 
 #define MSGCheckbox(itemid) case itemid: imp->flags(std::remove_pointer<decltype(imp)>::type::itemid##_checked, IsDlgButtonChecked(hWnd, itemid) != 0)
 #define MSGEnable(itemid, itemenable) imp->flags(itemenable##_enabled,  imp->flags[itemid##_checked]); EnableWindow(GetDlgItem(hWnd, itemenable), imp->flags[itemid##_checked]);
