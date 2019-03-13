@@ -75,6 +75,11 @@ static ES_INLINE void SetReflectedPrimitive(char *objAddr, JenHash type, const c
 	case 11:
 		*reinterpret_cast<double*>(objAddr) = std::atof(value);
 		break;
+
+	case 19:
+		*reinterpret_cast<std::string *>(objAddr) = value;
+		break;
+
 	default:
 		break;
 	}
@@ -197,6 +202,12 @@ ES_INLINE std::string GetReflectedPrimitive(const char *objAddr, JenHash type)
 		return std::to_string(*reinterpret_cast<const float*>(objAddr));
 	case 11:
 		return std::to_string(*reinterpret_cast<const double*>(objAddr));
+
+	case 18:
+		return objAddr;
+
+	case 19:
+		return *reinterpret_cast<const std::string *>(objAddr);
 
 	default:
 		return "";

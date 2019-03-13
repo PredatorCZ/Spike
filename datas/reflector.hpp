@@ -111,6 +111,7 @@ protected:
 	}
 public:
 	Reflector() : _types(nullptr), _typeNames(nullptr), thisAddr(nullptr), _nTypes(0) {}
+	Reflector(const reflType *__types, char *_thisAddr, int __nTypes, const char **__typeNames) : _types(__types), _typeNames(__typeNames), thisAddr(_thisAddr), _nTypes(__nTypes) {}
 
 	using IReflector::GetReflectedValue;
 	using IReflector::SetReflectedValue;
@@ -214,6 +215,13 @@ template <> struct _getType<long double> {
 	static const char TYPE = 11; static const JenHash HASH = 0; static const unsigned char SUBSIZE = 0;
 };
 
+template <> struct _getType<const char*> {
+	static const char TYPE = 18; static const JenHash HASH = 0; static const unsigned char SUBSIZE = 0;
+};
+
+template <> struct _getType<std::string> {
+	static const char TYPE = 19; static const JenHash HASH = 0; static const unsigned char SUBSIZE = 0;
+};
 
 #define DECLARE_REFLECTOR_STATIC static const int nTypes; static const reflType types[];
 
