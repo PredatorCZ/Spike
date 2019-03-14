@@ -5,10 +5,12 @@
 #define IDConfigValue(id) id##_value
 #define IDConfigBool(id) id##_checked
 #define IDConfigVisible(id) id##_enabled
+#define IDConfigIndex(id) id##_index
 
 #define IDDistributeBooleans(value) (1 << value) |
 
 #define NewIDConfigValue(id) float id##_value
+#define NewIDConfigIndex(id) int id##_index
 
 #define IDConfigText(id) _T(# id)
 #define CFGBufferSize 16
@@ -132,9 +134,9 @@ ES_FORCEINLINE void WriteText(const TCHAR *name, const TSTRING value, const TCHA
 
 #define GetCFGEnabled(name) Enabled(_T(# name), flags, name##_enabled, CFGFile, buffer, GetDlgItem(hWnd, name))
 #define GetCFGChecked(name) Checked(_T(# name), flags, name##_checked, CFGFile, buffer, hWnd, name)
-#define GetCFGCValue(name) GetValue(_T(# name), name##_value, CFGFile, buffer)
-#define GetCFGCIndex(name) GetIndex(_T(# name), name##_index, CFGFile, buffer)
-#define GetCFGCText(name) GetText(_T(# name), name, CFGFile, buffer)
+#define GetCFGValue(name) GetValue(_T(# name), name##_value, CFGFile, buffer)
+#define GetCFGIndex(name) GetIndex(_T(# name), name##_index, CFGFile, buffer)
+#define GetCFGText(name) GetText(_T(# name), name, CFGFile, buffer)
 
 #define SetCFGString(name, key, value) WritePrivateProfileString(name, key, value, CFGFile)
 #define SetCFGEnabled(name) SetCFGString(_T(# name),_T("enabled"), flags[name##_enabled] ? _T("true"):_T("false"))
