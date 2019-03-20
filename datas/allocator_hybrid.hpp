@@ -62,7 +62,11 @@ namespace std {
 		_DECLSPEC_ALLOCATOR pointer allocate(size_t count)
 		{
 			if (!buffer || isDestroyed & reinterpret_cast<uintptr_t>(buffer))
+#if _MSC_VER > 1900
+				return (static_cast<pointer>(_Allocate<_New_alignof<value_type>>(count * sizeof(value_type))));
+#else
 				return (static_cast<pointer>(_Allocate(count, sizeof(value_type))));
+#endif
 			else
 				return buffer;
 		}
@@ -76,7 +80,11 @@ namespace std {
 			}
 
 			if (buffer != ptr)
+#if _MSC_VER > 1900
+				_Deallocate<_New_alignof<value_type>>(ptr, count * sizeof(value_type));
+#else
 				_Deallocate(ptr, count, sizeof(value_type));
+#endif
 			else
 				buffer = nullptr;
 		}
@@ -85,5 +93,5 @@ namespace std {
 	template <class T, class O>
 	bool operator==(const allocator_hybrid<T> &t, const allocator_hybrid<O> &o) { return t.buffer == o.buffer; }
 	template <class T, class O>
-	bool operator!=(const allocator_hybrid<T> &t, const allocator_hybrid<O> &o) { return !(t == o) }
+	bool operator!=(const allocator_hybrid<T> &t, const allocator_hybrid<O> &o) { return !(t == o); }
 }
