@@ -22,26 +22,42 @@
 #ifndef ES_FLAGS_DEFINED
 #define ES_FLAGS_DEFINED
 #include "supercore.hpp"
-template <typename T> class t_Flags
-{
-	T Value;
-public:
-	typedef T ValueType;
-	t_Flags(): Value(0){}
-	t_Flags(T inval) { Value = inval; }
-	ES_FORCEINLINE void operator=(T inval) { Value = inval; }
-	ES_FORCEINLINE bool operator[](int pos) const { return (Value & (1 << pos)) != 0; }
-	ES_FORCEINLINE void operator()(int pos, bool val) { val ? Value |= (1 << pos) : Value &= ~(1 << pos); }
-};
 
-template<class T, class E> class EnumFlags : public t_Flags<T>
+template<class T, class E = int> class esFlags
 {
 public:
-	EnumFlags() {}
-	EnumFlags(T inval) : t_Flags(inval) {}
 	typedef E EnumClass;
 	typedef T ValueType;
+private:
+	T Value;
+
+	template <typename _Type>
+	const T _eval(const T val, _Type input) { return val | (1 << input); }
+
+	template <typename _Type, typename... _Others>
+	const T _eval(const T val, _Type input, _Others... inputs)
+	{
+		return _eval(val | (1 << input), inputs...);
+	}
+	
+public:
+	esFlags() : Value(0) {}
+	template<typename... _Type> esFlags(const _Type... inputs)
+	{
+		Value = _eval(0, inputs...);
+	}
+
+	ES_FORCEINLINE void operator=(T inval) { Value = inval; }
+	ES_FORCEINLINE bool operator[](E pos) const { return (Value & (1 << pos)) != 0; }
+	ES_FORCEINLINE void operator()(E pos, bool val) { val ? Value |= (1 << pos) : Value &= ~(1 << pos); }
+
+	void operator+= (E input) { return operator(input, true); }
+	void operator-= (E input) { return operator(input, false); }
+
+	const bool operator==(const esFlags &input)const { return Value == input.Value; }
 };
+
+template<class T, class E> using EnumFlags = esFlags<T, E>;
 
 template<class T, class E> class esEnum
 {
@@ -62,7 +78,7 @@ public:
 #ifdef ES_REFLECTOR_DEFINED
 #ifndef ES_FLAGS_TEMPLATES_DEFINED
 #define ES_FLAGS_TEMPLATES_DEFINED
-template <class C, class E> struct _getType<EnumFlags<C, E>> {
+template <class C, class E> struct _getType<esFlags<C, E>> {
 	static const char TYPE = 12; static const JenHash HASH = _EnumWrap<E>::HASH; static const uchar SUBSIZE = 0;
 };
 template <class C, class E> struct _getType<esEnum<C, E>> {

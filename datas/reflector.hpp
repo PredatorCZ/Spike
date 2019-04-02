@@ -14,6 +14,10 @@
 	WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 	See the License for the specific language governing permissions and
 	limitations under the License.
+
+	-- April, 2019 
+		- REFLECTOR_ENUM macros no longer require eplicit hash
+		- removed all DECLARE_REFLECTOR macros, exept this one
 */
 
 #ifndef ES_REFLECTOR_DEFINED
@@ -32,30 +36,43 @@ enum classname { StaticFor(_REFLECTOR_ADDN_ENUMVAL, __VA_ARGS__) };
 
 template<class E>struct _EnumWrap {};
 
-#define REFLECTOR_ENUM(classname, classHash, ...) namespace _##classname { enum classname{ StaticFor(_REFLECTOR_ADDN_ENUMVAL, __VA_ARGS__) }; };\
+#define REFLECTOR_ENUM(classname, ...) namespace _##classname { enum classname{ StaticFor(_REFLECTOR_ADDN_ENUMVAL, __VA_ARGS__) }; };\
 typedef _##classname::classname classname; \
 template<> struct _EnumWrap<classname> { \
 static const int _reflectedSize = VA_NARGS(__VA_ARGS__);\
 const char *_reflected[_reflectedSize] = { StaticFor(_REFLECTOR_ADDN_ENUM, __VA_ARGS__) }; \
-static const JenHash HASH = classHash;\
+static const JenHash HASH = JenkinsHash(#classname, sizeof(#classname) - 1);\
 };
 
-#define REFLECTOR_ENUM_NAKED(classname, classHash, ...) enum classname{ StaticFor(_REFLECTOR_ADDN_ENUMVAL, __VA_ARGS__) };\
+#define REFLECTOR_ENUM_NAKED(classname, ...) enum classname{ StaticFor(_REFLECTOR_ADDN_ENUMVAL, __VA_ARGS__) };\
 template<> struct _EnumWrap<classname> { \
 static const int _reflectedSize = VA_NARGS(__VA_ARGS__);\
 const char *_reflected[_reflectedSize] = { StaticFor(_REFLECTOR_ADDN_ENUM, __VA_ARGS__) }; \
-static const JenHash HASH = classHash;\
+static const JenHash HASH = JenkinsHash(#classname, sizeof(#classname) - 1);\
 };
 
 #define _REFLECTOR_ADDN(classname, _id, value) reflType { sizeof(classname::value), _getType<decltype(classname::value)>::SUBSIZE, _id, offsetof(classname,value), JenkinsHash(#value, sizeof(#value) -1),\
 _getType<decltype(classname::value)>::TYPE , _getType<decltype(classname::value)>::HASH},
 
-#define REFLECTOR_START(classname,...) const reflType classname::types[] = { StaticForArgID(_REFLECTOR_ADDN, classname, __VA_ARGS__) }; \
-const int classname::nTypes = sizeof(classname::types) / sizeof(reflType);
+#define REFLECTOR_START(classname,...) static const reflType __##classname##_types[] = { StaticForArgID(_REFLECTOR_ADDN, classname, __VA_ARGS__) }; \
+static const reflectorStatic __##classname##_statical = {  VA_NARGS(__VA_ARGS__), __##classname##_types, nullptr, nullptr, JenkinsHash(#classname, sizeof(#classname) - 1) };\
+const reflectorStatic *classname::__rfPtrStatic = &__##classname##_statical;
 
-#define REFLECTOR_START_WNAMES(classname,...) const reflType classname::types[] = { StaticForArgID(_REFLECTOR_ADDN, classname, __VA_ARGS__) }; \
-const int classname::nTypes = (sizeof(classname::types) / sizeof(reflType)) | 0x80000000;\
-const char * classname::typeNames[] = { StaticFor(_REFLECTOR_ADDN_ENUM, __VA_ARGS__) };
+#define REFLECTOR_START_WNAMES(classname,...) static const reflType __##classname##_types[] = { StaticForArgID(_REFLECTOR_ADDN, classname, __VA_ARGS__) }; \
+static const char *__##classname##_typeNames[] = { StaticFor(_REFLECTOR_ADDN_ENUM, __VA_ARGS__) };\
+static const reflectorStatic __##classname##_statical = { \
+	VA_NARGS(__VA_ARGS__), __##classname##_types, __##classname##_typeNames, \
+	#classname, JenkinsHash(#classname, sizeof(#classname) - 1) };\
+const reflectorStatic *classname::__rfPtrStatic = &__##classname##_statical;
+
+#define DECLARE_REFLECTOR static const reflectorStatic *__rfPtrStatic;\
+const reflectorInstanceConst _rfRetreive() const { return { __rfPtrStatic, this }; }\
+const reflectorInstance _rfRetreive() { return { __rfPtrStatic, this }; }
+
+namespace pugi
+{
+	class xml_node;
+}
 
 struct reflType
 {
@@ -67,42 +84,32 @@ struct reflType
 	JenHash subtypeHash;
 };
 
-class IReflector
+struct reflectorStatic
 {
-public:
-	struct KVPair
-	{
-		const char *name;
-		std::string value;
-	};
-
-	virtual void SetReflectedValue(const JenHash hash, const char *value) = 0;
-	ES_INLINE void SetReflectedValue(const char *name, const char *value)
-	{
-		const JenHash hash = JenkinsHash(name, static_cast<JenHash>(strlen(name)));
-		return SetReflectedValue(hash, value);
-	}
-	virtual int GetNumReflectedValues() const = 0;
-	virtual std::string GetReflectedValue(int id) const = 0;
-	virtual std::string GetReflectedValue(JenHash hash) const = 0;
-	ES_INLINE std::string GetReflectedValue(const char *name) const
-	{
-		const JenHash hash = JenkinsHash(name, static_cast<JenHash>(strlen(name)));
-		return GetReflectedValue(hash);
-	}
-	virtual KVPair GetReflectedPair(int id) const = 0;
-	virtual KVPair GetReflectedPair(JenHash hash) const = 0;
-
+	const int nTypes;
+	const reflType *types;
+	const char *const *typeNames;
+	const char *className;
+	const JenHash classHash;
 };
 
-class Reflector : public IReflector
+struct reflectorInstance
 {
-protected:
-	const reflType *_types;
-	const char **_typeNames;
-	char *thisAddr;
-	int _nTypes;
+	const reflectorStatic *rfStatic;
+	void *rfInstance;
+};
 
+struct reflectorInstanceConst
+{
+	const reflectorStatic *rfStatic;
+	const void *rfInstance;
+};
+
+class Reflector
+{
+	virtual const reflectorInstanceConst _rfRetreive() const = 0;
+	virtual const reflectorInstance _rfRetreive() = 0;
+protected:
 	const reflType *GetReflectedType(const JenHash hash) const;
 	ES_INLINE const reflType *GetReflectedType(const char *name) const
 	{
@@ -110,15 +117,26 @@ protected:
 		return GetReflectedType(hash);
 	}
 public:
-	Reflector() : _types(nullptr), _typeNames(nullptr), thisAddr(nullptr), _nTypes(0) {}
-	Reflector(const reflType *__types, char *_thisAddr, int __nTypes, const char **__typeNames) : _types(__types), _typeNames(__typeNames), thisAddr(_thisAddr), _nTypes(__nTypes) {}
+	struct KVPair
+	{
+		const char *name;
+		std::string value;
+	};
 
-	using IReflector::GetReflectedValue;
-	using IReflector::SetReflectedValue;
+	ES_INLINE void SetReflectedValue(const char *name, const char *value)
+	{
+		const JenHash hash = JenkinsHash(name, static_cast<JenHash>(strlen(name)));
+		return SetReflectedValue(hash, value);
+	}
+	ES_INLINE std::string GetReflectedValue(const char *name) const
+	{
+		const JenHash hash = JenkinsHash(name, static_cast<JenHash>(strlen(name)));
+		return GetReflectedValue(hash);
+	}
 
 	void SetReflectedValue(const JenHash hash, const char *value);
-	int GetNumReflectedValues() const { return _nTypes & 0x7fffffff; }
-	ES_INLINE bool UseNames() const { return (_nTypes & 0x80000000) != 0; }
+	ES_INLINE int GetNumReflectedValues() const { return _rfRetreive().rfStatic->nTypes; }
+	ES_INLINE bool UseNames() const { return _rfRetreive().rfStatic->typeNames != nullptr; }
 	
 	std::string GetReflectedValue(int id) const;
 	ES_INLINE std::string GetReflectedValue(JenHash hash) const
@@ -131,22 +149,29 @@ public:
 		return GetReflectedValue(found->ID);
 	}
 
-	KVPair GetReflectedPair(int id) const 
+	ES_INLINE KVPair GetReflectedPair(int id) const
 	{ 
 		if (id >= GetNumReflectedValues())
 			return KVPair{};
 
-		return KVPair{ UseNames() ? _typeNames[id] : nullptr, GetReflectedValue(id) };
+		return KVPair{ UseNames() ? _rfRetreive().rfStatic->typeNames[id] : nullptr, GetReflectedValue(id) };
 	};
-	KVPair GetReflectedPair(JenHash hash) const 
+	ES_INLINE KVPair GetReflectedPair(JenHash hash) const
 	{
 		const reflType *found = GetReflectedType(hash);
 
 		if (!found)
 			return KVPair{};
 
-		return KVPair{ UseNames() ? _typeNames[found->ID] : nullptr, GetReflectedValue(found->ID) };
+		return KVPair{ UseNames() ? _rfRetreive().rfStatic->typeNames[found->ID] : nullptr, GetReflectedValue(found->ID) };
 	};
+
+	ES_INLINE const char *GetClassName() const { return _rfRetreive().rfStatic->className; }
+
+	int ToXML(const TSTRING filename) const;
+	int ToXML(pugi::xml_node &node) const;
+	int FromXML(const TSTRING filename);
+	int FromXML(pugi::xml_node &node);
 };
 
 template <typename _Ty> struct _getType 
@@ -222,17 +247,4 @@ template <> struct _getType<const char*> {
 template <> struct _getType<std::string> {
 	static const char TYPE = 19; static const JenHash HASH = 0; static const unsigned char SUBSIZE = 0;
 };
-
-#define DECLARE_REFLECTOR_STATIC static const int nTypes; static const reflType types[];
-
-#define DECLARE_REFLECTOR_WNAMES_STATIC DECLARE_REFLECTOR_STATIC static const char *typeNames[];
-
-#define DECLARE_REFLECTOR_WNAMES DECLARE_REFLECTOR_WNAMES_STATIC \
-ES_INLINE void ConstructReflection(){_nTypes = nTypes;_typeNames = typeNames;_types = types; thisAddr = reinterpret_cast<char*>(this);}
-
-#define DECLARE_REFLECTOR DECLARE_REFLECTOR_STATIC \
-ES_INLINE void ConstructReflection(){_nTypes = nTypes;_types = types; thisAddr = reinterpret_cast<char*>(this);}
-
-#define DECLARE_REFLECTOR_EMPTY ES_INLINE void ConstructReflection() {}
-
 #endif

@@ -124,7 +124,7 @@ union BFDataChunk
 	uchar b[4];
 };
 
-void BlowfishEncoder::EncodeBlock(ulong &block) const
+void BlowfishEncoder::EncodeBlock(uint64 &block) const
 {
 	uint &val0 = reinterpret_cast<uint&>(block);
 	uint &val1 = *(reinterpret_cast<uint*>(&block) + 1);
@@ -154,7 +154,7 @@ void BlowfishEncoder::EncodeBlock(ulong &block) const
 	val1 = _val0.d;
 }
 
-void BlowfishEncoder::DecodeBlock(ulong &block) const
+void BlowfishEncoder::DecodeBlock(uint64 &block) const
 {
 	uint &val0 = reinterpret_cast<uint&>(block);
 	uint &val1 = *(reinterpret_cast<uint*>(&block) + 1);
@@ -191,8 +191,8 @@ void BlowfishEncoder::CreateVector()
 	double rnd = rd(re);
 	double rnd2 = rd(re);
 	
-	eVector = reinterpret_cast<ulong&>(rnd);
-	eVector |= (reinterpret_cast<ulong&>(rnd) << 32) ^ eVector;
+	eVector = reinterpret_cast<uint64&>(rnd);
+	eVector |= (reinterpret_cast<uint64&>(rnd) << 32) ^ eVector;
 }
 
 void BlowfishEncoder::Encode(char *buffer, size_t size) const
@@ -219,7 +219,7 @@ void BlowfishEncoder::Encode(char *buffer, size_t size) const
 	/*if (restbytes)
 	{
 		char *curBuffer = buffer + (8 * numblocks);
-		ulong retbuff = 0;
+		uint64 retbuff = 0;
 		memcpy(&retbuff, curBuffer, restbytes);
 		EncodeBlock(retbuff);
 		memcpy(curBuffer, &retbuff, restbytes);
@@ -250,7 +250,7 @@ void BlowfishEncoder::Decode(char *buffer, size_t size) const
 	/*if (restbytes)
 	{
 		char *curBuffer = buffer + (8 * numblocks);
-		ulong retbuff = 0;
+		uint64 retbuff = 0;
 		memcpy(&retbuff, curBuffer, restbytes);
 		DecodeBlock(retbuff);
 		memcpy(curBuffer, &retbuff, restbytes);
@@ -265,7 +265,7 @@ ES_INLINE void BlowfishEncoder::EncodeECB(char * buffer, size_t size) const
 	for (int b = 0; b < numblocks; b++)
 	{
 		char *curBuffer = buffer + (8 * b);
-		ulong &block = reinterpret_cast<ulong&>(*curBuffer);
+		uint64 &block = reinterpret_cast<uint64&>(*curBuffer);
 		EncodeBlock(block);
 	}
 }
@@ -278,7 +278,7 @@ ES_INLINE void BlowfishEncoder::DecodeECB(char * buffer, size_t size) const
 	for (int b = 0; b < numblocks; b++)
 	{
 		char *curBuffer = buffer + (8 * b);
-		ulong &block = reinterpret_cast<ulong&>(*curBuffer);
+		uint64 &block = reinterpret_cast<uint64&>(*curBuffer);
 		DecodeBlock(block);
 	}
 }
@@ -287,12 +287,12 @@ ES_INLINE void BlowfishEncoder::EncodeCBC(char * buffer, size_t size) const
 {
 	const int numblocks = static_cast<int>(size / 8);
 	const int restbytes = static_cast<int>(size % 8);
-	ulong currentVector = eVector;
+	uint64 currentVector = eVector;
 
 	for (int b = 0; b < numblocks; b++)
 	{
 		char *curBuffer = buffer + (8 * b);
-		ulong &block = reinterpret_cast<ulong&>(*curBuffer);
+		uint64 &block = reinterpret_cast<uint64&>(*curBuffer);
 		block ^= currentVector;
 		EncodeBlock(block);
 		currentVector = block;
@@ -303,13 +303,13 @@ ES_INLINE void BlowfishEncoder::DecodeCBC(char * buffer, size_t size) const
 {
 	const int numblocks = static_cast<int>(size / 8);
 	const int restbytes = static_cast<int>(size % 8);
-	ulong currentVector = eVector;
-	ulong lastVector = 0;
+	uint64 currentVector = eVector;
+	uint64 lastVector = 0;
 
 	for (int b = 0; b < numblocks; b++)
 	{
 		char *curBuffer = buffer + (8 * b);
-		ulong &block = reinterpret_cast<ulong&>(*curBuffer);
+		uint64 &block = reinterpret_cast<uint64&>(*curBuffer);
 		lastVector = block;
 		DecodeBlock(block);
 		block ^= currentVector;
@@ -321,13 +321,13 @@ ES_INLINE void BlowfishEncoder::EncodePCBC(char * buffer, size_t size) const
 {
 	const int numblocks = static_cast<int>(size / 8);
 	const int restbytes = static_cast<int>(size % 8);
-	ulong currentVector = eVector;
-	ulong lastVector = 0;
+	uint64 currentVector = eVector;
+	uint64 lastVector = 0;
 
 	for (int b = 0; b < numblocks; b++)
 	{
 		char *curBuffer = buffer + (8 * b);
-		ulong &block = reinterpret_cast<ulong&>(*curBuffer);
+		uint64 &block = reinterpret_cast<uint64&>(*curBuffer);
 		lastVector = block;
 		block ^= currentVector;
 		EncodeBlock(block);
@@ -339,13 +339,13 @@ ES_INLINE void BlowfishEncoder::DecodePCBC(char * buffer, size_t size) const
 {
 	const int numblocks = static_cast<int>(size / 8);
 	const int restbytes = static_cast<int>(size % 8);
-	ulong currentVector = eVector;
-	ulong lastVector = 0;
+	uint64 currentVector = eVector;
+	uint64 lastVector = 0;
 
 	for (int b = 0; b < numblocks; b++)
 	{
 		char *curBuffer = buffer + (8 * b);
-		ulong &block = reinterpret_cast<ulong&>(*curBuffer);
+		uint64 &block = reinterpret_cast<uint64&>(*curBuffer);
 		lastVector = block;
 		DecodeBlock(block);
 		block ^= currentVector;
@@ -357,12 +357,12 @@ ES_INLINE void BlowfishEncoder::EncodeCFB(char * buffer, size_t size) const
 {
 	const int numblocks = static_cast<int>(size / 8);
 	const int restbytes = static_cast<int>(size % 8);
-	ulong currentVector = eVector;
+	uint64 currentVector = eVector;
 
 	for (int b = 0; b < numblocks; b++)
 	{
 		char *curBuffer = buffer + (8 * b);
-		ulong &block = reinterpret_cast<ulong&>(*curBuffer);
+		uint64 &block = reinterpret_cast<uint64&>(*curBuffer);
 		EncodeBlock(currentVector);
 		block ^= currentVector;
 		currentVector = block;
@@ -373,13 +373,13 @@ ES_INLINE void BlowfishEncoder::DecodeCFB(char * buffer, size_t size) const
 {
 	const int numblocks = static_cast<int>(size / 8);
 	const int restbytes = static_cast<int>(size % 8);
-	ulong currentVector = eVector;
-	ulong lastVector = 0;
+	uint64 currentVector = eVector;
+	uint64 lastVector = 0;
 
 	for (int b = 0; b < numblocks; b++)
 	{
 		char *curBuffer = buffer + (8 * b);
-		ulong &block = reinterpret_cast<ulong&>(*curBuffer);
+		uint64 &block = reinterpret_cast<uint64&>(*curBuffer);
 		EncodeBlock(currentVector);
 		lastVector = block;
 		block ^= currentVector;
@@ -391,13 +391,13 @@ ES_INLINE void BlowfishEncoder::EncodeOFB(char * buffer, size_t size) const
 {
 	const int numblocks = static_cast<int>(size / 8);
 	const int restbytes = static_cast<int>(size % 8);
-	ulong currentVector = eVector;
-	ulong lastVector = 0;
+	uint64 currentVector = eVector;
+	uint64 lastVector = 0;
 
 	for (int b = 0; b < numblocks; b++)
 	{
 		char *curBuffer = buffer + (8 * b);
-		ulong &block = reinterpret_cast<ulong&>(*curBuffer);
+		uint64 &block = reinterpret_cast<uint64&>(*curBuffer);
 		EncodeBlock(currentVector);
 		lastVector = currentVector;
 		block ^= currentVector;
@@ -409,12 +409,12 @@ ES_INLINE void BlowfishEncoder::DecodeOFB(char * buffer, size_t size) const
 {
 	const int numblocks = static_cast<int>(size / 8);
 	const int restbytes = static_cast<int>(size % 8);
-	ulong currentVector = eVector;
+	uint64 currentVector = eVector;
 
 	for (int b = 0; b < numblocks; b++)
 	{
 		char *curBuffer = buffer + (8 * b);
-		ulong &block = reinterpret_cast<ulong&>(*curBuffer);
+		uint64 &block = reinterpret_cast<uint64&>(*curBuffer);
 		EncodeBlock(currentVector);
 		block ^= currentVector;
 	}
@@ -426,7 +426,7 @@ void BlowfishEncoder::SetKey(const char *inKey, int inSize)
 	if (mode)
 		CreateVector();
 
-	ulong lastblock = 0;
+	uint64 lastblock = 0;
 
 	memcpy(sboxes, BF_SBOXES, BF_NUMSBOXES * 4);
 
@@ -463,7 +463,7 @@ void BlowfishEncoder::SetKey(const char *inKey, int inSize)
 #undef _BF_SBKEY
 #define _BF_SBKEY(_item, _id) sboxes[(_id * 256) + _item.b[_id]]
 
-void BlowfishEncoder2::EncodeBlock(ulong &block) const
+void BlowfishEncoder2::EncodeBlock(uint64 &block) const
 {
 	uint &val0 = reinterpret_cast<uint&>(block);
 	uint &val1 = *(reinterpret_cast<uint*>(&block) + 1);
@@ -493,7 +493,7 @@ void BlowfishEncoder2::EncodeBlock(ulong &block) const
 	val1 = _val0.d;
 }
 
-void BlowfishEncoder2::DecodeBlock(ulong &block) const
+void BlowfishEncoder2::DecodeBlock(uint64 &block) const
 {
 	uint &val0 = reinterpret_cast<uint&>(block);
 	uint &val1 = *(reinterpret_cast<uint*>(&block) + 1);
@@ -528,7 +528,7 @@ void BlowfishEncoder2::SetKey(const char *inKey, int inSize)
 	if (mode)
 		CreateVector();
 
-	ulong lastblock = 0;
+	uint64 lastblock = 0;
 
 	memcpy(sboxes, BF_SBOXES, BF_NUMSBOXES * 4);
 

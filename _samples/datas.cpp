@@ -27,9 +27,9 @@
 /************************ REFLECTOR SAMPLE ******************************/
 /************************************************************************/
 
-REFLECTOR_ENUM(EnumWrap00, 0xd587b2c1, E1, E2, E3) //declaring enum with class like encapsulation; E1, E2, E3 can be accessed only via EnumWrap00::
+REFLECTOR_ENUM(EnumWrap00, E1, E2, E3) //declaring enum with class like encapsulation; E1, E2, E3 can be accessed only via EnumWrap00::
 
-REFLECTOR_ENUM_NAKED(EnumWrap01, 0xd587b2c1, EnumWrap01_E1, EnumWrap01_E2, EnumWrap01_E3) // declaring classic enum; EnumWrap01_E1, EnumWrap01_E2, EnumWrap01_E3 can be accessed globally
+REFLECTOR_ENUM_NAKED(EnumWrap01, EnumWrap01_E1, EnumWrap01_E2, EnumWrap01_E3) // declaring classic enum; EnumWrap01_E1, EnumWrap01_E2, EnumWrap01_E3 can be accessed globally
 
 class enumClass00
 {
@@ -106,26 +106,25 @@ reflClass ReflectorTest()
 	REGISTER_ENUM(EnumWrap00);
 
 	reflClass test = {};
-	test.ConstructReflection();
 
 	//Previews of reflType entries
-	const reflType *types = reflClass::types;
-	const reflType *types2 = reflClass::types + 1;
-	const reflType *types3 = reflClass::types + 2;
-	const reflType *types4 = reflClass::types + 3;
-	const reflType *types5 = reflClass::types + 4;
-	const reflType *types6 = reflClass::types + 5;
-	const reflType *types7 = reflClass::types + 6;
-	const reflType *types8 = reflClass::types + 7;
-	const reflType *types9 = reflClass::types + 8;
-	const reflType *types10 = reflClass::types + 9;
-	const reflType *types11 = reflClass::types + 10;
-	const reflType *types12 = reflClass::types + 11;
-	const reflType *types13 = reflClass::types + 12;
-	const reflType *types14 = reflClass::types + 13;
-	const reflType *types15 = reflClass::types + 14;
-	const reflType *types16 = reflClass::types + 15;
-	const reflType *types17 = reflClass::types + 16;
+	const reflType *types = reflClass::__rfPtrStatic->types;
+	const reflType *types2 = reflClass::__rfPtrStatic->types + 1;
+	const reflType *types3 = reflClass::__rfPtrStatic->types + 2;
+	const reflType *types4 = reflClass::__rfPtrStatic->types + 3;
+	const reflType *types5 = reflClass::__rfPtrStatic->types + 4;
+	const reflType *types6 = reflClass::__rfPtrStatic->types + 5;
+	const reflType *types7 = reflClass::__rfPtrStatic->types + 6;
+	const reflType *types8 = reflClass::__rfPtrStatic->types + 7;
+	const reflType *types9 = reflClass::__rfPtrStatic->types + 8;
+	const reflType *types10 = reflClass::__rfPtrStatic->types + 9;
+	const reflType *types11 = reflClass::__rfPtrStatic->types + 10;
+	const reflType *types12 = reflClass::__rfPtrStatic->types + 11;
+	const reflType *types13 = reflClass::__rfPtrStatic->types + 12;
+	const reflType *types14 = reflClass::__rfPtrStatic->types + 13;
+	const reflType *types15 = reflClass::__rfPtrStatic->types + 14;
+	const reflType *types16 = reflClass::__rfPtrStatic->types + 15;
+	const reflType *types17 = reflClass::__rfPtrStatic->types + 16;
 
 	//setting values
 	test.SetReflectedValue("test1", "true");
@@ -159,13 +158,19 @@ reflClass ReflectorTest()
 	test.SetReflectedValue("test18.data2", "182.8744");
 
 	//Gets name and value pair, names are working only if DECLARE_REFLECTOR_WNAMES is used
-	Reflector::KVPair test1val = test.GetReflectedPair(16);
+	Reflector::KVPair test1val = test.GetReflectedPair(16);	
 
+	test.ToXML(_T("testfile.xml"));
+
+	test = {};
+
+	test.FromXML(_T("testfile.xml"));
+	
 	printline("Printing all reflected values")
-
+	
 	for (int r = 0; r < test.GetNumReflectedValues(); r++)
 	{
-		//printer << esString(test.GetReflectedValue(r)) >> 1;
+		printer << esString(test.GetReflectedValue(r)) >> 1;
 	}
 
 	return test;

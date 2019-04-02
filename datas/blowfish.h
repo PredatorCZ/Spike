@@ -37,7 +37,7 @@ public:
 protected:
 	uint pboxes[BF_NUMPBOXES];
 	uint sboxes[BF_NUMSBOXES];
-	mutable ulong eVector;
+	mutable uint64 eVector;
 	int enabled;
 	Mode mode;
 public:
@@ -60,11 +60,11 @@ public:
 	ES_FORCEINLINE void Enable(bool enable = true) { enabled = enable; }
 	ES_FORCEINLINE bool Valid() const { return enabled != 0; }
 	ES_FORCEINLINE void Mode(Mode _mode) { mode = _mode; }
-	ES_FORCEINLINE void Vector(ulong vec) { eVector = vec; }
-	ES_FORCEINLINE ulong Vector() const { return eVector; }
+	ES_FORCEINLINE void Vector(uint64 vec) { eVector = vec; }
+	ES_FORCEINLINE uint64 Vector() const { return eVector; }
 private:
-	virtual void EncodeBlock(ulong &block) const;
-	virtual void DecodeBlock(ulong &block) const;
+	virtual void EncodeBlock(uint64 &block) const;
+	virtual void DecodeBlock(uint64 &block) const;
 protected:
 	void CreateVector();
 };

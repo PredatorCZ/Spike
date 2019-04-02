@@ -54,3 +54,9 @@ typedef UniString<TCHAR> TSTRING;
 #else
 #define ToTSTRING std::to_string
 #endif
+
+
+constexpr int CompileFourCC(const char *input, const int hash = 0, const int indexOffset = 0, const int currentIndex = 0)
+{
+	return currentIndex > 3 ? hash : CompileFourCC(input, hash | (static_cast<int>(input[indexOffset + currentIndex]) << (currentIndex * 8)), indexOffset, currentIndex + 1);
+}

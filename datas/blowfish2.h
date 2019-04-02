@@ -24,6 +24,6 @@ class BlowfishEncoder2 : public BlowfishEncoder
 public:
 	void SetKey(const char *inKey, int inSize);
 private:
-	void EncodeBlock(ulong &block) const;
-	void DecodeBlock(ulong &block) const;
+	void EncodeBlock(uint64 &block) const;
+	void DecodeBlock(uint64 &block) const;
 };

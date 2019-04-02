@@ -22,10 +22,11 @@
 
 const reflType *Reflector::GetReflectedType(const unsigned int hash) const
 {
+	const reflectorStatic *inst = _rfRetreive().rfStatic;
 	const int _ntypes = GetNumReflectedValues();
 	for (int t = 0; t < _ntypes; t++)
-		if (_types[t].valueNameHash == hash)
-			return _types + t;
+		if (inst->types[t].valueNameHash == hash)
+			return inst->types + t;
 
 	return nullptr;
 }
@@ -88,6 +89,8 @@ static ES_INLINE void SetReflectedPrimitive(char *objAddr, JenHash type, const c
 void Reflector::SetReflectedValue(const unsigned int hash, const char *value)
 {
 	const reflType *reflValue = GetReflectedType(hash);
+	const reflectorInstance inst = _rfRetreive();
+	char *thisAddr = static_cast<char *>(inst.rfInstance);
 
 	if (!reflValue)
 		return;
@@ -221,7 +224,9 @@ std::string Reflector::GetReflectedValue(int id) const
 	if (id >= GetNumReflectedValues())
 		return "";
 
-	const reflType &reflValue = _types[id];
+	const reflectorInstanceConst inst = _rfRetreive();
+	const char *thisAddr = static_cast<const char *>(inst.rfInstance);
+	const reflType &reflValue = inst.rfStatic->types[id];
 
 	const int valueOffset = reflValue.offset;
 
