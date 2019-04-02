@@ -93,6 +93,8 @@ struct reflectorStatic
 	const JenHash classHash;
 };
 
+static const reflectorStatic __null_statical = { 0, 0, 0, 0, 0 };
+
 struct reflectorInstance
 {
 	const reflectorStatic *rfStatic;
@@ -107,8 +109,8 @@ struct reflectorInstanceConst
 
 class Reflector
 {
-	virtual const reflectorInstanceConst _rfRetreive() const = 0;
-	virtual const reflectorInstance _rfRetreive() = 0;
+	virtual const reflectorInstanceConst _rfRetreive() const { return { &__null_statical, nullptr }; }
+	virtual const reflectorInstance _rfRetreive() { return { &__null_statical, nullptr }; }
 protected:
 	const reflType *GetReflectedType(const JenHash hash) const;
 	ES_INLINE const reflType *GetReflectedType(const char *name) const
