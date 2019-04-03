@@ -144,6 +144,44 @@ enum DXGI_FORMAT
 	DXGI_FORMAT_FORCE_UINT
 };
 
+static constexpr int _bpps[] =
+{
+	0, 128, 128, 128, 128, 96, 96, 96, 96, 64, 64, 64, 64, 64, 64,
+	64, 64, 64, 64, 64, 64, 64, 64, 32, 32, 32, 32, 32, 32, 32, 32,
+	32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32,
+	32, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 8, 8, 8, 8,
+	8, 8, 1, 32, 32, 32, 4, 4, 4, 8, 8, 8, 8, 8, 8, 4, 4, 4, 8, 8, 8,
+	16, 16, 32, 32, 32, 32, 32, 32, 32, 8, 8, 8, 8, 8, 8, 32, 32, 64,
+	12, 32, 64, 32, 32, 32, 64, 0, 0, 0, 0, 0, 16, 0, 0, 0, 0
+};
+
+static_assert(_bpps[DXGI_FORMAT_R32G32B32A32_TYPELESS] == 128, "DXGI bpp mismatch");
+static_assert(_bpps[DXGI_FORMAT_R32G32B32_TYPELESS] == 96, "DXGI bpp mismatch");
+static_assert(_bpps[DXGI_FORMAT_R16G16B16A16_TYPELESS] == 64, "DXGI bpp mismatch");
+static_assert(_bpps[DXGI_FORMAT_X32_TYPELESS_G8X24_UINT] == 64, "DXGI bpp mismatch");
+static_assert(_bpps[DXGI_FORMAT_R10G10B10A2_TYPELESS] == 32, "DXGI bpp mismatch");
+static_assert(_bpps[DXGI_FORMAT_X24_TYPELESS_G8_UINT] == 32, "DXGI bpp mismatch");
+static_assert(_bpps[DXGI_FORMAT_R8G8_TYPELESS] == 16, "DXGI bpp mismatch");
+static_assert(_bpps[DXGI_FORMAT_R16_SINT] == 16, "DXGI bpp mismatch");
+static_assert(_bpps[DXGI_FORMAT_R1_UNORM] == 1, "DXGI bpp mismatch");
+static_assert(_bpps[DXGI_FORMAT_R9G9B9E5_SHAREDEXP] == 32, "DXGI bpp mismatch");
+static_assert(_bpps[DXGI_FORMAT_G8R8_G8B8_UNORM] == 32, "DXGI bpp mismatch");
+static_assert(_bpps[DXGI_FORMAT_BC1_TYPELESS] == 4, "DXGI bpp mismatch");
+static_assert(_bpps[DXGI_FORMAT_BC1_UNORM_SRGB] == 4, "DXGI bpp mismatch");
+static_assert(_bpps[DXGI_FORMAT_BC2_TYPELESS] == 8, "DXGI bpp mismatch");
+static_assert(_bpps[DXGI_FORMAT_BC3_UNORM_SRGB] == 8, "DXGI bpp mismatch");
+static_assert(_bpps[DXGI_FORMAT_BC4_TYPELESS] == 4, "DXGI bpp mismatch");
+static_assert(_bpps[DXGI_FORMAT_BC5_SNORM] == 8, "DXGI bpp mismatch");
+static_assert(_bpps[DXGI_FORMAT_B5G6R5_UNORM] == 16, "DXGI bpp mismatch");
+static_assert(_bpps[DXGI_FORMAT_B8G8R8A8_UNORM] == 32, "DXGI bpp mismatch");
+static_assert(_bpps[DXGI_FORMAT_B8G8R8X8_UNORM_SRGB] == 32, "DXGI bpp mismatch");
+static_assert(_bpps[DXGI_FORMAT_BC6H_TYPELESS] == 8, "DXGI bpp mismatch");
+static_assert(_bpps[DXGI_FORMAT_BC7_UNORM_SRGB] == 8, "DXGI bpp mismatch");
+static_assert(_bpps[DXGI_FORMAT_AYUV] == 32, "DXGI bpp mismatch");
+static_assert(_bpps[DXGI_FORMAT_P016] == 64, "DXGI bpp mismatch");
+static_assert(_bpps[DXGI_FORMAT_Y216] == 64, "DXGI bpp mismatch");
+static_assert(_bpps[DXGI_FORMAT_B4G4R4A4_UNORM] == 16, "DXGI bpp mismatch");
+
 struct DDS_Header
 {
 	static const int ID = CompileFourCC("DDS ");
@@ -171,7 +209,7 @@ struct DDS_Header
 		mipMapCount,
 		reserved00[11];
 
-	DDS_Header() : magic(ID), size(HEADER_SIZE), flags(Flags_Caps, Flags_Height, Flags_Width, Flags_PixelFormat), depth(0), mipMapCount(0), reserved00(), pitchOrLinearSize(0) {}
+	DDS_Header() : magic(ID), size(HEADER_SIZE), flags(Flags_Caps, Flags_Height, Flags_Width, Flags_PixelFormat), depth(1), mipMapCount(0), reserved00(), pitchOrLinearSize(0) {}
 };
 
 struct DDS_HeaderEnd
@@ -231,8 +269,8 @@ struct DDS_PixelFormat
 
 	DDS_PixelFormat() : 
 		pfSize(PIXELFORMAT_SIZE), fourCC(0), bpp(0), RBitMask(0), GBitMask(0), BBitMask(0), ABitMask(0) {}
-	DDS_PixelFormat(const int _fourCC) : 
-		pfSize(PIXELFORMAT_SIZE), fourCC(_fourCC), bpp(0), RBitMask(0), GBitMask(0), BBitMask(0), ABitMask(0), pfFlags(PFFlags_FourCC) {}
+	DDS_PixelFormat(const int _fourCC, int _bpp) : 
+		pfSize(PIXELFORMAT_SIZE), fourCC(_fourCC), bpp(_bpp), RBitMask(0), GBitMask(0), BBitMask(0), ABitMask(0), pfFlags(PFFlags_FourCC) {}
 	DDS_PixelFormat(FlagsType _flags, int _bpp, int rMask, int gMask, int bMask, int aMask) :
 		pfSize(PIXELFORMAT_SIZE), fourCC(0), pfFlags(_flags), bpp(_bpp), RBitMask(rMask), GBitMask(gMask), BBitMask(bMask), ABitMask(aMask) {}
 
@@ -248,26 +286,26 @@ struct DDS_PixelFormat
 	}
 };
 
-const DDS_PixelFormat DDSFormat_DXT1(CompileFourCC("DXT1"));
-const DDS_PixelFormat DDSFormat_DXT2(CompileFourCC("DXT2"));
-const DDS_PixelFormat DDSFormat_DXT3(CompileFourCC("DXT3"));
-const DDS_PixelFormat DDSFormat_DXT4(CompileFourCC("DXT4"));
-const DDS_PixelFormat DDSFormat_DXT5(CompileFourCC("DXT5"));
+const DDS_PixelFormat DDSFormat_DXT1(CompileFourCC("DXT1"), 4);
+const DDS_PixelFormat DDSFormat_DXT2(CompileFourCC("DXT2"), 8);
+const DDS_PixelFormat DDSFormat_DXT3(CompileFourCC("DXT3"), 8);
+const DDS_PixelFormat DDSFormat_DXT4(CompileFourCC("DXT4"), 8);
+const DDS_PixelFormat DDSFormat_DXT5(CompileFourCC("DXT5"), 8);
 
-const DDS_PixelFormat DDSFormat_BC4U(CompileFourCC("BC4U"));
-const DDS_PixelFormat DDSFormat_BC4S(CompileFourCC("BC4S"));
-const DDS_PixelFormat DDSFormat_BC5U(CompileFourCC("BC5U"));
-const DDS_PixelFormat DDSFormat_BC5S(CompileFourCC("BC5S"));
+const DDS_PixelFormat DDSFormat_BC4U(CompileFourCC("BC4U"), 4);
+const DDS_PixelFormat DDSFormat_BC4S(CompileFourCC("BC4S"), 4);
+const DDS_PixelFormat DDSFormat_BC5U(CompileFourCC("BC5U"), 8);
+const DDS_PixelFormat DDSFormat_BC5S(CompileFourCC("BC5S"), 8);
 
-const DDS_PixelFormat DDSFormat_R8G8_B8G8(CompileFourCC("RBGB"));
-const DDS_PixelFormat DDSFormat_G8R8_G8B8(CompileFourCC("GRGB"));
-const DDS_PixelFormat DDSFormat_UYVY(CompileFourCC("UYVY"));
-const DDS_PixelFormat DDSFormat_YUY2(CompileFourCC("YUY2"));
+const DDS_PixelFormat DDSFormat_R8G8_B8G8(CompileFourCC("RBGB"), 32);
+const DDS_PixelFormat DDSFormat_G8R8_G8B8(CompileFourCC("GRGB"), 32);
+const DDS_PixelFormat DDSFormat_UYVY(CompileFourCC("UYVY"), 32);
+const DDS_PixelFormat DDSFormat_YUY2(CompileFourCC("YUY2"), 32);
 
-const DDS_PixelFormat DDSFormat_ATI1(CompileFourCC("ATI1"));
-const DDS_PixelFormat DDSFormat_ATI2(CompileFourCC("ATI2"));
+const DDS_PixelFormat DDSFormat_ATI1(CompileFourCC("ATI1"), 4);
+const DDS_PixelFormat DDSFormat_ATI2(CompileFourCC("ATI2"), 8);
 
-const DDS_PixelFormat DDSFormat_DX10(CompileFourCC("DX10"));
+const DDS_PixelFormat DDSFormat_DX10(CompileFourCC("DX10"), 0);
 
 
 const DDS_PixelFormat DDSFormat_A2B10G10R10	({ DDS_PixelFormat::PFFlags_RGB, DDS_PixelFormat::PFFlags_AlphaPixels },		32,		0x000003ff, 0x000ffc00, 0x3ff00000, 0x00000000);
@@ -336,6 +374,87 @@ struct DDS : DDS_Header, DDS_PixelFormat, DDS_HeaderEnd, DDS_HeaderDX10
 		caps00(Caps00Flags_Complex, usesMips);
 		caps00(Caps00Flags_MipMaps, usesMips);
 		flags(Flags_MipMaps, usesMips);
+	}
+
+	ES_INLINE void ComputeBPP()
+	{
+		if (bpp)
+			return;
+		
+		DDS_PixelFormat &tformat = static_cast<DDS_PixelFormat &>(*this);
+
+		if (tformat == DDSFormat_DX10)
+		{
+			bpp = _bpps[dxgiFormat];
+		}
+		else
+		{
+			switch (fourCC)
+			{
+			case 36:
+			case 110:
+			case 113:
+			case 115:
+				bpp = 64;
+				break;
+			case 111:
+				bpp = 16;
+				break;
+			case 112:
+			case 114:
+			case CompileFourCC("RBGB"):
+			case CompileFourCC("GRGB"):
+			case CompileFourCC("YUY2"):
+				bpp = 32;
+				break;
+			case 116:
+				bpp = 128;
+				break;
+			case CompileFourCC("DXT1"):
+			case CompileFourCC("BC4U"):
+			case CompileFourCC("ATI1"):
+			case CompileFourCC("BC4S"):
+				bpp = 4;
+				break;
+			case CompileFourCC("DXT2"):
+			case CompileFourCC("DXT3"):
+			case CompileFourCC("DXT4"):
+			case CompileFourCC("DXT5"):
+			case CompileFourCC("BC5U"):
+			case CompileFourCC("ATI2"):
+			case CompileFourCC("BC5S"):
+				bpp = 8;
+				break;
+			default:
+				break;
+			}
+		}
+	}
+
+	struct MipSizes
+	{
+		int mips[15];
+	};
+
+	ES_INLINE int ComputeBufferSize(MipSizes &dOut) const
+	{
+		if (!bpp)
+			return 0;
+
+		int _mipCount = mipMapCount ? mipMapCount : 1;
+		int _width = width;
+		int _height = height;
+		int fullBuffer = 0;
+
+		for (int m = 0; m < _mipCount; m++)
+		{
+			dOut.mips[m] = ((_width * _height * bpp) + 7) / 8;
+			fullBuffer += dOut.mips[m];
+			_width /= 2;
+			_height /= 2;
+		}
+
+		return fullBuffer;
 	}
 
 	ES_INLINE int FromLegacy()
@@ -459,13 +578,13 @@ struct DDS : DDS_Header, DDS_PixelFormat, DDS_HeaderEnd, DDS_HeaderDX10
 		switch (dxgiFormat)
 		{
 		case DXGI_FORMAT_R16G16B16A16_UNORM:
-			operator=(DDS_PixelFormat(36));
+			operator=(DDS_PixelFormat(36, 64));
 			break;
 		case DXGI_FORMAT_R16G16B16A16_SNORM:
-			operator=(DDS_PixelFormat(110));
+			operator=(DDS_PixelFormat(110, 64));
 			break;
 		case DXGI_FORMAT_R16G16B16A16_FLOAT:
-			operator=(DDS_PixelFormat(113));
+			operator=(DDS_PixelFormat(113, 64));
 			break;
 		case DXGI_FORMAT_R10G10B10A2_UNORM:
 			operator=(DDSFormat_A2B10G10R10);
@@ -477,19 +596,19 @@ struct DDS : DDS_Header, DDS_PixelFormat, DDS_HeaderEnd, DDS_HeaderDX10
 			operator=(DDSFormat_G16R16);
 			break;
 		case DXGI_FORMAT_R16_FLOAT:
-			operator=(DDS_PixelFormat(111));
+			operator=(DDS_PixelFormat(111, 16));
 			break;
 		case DXGI_FORMAT_R16G16_FLOAT:
-			operator=(DDS_PixelFormat(112));
+			operator=(DDS_PixelFormat(112, 32));
 			break;
 		case DXGI_FORMAT_R32_FLOAT:
-			operator=(DDS_PixelFormat(114));
+			operator=(DDS_PixelFormat(114, 32));
 			break;
 		case DXGI_FORMAT_R32G32_FLOAT:
-			operator=(DDS_PixelFormat(115));
+			operator=(DDS_PixelFormat(115, 64));
 			break;
 		case DXGI_FORMAT_R32G32B32A32_FLOAT:
-			operator=(DDS_PixelFormat(116));
+			operator=(DDS_PixelFormat(116, 128));
 			break;
 		case DXGI_FORMAT_A8_UNORM:
 			operator=(DDSFormat_A8);
