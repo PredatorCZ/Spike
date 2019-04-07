@@ -43,11 +43,11 @@ int Reflector::ToXML(pugi::xml_node &node) const
 		sprintf_s(const_cast<char *>(className.c_str()), 15, "h:%X", stat->classHash);
 	}
 
-	pugi::xml_node &thisNode = node.append_child(className.c_str());
+	pugi::xml_node thisNode = node.append_child(className.c_str());
 
 	for (int t = 0; t < stat->nTypes; t++)
 	{
-		std::string &str = GetReflectedValue(t);
+		std::string str = GetReflectedValue(t);
 		std::string varName;
 
 		if (UseNames())
@@ -58,7 +58,7 @@ int Reflector::ToXML(pugi::xml_node &node) const
 			sprintf_s(const_cast<char *>(varName.c_str()), 15, "h:%X", stat->types[t].valueNameHash);
 		}
 
-		pugi::xml_node &cNode = thisNode.append_child(varName.c_str());
+		pugi::xml_node cNode = thisNode.append_child(varName.c_str());
 		cNode.append_buffer(str.c_str(), str.size());
 	}
 	return 0;
@@ -84,7 +84,7 @@ int Reflector::FromXML(pugi::xml_node &node)
 	{
 		JenHash vHash = (*a.name() == 'h' && *(a.name() + 1) == ':') ? 
 			strtoul(a.name() + 2, nullptr, 16) : 
-			JenkinsHash(a.name(), strlen(a.name()));
+			JenkinsHash(a.name(), static_cast<int>(strlen(a.name())));
 
 		if (vHash == stat->classHash)
 		{
@@ -100,7 +100,7 @@ int Reflector::FromXML(pugi::xml_node &node)
 	{
 		JenHash vHash = (*a.name() == 'h' && *(a.name() + 1) == ':') ?
 			strtoul(a.name() + 2, nullptr, 16) :
-			JenkinsHash(a.name(), strlen(a.name()));
+			JenkinsHash(a.name(), static_cast<int>(strlen(a.name())));
 
 		SetReflectedValue(vHash, a.text().as_string());
 	}

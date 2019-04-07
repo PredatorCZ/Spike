@@ -58,7 +58,7 @@ protected:
 		if (FileStream.fail())
 			return false;
 
-		BaseStream = &FileStream;
+		this->BaseStream = &FileStream;
 		return true;
 	}
 
@@ -95,15 +95,15 @@ public:
 			_BinCore::_BinCore();
 		}
 
-		BaseStream = &instream;
+		this->BaseStream = &instream;
 	}
 
 	ES_FORCEINLINE void SetRelativeOrigin(const size_t newOrigin, bool useSeek = true)
 	{
-		localseek = newOrigin;
+		this->localseek = newOrigin;
 
 		if (useSeek)
-			Seek(0);
+			this->Seek(0);
 	}
 
 	template<typename T> ES_FORCEINLINE bool Open(const UniString<T> &filePath) { return _Open(filePath); }
@@ -113,7 +113,7 @@ public:
 	ES_FORCEINLINE void SwapEndian(bool swap) { swapEndian = swap; }
 	ES_FORCEINLINE bool SwappedEndian() { return swapEndian; }
 	ES_FORCEINLINE void ResetRelativeOrigin(bool useSeek = true) { SetRelativeOrigin(0, useSeek); };
-	ES_FORCEINLINE StreamType *GetStream() { return BaseStream; }
+	ES_FORCEINLINE StreamType *GetStream() { return this->BaseStream; }
 
 #ifdef ES_ENCRYPTION_DEFINED
 	template<class C>IEncryptor *Encryptor()

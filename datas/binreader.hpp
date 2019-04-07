@@ -83,7 +83,7 @@ public:
 	/// swapType : will force not to swap endianess, when used with class that does not have SwapEndian method or is not defined for structural swap
 	template<
 		class _containerClass,
-		class T = _containerClass::value_type
+		class T = typename _containerClass::value_type
 	> const void ReadContainer(_containerClass &input, size_t numitems, _e_swapEndian) const
 	{
 		input.resize(numitems);
@@ -116,7 +116,7 @@ public:
 	/// Will read buffer until 0
 	template<class _containerClass> const void ReadString(_containerClass &input) const
 	{
-		_containerClass::value_type tmp;
+		typename _containerClass::value_type tmp;
 		while ((Read(tmp),tmp) != 0 && !BaseStream->eof())
 			input.push_back(tmp);
 	}

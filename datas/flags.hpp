@@ -50,9 +50,8 @@ public:
 	ES_FORCEINLINE void operator=(T inval) { Value = inval; }
 	ES_FORCEINLINE bool operator[](E pos) const { return (Value & (1 << pos)) != 0; }
 	ES_FORCEINLINE void operator()(E pos, bool val) { val ? Value |= (1 << pos) : Value &= ~(1 << pos); }
-
-	void operator+= (E input) { return operator(input, true); }
-	void operator-= (E input) { return operator(input, false); }
+	ES_FORCEINLINE void operator+= (E input) { operator()(input, true); }
+	ES_FORCEINLINE void operator-= (E input) { operator()(input, false); }
 
 	const bool operator==(const esFlags &input)const { return Value == input.Value; }
 };

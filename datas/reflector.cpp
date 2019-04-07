@@ -179,7 +179,7 @@ ES_INLINE std::string GetReflectedPrimitive(const char *objAddr, JenHash type)
 	{
 
 	case 1:
-		return std::to_string(*reinterpret_cast<const bool*>(objAddr));
+		return *reinterpret_cast<const bool *>(objAddr) ? "true" : "false";
 
 	case 2:
 		return std::to_string(static_cast<int>(*reinterpret_cast<const char*>(objAddr)));

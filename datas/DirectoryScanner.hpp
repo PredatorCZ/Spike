@@ -18,9 +18,10 @@
 */
 
 #pragma once
-#include "supercore.hpp"
+#include <tchar.h>
 #include <windows.h>
 #include <vector>
+#include "supercore.hpp"
 
 class DirectoryScanner
 {
@@ -40,7 +41,7 @@ public:
 	typedef storage_type::iterator iterator;
 	typedef storage_type::const_iterator const_iterator;
 
-	void Scan(const TSTRING &dir)
+	void Scan(const TSTRING & dir)
 	{
 		TSTRING wdir = dir;
 		TCHAR lastword = wdir[wdir.length() - 1];
@@ -85,6 +86,7 @@ public:
 	ES_FORCEINLINE const_iterator cbegin() const { return files.cbegin(); }
 	ES_FORCEINLINE const_iterator cend() const { return files.cend(); }
 	void AddFilter(TSTRING val) { filters.push_back(val); }
+	const storage_type &Files() const { return files; }
 
 private:
 	storage_type files;
