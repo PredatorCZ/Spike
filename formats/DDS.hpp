@@ -431,12 +431,14 @@ struct DDS : DDS_Header, DDS_PixelFormat, DDS_HeaderEnd, DDS_HeaderDX10
 		}
 	}
 
-	struct MipSizes
+	struct Mips
 	{
-		int mips[15];
+		static const int maxMips = 15;
+		int sizes[maxMips];
+		int offsets[maxMips];
 	};
 
-	ES_INLINE int ComputeBufferSize(MipSizes &dOut) const
+	ES_INLINE int ComputeBufferSize(Mips &dOut) const
 	{
 		if (!bpp)
 			return 0;
@@ -445,11 +447,68 @@ struct DDS : DDS_Header, DDS_PixelFormat, DDS_HeaderEnd, DDS_HeaderDX10
 		int _width = width;
 		int _height = height;
 		int fullBuffer = 0;
+		bool useBlockCompression = false;
+
+		if (dxgiFormat)
+		{
+			switch (dxgiFormat)
+			{
+			case DXGI_FORMAT_BC1_UNORM:
+			case DXGI_FORMAT_BC1_UNORM_SRGB:
+			case DXGI_FORMAT_BC2_UNORM:
+			case DXGI_FORMAT_BC2_UNORM_SRGB:
+			case DXGI_FORMAT_BC3_UNORM:
+			case DXGI_FORMAT_BC3_UNORM_SRGB:
+			case DXGI_FORMAT_BC4_UNORM:
+			case DXGI_FORMAT_BC4_SNORM:
+			case DXGI_FORMAT_BC5_UNORM:
+			case DXGI_FORMAT_BC5_SNORM:
+			case DXGI_FORMAT_BC6H_UF16:
+			case DXGI_FORMAT_BC6H_SF16:
+			case DXGI_FORMAT_BC7_UNORM:
+			case DXGI_FORMAT_BC7_UNORM_SRGB:
+				useBlockCompression = true;
+				break;
+			default:
+				break;
+			}
+		}
+		else
+		{
+			switch (fourCC)
+			{
+			case CompileFourCC("DXT1"):
+			case CompileFourCC("DXT2"):
+			case CompileFourCC("DXT3"):
+			case CompileFourCC("DXT4"):
+			case CompileFourCC("DXT5"):
+			case CompileFourCC("BC4U"):
+			case CompileFourCC("ATI1"):
+			case CompileFourCC("BC4S"):
+			case CompileFourCC("BC5U"):
+			case CompileFourCC("ATI2"):
+			case CompileFourCC("BC5S"):
+				useBlockCompression = true;
+				break;
+			default:
+				break;
+			}
+		}
 
 		for (int m = 0; m < _mipCount; m++)
 		{
-			dOut.mips[m] = ((_width * _height * bpp) + 7) / 8;
-			fullBuffer += dOut.mips[m];
+			int __width = _width,
+				__height = _height;
+
+			if (useBlockCompression && (__width * __height < 16))
+			{
+				__width = 4;
+				__height = 4;
+			}
+
+			dOut.sizes[m] = ((__width * __height * bpp) + 7) / 8;
+			dOut.offsets[m] = fullBuffer;
+			fullBuffer += dOut.sizes[m];
 			_width /= 2;
 			_height /= 2;
 		}
