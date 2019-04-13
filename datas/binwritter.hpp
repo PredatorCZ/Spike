@@ -20,25 +20,27 @@
 
 class _BinCoreOut
 {
+public:
+	typedef std::ostream StreamType;
 protected:
 	_BinCoreOut() : localseek(0) {}
 	size_t localseek;
-	std::ostream *BaseStream;
-	static const uint MODE = std::ios::binary | std::ios::out;
+	StreamType *BaseStream;
+	static const std::ios_base::openmode MODE = std::ios::binary | std::ios::out;
 public:
 	ES_FORCEINLINE const size_t Tell(const bool relative = true) const
 	{
 		return static_cast<size_t>(BaseStream->tellp()) - (relative ? localseek : 0);
 	}
 
-	ES_FORCEINLINE void Seek(const size_t position, const int vay = SEEK_SET, const bool relative = true) const
+	ES_FORCEINLINE void Seek(const size_t position, const std::ios_base::seekdir vay = std::ios_base::beg, const bool relative = true) const
 	{
 		BaseStream->seekp(position + ((relative && !vay) ? localseek : 0), vay);
 	}
 
-	ES_FORCEINLINE void Skip(const size_t length) { Seek(length, SEEK_CUR); }
+	ES_FORCEINLINE void Skip(const size_t length) { Seek(length, std::ios_base::cur); }
 
-	template<typename T> ES_FORCEINLINE void Skip() { Seek(sizeof(T), SEEK_CUR); }
+	template<typename T> ES_FORCEINLINE void Skip() { Seek(sizeof(T), std::ios_base::cur); }
 };
 
 class BinWritter : public _BinCore<_BinCoreOut>
@@ -46,8 +48,8 @@ class BinWritter : public _BinCore<_BinCoreOut>
 public:
 
 	template<typename T> BinWritter(const UniString<T> &filePath) { _Open(filePath); }
-	BinWritter(std::ostream &instream) { SetStream(instream); }
-	BinWritter(const wchar_t *filePath) { _Open(filePath); }
+	BinWritter(StreamType &instream) { SetStream(instream); }
+	//BinWritter(const wchar_t *filePath) { _Open(filePath); }
 	BinWritter(const char *filePath) { _Open(filePath); }
 
 	ES_FORCEINLINE void WriteBuffer(const char *buffer, size_t size) const
@@ -71,7 +73,7 @@ public:
 	/// swapType : will force not to swap endianess, when used with class that does not have SwapEndian method or is not defined for structural swap
 	template<
 		class _containerClass, 
-		class T = _containerClass::value_type
+		class T = typename _containerClass::value_type
 	> const void WriteContainer(_containerClass &input, _e_swapEndian) const
 	{
 		const size_t elesize = sizeof(T);
@@ -88,7 +90,7 @@ public:
 		}
 		else
 #endif	
-			WriteBuffer(reinterpret_cast<const char*>(input.begin()._Ptr), capacity);
+			WriteBuffer(reinterpret_cast<const char*>(input.begin().operator->()), capacity);
 	}
 
 	/// Will write any std container using std::allocator class, eg. vector, basic_string, etc..

@@ -1,12 +1,12 @@
-#include <tchar.h>
-#include <stdio.h>
+//#include <tchar.h>
+//#include <stdio.h>
 #include <vector>
 #include <thread>
 //some headers should be included first, to activate macro definitions for others
 #include "../datas/reflector.hpp"
 #include "../datas/endian.hpp"
 
-#include "../datas/allocator_hybrid.hpp"
+//#include "../datas/allocator_hybrid.hpp"
 #include "../datas/vectors.hpp"
 #include "../datas/disabler.hpp"
 #include "../datas/esstring.h"
@@ -162,7 +162,7 @@ reflClass ReflectorTest()
 
 	//test.ToXML(_T("testfile.xml"));
 
-	test = {};
+	//test = {};
 
 	//test.FromXML(_T("testfile.xml"));
 	
@@ -232,7 +232,7 @@ void HybridVector()
 	char *externalBuffer = static_cast<char*>(malloc(125));
 	memset(externalBuffer, 89, 125);
 
-	std::vector<char, std::allocator_hybrid<char>> vectr;
+	/*std::vector<char, std::allocator_hybrid<char>> vectr;
 	vectr.resize(85);
 
 	//assigning externalBuffer as internal buffer for vector
@@ -251,7 +251,7 @@ void HybridVector()
 	vectr.~vector();
 
 	//doing normal vector stuff afterwards
-	vectr.push_back(75); 
+	vectr.push_back(75); */
 
 	free(externalBuffer);
 }
@@ -277,9 +277,23 @@ struct ImasterClass
 template<class _parent>
 struct masterClass_t : _parent
 {
-	ADD_DISABLERS(_parent, noType);
+	//ADD_DISABLERS(_parent, noType);
+	typedef _parent this_type;
+	struct disablernoType 
+	{
+		template<typename U, void (U::*f)()> struct detectorClass {};
+		template<class C> static constexpr std::false_type detectorFunc(...) {};
+		template<class C> static constexpr std::true_type detectorFunc(detectorClass<C, &C::func>*) {}; 
+	};
 
-	enabledFunction(noType, int) Func01()
+	void foo()
+	{
+		auto huh = disablernoType::detectorFunc<class02>(nullptr);
+	}
+	//enabledFunction(noType, int) 
+	template<class SC = this_type, bool enabled = decltype(disablernoType::detectorFunc<SC>(nullptr))::value>
+	typename std::enable_if<enabled, int>::type
+	Func01()
 	{
 		return iType;
 	}
@@ -351,11 +365,11 @@ void ESstringTest()
 	esString wide = L"Samle Text utf16";
 	esString normal = "Sample Text default";
 
-	printf(static_cast<std::string>(wide).c_str());
+	printf(static_cast<std::string>(wide).c_str(), NULL);
 	printf("\n");
 	printer << wide >> 1;
 
-	printf(static_cast<std::string>(normal).c_str());
+	printf(static_cast<std::string>(normal).c_str(), NULL);
 	printf("\n");
 	printer << normal >> 1;
 }
@@ -387,10 +401,10 @@ void MasterprinterTest()
 /************************************************************************/
 /*********************** MAIN *******************************************/
 /************************************************************************/
-
+#include <iostream>
 int main()
 {
-	printer.AddPrinterFunction(wprintf); // adding console print function for masterprinter service
+	printer.AddPrinterFunction(reinterpret_cast<void*>(printf)); // adding console print function for masterprinter service
 
 	DisablerTest();
 	HybridVector();

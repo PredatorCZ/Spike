@@ -17,8 +17,8 @@
 */
 
 #pragma once
-#define uint					unsigned int
-#define ushort					unsigned short
+//#define uint					unsigned int
+//#define ushort					unsigned short
 #define uchar					unsigned char
 #define uint64					unsigned long long
 #define int64					long long
@@ -26,7 +26,7 @@
 
 #if defined(__GNUC__) || defined(__GNUG__)
 #define ES_FORCEINLINE __attribute__((always_inline))
-#define ES_INLINE
+#define ES_INLINE inline
 #elif defined(_MSC_VER)
 #define ES_FORCEINLINE __forceinline
 #define ES_INLINE inline

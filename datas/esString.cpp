@@ -17,9 +17,10 @@
 */
 
 #pragma warning(disable: 4244)
+#include <cstring>
 #include "binreader.hpp"
-#include "BinWritter.hpp"
-#include "esString.h"
+#include "binwritter.hpp"
+#include "esstring.h"
 
 thread_local bool esString::OutputAsUTF16 = false;
 
@@ -77,16 +78,28 @@ void esString::Save(BinWritter *bw, bool pureText)
 	if (pureText)
 	{
 		if (Flags.IOWideChar)
-			bw->WriteContainer(operator std::wstring());
+		{
+			std::wstring oVal = *this;
+			bw->WriteContainer(oVal);
+		}
 		else
-			bw->WriteContainer(operator std::string());
+		{
+			std::string oVal = *this;
+			bw->WriteContainer(oVal);
+		}
 	}
 	else
 	{
 		if (Flags.IOWideChar)
-			bw->WriteContainerWCount<uchar>(operator std::wstring());
+		{
+			std::wstring oVal = *this;
+			bw->WriteContainerWCount(oVal);
+		}
 		else
-			bw->WriteContainerWCount<uchar>(operator std::string());
+		{
+			std::string oVal = *this;
+			bw->WriteContainerWCount(oVal);
+		}
 	}
 }
 
