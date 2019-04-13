@@ -57,8 +57,8 @@ struct _ReflClassData
 	ushort test5;
 	int test6;
 	uint test7;
-	_LONGLONG test8;
-	_ULONGLONG test9;
+	int64 test8;
+	uint64 test9;
 	float test10;
 	double test11;
 	EnumFlags<uchar, EnumWrap00> test12;
@@ -160,11 +160,11 @@ reflClass ReflectorTest()
 	//Gets name and value pair, names are working only if DECLARE_REFLECTOR_WNAMES is used
 	Reflector::KVPair test1val = test.GetReflectedPair(16);	
 
-	test.ToXML(_T("testfile.xml"));
+	//test.ToXML(_T("testfile.xml"));
 
 	test = {};
 
-	test.FromXML(_T("testfile.xml"));
+	//test.FromXML(_T("testfile.xml"));
 	
 	printline("Printing all reflected values")
 	
@@ -181,7 +181,7 @@ reflClass ReflectorTest()
 /************************************************************************/
 void FileIO(const TCHAR *folderPath)
 {
-	std::wstring fnamele = folderPath;
+	TSTRING fnamele = folderPath;
 	fnamele.append(_T("tesfile.le"));
 	
 	reflClass rclass = ReflectorTest();
@@ -194,7 +194,7 @@ void FileIO(const TCHAR *folderPath)
 	}
 
 	TFileInfo fle(fnamele.c_str());
-	std::wstring fnamebe = fle.GetPath() + fle.GetFileName() + _T(".be");
+	TSTRING fnamebe = fle.GetPath() + fle.GetFileName() + _T(".be");
 
 	printline("Saving: ", << fnamebe);
 
@@ -315,7 +315,7 @@ void DisablerTest()
 /************************************************************************/
 void EncryptorTest(const TCHAR *folderPath)
 {
-	std::wstring fnameenc = folderPath;
+	TSTRING fnameenc = folderPath;
 	fnameenc.append(_T("tesfile.enc"));
 
 	reflClass rclass = ReflectorTest();

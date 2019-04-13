@@ -30,7 +30,7 @@
 *.exe
 *.out
 *.app
-
+*.vs*
 *.aps
 image/*
 mfcex/*

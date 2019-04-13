@@ -62,7 +62,11 @@ protected:
 		return true;
 	}
 
-	_BinCore() :swapEndian(0), encCreated(0) {}
+	_BinCore() :swapEndian(0), encCreated(0)
+#ifdef ES_ENCRYPTION_DEFINED
+		, enc(nullptr)
+#endif
+	{}
 	ES_FORCEINLINE void DisposeEncryptor()
 	{
 #ifdef ES_ENCRYPTION_DEFINED
