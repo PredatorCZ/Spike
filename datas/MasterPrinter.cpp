@@ -77,7 +77,7 @@ void MasterPrinterThread::FlushAll()
 	std::lock_guard<std::mutex> guard(__MasterPrinter._mutexPrint);
 	for (auto &f : __MasterPrinter.functions)
 	{
-		int(*Func)(TCHAR*) = reinterpret_cast<int(*)(TCHAR*)>(f);
+		int(*Func)(const TCHAR*) = reinterpret_cast<int(*)(const TCHAR*)>(f);
 		if (__MasterPrinter.printThreadID)
 		{
 			Func(_T("Thread[0x"));

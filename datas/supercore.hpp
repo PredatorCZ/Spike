@@ -17,12 +17,12 @@
 */
 
 #pragma once
-//#define uint					unsigned int
-//#define ushort					unsigned short
-#define uchar					unsigned char
-#define uint64					unsigned long long
-#define int64					long long
 
+typedef unsigned int			uint;
+typedef unsigned short			ushort;					
+typedef unsigned char			uchar;
+typedef unsigned long long		uint64;
+typedef long long				int64;
 
 #if defined(__GNUC__) || defined(__GNUG__)
 #define ES_FORCEINLINE __attribute__((always_inline))
@@ -36,6 +36,19 @@ typedef union { const char ACT[4]; const int NUM; } __es_endian_detector_u;
 
 static constexpr bool ES_LITTLE_ENDIAN = __es_endian_detector_u{ 1 }.ACT[0] == 1;
 static constexpr bool ES_X64 = sizeof(void*) == 8;
+
+struct __es_reusePadding_detector_superbase_s {};
+struct __es_reusePadding_detector_base_s : __es_reusePadding_detector_superbase_s
+{
+	int v1;
+	short v20;
+};
+struct __es_reusePadding_detector_s : __es_reusePadding_detector_base_s
+{
+	char v21;
+};
+
+static constexpr bool ES_REUSE_PADDING = sizeof(__es_reusePadding_detector_s) == 8;
 
 #ifndef _TCHAR_DEFINED
 #ifdef _UNICODE

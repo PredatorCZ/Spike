@@ -277,28 +277,14 @@ struct ImasterClass
 template<class _parent>
 struct masterClass_t : _parent
 {
-	//ADD_DISABLERS(_parent, noType);
-	typedef _parent this_type;
-	struct disablernoType 
+	ADD_DISABLERS(_parent, noType);
+	
+	enabledFunction(int) Func01()
 	{
-		template<typename U, void (U::*f)()> struct detectorClass {};
-		template<class C> static constexpr std::false_type detectorFunc(...) {};
-		template<class C> static constexpr std::true_type detectorFunc(detectorClass<C, &C::func>*) {}; 
-	};
-
-	void foo()
-	{
-		auto huh = disablernoType::detectorFunc<class02>(nullptr);
-	}
-	//enabledFunction(noType, int) 
-	template<class SC = this_type, bool enabled = decltype(disablernoType::detectorFunc<SC>(nullptr))::value>
-	typename std::enable_if<enabled, int>::type
-	Func01()
-	{
-		return iType;
+		return this->iType;
 	}
 
-	disabledFunction(noType, int) Func01()
+	disabledFunction(int) Func01()
 	{
 		return -1;
 	}
@@ -401,10 +387,12 @@ void MasterprinterTest()
 /************************************************************************/
 /*********************** MAIN *******************************************/
 /************************************************************************/
-#include <iostream>
+
 int main()
 {
 	printer.AddPrinterFunction(reinterpret_cast<void*>(printf)); // adding console print function for masterprinter service
+
+	printline("Compiler info:\n\tLittle Endian: ", << ES_LITTLE_ENDIAN << "\n\tX64: " << ES_X64 << "\n\tClass padding optimalization: " << ES_REUSE_PADDING)
 
 	DisablerTest();
 	HybridVector();
