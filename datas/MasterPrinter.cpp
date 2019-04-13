@@ -19,12 +19,37 @@
 #include "MasterPrinter.hpp"
 #include <mutex>
 #include <vector>
-#include <tchar.h>
+
+#ifndef _TCHAR_DEFINED
+#ifdef _UNICODE
+#define _itot_s     _itow_s
+#else
+#define _itot_s     _itoa_s
+#endif
+#endif
+
+#ifdef _MSC_VER
+#include <Windows.h>
+#endif
+
+#include "datas/flags.hpp"
+
+enum MSVC_Console_Flags
+{
+	MSC_Text_Blue,
+	MSC_Text_Green,
+	MSC_Text_Red,
+	MSC_Text_Intensify,
+};
+
+typedef esFlags<short, MSVC_Console_Flags> consoleColorAttrFlags;
+
 static struct MasterPrinter
 {
 	std::vector<void*> functions;
 	std::mutex _mutexPrint;
 	bool printThreadID = false;
+	consoleColorAttrFlags consoleColorAttr;
 }__MasterPrinter;
 
 void MasterPrinterThread::AddPrinterFunction(void *funcPtr)
@@ -79,9 +104,40 @@ void MasterPrinterThread::PrintThreadID(bool yn)
 	__MasterPrinter.printThreadID = yn;
 }
 
-MasterPrinterThread::MasterPrinterThread() :_masterstream(new MasterStreamType()) {};
+MasterPrinterThread::MasterPrinterThread() :_masterstream(new MasterStreamType()) 
+{
+#ifdef _MSC_VER
+	CONSOLE_SCREEN_BUFFER_INFO conInfo;
+	GetConsoleScreenBufferInfo(GetStdHandle(STD_OUTPUT_HANDLE), &conInfo);
+	__MasterPrinter.consoleColorAttr = conInfo.wAttributes & (FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE | FOREGROUND_INTENSITY);
+#endif
+}
 MasterPrinterThread::~MasterPrinterThread()
 {
 	if (_masterstream)
 		delete _masterstream;
+}
+
+void SetConsoleTextColor(int red, int green, int blue)
+{
+#ifdef _MSC_VER
+	consoleColorAttrFlags newFlags = __MasterPrinter.consoleColorAttr;
+	newFlags(MSC_Text_Red, red > 0);
+	newFlags(MSC_Text_Green, green > 0);
+	newFlags(MSC_Text_Blue, blue > 0);
+	newFlags(MSC_Text_Intensify, (red | green | blue) > 128);
+
+	SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), reinterpret_cast<consoleColorAttrFlags::ValueType &>(newFlags));
+#else
+	printer << _T("\033[38;2;") << red << ';' << green << ';' << blue << 'm';
+#endif
+}
+
+void RestoreConsoleTextColor()
+{
+#ifdef _MSC_VER
+	SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), reinterpret_cast<consoleColorAttrFlags::ValueType &>(__MasterPrinter.consoleColorAttr));
+#else
+	printer << _T("\033[0m");
+#endif
 }

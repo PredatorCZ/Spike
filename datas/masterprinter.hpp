@@ -28,8 +28,9 @@ typedef char     TCHAR;
 #endif
 #endif
 #define _T(x)       __T(x)
-#define printerror(x, ...) printer << _T("ERROR: ") << _T(x) __VA_ARGS__>> 1;
-#define printwarning(x, ...) printer << _T("WARNING: ") << _T(x) __VA_ARGS__>> 1;
+
+#define printerror(x, ...) { SetConsoleTextColor(255, 0, 0); printer << _T("ERROR: ") << _T(x) __VA_ARGS__>> 1; RestoreConsoleTextColor();}
+#define printwarning(x, ...) { SetConsoleTextColor(255, 255, 0); printer << _T("WARNING: ") << _T(x) __VA_ARGS__>> 1; RestoreConsoleTextColor();}
 #define printline(x, ...) printer << _T(x) __VA_ARGS__>> 1;
 
 thread_local static class MasterPrinterThread
@@ -49,6 +50,10 @@ public:
 	void operator >> (int endWay);
 	void PrintThreadID(bool yn);
 	void Locale(const char *localeName) { _masterstream->imbue(std::locale(localeName)); }
+	void Locale(const std::locale &loc) { _masterstream->imbue(loc); }
 	MasterPrinterThread();
 	~MasterPrinterThread();
 }printer;
+
+void SetConsoleTextColor(int red, int green, int blue);
+void RestoreConsoleTextColor();
