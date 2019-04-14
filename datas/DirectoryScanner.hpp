@@ -21,7 +21,15 @@
 #if defined(__GNUC__) || defined(__GNUG__)
 #include <dirent.h>
 #else
+#ifndef _INC_TCHAR
+#ifdef _UNICODE
+#define _tcscmp wcscmp
+#else
+#define _tcscmp strcmp
+#endif
 #include <windows.h>
+#endif
+
 #endif
 #include <cstring>
 #include <vector>

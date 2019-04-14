@@ -6,7 +6,7 @@
 #include "../datas/reflector.hpp"
 #include "../datas/endian.hpp"
 
-//#include "../datas/allocator_hybrid.hpp"
+#include "../datas/allocator_hybrid.hpp"
 #include "../datas/vectors.hpp"
 #include "../datas/disabler.hpp"
 #include "../datas/esstring.h"
@@ -233,7 +233,7 @@ void HybridVector()
 	char *externalBuffer = static_cast<char*>(malloc(125));
 	memset(externalBuffer, 89, 125);
 
-	/*std::vector<char, std::allocator_hybrid<char>> vectr;
+	std::vector<char, std::allocator_hybrid<char>> vectr;
 	vectr.resize(85);
 
 	//assigning externalBuffer as internal buffer for vector
@@ -252,7 +252,7 @@ void HybridVector()
 	vectr.~vector();
 
 	//doing normal vector stuff afterwards
-	vectr.push_back(75); */
+	vectr.push_back(75); 
 
 	free(externalBuffer);
 }

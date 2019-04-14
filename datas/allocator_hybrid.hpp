@@ -17,6 +17,9 @@
 */
 
 #pragma once
+#ifndef _DECLSPEC_ALLOCATOR
+#define _DECLSPEC_ALLOCATOR
+#endif
 namespace std {
 
 	template <class _Ty> struct allocator_hybrid
@@ -46,13 +49,6 @@ namespace std {
 		allocator_hybrid(pointer iBuff) : buffer(iBuff) {};
 
 		template<class U> allocator_hybrid(const allocator_hybrid<U> &) : allocator_hybrid() {}
-		
-		allocator_hybrid(const _Container_proxy &p)
-		{
-			const _Container_proxy &puh = p;
-
-			return;
-		}
 
 		allocator_hybrid(const allocator_hybrid<value_type>& input)
 		{
@@ -62,11 +58,7 @@ namespace std {
 		_DECLSPEC_ALLOCATOR pointer allocate(size_t count)
 		{
 			if (!buffer || isDestroyed & reinterpret_cast<uintptr_t>(buffer))
-#if _MSC_VER > 1900
-				return (static_cast<pointer>(_Allocate<_New_alignof<value_type>>(count * sizeof(value_type))));
-#else
-				return (static_cast<pointer>(_Allocate(count, sizeof(value_type))));
-#endif
+				return static_cast<pointer>(operator new(count * sizeof(value_type)));
 			else
 				return buffer;
 		}
@@ -80,11 +72,7 @@ namespace std {
 			}
 
 			if (buffer != ptr)
-#if _MSC_VER > 1900
-				_Deallocate<_New_alignof<value_type>>(ptr, count * sizeof(value_type));
-#else
-				_Deallocate(ptr, count, sizeof(value_type));
-#endif
+				operator delete(ptr, count * sizeof(value_type));
 			else
 				buffer = nullptr;
 		}
