@@ -1,4 +1,7 @@
 # PreCore
+[![Build Status](https://travis-ci.org/PredatorCZ/PreCore.svg?branch=master)](https://travis-ci.org/PredatorCZ/PreCore)
+[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
+
 PreCore is a library with helper classes.
 It contains IO classes, logging services, algorhitms, data types, extensions for other libraries and more.
 
@@ -90,8 +93,8 @@ Usage is in data.cpp.
 
 Classes:
 
-- t_Flags: base class for managing bit flags
-- EnumFlags : uses enumeration as bit flags
+- esFlags: can use enumeration class as bit flags
+- EnumFlags : compatibility typedef of esFlags
 - esEnum : enum with explicit size
 
 ### halfFloat
@@ -133,6 +136,12 @@ Usage is in data.cpp.
 ### xorenc
 XOR encoder.
 Usage is in data.cpp.
+
+### DirectoryScanner
+Class for recursively scanning files by their extension.
+
+### SettingsManager
+Base class used only for static classes, used for storing/reading/writing variables as application settings.
 
 ## MAXEx
 Extension classes for 3ds max objects.
