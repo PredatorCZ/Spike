@@ -130,7 +130,7 @@ void SetConsoleTextColor(int red, int green, int blue)
 
 	SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), reinterpret_cast<consoleColorAttrFlags::ValueType &>(newFlags));
 #else
-	printer << _T("\033[38;2;") << red << ';' << green << ';' << blue << 'm';
+	printer << _T("\033[38;2;") << red << ';' << green << ';' << blue << 'm' >> 0;
 #endif
 }
 
@@ -139,6 +139,6 @@ void RestoreConsoleTextColor()
 #ifdef _MSC_VER
 	SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), reinterpret_cast<consoleColorAttrFlags::ValueType &>(__MasterPrinter.consoleColorAttr));
 #else
-	printer << _T("\033[0m");
+	printer << _T("\033[0m") >> 0;
 #endif
 }

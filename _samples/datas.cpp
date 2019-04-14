@@ -18,6 +18,7 @@
 #include "../datas/reflectorRegistry.hpp"
 #include "../datas/xorenc.hpp"
 #include "../datas/blowfish2.h"
+#include "../datas/DirectoryScanner.hpp"
 
 //some headers should be included last, to activate all possible macro contitionals
 #include "../datas/binreader.hpp"
@@ -388,7 +389,7 @@ void MasterprinterTest()
 /*********************** MAIN *******************************************/
 /************************************************************************/
 
-int main()
+int main(const int argc, const TCHAR **argv)
 {
 #ifndef UNICODE
 	printer.AddPrinterFunction(reinterpret_cast<void*>(printf)); // adding console print function for masterprinter service
@@ -404,7 +405,7 @@ int main()
 	HybridVector();
 	ReflectorTest();
 
-	TSTRING folderpath;
+	TSTRING folderpath = TFileInfo(argv[0]).GetPath();
 
 	FileIO(folderpath.c_str());
 	EncryptorTest(folderpath.c_str());
@@ -412,6 +413,16 @@ int main()
 	ESstringTest();
 
 	MasterprinterTest();
+
+	DirectoryScanner scan;
+	scan.Scan(folderpath);
+
+	printline("Printing build directory.");
+
+	for (auto &s : scan)
+	{
+		printer << s >> 1;
+	}
 
 	return 0;
 }

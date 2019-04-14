@@ -45,6 +45,9 @@ public:
 			pathindex = pathindex2;
 		path = fullPath.substr(0, pathindex + 1);
 		
+		if (dotIndex == fullPath.npos)
+			dotIndex = fullPath.size();
+
 		filename = fullPath.substr(pathindex + 1, dotIndex - (pathindex + 1));
 		filenameFull = fullPath.substr(pathindex + 1);	
 		extension = fullPath.substr(dotIndex);

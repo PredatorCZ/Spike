@@ -18,10 +18,14 @@
 */
 
 #pragma once
-#include <tchar.h>
+#if defined(__GNUC__) || defined(__GNUG__)
+#include <dirent.h>
+#else
 #include <windows.h>
+#endif
+#include <cstring>
 #include <vector>
-#include "supercore.hpp"
+#include "esstring.h"
 
 class DirectoryScanner
 {
@@ -41,7 +45,22 @@ public:
 	typedef storage_type::iterator iterator;
 	typedef storage_type::const_iterator const_iterator;
 
-	void Scan(const TSTRING & dir)
+	void Scan(const TSTRING & dir);
+
+	ES_FORCEINLINE iterator begin() { return files.begin(); }
+	ES_FORCEINLINE iterator end() { return files.end(); }
+	ES_FORCEINLINE const_iterator cbegin() const { return files.cbegin(); }
+	ES_FORCEINLINE const_iterator cend() const { return files.cend(); }
+	void AddFilter(TSTRING val) { filters.push_back(val); }
+	const storage_type &Files() const { return files; }
+
+private:
+	storage_type files;
+	storage_type filters;
+};
+
+#if defined(__GNUC__) || defined(__GNUG__)
+	void DirectoryScanner::Scan(const TSTRING & dir)
 	{
 		TSTRING wdir = dir;
 		TCHAR lastword = wdir[wdir.length() - 1];
@@ -50,7 +69,45 @@ public:
 			wdir.pop_back();
 
 		if (lastword != '\\' && lastword != '/')
-			wdir.push_back('\\');
+			wdir.push_back('/');
+
+		DIR *cDir = opendir(wdir.c_str());
+
+		if (!cDir)
+			return;
+
+		dirent *cFile = nullptr;
+
+		while ((cFile = readdir(cDir)) != nullptr)
+		{
+			if (!strcmp(cFile->d_name, ".") || 
+				!strcmp(cFile->d_name, ".."))
+				continue;
+
+			TSTRING miniFile = esString(cFile->d_name);
+			TSTRING subFile = wdir;
+			subFile += miniFile;
+
+			if (cFile->d_type == DT_DIR)
+				Scan(subFile);
+			else if (IsFilteredFile(miniFile.c_str()))
+				files.push_back(subFile);
+
+		}
+
+		closedir(cDir);
+	}
+#else
+	void DirectoryScanner::Scan(const TSTRING & dir)
+	{
+		TSTRING wdir = dir;
+		TCHAR lastword = wdir[wdir.length() - 1];
+
+		if (lastword == '"')
+			wdir.pop_back();
+
+		if (lastword != '\\' && lastword != '/')
+			wdir.push_back('/');
 
 		wdir.push_back('*');
 
@@ -80,15 +137,4 @@ public:
 
 		FindClose(fleHandle);
 	}
-
-	ES_FORCEINLINE iterator begin() { return files.begin(); }
-	ES_FORCEINLINE iterator end() { return files.end(); }
-	ES_FORCEINLINE const_iterator cbegin() const { return files.cbegin(); }
-	ES_FORCEINLINE const_iterator cend() const { return files.cend(); }
-	void AddFilter(TSTRING val) { filters.push_back(val); }
-	const storage_type &Files() const { return files; }
-
-private:
-	storage_type files;
-	storage_type filters;
-};
+#endif
