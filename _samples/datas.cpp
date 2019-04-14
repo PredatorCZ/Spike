@@ -250,6 +250,8 @@ void HybridVector()
 
 	//This is a great alternative to drop externalBuffer, it'll just reset the whole vector
 	vectr.~vector();
+	//Windows clears vector when destructor is called, Posix don't.
+	vectr.clear();
 
 	//doing normal vector stuff afterwards
 	vectr.push_back(75); 
