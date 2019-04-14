@@ -390,9 +390,15 @@ void MasterprinterTest()
 
 int main()
 {
+#ifndef UNICODE
 	printer.AddPrinterFunction(reinterpret_cast<void*>(printf)); // adding console print function for masterprinter service
+#else
+	printer.AddPrinterFunction(reinterpret_cast<void*>(wprintf));
+#endif
+	printline("Compiler info:\n\tLittle Endian: ", << ES_LITTLE_ENDIAN << "\n\tX64: " << ES_X64 << "\n\tClass padding optimalization: " << ES_REUSE_PADDING);
 
-	printline("Compiler info:\n\tLittle Endian: ", << ES_LITTLE_ENDIAN << "\n\tX64: " << ES_X64 << "\n\tClass padding optimalization: " << ES_REUSE_PADDING)
+	printerror("I am error and I'm red.");
+	printwarning("I am warning and I'm yellow.")
 
 	DisablerTest();
 	HybridVector();

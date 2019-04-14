@@ -23,9 +23,9 @@
 
 #ifndef _TCHAR_DEFINED
 #ifdef _UNICODE
-#define tprintf     _itow_s
+#define tprintf     swprintf
 #else
-#define tprintf     _itoa_s
+#define tprintf     snprintf
 #endif
 #endif
 
@@ -83,10 +83,7 @@ void MasterPrinterThread::FlushAll()
 			Func(_T("Thread[0x"));
 			std::thread::id threadID = std::this_thread::get_id();
 			TCHAR buffer[65];
-
-			sprintf(buffer, "%X", reinterpret_cast<uint&>(threadID));
-
-			//_itoa_s(reinterpret_cast<_Thrd_id_t&>(threadID), buffer, 65, 16);
+			tprintf(buffer, 65, _T("%X"), static_cast<uint>(reinterpret_cast<uint&>(threadID)));
 			Func(buffer);
 			Func(_T("] "));
 		}
