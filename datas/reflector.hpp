@@ -25,6 +25,7 @@
 #include "supercore.hpp"
 #include "jenkinshash.hpp"
 #include <string>
+#include <cstring>
 #include "macroLoop.hpp"
 
 #define _REFLECTOR_ADDN_ENUM(value) #value,
@@ -76,7 +77,8 @@ namespace pugi
 
 struct reflType
 {
-	uchar size : 4, subSize : 4;
+	uchar size,
+		subSize;
 	uchar ID;
 	ushort offset;
 	JenHash valueNameHash;

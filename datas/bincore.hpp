@@ -76,7 +76,7 @@ protected:
 		encCreated = false;
 	}
 public:
-	typedef typename std::remove_pointer<decltype(_driverClass::BaseStream)>::type StreamType;
+	typedef typename _driverClass::StreamType StreamType;
 
 	enum EndianSwap
 	{
@@ -96,7 +96,11 @@ public:
 		if (IsValid())
 		{
 			FileStream.close();
-			_BinCore::_BinCore();
+			swapEndian = 0;
+			encCreated = 0;
+#ifdef ES_ENCRYPTION_DEFINED
+			enc = nullptr;
+#endif
 		}
 
 		this->BaseStream = &instream;

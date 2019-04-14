@@ -37,7 +37,7 @@ public:
 };
 #pragma warning(push)
 #pragma warning(disable: 4127)
-template<class C> ES_FORCEINLINE void FByteswapper(C &input)
+template<class C> ES_INLINE void FByteswapper(C &input)
 {
 	if (std::is_arithmetic<C>::value)
 	{

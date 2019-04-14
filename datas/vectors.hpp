@@ -20,6 +20,7 @@
 #define ES_VECTORS_DEFINED
 #include "supercore.hpp"
 #include <ostream>
+#include <float.h>
 
 #define FLTCMP(a, b) (a <= (b + FLT_EPSILON) && a >= (b - FLT_EPSILON))
 

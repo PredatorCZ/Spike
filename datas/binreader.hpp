@@ -20,25 +20,27 @@
 
 class _BinCoreIn
 {
+public:
+	typedef std::istream StreamType;
 protected:
 	_BinCoreIn() : localseek(0), BaseStream(nullptr){}
 	size_t localseek;
-	std::istream *BaseStream;
-	static const uint MODE = std::ios::binary | std::ios::in | std::ios::ate;
+	StreamType *BaseStream;
+	static const std::ios_base::openmode MODE = std::ios::binary | std::ios::in | std::ios::ate;
 public:
 	ES_FORCEINLINE const size_t Tell(const bool relative = true) const
 	{
 		return static_cast<size_t>(BaseStream->tellg()) - (relative ? localseek : 0);
 	}
 
-	ES_FORCEINLINE void Seek(const size_t position, const int vay = SEEK_SET, const bool relative = true) const
+	ES_FORCEINLINE void Seek(const size_t position, const std::ios_base::seekdir vay = std::ios_base::beg, const bool relative = true) const
 	{
 		BaseStream->seekg(position + ((relative && !vay) ? localseek : 0), vay);
 	}
 
-	ES_FORCEINLINE void Skip(const size_t length) { Seek(length, SEEK_CUR); }
+	ES_FORCEINLINE void Skip(const size_t length) { Seek(length, std::ios_base::cur); }
 
-	template<typename T> ES_FORCEINLINE void Skip() { Seek(sizeof(T), SEEK_CUR); }
+	template<typename T> ES_FORCEINLINE void Skip() { Seek(sizeof(T), std::ios_base::cur); }
 };
 
 
@@ -60,8 +62,8 @@ class BinReader : public _BinCore<_BinCoreIn>
 public:
 
 	template<typename T> BinReader(const UniString<T> &filePath) : BinReader() { _Open(filePath); SetFileSize(); }
-	BinReader(std::istream &instream) : BinReader() { SetStream(instream); }
-	BinReader(const wchar_t *filePath) : BinReader() { _Open(filePath); SetFileSize(); }
+	BinReader(StreamType &instream) : BinReader() { SetStream(instream); }
+	//BinReader(const wchar_t *filePath) : BinReader() { _Open(filePath); SetFileSize(); }
 	BinReader(const char *filePath) : BinReader() { _Open(filePath); SetFileSize(); }
 
 	ES_FORCEINLINE size_t SavePos() { return savepos = Tell(); }
@@ -89,11 +91,11 @@ public:
 		input.resize(numitems);
 		const size_t elesize = sizeof(T);
 		const size_t arrsize = elesize*numitems;
-		BaseStream->read(reinterpret_cast<char*>(const_cast<T*>(input.begin()._Ptr)), arrsize);
+		BaseStream->read(reinterpret_cast<char*>(const_cast<T*>(input.begin().operator->())), arrsize);
 
 #ifdef ES_ENCRYPTION_DEFINED
 		if (enc && enc->Valid())
-			enc->Encode(reinterpret_cast<char*>(const_cast<T*>(input.begin()._Ptr)), arrsize);
+			enc->Encode(reinterpret_cast<char*>(const_cast<T*>(input.begin().operator->())), arrsize);
 #endif
 
 #ifdef ES_ENDIAN_DEFINED

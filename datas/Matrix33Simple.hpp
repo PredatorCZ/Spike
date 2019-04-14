@@ -17,7 +17,7 @@
 */
 
 #pragma once
-#include "datas/Vectors.hpp"
+#include "vectors.hpp"
 class Matrix33s
 {
 public:
@@ -44,7 +44,7 @@ public:
 	Matrix33s TransposeCopy() const;
 	Matrix33s InverseCopy()const;
 	Matrix33s MultiplyCopy(Matrix33s &input)const;
-	Matrix33s Matrix33s::NormalizeCopy() const;
+	Matrix33s NormalizeCopy() const;
 	Vector RotatePoint(const Vector &input) const;
 	void FromQuat(const Vector4 & q);
 	void ToQuat(Vector4 & q)const;

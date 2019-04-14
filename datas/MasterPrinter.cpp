@@ -16,15 +16,16 @@
 	limitations under the License.
 */
 
-#include "MasterPrinter.hpp"
+#include "masterprinter.hpp"
 #include <mutex>
 #include <vector>
+#include <thread>
 
 #ifndef _TCHAR_DEFINED
 #ifdef _UNICODE
-#define _itot_s     _itow_s
+#define tprintf     _itow_s
 #else
-#define _itot_s     _itoa_s
+#define tprintf     _itoa_s
 #endif
 #endif
 
@@ -76,13 +77,16 @@ void MasterPrinterThread::FlushAll()
 	std::lock_guard<std::mutex> guard(__MasterPrinter._mutexPrint);
 	for (auto &f : __MasterPrinter.functions)
 	{
-		int(*Func)(TCHAR*) = reinterpret_cast<int(*)(TCHAR*)>(f);
+		int(*Func)(const TCHAR*) = reinterpret_cast<int(*)(const TCHAR*)>(f);
 		if (__MasterPrinter.printThreadID)
 		{
 			Func(_T("Thread[0x"));
 			std::thread::id threadID = std::this_thread::get_id();
 			TCHAR buffer[65];
-			_itot_s(reinterpret_cast<_Thrd_id_t&>(threadID), buffer, 65, 16);
+
+			sprintf(buffer, "%X", reinterpret_cast<uint&>(threadID));
+
+			//_itoa_s(reinterpret_cast<_Thrd_id_t&>(threadID), buffer, 65, 16);
 			Func(buffer);
 			Func(_T("] "));
 		}

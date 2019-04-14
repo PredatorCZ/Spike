@@ -156,7 +156,7 @@ void Reflector::SetReflectedValue(const unsigned int hash, const char *value)
 			{
 				//valueCopy[i] = '\0';
 
-				SetReflectedPrimitive(thisAddr + reflValue->offset + (reflValue->subSize * currentItem), reflValue->subtypeHash, (valueCopy.begin() + lastItem)._Ptr);
+				SetReflectedPrimitive(thisAddr + reflValue->offset + (reflValue->subSize * currentItem), reflValue->subtypeHash, (valueCopy.begin() + lastItem).operator->());
 				lastItem = i + 1;
 				currentItem++;
 			}
