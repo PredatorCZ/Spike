@@ -52,8 +52,14 @@ const char *_reflected[_reflectedSize] = { StaticFor(_REFLECTOR_ADDN_ENUM, __VA_
 static const JenHash HASH = JenkinsHash(#classname, sizeof(#classname) - 1);\
 };
 
-#define _REFLECTOR_ADDN(classname, _id, value) reflType { sizeof(classname::value), _getType<decltype(classname::value)>::SUBSIZE, _id, offsetof(classname,value), JenkinsHash(#value, sizeof(#value) -1),\
-_getType<decltype(classname::value)>::TYPE , _getType<decltype(classname::value)>::HASH},
+template<class C>struct _SubReflClassWrap {};
+
+#define _REFLECTOR_ADDN(classname, _id, value) reflType { \
+_getType<std::remove_reference<decltype(classname::value)>::type>::SUBSIZE, _id, \
+_getType<std::remove_reference<decltype(classname::value)>::type>::NUMITEMS, \
+offsetof(classname,value), JenkinsHash(#value, sizeof(#value) -1),\
+_getType<std::remove_reference<decltype(classname::value)>::type>::TYPE , \
+_getType<std::remove_reference<decltype(classname::value)>::type>::HASH},
 
 #define REFLECTOR_START(classname,...) static const reflType __##classname##_types[] = { StaticForArgID(_REFLECTOR_ADDN, classname, __VA_ARGS__) }; \
 static const reflectorStatic __##classname##_statical = {  VA_NARGS(__VA_ARGS__), __##classname##_types, nullptr, nullptr, JenkinsHash(#classname, sizeof(#classname) - 1) };\
@@ -64,7 +70,8 @@ static const char *__##classname##_typeNames[] = { StaticFor(_REFLECTOR_ADDN_ENU
 static const reflectorStatic __##classname##_statical = { \
 	VA_NARGS(__VA_ARGS__), __##classname##_types, __##classname##_typeNames, \
 	#classname, JenkinsHash(#classname, sizeof(#classname) - 1) };\
-const reflectorStatic *classname::__rfPtrStatic = &__##classname##_statical;
+const reflectorStatic *classname::__rfPtrStatic = &__##classname##_statical;\
+template<> struct _SubReflClassWrap<classname> { static const JenHash HASH = JenkinsHash(#classname, sizeof(#classname) - 1); };
 
 #define DECLARE_REFLECTOR static const reflectorStatic *__rfPtrStatic;\
 const reflectorInstanceConst _rfRetreive() const { return { __rfPtrStatic, this }; }\
@@ -73,18 +80,20 @@ const reflectorInstance _rfRetreive() { return { __rfPtrStatic, this }; }
 namespace pugi
 {
 	class xml_node;
+	struct xml_node_struct;
 }
 
 struct reflType
 {
-	uchar size,
-		subSize;
+	uchar subSize;
 	uchar ID;
+	ushort numItems;
 	ushort offset;
 	JenHash valueNameHash;
 	JenHash typeHash;
 	JenHash subtypeHash;
 };
+const int __sizeof_RelfType = sizeof(reflType);
 
 struct reflectorStatic
 {
@@ -115,11 +124,7 @@ class Reflector
 	virtual const reflectorInstance _rfRetreive() { return { &__null_statical, nullptr }; }
 protected:
 	const reflType *GetReflectedType(const JenHash hash) const;
-	ES_INLINE const reflType *GetReflectedType(const char *name) const
-	{
-		const JenHash hash = JenkinsHash(name, static_cast<JenHash>(strlen(name)));
-		return GetReflectedType(hash);
-	}
+	const reflType *GetReflectedType(const char *name) const;
 public:
 	struct KVPair
 	{
@@ -127,128 +132,276 @@ public:
 		std::string value;
 	};
 
-	ES_INLINE void SetReflectedValue(const char *name, const char *value)
+	struct SubClass
 	{
-		const JenHash hash = JenkinsHash(name, static_cast<JenHash>(strlen(name)));
-		return SetReflectedValue(hash, value);
-	}
-	ES_INLINE std::string GetReflectedValue(const char *name) const
-	{
-		const JenHash hash = JenkinsHash(name, static_cast<JenHash>(strlen(name)));
-		return GetReflectedValue(hash);
-	}
+		reflectorInstance inst;
+		reflectorInstanceConst instc;
+	};
 
+	typedef pugi::xml_node_struct *xmlNodePtr;
+
+	void SetReflectedValue(const char *name, const char *value);
 	void SetReflectedValue(const JenHash hash, const char *value);
-	ES_INLINE int GetNumReflectedValues() const { return _rfRetreive().rfStatic->nTypes; }
-	ES_INLINE bool UseNames() const { return _rfRetreive().rfStatic->typeNames != nullptr; }
+
+	int GetNumReflectedValues() const;
+	const char *GetClassName() const;
+	bool UseNames() const;
 	
 	std::string GetReflectedValue(int id) const;
-	ES_INLINE std::string GetReflectedValue(JenHash hash) const
-	{
-		const reflType *found = GetReflectedType(hash);
+	std::string GetReflectedValue(JenHash hash) const;
+	std::string GetReflectedValue(const char *name) const;
 
-		if (!found)
-			return "";
+	bool IsReflectedSubClass(const char *name) const;
+	bool IsReflectedSubClass(JenHash hash) const;
+	bool IsReflectedSubClass(int id) const;
 
-		return GetReflectedValue(found->ID);
-	}
+	const SubClass GetReflectedSubClass(const char *name) const;
+	const SubClass GetReflectedSubClass(JenHash hash) const;
+	const SubClass GetReflectedSubClass(int id) const;
 
-	ES_INLINE KVPair GetReflectedPair(int id) const
-	{ 
-		if (id >= GetNumReflectedValues())
-			return KVPair{};
+	const SubClass GetReflectedSubClass(const char *name);
+	const SubClass GetReflectedSubClass(JenHash hash);
+	const SubClass GetReflectedSubClass(int id);
 
-		return KVPair{ UseNames() ? _rfRetreive().rfStatic->typeNames[id] : nullptr, GetReflectedValue(id) };
-	};
-	ES_INLINE KVPair GetReflectedPair(JenHash hash) const
-	{
-		const reflType *found = GetReflectedType(hash);
+	KVPair GetReflectedPair(int id) const;
+	KVPair GetReflectedPair(JenHash hash) const;
+	
+	virtual xmlNodePtr ToXML(const TSTRING filename, bool asNewNode = true) const;
+	virtual xmlNodePtr ToXML(pugi::xml_node &node, bool asNewNode = true) const;
+	virtual xmlNodePtr FromXML(const TSTRING filename, bool lookupClassNode = true);
+	virtual xmlNodePtr FromXML(pugi::xml_node &node, bool lookupClassNode = true);
+};
 
-		if (!found)
-			return KVPair{};
+template<class C>
+class ReflectorWrap : public Reflector
+{
+	const reflectorInstanceConst _rfRetreive() const { return static_cast<const C*>(data)->_rfRetreive(); }
+	const reflectorInstance _rfRetreive() { return data->_rfRetreive(); }
+public:
+	C *data;
+	ReflectorWrap(C *_data) : data(_data) {}
+};
 
-		return KVPair{ UseNames() ? _rfRetreive().rfStatic->typeNames[found->ID] : nullptr, GetReflectedValue(found->ID) };
-	};
+template<class C>
+class ReflectorWrapConst : public Reflector
+{
+	const reflectorInstanceConst _rfRetreive() const { return data->_rfRetreive(); }
+public:
+	const C *data;
+	ReflectorWrapConst(const C *_data) : data(_data) {}
+};
 
-	ES_INLINE const char *GetClassName() const { return _rfRetreive().rfStatic->className; }
-
-	int ToXML(const TSTRING filename) const;
-	int ToXML(pugi::xml_node &node) const;
-	int FromXML(const TSTRING filename);
-	int FromXML(pugi::xml_node &node);
+class ReflectorSubClass : public Reflector
+{
+	const reflectorInstanceConst _rfRetreive() const { return data.instc; }
+	const reflectorInstance _rfRetreive() { return data.inst; }
+public:
+	SubClass data;
+	ReflectorSubClass(const SubClass &_data) : data(_data) {}
 };
 
 template <typename _Ty> struct _getType 
 {
-	static const char TYPE = static_cast<const char>(std::is_enum<_Ty>::value ? 13 : 0);
-	static const JenHash HASH = std::is_enum<_Ty>::value ? _EnumWrap<_Ty>::HASH : 0;
-	static const unsigned char SUBSIZE = 0;
+	template<typename U, const reflectorInstance (U:: *f)()> struct detectorClass {};
+	template<class C> static constexpr std::false_type detectorFunc(...);
+	template<class C> static constexpr std::true_type detectorFunc(detectorClass<C, &C::_rfRetreive> *);
+
+	static constexpr bool subReflected = decltype(detectorFunc<_Ty>(nullptr))::value;
+
+	template<bool ye> static constexpr JenHash EnumWrapHash() { return 0; }
+	template<> static constexpr JenHash EnumWrapHash<true>() { return _EnumWrap<_Ty>::HASH; }
+
+	static const char TYPE = static_cast<const char>(std::is_enum<_Ty>::value ? 13 : (subReflected ? 21 : 0));
+	static const JenHash HASH = EnumWrapHash<std::is_enum<_Ty>::value>() + (subReflected ? _SubReflClassWrap<_Ty>::HASH : 0);
+	static const uchar SUBSIZE = 0;
+	static const ushort NUMITEMS = 1;
 };
 template <> struct _getType<bool> {
-	static const char TYPE = 1; static const JenHash HASH = 0; static const unsigned char SUBSIZE = 0;
+	static const char TYPE = 1; static const JenHash HASH = 0; static const unsigned char SUBSIZE = 0; static const ushort NUMITEMS = 1;
 };
 template <> struct _getType<char> {
-	static const char TYPE = 2; static const JenHash HASH = 0; static const unsigned char SUBSIZE = 0;
+	static const char TYPE = 2; static const JenHash HASH = 0; static const unsigned char SUBSIZE = 0; static const ushort NUMITEMS = 1;
 };
 template <> struct _getType<signed char> {
-	static const char TYPE = 2; static const JenHash HASH = 0; static const unsigned char SUBSIZE = 0;
+	static const char TYPE = 2; static const JenHash HASH = 0; static const unsigned char SUBSIZE = 0; static const ushort NUMITEMS = 1;
 };
 template <> struct _getType<uchar> {
-	static const char TYPE = 3; static const JenHash HASH = 0; static const unsigned char SUBSIZE = 0;
+	static const char TYPE = 3; static const JenHash HASH = 0; static const unsigned char SUBSIZE = 0; static const ushort NUMITEMS = 1;
 };
 
 template <> struct _getType<wchar_t> {
-	static const char TYPE = 4; static const JenHash HASH = 0; static const unsigned char SUBSIZE = 0;
+	static const char TYPE = 4; static const JenHash HASH = 0; static const unsigned char SUBSIZE = 0; static const ushort NUMITEMS = 1;
 };
 template <> struct _getType<char16_t> {
-	static const char TYPE = 4; static const JenHash HASH = 0; static const unsigned char SUBSIZE = 0;
+	static const char TYPE = 4; static const JenHash HASH = 0; static const unsigned char SUBSIZE = 0; static const ushort NUMITEMS = 1;
 };
 template <> struct _getType<short> {
-	static const char TYPE = 4; static const JenHash HASH = 0; static const unsigned char SUBSIZE = 0;
+	static const char TYPE = 4; static const JenHash HASH = 0; static const unsigned char SUBSIZE = 0; static const ushort NUMITEMS = 1;
 };
 template <> struct _getType<ushort> {
-	static const char TYPE = 5; static const JenHash HASH = 0; static const unsigned char SUBSIZE = 0;
+	static const char TYPE = 5; static const JenHash HASH = 0; static const unsigned char SUBSIZE = 0; static const ushort NUMITEMS = 1;
 };
 
 template <> struct _getType<char32_t> {
-	static const char TYPE = 6; static const JenHash HASH = 0; static const unsigned char SUBSIZE = 0;
+	static const char TYPE = 6; static const JenHash HASH = 0; static const unsigned char SUBSIZE = 0; static const ushort NUMITEMS = 1;
 };
 template <> struct _getType<int> {
-	static const char TYPE = 6; static const JenHash HASH = 0; static const unsigned char SUBSIZE = 0;
+	static const char TYPE = 6; static const JenHash HASH = 0; static const unsigned char SUBSIZE = 0; static const ushort NUMITEMS = 1;
 };
 template <> struct _getType<uint> {
-	static const char TYPE = 7; static const JenHash HASH = 0; static const unsigned char SUBSIZE = 0;
+	static const char TYPE = 7; static const JenHash HASH = 0; static const unsigned char SUBSIZE = 0; static const ushort NUMITEMS = 1;
 };
 template <> struct _getType<long> {
-	static const char TYPE = 6; static const JenHash HASH = 0; static const unsigned char SUBSIZE = 0;
+	static const char TYPE = 6; static const JenHash HASH = 0; static const unsigned char SUBSIZE = 0; static const ushort NUMITEMS = 1;
 };
 template <> struct _getType<unsigned long> {
-	static const char TYPE = 7; static const JenHash HASH = 0; static const unsigned char SUBSIZE = 0;
+	static const char TYPE = 7; static const JenHash HASH = 0; static const unsigned char SUBSIZE = 0; static const ushort NUMITEMS = 1;
 };
 
 template <> struct _getType<int64> {
-	static const char TYPE = 8; static const JenHash HASH = 0; static const unsigned char SUBSIZE = 0;
+	static const char TYPE = 8; static const JenHash HASH = 0; static const unsigned char SUBSIZE = 0; static const ushort NUMITEMS = 1;
 };
 template <> struct _getType<uint64> {
-	static const char TYPE = 9; static const JenHash HASH = 0; static const unsigned char SUBSIZE = 0;
+	static const char TYPE = 9; static const JenHash HASH = 0; static const unsigned char SUBSIZE = 0; static const ushort NUMITEMS = 1;
 };
 
 template <> struct _getType<float> {
-	static const char TYPE = 10; static const JenHash HASH = 0; static const unsigned char SUBSIZE = 0;
+	static const char TYPE = 10; static const JenHash HASH = 0; static const unsigned char SUBSIZE = 0; static const ushort NUMITEMS = 1;
 };
 
 template <> struct _getType<double> {
-	static const char TYPE = 11; static const JenHash HASH = 0; static const unsigned char SUBSIZE = 0;
+	static const char TYPE = 11; static const JenHash HASH = 0; static const unsigned char SUBSIZE = 0; static const ushort NUMITEMS = 1;
 };
 template <> struct _getType<long double> {
-	static const char TYPE = 11; static const JenHash HASH = 0; static const unsigned char SUBSIZE = 0;
+	static const char TYPE = 11; static const JenHash HASH = 0; static const unsigned char SUBSIZE = 0; static const ushort NUMITEMS = 1;
 };
 
 template <> struct _getType<const char*> {
-	static const char TYPE = 18; static const JenHash HASH = 0; static const unsigned char SUBSIZE = 0;
+	static const char TYPE = 18; static const JenHash HASH = 0; static const unsigned char SUBSIZE = 0; static const ushort NUMITEMS = 1;
 };
 
 template <> struct _getType<std::string> {
-	static const char TYPE = 19; static const JenHash HASH = 0; static const unsigned char SUBSIZE = 0;
+	static const char TYPE = 19; static const JenHash HASH = 0; static const unsigned char SUBSIZE = 0; static const ushort NUMITEMS = 1;
 };
+
+template <class C, size_t _Size> struct _getType<C[_Size]> {
+	static const char TYPE = 20; static const JenHash HASH = _getType<C>::TYPE; static const uchar SUBSIZE = sizeof(C); static const ushort NUMITEMS = _Size;
+};
+
+#ifdef _ARRAY_
+template <class C, size_t _Size> struct _getType<std::array<C, _Size>> {
+	static const char TYPE = 20; static const JenHash HASH = _getType<C>::TYPE; static const uchar SUBSIZE = sizeof(C); static const ushort NUMITEMS = _Size;
+};
+#endif
+
+ES_INLINE const reflType *Reflector::GetReflectedType(const char *name) const
+{
+	const JenHash hash = JenkinsHash(name, static_cast<JenHash>(strlen(name)));
+	return GetReflectedType(hash);
+}
+
+ES_INLINE void Reflector::SetReflectedValue(const char *name, const char *value)
+{
+	const JenHash hash = JenkinsHash(name, static_cast<JenHash>(strlen(name)));
+	return SetReflectedValue(hash, value);
+}
+
+ES_INLINE std::string Reflector::GetReflectedValue(const char *name) const
+{
+	const JenHash hash = JenkinsHash(name, static_cast<JenHash>(strlen(name)));
+	return GetReflectedValue(hash);
+}
+
+ES_INLINE int Reflector::GetNumReflectedValues() const { return _rfRetreive().rfStatic->nTypes; }
+
+ES_INLINE bool Reflector::UseNames() const { return _rfRetreive().rfStatic->typeNames != nullptr; }
+
+ES_INLINE std::string Reflector::GetReflectedValue(JenHash hash) const
+{
+	const reflType *found = GetReflectedType(hash);
+
+	if (!found)
+		return "";
+
+	return GetReflectedValue(found->ID);
+}
+
+ES_INLINE const Reflector::SubClass Reflector::GetReflectedSubClass(const char *name) const
+{
+	const JenHash hash = JenkinsHash(name, static_cast<JenHash>(strlen(name)));
+	return GetReflectedSubClass(hash);
+}
+
+ES_INLINE const Reflector::SubClass Reflector::GetReflectedSubClass(JenHash hash) const
+{
+	const reflType *found = GetReflectedType(hash);
+
+	if (!found)
+		return {};
+
+	return GetReflectedSubClass(found->ID);
+}
+
+ES_INLINE const Reflector::SubClass Reflector::GetReflectedSubClass(const char *name)
+{
+	const JenHash hash = JenkinsHash(name, static_cast<JenHash>(strlen(name)));
+	return GetReflectedSubClass(hash);
+}
+
+ES_INLINE const Reflector::SubClass Reflector::GetReflectedSubClass(JenHash hash)
+{
+	const reflType *found = GetReflectedType(hash);
+
+	if (!found)
+		return {};
+
+	return GetReflectedSubClass(found->ID);
+}
+
+ES_INLINE Reflector::KVPair Reflector::GetReflectedPair(int id) const
+{
+	if (id >= GetNumReflectedValues())
+		return KVPair{};
+
+	return KVPair{ UseNames() ? _rfRetreive().rfStatic->typeNames[id] : nullptr, GetReflectedValue(id) };
+}
+
+ES_INLINE Reflector::KVPair Reflector::GetReflectedPair(JenHash hash) const
+{
+	const reflType *found = GetReflectedType(hash);
+
+	if (!found)
+		return KVPair{};
+
+	return KVPair{ UseNames() ? _rfRetreive().rfStatic->typeNames[found->ID] : nullptr, GetReflectedValue(found->ID) };
+}
+
+ES_INLINE const char *Reflector::GetClassName() const { return _rfRetreive().rfStatic->className; }
+
+ES_INLINE bool Reflector::IsReflectedSubClass(const char *name) const
+{
+	const JenHash hash = JenkinsHash(name, static_cast<JenHash>(strlen(name)));
+	return IsReflectedSubClass(hash);
+}
+
+ES_INLINE bool Reflector::IsReflectedSubClass(JenHash hash) const
+{
+	const reflType *found = GetReflectedType(hash);
+
+	if (!found)
+		return false;
+
+	return IsReflectedSubClass(found->ID);
+}
+
+ES_INLINE bool Reflector::IsReflectedSubClass(int ID) const
+{
+	if (ID >= GetNumReflectedValues())
+		return false;
+
+	const reflType fl = _rfRetreive().rfStatic->types[ID];
+
+	return fl.typeHash == 21;
+}
+
 #endif

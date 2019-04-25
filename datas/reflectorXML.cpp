@@ -18,40 +18,56 @@
 
 #include "reflector.hpp"
 #include "pugixml.hpp"
+#include "masterprinter.hpp"
+#include "pugiex.hpp"
 
-int Reflector::ToXML(const TSTRING filename) const
+Reflector::xmlNodePtr Reflector::ToXML(const TSTRING filename, bool asNewNode) const
 {
 	pugi::xml_document doc = {};
 
-	if (ToXML(doc))
-		return 1;
+	ToXML(doc, asNewNode);
 
 	doc.save_file(filename.c_str(), "\t", pugi::format_write_bom | pugi::format_indent);
-	return 0;
+
+	return doc.internal_object();
 }
 
-int Reflector::ToXML(pugi::xml_node &node) const
+Reflector::xmlNodePtr Reflector::ToXML(pugi::xml_node &node, bool asNewNode) const
 {
 	const reflectorStatic *stat = _rfRetreive().rfStatic;
-	std::string className;
+	pugi::xml_node thisNode = node;
 
-	if (UseNames())
-		className = stat->className;
-	else
+	if (asNewNode)
 	{
-		className.resize(15);
-		sprintf_s(const_cast<char *>(className.c_str()), 15, "h:%X", stat->classHash);
+		std::string className;
+
+		if (UseNames())
+			className = stat->className;
+		else
+		{
+			className.resize(15);
+			sprintf_s(const_cast<char *>(className.c_str()), 15, "h:%X", stat->classHash);
+		}
+
+		thisNode = node.append_child(className.c_str());
 	}
 
-	pugi::xml_node thisNode = node.append_child(className.c_str());
-
 	for (int t = 0; t < stat->nTypes; t++)
-	{
-		std::string str = GetReflectedValue(t);
+	{	
 		std::string varName;
 
 		if (UseNames())
+		{
 			varName = stat->typeNames[t];
+			size_t fndBrace = varName.find('[');
+			size_t fndBraceEnd = varName.find(']');
+
+			if (fndBraceEnd != varName.npos)
+				varName.pop_back();
+
+			if (fndBrace != varName.npos)
+				varName.replace(fndBrace, 1, 1, ':');
+		}
 		else
 		{
 			varName.resize(15);
@@ -59,51 +75,68 @@ int Reflector::ToXML(pugi::xml_node &node) const
 		}
 
 		pugi::xml_node cNode = thisNode.append_child(varName.c_str());
-		cNode.append_buffer(str.c_str(), str.size());
+		
+		if (IsReflectedSubClass(t))
+		{
+			ReflectorSubClass subCl(GetReflectedSubClass(t));
+			subCl.ToXML(cNode, false);
+		}
+		else
+		{
+			std::string str = GetReflectedValue(t);
+			cNode.append_buffer(str.c_str(), str.size());
+		}
 	}
-	return 0;
+	return thisNode.internal_object();
 }
 
-int Reflector::FromXML(const TSTRING filename)
+Reflector::xmlNodePtr Reflector::FromXML(const TSTRING filename, bool lookupClassNode)
 {
 	pugi::xml_document doc = {};
 	auto reslt = doc.load_file(filename.c_str());
 
-	if (FromXML(doc))
-		return 1;
+	if (!reslt)
+	{
+		printerror("[Reflector] Couldn't load xml file. " << _EnumWrap<XMLError>{}._reflected[reslt.status] << " at offset: " << reslt.offset);
+		return nullptr;
+	}
 
-	return 0;
+	return FromXML(doc, lookupClassNode);
 }
 
-int Reflector::FromXML(pugi::xml_node &node)
+Reflector::xmlNodePtr Reflector::FromXML(pugi::xml_node &node, bool lookupClassNode)
 {
 	const reflectorStatic *stat = _rfRetreive().rfStatic;
 	pugi::xml_node thisNode;
 	
-	for (auto &a : node.children())
+	if (lookupClassNode)
 	{
-		JenHash vHash = (*a.name() == 'h' && *(a.name() + 1) == ':') ? 
-			strtoul(a.name() + 2, nullptr, 16) : 
-			JenkinsHash(a.name(), static_cast<int>(strlen(a.name())));
-
-		if (vHash == stat->classHash)
+		for (auto &a : node.children())
 		{
-			thisNode = a;
-			break;
+			JenHash vHash = (*a.name() == 'h' && *(a.name() + 1) == ':') ?
+				strtoul(a.name() + 2, nullptr, 16) :
+				JenkinsHash(a.name(), static_cast<int>(strlen(a.name())));
+
+			if (vHash == stat->classHash)
+			{
+				thisNode = a;
+				break;
+			}
 		}
 	}
+	else
+		thisNode = node;
+
 	
-	if (thisNode.empty())
-		return 1;
+	if (!thisNode.empty())
+		for (auto &a : thisNode.children())
+		{
+			JenHash vHash = (*a.name() == 'h' && *(a.name() + 1) == ':') ?
+				strtoul(a.name() + 2, nullptr, 16) :
+				JenkinsHash(a.name(), static_cast<int>(strlen(a.name())));
 
-	for (auto &a : thisNode.children())
-	{
-		JenHash vHash = (*a.name() == 'h' && *(a.name() + 1) == ':') ?
-			strtoul(a.name() + 2, nullptr, 16) :
-			JenkinsHash(a.name(), static_cast<int>(strlen(a.name())));
+			SetReflectedValue(vHash, a.text().as_string());
+		}
 
-		SetReflectedValue(vHash, a.text().as_string());
-	}
-
-	return 0;
+	return thisNode.internal_object();
 }

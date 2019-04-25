@@ -106,7 +106,7 @@ void Reflector::SetReflectedValue(const unsigned int hash, const char *value)
 			ival = REFEnumStorage[reflValue->subtypeHash].MultiConstructor(value);
 		}
 
-		memcpy(thisAddr + reflValue->offset, reinterpret_cast<const char*>(&ival), reflValue->size);
+		memcpy(thisAddr + reflValue->offset, reinterpret_cast<const char*>(&ival), reflValue->subSize);
 
 		break;
 	}
@@ -134,7 +134,7 @@ void Reflector::SetReflectedValue(const unsigned int hash, const char *value)
 			ival = REFEnumStorage[reflValue->subtypeHash].Constructor(value);
 		}
 
-		memcpy(thisAddr + reflValue->offset, reinterpret_cast<const char*>(&ival), reflValue->size);
+		memcpy(thisAddr + reflValue->offset, reinterpret_cast<const char*>(&ival), reflValue->subSize);
 
 		break;
 	}
@@ -164,7 +164,27 @@ void Reflector::SetReflectedValue(const unsigned int hash, const char *value)
 
 		break;
 	}
-	
+	case 20:
+	{
+		std::string valueCopy = value;
+		std::replace(valueCopy.begin(), valueCopy.end(), '{', ' ');
+		std::replace(valueCopy.begin(), valueCopy.end(), '}', ' ');
+
+		size_t currentItem = 0;
+		size_t lastItem = 0;
+
+		for (size_t i = 0; i < valueCopy.size() + 1; i++)
+		{
+			if (valueCopy[i] == ',' || valueCopy[i] == '\0')
+			{
+				SetReflectedPrimitive(thisAddr + reflValue->offset + (reflValue->subSize * currentItem), reflValue->subtypeHash, (valueCopy.begin() + lastItem).operator->());
+				lastItem = i + 1;
+				currentItem++;
+			}
+		}
+
+		break;
+	}
 	default:
 		SetReflectedPrimitive(thisAddr + reflValue->offset, reflValue->typeHash, value);
 		break;
@@ -173,7 +193,7 @@ void Reflector::SetReflectedValue(const unsigned int hash, const char *value)
 
 }
 
-ES_INLINE std::string GetReflectedPrimitive(const char *objAddr, JenHash type)
+static ES_INLINE std::string GetReflectedPrimitive(const char *objAddr, JenHash type)
 {
 	switch (type)
 	{
@@ -218,7 +238,6 @@ ES_INLINE std::string GetReflectedPrimitive(const char *objAddr, JenHash type)
 
 }
 
-
 std::string Reflector::GetReflectedValue(int id) const
 {
 	if (id >= GetNumReflectedValues())
@@ -238,7 +257,7 @@ std::string Reflector::GetReflectedValue(int id) const
 		{
 			std::string oval = {};
 			int ival = 0;
-			memcpy(reinterpret_cast<char*>(&ival), thisAddr + valueOffset, reflValue.size);
+			memcpy(reinterpret_cast<char*>(&ival), thisAddr + valueOffset, reflValue.subSize);
 			REFEnumStorage[reflValue.subtypeHash].MultiDestructor(oval, ival);
 			return oval;
 		}
@@ -266,7 +285,7 @@ std::string Reflector::GetReflectedValue(int id) const
 			std::string oval = {};
 			int ival = 0;
 
-			memcpy(reinterpret_cast<char*>(&ival), thisAddr + valueOffset, reflValue.size);
+			memcpy(reinterpret_cast<char*>(&ival), thisAddr + valueOffset, reflValue.subSize);
 
 			REFEnumStorage[reflValue.subtypeHash].Destructor(oval, ival);
 			return oval;
@@ -279,7 +298,7 @@ std::string Reflector::GetReflectedValue(int id) const
 	case 16: //vector
 	case 17: //vector4
 	{
-		const int numItems = reflValue.typeHash - 13;
+		const int numItems = reflValue.numItems;
 
 		std::string outVal = "[";
 
@@ -291,10 +310,60 @@ std::string Reflector::GetReflectedValue(int id) const
 		return outVal + "]";
 	}
 
+	case 20:
+	{
+		const int numItems = reflValue.numItems;
+
+		std::string outVal = "{";
+
+		for (int i = 0; i < numItems; i++)
+		{
+			outVal += GetReflectedPrimitive(thisAddr + valueOffset + (static_cast<intptr_t>(reflValue.subSize) * i), reflValue.subtypeHash) + ((i + 1 < numItems) ? ", " : "");
+		}
+
+		return outVal + "}";
+	}
+	case 21:
+		return "SUBCLASS_TYPE";
 	default:
 		return GetReflectedPrimitive(thisAddr + valueOffset, reflValue.typeHash);
 	}
 
 }
 
+const Reflector::SubClass Reflector::GetReflectedSubClass(int id) const
+{
+	if (id >= GetNumReflectedValues())
+		return {};
+
+	const reflectorInstanceConst inst = _rfRetreive();
+	const char *thisAddr = static_cast<const char *>(inst.rfInstance);
+	const reflType &reflValue = inst.rfStatic->types[id];
+
+	const int valueOffset = reflValue.offset;
+
+	if (reflValue.typeHash != 21 || !REFSubClassStorage.count(reflValue.subtypeHash))
+		return {};
+
+	return { {},{REFSubClassStorage.at(reflValue.subtypeHash), thisAddr + valueOffset} };
+}
+
+const Reflector::SubClass Reflector::GetReflectedSubClass(int id)
+{
+	if (id >= GetNumReflectedValues())
+		return {};
+
+	const reflectorInstance inst = _rfRetreive();
+	char *thisAddr = static_cast<char *>(inst.rfInstance);
+	const reflType & reflValue = inst.rfStatic->types[id];
+
+	const int valueOffset = reflValue.offset;
+
+	if (reflValue.typeHash != 21 || !REFSubClassStorage.count(reflValue.subtypeHash))
+		return {};
+
+	return { {REFSubClassStorage.at(reflValue.subtypeHash), thisAddr + valueOffset},{REFSubClassStorage.at(reflValue.subtypeHash), thisAddr + valueOffset} };
+}
+
 RefEnumMapper REFEnumStorage;
+RefSubClassMapper REFSubClassStorage;

@@ -116,3 +116,10 @@ void EnumDestructor_t(std::string &output, int value)
 
 
 #define REGISTER_ENUM(classname) REFEnumStorage[static_cast<const JenHash>(_EnumWrap<classname>::HASH)] = RefEnumFunctions{ EnumMultiConstructor_t<_EnumWrap<classname>>, EnumMultiDestructor_t<_EnumWrap<classname>>, EnumConstructor_t<_EnumWrap<classname>>, EnumDestructor_t<_EnumWrap<classname>> };
+
+struct reflectorStatic;
+
+typedef std::map<unsigned int, const reflectorStatic*> RefSubClassMapper;
+extern RefSubClassMapper REFSubClassStorage;
+
+#define REGISTER_SUBCLASS(classname) REFSubClassStorage[_SubReflClassWrap<classname>::HASH] = classname::__rfPtrStatic;

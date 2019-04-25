@@ -123,6 +123,19 @@ public:
 	ES_FORCEINLINE void ResetRelativeOrigin(bool useSeek = true) { SetRelativeOrigin(0, useSeek); };
 	ES_FORCEINLINE StreamType *GetStream() { return this->BaseStream; }
 
+	void ApplyPadding(int allignBytes = 16) const
+	{
+		const size_t mask = allignBytes - 1;
+		const size_t iterPos = this->Tell();
+		const size_t result = iterPos & mask;
+
+		if (!result)
+			return;
+
+		this->Skip(allignBytes - result);
+
+	}
+
 #ifdef ES_ENCRYPTION_DEFINED
 	template<class C>IEncryptor *Encryptor()
 	{

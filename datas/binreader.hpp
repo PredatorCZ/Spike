@@ -38,9 +38,9 @@ public:
 		BaseStream->seekg(position + ((relative && !vay) ? localseek : 0), vay);
 	}
 
-	ES_FORCEINLINE void Skip(const size_t length) { Seek(length, std::ios_base::cur); }
+	ES_FORCEINLINE void Skip(const size_t length) const { Seek(length, std::ios_base::cur); }
 
-	template<typename T> ES_FORCEINLINE void Skip() { Seek(sizeof(T), std::ios_base::cur); }
+	template<typename T> ES_FORCEINLINE void Skip() const { Seek(sizeof(T), std::ios_base::cur); }
 };
 
 
@@ -65,6 +65,10 @@ public:
 	BinReader(StreamType &instream) : BinReader() { SetStream(instream); }
 	//BinReader(const wchar_t *filePath) : BinReader() { _Open(filePath); SetFileSize(); }
 	BinReader(const char *filePath) : BinReader() { _Open(filePath); SetFileSize(); }
+
+	template<typename T> ES_FORCEINLINE bool Open(const UniString<T> &filePath) { bool var = _Open(filePath);  SetFileSize(); return var; }
+	ES_FORCEINLINE bool Open(const char *filePath) { bool var = _Open(filePath);  SetFileSize(); return var; }
+	ES_FORCEINLINE bool Open(const wchar_t *filePath) { bool var = _Open(filePath);  SetFileSize(); return var; }
 
 	ES_FORCEINLINE size_t SavePos() { return savepos = Tell(); }
 	ES_FORCEINLINE void RestorePos() { Seek(savepos); }
