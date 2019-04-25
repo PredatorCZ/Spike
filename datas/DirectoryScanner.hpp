@@ -27,9 +27,8 @@
 #else
 #define _tcscmp strcmp
 #endif
-#include <windows.h>
 #endif
-
+#include <windows.h>
 #endif
 #include <cstring>
 #include <vector>

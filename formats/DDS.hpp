@@ -723,7 +723,7 @@ struct DDS : DDS_Header, DDS_PixelFormat, DDS_HeaderEnd, DDS_HeaderDX10
 			break;
 		}
 
-		if (forceIncompatibilities)
+		if (forceIncompatibilities && result)
 		{
 			result = 0;
 
