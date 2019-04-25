@@ -61,14 +61,12 @@ class BinReader : public _BinCore<_BinCoreIn>
 
 public:
 
-	template<typename T> BinReader(const UniString<T> &filePath) : BinReader() { _Open(filePath); SetFileSize(); }
+	BinReader(const std::string &filePath) : BinReader() { _Open(filePath); SetFileSize(); }
 	BinReader(StreamType &instream) : BinReader() { SetStream(instream); }
-	//BinReader(const wchar_t *filePath) : BinReader() { _Open(filePath); SetFileSize(); }
 	BinReader(const char *filePath) : BinReader() { _Open(filePath); SetFileSize(); }
 
-	template<typename T> ES_FORCEINLINE bool Open(const UniString<T> &filePath) { bool var = _Open(filePath);  SetFileSize(); return var; }
+	bool Open(const std::string &filePath) { bool var = _Open(filePath);  SetFileSize(); return var; }
 	ES_FORCEINLINE bool Open(const char *filePath) { bool var = _Open(filePath);  SetFileSize(); return var; }
-	ES_FORCEINLINE bool Open(const wchar_t *filePath) { bool var = _Open(filePath);  SetFileSize(); return var; }
 
 	ES_FORCEINLINE size_t SavePos() { return savepos = Tell(); }
 	ES_FORCEINLINE void RestorePos() { Seek(savepos); }

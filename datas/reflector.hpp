@@ -35,7 +35,10 @@
 const char * classname##_reflected[classname##_reflectedSize] = { StaticFor(_REFLECTOR_ADDN_ENUM, __VA_ARGS__) }; \
 enum classname { StaticFor(_REFLECTOR_ADDN_ENUMVAL, __VA_ARGS__) };
 
-template<class E>struct _EnumWrap {};
+template<class E> struct _EnumWrap 
+{
+	static const JenHash HASH = 0;
+};
 
 #define REFLECTOR_ENUM(classname, ...) namespace _##classname { enum classname{ StaticFor(_REFLECTOR_ADDN_ENUMVAL, __VA_ARGS__) }; };\
 typedef _##classname::classname classname; \
@@ -52,7 +55,10 @@ const char *_reflected[_reflectedSize] = { StaticFor(_REFLECTOR_ADDN_ENUM, __VA_
 static const JenHash HASH = JenkinsHash(#classname, sizeof(#classname) - 1);\
 };
 
-template<class C>struct _SubReflClassWrap {};
+template<class C> struct _SubReflClassWrap 
+{
+	static const JenHash HASH = 0;
+};
 
 #define _REFLECTOR_ADDN(classname, _id, value) reflType { \
 _getType<std::remove_reference<decltype(classname::value)>::type>::SUBSIZE, _id, \
@@ -166,10 +172,10 @@ public:
 	KVPair GetReflectedPair(int id) const;
 	KVPair GetReflectedPair(JenHash hash) const;
 	
-	virtual xmlNodePtr ToXML(const TSTRING filename, bool asNewNode = true) const;
-	virtual xmlNodePtr ToXML(pugi::xml_node &node, bool asNewNode = true) const;
-	virtual xmlNodePtr FromXML(const TSTRING filename, bool lookupClassNode = true);
-	virtual xmlNodePtr FromXML(pugi::xml_node &node, bool lookupClassNode = true);
+	xmlNodePtr ToXML(const TSTRING filename, bool asNewNode = true) const;
+	xmlNodePtr ToXML(pugi::xml_node &node, bool asNewNode = true) const;
+	xmlNodePtr FromXML(const TSTRING filename, bool lookupClassNode = true);
+	xmlNodePtr FromXML(pugi::xml_node &node, bool lookupClassNode = true);
 };
 
 template<class C>
@@ -208,11 +214,8 @@ template <typename _Ty> struct _getType
 
 	static constexpr bool subReflected = decltype(detectorFunc<_Ty>(nullptr))::value;
 
-	template<bool ye> static constexpr JenHash EnumWrapHash() { return 0; }
-	template<> static constexpr JenHash EnumWrapHash<true>() { return _EnumWrap<_Ty>::HASH; }
-
 	static const char TYPE = static_cast<const char>(std::is_enum<_Ty>::value ? 13 : (subReflected ? 21 : 0));
-	static const JenHash HASH = EnumWrapHash<std::is_enum<_Ty>::value>() + (subReflected ? _SubReflClassWrap<_Ty>::HASH : 0);
+	static const JenHash HASH =  _EnumWrap<_Ty>::HASH + _SubReflClassWrap<_Ty>::HASH;
 	static const uchar SUBSIZE = 0;
 	static const ushort NUMITEMS = 1;
 };

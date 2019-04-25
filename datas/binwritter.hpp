@@ -47,9 +47,8 @@ class BinWritter : public _BinCore<_BinCoreOut>
 {
 public:
 
-	template<typename T> BinWritter(const UniString<T> &filePath) { _Open(filePath); }
+	BinWritter(const std::string &filePath) { _Open(filePath); }
 	BinWritter(StreamType &instream) { SetStream(instream); }
-	//BinWritter(const wchar_t *filePath) { _Open(filePath); }
 	BinWritter(const char *filePath) { _Open(filePath); }
 
 	ES_FORCEINLINE void WriteBuffer(const char *buffer, size_t size) const
