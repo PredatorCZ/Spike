@@ -114,14 +114,26 @@ public:
 			this->Seek(0);
 	}
 
-	template<typename T> ES_FORCEINLINE bool Open(const UniString<T> &filePath) { return _Open(filePath); }
+	ES_FORCEINLINE bool Open(const std::string &filePath) { return _Open(filePath); }
 	ES_FORCEINLINE bool Open(const char *filePath) { return _Open(filePath); }
-	ES_FORCEINLINE bool Open(const wchar_t *filePath) { return _Open(filePath); }
 	ES_FORCEINLINE bool IsValid() const { return !FileStream.fail(); }
 	ES_FORCEINLINE void SwapEndian(bool swap) { swapEndian = swap; }
 	ES_FORCEINLINE bool SwappedEndian() { return swapEndian; }
 	ES_FORCEINLINE void ResetRelativeOrigin(bool useSeek = true) { SetRelativeOrigin(0, useSeek); };
 	ES_FORCEINLINE StreamType *GetStream() { return this->BaseStream; }
+
+	void ApplyPadding(int allignBytes = 16) const
+	{
+		const size_t mask = allignBytes - 1;
+		const size_t iterPos = this->Tell();
+		const size_t result = iterPos & mask;
+
+		if (!result)
+			return;
+
+		this->Skip(allignBytes - result);
+
+	}
 
 #ifdef ES_ENCRYPTION_DEFINED
 	template<class C>IEncryptor *Encryptor()

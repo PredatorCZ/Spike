@@ -38,18 +38,17 @@ public:
 		BaseStream->seekp(position + ((relative && !vay) ? localseek : 0), vay);
 	}
 
-	ES_FORCEINLINE void Skip(const size_t length) { Seek(length, std::ios_base::cur); }
+	ES_FORCEINLINE void Skip(const size_t length) const { Seek(length, std::ios_base::cur); }
 
-	template<typename T> ES_FORCEINLINE void Skip() { Seek(sizeof(T), std::ios_base::cur); }
+	template<typename T> ES_FORCEINLINE void Skip() const { Seek(sizeof(T), std::ios_base::cur); }
 };
 
 class BinWritter : public _BinCore<_BinCoreOut>
 {
 public:
 
-	template<typename T> BinWritter(const UniString<T> &filePath) { _Open(filePath); }
+	BinWritter(const std::string &filePath) { _Open(filePath); }
 	BinWritter(StreamType &instream) { SetStream(instream); }
-	//BinWritter(const wchar_t *filePath) { _Open(filePath); }
 	BinWritter(const char *filePath) { _Open(filePath); }
 
 	ES_FORCEINLINE void WriteBuffer(const char *buffer, size_t size) const
@@ -81,7 +80,7 @@ public:
 #ifdef ES_ENDIAN_DEFINED
 		if (swapEndian && elesize > 1)
 		{
-			for (T &a : input)
+			for (const T &a : input)
 			{
 				T outCopy = a;
 				FByteswapper(outCopy);

@@ -101,7 +101,7 @@ public:
 		return *this;
 	}
 #ifdef ES_ENDIAN_DEFINED 
-	ES_FORCEINLINE const void SwapEndian()
+	ES_FORCEINLINE void SwapEndian()
 	{
 		FByteswapper(X);
 		FByteswapper(Y);
@@ -198,7 +198,7 @@ public:
 		return *this;
 	}
 #ifdef ES_ENDIAN_DEFINED 
-	ES_FORCEINLINE const void SwapEndian()
+	ES_FORCEINLINE void SwapEndian()
 	{
 		FByteswapper(X);
 		FByteswapper(Y);
@@ -294,7 +294,7 @@ public:
 	}
 	friend ES_INLINE std::ostream& operator<<(std::ostream &strm, const t_Vector4<T> &v) { return strm << v.X << " " << v.Y << " " << v.Z << " " << v.W; }
 #ifdef ES_ENDIAN_DEFINED 
-	ES_FORCEINLINE const void SwapEndian()
+	ES_FORCEINLINE void SwapEndian()
 	{
 		FByteswapper(X);
 		FByteswapper(Y);
@@ -319,13 +319,13 @@ typedef t_Vector4<uchar> UCVector4;
 #ifndef ES_VECTORS_TEMPLATES_DEFINED
 #define ES_VECTORS_TEMPLATES_DEFINED
 template <class C> struct _getType<t_Vector2<C>> {
-	static const char TYPE = 15; static const JenHash HASH = _getType<C>::TYPE; static const uchar SUBSIZE = sizeof(C);
+	static const char TYPE = 15; static const JenHash HASH = _getType<C>::TYPE; static const uchar SUBSIZE = sizeof(C); static const ushort NUMITEMS = 2;
 };
 template <class C> struct _getType<t_Vector<C>> {
-	static const char TYPE = 16; static const JenHash HASH = _getType<C>::TYPE; static const uchar SUBSIZE = sizeof(C);
+	static const char TYPE = 16; static const JenHash HASH = _getType<C>::TYPE; static const uchar SUBSIZE = sizeof(C); static const ushort NUMITEMS = 3;
 };
 template <class C> struct _getType<t_Vector4<C>> {
-	static const char TYPE = 17; static const JenHash HASH = _getType<C>::TYPE; static const uchar SUBSIZE = sizeof(C);
+	static const char TYPE = 17; static const JenHash HASH = _getType<C>::TYPE; static const uchar SUBSIZE = sizeof(C); static const ushort NUMITEMS = 4;
 };
 #endif
 #endif // ES_REFLECTOR_DEFINED

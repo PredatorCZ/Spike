@@ -78,10 +78,10 @@ public:
 #ifndef ES_FLAGS_TEMPLATES_DEFINED
 #define ES_FLAGS_TEMPLATES_DEFINED
 template <class C, class E> struct _getType<esFlags<C, E>> {
-	static const char TYPE = 12; static const JenHash HASH = _EnumWrap<E>::HASH; static const uchar SUBSIZE = 0;
+	static const char TYPE = 12; static const JenHash HASH = _EnumWrap<E>::HASH; static const uchar SUBSIZE = sizeof(C); static const ushort NUMITEMS = 1;
 };
 template <class C, class E> struct _getType<esEnum<C, E>> {
-	static const char TYPE = 14; static const JenHash HASH = _EnumWrap<E>::HASH; static const uchar SUBSIZE = 0;
+	static const char TYPE = 14; static const JenHash HASH = _EnumWrap<E>::HASH; static const uchar SUBSIZE = sizeof(C); static const ushort NUMITEMS = 1;
 };
 #endif
 #endif // ES_REFLECTOR_DEFINED

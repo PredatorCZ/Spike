@@ -37,19 +37,24 @@ public:
 	ES_FORCEINLINE _FileInfo_t(const T *fname )
 	{
 		fullPath = fname;
-		size_t pathindex = fullPath.find_last_of('\\');
-		size_t pathindex2 = fullPath.find_last_of('/');
+		
+		for (auto &c : fullPath)
+			if (c == '\\')
+				c = '/';
+
+		size_t pathindex = fullPath.find_last_of('/');
 		size_t dotIndex = fullPath.find_last_of('.');
 
-		if (pathindex2 != fullPath.npos && (pathindex == fullPath.npos || pathindex2 > pathindex))
-			pathindex = pathindex2;
-		path = fullPath.substr(0, pathindex + 1);
+		if (pathindex != fullPath.npos)
+			pathindex++;
+
+		path = fullPath.substr(0, pathindex);
 		
 		if (dotIndex == fullPath.npos)
 			dotIndex = fullPath.size();
 
-		filename = fullPath.substr(pathindex + 1, dotIndex - (pathindex + 1));
-		filenameFull = fullPath.substr(pathindex + 1);	
+		filename = fullPath.substr(pathindex, dotIndex - pathindex);
+		filenameFull = fullPath.substr(pathindex);	
 		extension = fullPath.substr(dotIndex);
 	}
 	ES_FORCEINLINE const _strType &GetFullPath() const {return fullPath;}
@@ -63,14 +68,14 @@ public:
 		size_t lastOffset = 2;
 
 		for (size_t c = 0; c < fullSize; c++)
-			if (fullPath[c] == '\\' || fullPath[c] == '/')
+			if (fullPath[c] == '/')
 				lastOffset++;
 
 		rVec.reserve(lastOffset);
 		lastOffset = 0;
 
 		for (size_t c = 0; c < fullSize; c++)
-			if (fullPath[c] == '\\' || fullPath[c] == '/')
+			if (fullPath[c] == '/')
 			{
 				size_t curOffset = lastOffset + (lastOffset ? 1 : 0);
 				rVec.push_back(fullPath.substr(curOffset, c - curOffset));
