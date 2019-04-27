@@ -131,6 +131,7 @@ class Reflector
 protected:
 	const reflType *GetReflectedType(const JenHash hash) const;
 	const reflType *GetReflectedType(const char *name) const;
+	const reflType *GetReflectedType(int ID) const;
 public:
 	struct KVPair
 	{
@@ -148,6 +149,7 @@ public:
 
 	void SetReflectedValue(const char *name, const char *value);
 	void SetReflectedValue(const JenHash hash, const char *value);
+	void SetReflectedValue(int id, const char *value);
 
 	int GetNumReflectedValues() const;
 	const char *GetClassName() const;
@@ -301,6 +303,12 @@ ES_INLINE const reflType *Reflector::GetReflectedType(const char *name) const
 {
 	const JenHash hash = JenkinsHash(name, static_cast<JenHash>(strlen(name)));
 	return GetReflectedType(hash);
+}
+
+ES_INLINE const reflType *Reflector::GetReflectedType(int ID) const
+{
+	const reflectorStatic *inst = _rfRetreive().rfStatic;
+	return inst->types + ID;
 }
 
 ES_INLINE void Reflector::SetReflectedValue(const char *name, const char *value)

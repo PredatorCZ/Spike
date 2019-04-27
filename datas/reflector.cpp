@@ -20,7 +20,7 @@
 #include "reflectorRegistry.hpp"
 #include <algorithm>
 
-const reflType *Reflector::GetReflectedType(const unsigned int hash) const
+const reflType *Reflector::GetReflectedType(const JenHash hash) const
 {
 	const reflectorStatic *inst = _rfRetreive().rfStatic;
 	const int _ntypes = GetNumReflectedValues();
@@ -86,12 +86,8 @@ static ES_INLINE void SetReflectedPrimitive(char *objAddr, JenHash type, const c
 	}
 }
 
-void Reflector::SetReflectedValue(const unsigned int hash, const char *value)
+static void SetReflectedMember(const reflType *reflValue, const char *value, char *thisAddr)
 {
-	const reflType *reflValue = GetReflectedType(hash);
-	const reflectorInstance inst = _rfRetreive();
-	char *thisAddr = static_cast<char *>(inst.rfInstance);
-
 	if (!reflValue)
 		return;
 
@@ -106,7 +102,7 @@ void Reflector::SetReflectedValue(const unsigned int hash, const char *value)
 			ival = REFEnumStorage[reflValue->subtypeHash].MultiConstructor(value);
 		}
 
-		memcpy(thisAddr + reflValue->offset, reinterpret_cast<const char*>(&ival), reflValue->subSize);
+		memcpy(thisAddr + reflValue->offset, reinterpret_cast<const char *>(&ival), reflValue->subSize);
 
 		break;
 	}
@@ -120,7 +116,7 @@ void Reflector::SetReflectedValue(const unsigned int hash, const char *value)
 			ival = REFEnumStorage[reflValue->subtypeHash].Constructor(value);
 		}
 
-		*reinterpret_cast<int*>(thisAddr + reflValue->offset) = ival;
+		*reinterpret_cast<int *>(thisAddr + reflValue->offset) = ival;
 
 		break;
 	}
@@ -134,7 +130,7 @@ void Reflector::SetReflectedValue(const unsigned int hash, const char *value)
 			ival = REFEnumStorage[reflValue->subtypeHash].Constructor(value);
 		}
 
-		memcpy(thisAddr + reflValue->offset, reinterpret_cast<const char*>(&ival), reflValue->subSize);
+		memcpy(thisAddr + reflValue->offset, reinterpret_cast<const char *>(&ival), reflValue->subSize);
 
 		break;
 	}
@@ -191,6 +187,24 @@ void Reflector::SetReflectedValue(const unsigned int hash, const char *value)
 
 	}
 
+}
+
+void Reflector::SetReflectedValue(int ID, const char *value)
+{
+	const reflType *reflValue = GetReflectedType(ID);
+	const reflectorInstance inst = _rfRetreive();
+	char *thisAddr = static_cast<char *>(inst.rfInstance);
+
+	SetReflectedMember(reflValue, value, thisAddr);
+}
+
+void Reflector::SetReflectedValue(const JenHash hash, const char *value)
+{
+	const reflType *reflValue = GetReflectedType(hash);
+	const reflectorInstance inst = _rfRetreive();
+	char *thisAddr = static_cast<char *>(inst.rfInstance);
+	
+	SetReflectedMember(reflValue, value, thisAddr);
 }
 
 static ES_INLINE std::string GetReflectedPrimitive(const char *objAddr, JenHash type)

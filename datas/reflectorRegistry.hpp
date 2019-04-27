@@ -56,7 +56,7 @@ int EnumMultiConstructor_t(const char *value)
 
 	while (true)
 	{
-		if (*c == ' ' || *c == '|' || !*c)
+		if (*c == ' ' || *c == '|' || !*c || *c == ',')
 		{
 			if (currentValue.size())
 			{
@@ -68,7 +68,8 @@ int EnumMultiConstructor_t(const char *value)
 					}
 				currentValue.clear();
 			}
-			else if (!*c)
+			
+			if (!*c || *c == ',')
 			{
 				break;
 			}
