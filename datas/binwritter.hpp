@@ -46,10 +46,10 @@ public:
 class BinWritter : public _BinCore<_BinCoreOut>
 {
 public:
-
-	BinWritter(const std::string &filePath) { _Open(filePath); }
+	template<class T> BinWritter(const UniString<T> &filePath) { _Open(filePath.c_str()); }
 	BinWritter(StreamType &instream) { SetStream(instream); }
 	BinWritter(const char *filePath) { _Open(filePath); }
+	BinWritter(const wchar_t *filePath) { _Open(filePath); }
 
 	ES_FORCEINLINE void WriteBuffer(const char *buffer, size_t size) const
 	{
@@ -68,8 +68,8 @@ public:
 			BaseStream->write(buffer, size);
 	}
 	
-	/// Will write any std container using std::allocator class, eg. vector, basic_string, etc..
-	/// swapType : will force not to swap endianess, when used with class that does not have SwapEndian method or is not defined for structural swap
+	// Will write any std container using std::allocator class, eg. vector, basic_string, etc..
+	// swapType : will force not to swap endianess, when used with class that does not have SwapEndian method or is not defined for structural swap
 	template<
 		class _containerClass, 
 		class T = typename _containerClass::value_type
@@ -92,9 +92,9 @@ public:
 			WriteBuffer(reinterpret_cast<const char*>(input.begin().operator->()), capacity);
 	}
 
-	/// Will write any std container using std::allocator class, eg. vector, basic_string, etc..
-	/// Will write number of items first
-	/// swapType : will force not to swap endianess, when used with class that does not have SwapEndian method or is not defined for structural swap
+	// Will write any std container using std::allocator class, eg. vector, basic_string, etc..
+	// Will write number of items first
+	// swapType : will force not to swap endianess, when used with class that does not have SwapEndian method or is not defined for structural swap
 	template<class _countType = int, class _containerClass> const void WriteContainerWCount(_containerClass &input, EndianSwap swapType = SWAP) const
 	{
 		const _countType numElements = static_cast<_countType>(input.size());
@@ -102,9 +102,9 @@ public:
 		WriteContainer(input, swapType);
 	}
 
-	///cut : will remove \0
+	//cut : will remove \0
 	void WriteT(const char *input, bool cut = false) const { WriteBuffer(input, strlen(input) + (cut ? 0 : 1)); }
-	///cut : will remove \0
+	//cut : will remove \0
 	void WriteT(const wchar_t *input, bool cut = false) const
 	{
 		size_t size = wcslen(input);
@@ -126,7 +126,7 @@ public:
 			WriteBuffer(reinterpret_cast<const char *>(input), capacity);
 	}
 
-	/// swapType : will force not to swap endianess, when used with class that does not have SwapEndian method or is not defined for structural swap
+	// swapType : will force not to swap endianess, when used with class that does not have SwapEndian method or is not defined for structural swap
 	template<class T> void Write(const T input, _e_swapEndian) const
 	{ 
 		const size_t capacity = sizeof(T);

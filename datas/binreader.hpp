@@ -26,7 +26,7 @@ protected:
 	_BinCoreIn() : localseek(0), BaseStream(nullptr){}
 	size_t localseek;
 	StreamType *BaseStream;
-	static const std::ios_base::openmode MODE = std::ios::binary | std::ios::in | std::ios::ate;
+	static const std::ios_base::openmode MODE = std::ios::binary | std::ios::in;
 public:
 	ES_FORCEINLINE const size_t Tell(const bool relative = true) const
 	{
@@ -43,34 +43,21 @@ public:
 	template<typename T> ES_FORCEINLINE void Skip() const { Seek(sizeof(T), std::ios_base::cur); }
 };
 
-
-
-
 class BinReader : public _BinCore<_BinCoreIn>
 {
-	size_t currentFileSize;
 	size_t savepos;
 
-	BinReader() :currentFileSize(0), savepos(0) {}
-
-	ES_FORCEINLINE void SetFileSize()
-	{
-		currentFileSize = static_cast<size_t>(FileStream.tellg());
-		FileStream.seekg(0);
-	}
+	BinReader() : savepos(0) {}
 
 public:
 
-	BinReader(const std::string &filePath) : BinReader() { _Open(filePath); SetFileSize(); }
+	template<class T> BinReader(const UniString<T> &filePath) : BinReader() { _Open(filePath.c_str()); }
 	BinReader(StreamType &instream) : BinReader() { SetStream(instream); }
-	BinReader(const char *filePath) : BinReader() { _Open(filePath); SetFileSize(); }
-
-	bool Open(const std::string &filePath) { bool var = _Open(filePath);  SetFileSize(); return var; }
-	ES_FORCEINLINE bool Open(const char *filePath) { bool var = _Open(filePath);  SetFileSize(); return var; }
+	BinReader(const char *filePath) : BinReader() { _Open(filePath); }
+	BinReader(const wchar_t *filePath) : BinReader() { _Open(filePath); }
 
 	ES_FORCEINLINE size_t SavePos() { return savepos = Tell(); }
 	ES_FORCEINLINE void RestorePos() { Seek(savepos); }
-	ES_FORCEINLINE const size_t GetSize() const { return currentFileSize; }
 
 	ES_FORCEINLINE void ReadBuffer(char *buffer, size_t size) 
 	{ 
@@ -83,8 +70,8 @@ public:
 	}
 #pragma warning(push)
 #pragma warning(disable: 4100)
-	/// Will read any std container using std::allocator class, eg. vector, basic_string, etc..
-	/// swapType : will force not to swap endianess, when used with class that does not have SwapEndian method or is not defined for structural swap
+	// Will read any std container using std::allocator class, eg. vector, basic_string, etc..
+	// swapType : will force not to swap endianess, when used with class that does not have SwapEndian method or is not defined for structural swap
 	template<
 		class _containerClass,
 		class T = typename _containerClass::value_type
@@ -107,9 +94,9 @@ public:
 #endif
 	}
 
-	/// Will read any std container using std::allocator class, eg. vector, basic_string, etc..
-	/// Will read number of items first
-	/// swapType : will force not to swap endianess, when used with class that does not have SwapEndian method or is not defined for structural swap
+	// Will read any std container using std::allocator class, eg. vector, basic_string, etc..
+	// Will read number of items first
+	// swapType : will force not to swap endianess, when used with class that does not have SwapEndian method or is not defined for structural swap
 	template<class _countType = int, class _containerClass> const void ReadContainer(_containerClass &input, EndianSwap swapType = SWAP) const
 	{
 		_countType numElements;
@@ -117,7 +104,7 @@ public:
 		ReadContainer(input, numElements, swapType);
 	}
 
-	/// Will read buffer until 0
+	// Will read buffer until 0
 	template<class _containerClass> const void ReadString(_containerClass &input) const
 	{
 		typename _containerClass::value_type tmp;
@@ -125,7 +112,7 @@ public:
 			input.push_back(tmp);
 	}
 
-	/// swapType : will force not to swap endianess, when used with class that does not have SwapEndian method or is not defined for structural swap
+	// swapType : will force not to swap endianess, when used with class that does not have SwapEndian method or is not defined for structural swap
 	template<
 		typename T
 	> ES_FORCEINLINE void Read(T &value, const size_t size = sizeof(T), _e_swapEndian) const

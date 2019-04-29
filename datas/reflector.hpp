@@ -174,10 +174,19 @@ public:
 	KVPair GetReflectedPair(int id) const;
 	KVPair GetReflectedPair(JenHash hash) const;
 	
-	xmlNodePtr ToXML(const TSTRING filename, bool asNewNode = true) const;
+	xmlNodePtr ToXML(const char *filename, bool asNewNode = true) const { return _ToXML(filename, asNewNode); }
+	xmlNodePtr ToXML(const wchar_t *filename, bool asNewNode = true) const { return _ToXML(filename, asNewNode); }
+	template<class T> xmlNodePtr ToXML(const UniString<T> filename, bool asNewNode = true) const { return _ToXML(filename.c_str(), asNewNode); }
 	xmlNodePtr ToXML(pugi::xml_node &node, bool asNewNode = true) const;
-	xmlNodePtr FromXML(const TSTRING filename, bool lookupClassNode = true);
+	xmlNodePtr FromXML(const char *filename, bool lookupClassNode = true) { return _FromXML(filename, lookupClassNode); }
+	xmlNodePtr FromXML(const wchar_t *filename, bool lookupClassNode = true) { return _FromXML(filename, lookupClassNode); }
+	template<class T> xmlNodePtr FromXML(const UniString<T> filename, bool lookupClassNode = true) { return _FromXML(filename.c_str(), lookupClassNode); }
 	xmlNodePtr FromXML(pugi::xml_node &node, bool lookupClassNode = true);
+private:
+	template<class _Ty0>
+	xmlNodePtr _ToXML(const _Ty0 *filename, bool asNewNode = true) const;
+	template<class _Ty1>
+	xmlNodePtr _FromXML(const _Ty1 *filename, bool lookupClassNode = true);
 };
 
 template<class C>

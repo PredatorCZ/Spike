@@ -17,52 +17,127 @@
 */
 
 #pragma once
-#include "supercore.hpp"
+#include <locale>
+#include <codecvt>
 #include <ostream>
+#include <vector>
+#include "allocator_hybrid.hpp"
+#include "supercore.hpp"
 
-class BinWritter;
-class BinReader;
-
-struct esString
+class esString
 {
-private:
-	char *_Data;
-	struct { unsigned int UseWideChar : 1, IsLinked : 1, IOWideChar : 1; }Flags;
-	uint size = 0;
-	uint capacity = 0;
-	void _refresh(unsigned int newsize);
-	void Set(const char *input, const uint size);
-	void Set(const wchar_t *input, const uint size);
+	typedef std::allocator_hybrid<char> Alloc_Type;
+	typedef std::vector<char, Alloc_Type> Container_Type;
+	Container_Type masterBuffer;
+	bool UseWideChar;
+	
 public:
-	ES_FORCEINLINE esString() : Flags{ 0, 0, OutputAsUTF16 }, size(0), capacity(0), _Data(nullptr) {}
-	template<class C> ES_FORCEINLINE esString(const UniString<C> &input) { *this = input; }
-	ES_FORCEINLINE esString(const char *input) : esString() { *this = input; };
-	ES_FORCEINLINE esString(const wchar_t *input) : esString() { *this = input; };
-	ES_FORCEINLINE esString(const esString &input) { ReceiveLinkCopy(input); };
+	esString() : UseWideChar(true) {}
+	template<class C> esString(const UniString<C> &input) : esString() { *this = input; }
+	esString(const char *input) : esString() { *this = input; };
+	esString(const wchar_t *input) : esString() { *this = input; };
 
-	void Save(BinWritter *wr, bool pureText = false);
-	void Load(BinReader *wr, bool pureText = false);
-	void Link(char *ptr);
+	void Link(const char *input);
+	void Link(const wchar_t *input);
+	void Set(const char *input);
+	void Set(const wchar_t *input);
+	ES_FORCEINLINE std::wstring ToWString() const { return static_cast<std::wstring>(*this); }
+	ES_FORCEINLINE std::string ToString() const { return static_cast<std::string>(*this); }
 
+	template<class C>
+	ES_FORCEINLINE UniString<C> ToTString() const { return static_cast<UniString<C>>(*this); }
 
 	operator std::wstring() const;
 	operator std::string() const;
 
-	template<class C> ES_FORCEINLINE void operator = (const UniString<C> &input) { Set(input.c_str(), static_cast<uint>(input.size())); }
-	ES_FORCEINLINE void operator = (const char *input) { Set(input, static_cast<uint>(strlen(input))); }
-	ES_FORCEINLINE void operator = (const wchar_t *input) { Set(input, static_cast<uint>(wcslen(input))); }
-	ES_FORCEINLINE void operator = (const esString &input) { ReceiveLinkCopy(input); }
-		
-	bool compare(const esString &input)const;
-	ES_FORCEINLINE bool Unicode()const { return Flags.IOWideChar; }
-	ES_FORCEINLINE void Unicode(bool setval) { Flags.IOWideChar = setval; }
-	void SwapEndian();
-	void LinkCopyInto(esString &input)const;
-	void ReceiveLinkCopy(const esString &input);
+	template<class C> void operator = (const UniString<C> &input) { Set(input.c_str()); }
+	void operator = (const char *input) { Set(input); }
+	void operator = (const wchar_t *input) { Set(input); }
 	
-	~esString();
 	friend ES_INLINE std::ostream& operator<<(std::ostream &strm, const esString &v) { return strm << static_cast<std::string>(v).c_str(); }
 	friend ES_INLINE std::wostream& operator<<(std::wostream &strm, const esString &v) { return strm << static_cast<std::wstring>(v).c_str(); }
-
-	thread_local static bool OutputAsUTF16;
 };
+
+template<class C>
+static UniString<C> esStringConvert(const wchar_t *input)
+{
+	return esString(input).ToTString<C>();
+}
+
+template<class C>
+static UniString<C> esStringConvert(const char *input)
+{
+	return esString(input).ToTString<C>();
+}
+
+template<class R, class C>
+static UniString<R> esToString(C input, R) 
+{
+	//Shall be never called
+	return esString(std::to_string(input).c_str()).ToTString<R>();
+}
+
+template<class C>
+static UniString<wchar_t> esToString(C input, wchar_t)
+{
+	return std::to_wstring(input);
+}
+
+template<class C>
+static UniString<char> esToString(C input, char)
+{
+	return std::to_string(input);
+}
+
+ES_INLINE esString::operator std::string() const
+{
+	if (UseWideChar)
+	{
+		const wchar_t *buffa = reinterpret_cast<const wchar_t *>(masterBuffer.data());
+		std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>> converter;
+		return converter.to_bytes(buffa);
+	}
+	else
+		return masterBuffer.data();
+}
+
+ES_INLINE esString::operator std::wstring() const
+{
+	if (UseWideChar)
+		return reinterpret_cast<const wchar_t *>(masterBuffer.data());
+	else
+	{
+		std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>> converter;
+		return converter.from_bytes(masterBuffer.data());
+	}
+}
+
+ES_INLINE void esString::Set(const char *input)
+{
+	size_t sLen = strlen(input) + 1;
+	UseWideChar = false;
+	masterBuffer = Container_Type(input, input + sLen);
+}
+
+ES_INLINE void esString::Set(const wchar_t *input)
+{
+	size_t sLen = (wcslen(input) + 1) * sizeof(wchar_t);
+	UseWideChar = true;
+	const char *rcInput = reinterpret_cast<const char *>(input);
+	masterBuffer = Container_Type(rcInput, rcInput + sLen);
+}
+
+ES_INLINE void esString::Link(const char *input)
+{
+	size_t sLen = strlen(input) + 1;
+	UseWideChar = false;
+	masterBuffer = Container_Type(input, input + sLen, Alloc_Type(const_cast<char*>(input)));
+}
+
+ES_INLINE void esString::Link(const wchar_t *input)
+{
+	size_t sLen = (wcslen(input) + 1) * sizeof(wchar_t);
+	UseWideChar = true;
+	const char *rcInput = reinterpret_cast<const char *>(input);
+	masterBuffer = Container_Type(rcInput, rcInput + sLen, Alloc_Type(const_cast<char *>(rcInput)));
+}

@@ -16,7 +16,7 @@
 */
 
 #pragma once
-#include "supercore.hpp"
+#include "esstring.h"
 #include <fstream>
 
 #define getBlockSize(classname, startval, endval) offsetof(classname, endval) - offsetof(classname, startval) + sizeof(classname::endval)
@@ -41,7 +41,18 @@
 template<class _driverClass, _t_flags>
 class _BinCore : public _driverClass
 {
+	template<typename T> ES_FORCEINLINE bool __Open(const T _fileName)
+	{
+		FileStream.open(_fileName, _driverClass::MODE);
+
+		if (FileStream.fail())
+			return false;
+
+		this->BaseStream = &FileStream;
+		return true;
+	}
 protected:
+
 	std::fstream FileStream;
 
 #ifdef ES_ENCRYPTION_DEFINED
@@ -51,15 +62,18 @@ protected:
 	bool swapEndian;
 	mutable bool encCreated;
 
-	template<typename T> ES_FORCEINLINE bool _Open(const T _fileName)
+	ES_FORCEINLINE bool _Open(const char *_fileName)
 	{
-		FileStream.open(_fileName, _driverClass::MODE);
+		return __Open(_fileName);
+	}
 
-		if (FileStream.fail())
-			return false;
-
-		this->BaseStream = &FileStream;
-		return true;
+	ES_FORCEINLINE bool _Open(const wchar_t *_fileName)
+	{
+#ifdef UNICODE
+		return __Open(_fileName);
+#else
+		return __Open(esStringConvert<char>(_fileName).c_str());
+#endif
 	}
 
 	_BinCore() :swapEndian(0), encCreated(0)
@@ -114,7 +128,7 @@ public:
 			this->Seek(0);
 	}
 
-	ES_FORCEINLINE bool Open(const std::string &filePath) { return _Open(filePath); }
+	template<class T> ES_FORCEINLINE bool Open(const UniString<T> &filePath) { return _Open(filePath.c_str()); }
 	ES_FORCEINLINE bool Open(const char *filePath) { return _Open(filePath); }
 	ES_FORCEINLINE bool IsValid() const { return !FileStream.fail(); }
 	ES_FORCEINLINE void SwapEndian(bool swap) { swapEndian = swap; }
@@ -122,7 +136,7 @@ public:
 	ES_FORCEINLINE void ResetRelativeOrigin(bool useSeek = true) { SetRelativeOrigin(0, useSeek); };
 	ES_FORCEINLINE StreamType *GetStream() { return this->BaseStream; }
 
-	void ApplyPadding(int allignBytes = 16) const
+	ES_INLINE void ApplyPadding(int allignBytes = 16) const
 	{
 		const size_t mask = allignBytes - 1;
 		const size_t iterPos = this->Tell();
@@ -133,6 +147,15 @@ public:
 
 		this->Skip(allignBytes - result);
 
+	}
+
+	ES_FORCEINLINE const size_t GetSize() const 
+	{
+		size_t savepos = this->Tell();
+		this->Seek(0, std::ios_base::end);
+		size_t curSize = this->Tell(false);
+		this->Seek(savepos);
+		return curSize;
 	}
 
 #ifdef ES_ENCRYPTION_DEFINED

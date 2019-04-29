@@ -21,16 +21,20 @@
 #include "masterprinter.hpp"
 #include "pugiex.hpp"
 
-Reflector::xmlNodePtr Reflector::ToXML(const TSTRING filename, bool asNewNode) const
+template<class _Ty0>
+Reflector::xmlNodePtr Reflector::_ToXML(const _Ty0 *filename, bool asNewNode) const
 {
 	pugi::xml_document doc = {};
 
 	ToXML(doc, asNewNode);
 
-	doc.save_file(filename.c_str(), "\t", pugi::format_write_bom | pugi::format_indent);
+	doc.save_file(filename, "\t", pugi::format_write_bom | pugi::format_indent);
 
 	return doc.internal_object();
 }
+
+template Reflector::xmlNodePtr Reflector::_ToXML<char>(const char*, bool) const;
+template Reflector::xmlNodePtr Reflector::_ToXML<wchar_t>(const wchar_t *, bool) const;
 
 Reflector::xmlNodePtr Reflector::ToXML(pugi::xml_node &node, bool asNewNode) const
 {
@@ -90,10 +94,11 @@ Reflector::xmlNodePtr Reflector::ToXML(pugi::xml_node &node, bool asNewNode) con
 	return thisNode.internal_object();
 }
 
-Reflector::xmlNodePtr Reflector::FromXML(const TSTRING filename, bool lookupClassNode)
+template<class _Ty1>
+Reflector::xmlNodePtr Reflector::_FromXML(const _Ty1 *filename, bool lookupClassNode)
 {
 	pugi::xml_document doc = {};
-	auto reslt = doc.load_file(filename.c_str());
+	auto reslt = doc.load_file(filename);
 
 	if (!reslt)
 	{
@@ -103,6 +108,9 @@ Reflector::xmlNodePtr Reflector::FromXML(const TSTRING filename, bool lookupClas
 
 	return FromXML(doc, lookupClassNode);
 }
+
+template Reflector::xmlNodePtr Reflector::_FromXML<char>(const char *, bool);
+template Reflector::xmlNodePtr Reflector::_FromXML<wchar_t>(const wchar_t *, bool);
 
 Reflector::xmlNodePtr Reflector::FromXML(pugi::xml_node &node, bool lookupClassNode)
 {

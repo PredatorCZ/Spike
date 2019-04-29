@@ -71,8 +71,11 @@ namespace std {
 				return;
 			}
 
+			//for some reason GCC cannot pick correct delete (void*,size_t) function
+			//std::size_t sizeToDestroy = count * sizeof(value_type);
+			
 			if (buffer != ptr)
-				operator delete(ptr, count * sizeof(value_type));
+				operator delete(ptr);
 			else
 				buffer = nullptr;
 		}
