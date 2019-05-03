@@ -266,7 +266,7 @@ public:
 	ES_FORCEINLINE bool operator!=(const t_Vector4 &input) const { return !(*this == input); }
 	ES_FORCEINLINE bool IsSymetrical() const { return (X == Y) && (X == Z) && (Z == W); }
 
-	template<typename T2>ES_FORCEINLINE t_Vector4<T2> Convert() { return t_Vector4<T2>(static_cast<T2>(X), static_cast<T2>(Y), static_cast<T2>(Z), static_cast<T2>(W)); }
+	template<typename T2>ES_FORCEINLINE t_Vector4<T2> Convert() const { return t_Vector4<T2>(static_cast<T2>(X), static_cast<T2>(Y), static_cast<T2>(Z), static_cast<T2>(W)); }
 
 	ES_FORCEINLINE std::string ToString() const
 	{
