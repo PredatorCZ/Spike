@@ -38,6 +38,9 @@ public:
 	{
 		fullPath = fname;
 		
+		if (!fullPath.size())
+			return;
+
 		for (auto &c : fullPath)
 			if (c == '\\')
 				c = '/';
