@@ -78,6 +78,10 @@ public:
 	> const void ReadContainer(_containerClass &input, size_t numitems, _e_swapEndian) const
 	{
 		input.resize(numitems);
+
+		if (!numitems)
+			return;
+
 		const size_t elesize = sizeof(T);
 		const size_t arrsize = elesize*numitems;
 		BaseStream->read(reinterpret_cast<char*>(const_cast<T*>(input.begin().operator->())), arrsize);
