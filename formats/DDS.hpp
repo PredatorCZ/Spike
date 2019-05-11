@@ -779,7 +779,6 @@ struct DDS : DDS_Header, DDS_PixelFormat, DDS_HeaderEnd, DDS_HeaderDX10
 	}
 };
 
-static_assert(sizeof(DDS) == 160, "Check assumptions");
 static_assert(sizeof(DDS_HeaderDX10) == 20, "Check assumptions");
 static_assert(sizeof(DDS_PixelFormat) == 32, "Check assumptions");
 static_assert(DDS::LEGACY_SIZE == 128, "Check assumptions");
