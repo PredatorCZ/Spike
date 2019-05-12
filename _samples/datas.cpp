@@ -282,12 +282,12 @@ struct masterClass_t : _parent
 {
 	ADD_DISABLERS(_parent, noType);
 	
-	enabledFunction(int) Func01()
+	enabledFunction(noType, int) Func01()
 	{
 		return this->iType;
 	}
 
-	disabledFunction(int) Func01()
+	disabledFunction(noType, int) Func01()
 	{
 		return -1;
 	}

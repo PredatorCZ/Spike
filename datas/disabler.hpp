@@ -18,15 +18,15 @@
 
 #pragma once
 #include "macroLoop.hpp"
-#define _DISABLER_E(func)template<class C> static constexpr std::true_type detectorFunc(detectorClass<C, &C::func>*);
+#define _DISABLER_E(funcName)template<class C> static constexpr std::true_type detector##funcName(detectorClass<C, &C::funcName>*);\
+template<class C> static constexpr std::false_type detector##funcName(...);
 
 #define ADD_DISABLERS(classname, ...) typedef classname this_type;\
 template<typename U, void (U::*f)()> struct detectorClass {};\
-template<class C> static constexpr std::false_type detectorFunc(...);\
 StaticFor(_DISABLER_E, __VA_ARGS__)
 
-#define disabledFunction(retrnType)template<class SC = this_type, bool enabled = decltype(detectorFunc<this_type>(nullptr))::value>\
+#define disabledFunction(funcName, retrnType)template<class SC = this_type, bool enabled = decltype(detector##funcName<this_type>(nullptr))::value>\
 typename std::enable_if<enabled, retrnType>::type
 
-#define enabledFunction(retrnType)template<class SC = this_type, bool enabled = decltype(detectorFunc<this_type>(nullptr))::value>\
+#define enabledFunction(funcName, retrnType)template<class SC = this_type, bool enabled = decltype(detector##funcName<this_type>(nullptr))::value>\
 typename std::enable_if<!enabled, retrnType>::type
