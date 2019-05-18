@@ -146,7 +146,15 @@ ES_FORCEINLINE void WriteText(const TCHAR *name, const TSTRING value, const TCHA
 #define SetCFGText(name) WriteText(_T(# name), name, CFGFile)
 
 #define MSGCheckbox(itemid) case itemid: imp->flags(std::remove_pointer<decltype(imp)>::type::itemid##_checked, IsDlgButtonChecked(hWnd, itemid) != 0)
-#define MSGEnable(itemid, itemenable) imp->flags(itemenable##_enabled,  imp->flags[itemid##_checked]); EnableWindow(GetDlgItem(hWnd, itemenable), imp->flags[itemid##_checked]);
+#define MSGEnable(itemid, itemenable) imp->flags(std::remove_pointer<decltype(imp)>::type::itemenable##_enabled,  imp->flags[std::remove_pointer<decltype(imp)>::type::itemid##_checked]);\
+EnableWindow(GetDlgItem(hWnd, itemenable), imp->flags[std::remove_pointer<decltype(imp)>::type::itemenable##_enabled]);
+
+#define MSGEnableEnabled(itemid, itemenable) \
+imp->flags(\
+	std::remove_pointer<decltype(imp)>::type::itemenable##_enabled,\
+	imp->flags[std::remove_pointer<decltype(imp)>::type::itemid##_checked] && imp->flags[std::remove_pointer<decltype(imp)>::type::itemid##_enabled]\
+);\
+EnableWindow(GetDlgItem(hWnd, itemenable), imp->flags[std::remove_pointer<decltype(imp)>::type::itemenable##_enabled]);
 
 static const TCHAR hkpresetgroup[] = _T("HK_PRESET");
 static const TCHAR _cormatElements[] = { 'X', 'Y', 'Z' };
