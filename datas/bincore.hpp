@@ -130,6 +130,7 @@ public:
 
 	template<class T> ES_FORCEINLINE bool Open(const UniString<T> &filePath) { return _Open(filePath.c_str()); }
 	ES_FORCEINLINE bool Open(const char *filePath) { return _Open(filePath); }
+	ES_FORCEINLINE bool Open(const wchar_t *filePath) { return _Open(filePath); }
 	ES_FORCEINLINE bool IsValid() const { return !FileStream.fail(); }
 	ES_FORCEINLINE void SwapEndian(bool swap) { swapEndian = swap; }
 	ES_FORCEINLINE bool SwappedEndian() { return swapEndian; }
