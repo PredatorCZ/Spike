@@ -117,19 +117,19 @@ ES_INLINE void _DecodeBC2Block(const char *data, char *obuffer, int w, int h, in
 }
 
 
-void DecodeBC1BlockA(const char *data, char *obuffer, int w, int h, int width)
+ES_INLINE void DecodeBC1BlockA(const char *data, char *obuffer, int w, int h, int width)
 {
 	_DecodeBC1BlockA(data, obuffer, w, h, width);
 }
 
-void DecodeBC2Block(const char * data, char * obuffer, int w, int h, int width)
+ES_INLINE void DecodeBC2Block(const char * data, char * obuffer, int w, int h, int width)
 {
 	_DecodeBC2Block(data, obuffer + 3, w, h, width);
 	_DecodeBC1Block(data + 8, obuffer, w, h, width, 4);
 
 }
 
-void DecodeBC1Block(const char *data, char *obuffer, int w, int h, int width)
+ES_INLINE void DecodeBC1Block(const char *data, char *obuffer, int w, int h, int width)
 {
 	_DecodeBC1Block(data, obuffer, w, h, width);
 }
@@ -178,24 +178,24 @@ ES_INLINE void _DecodeBC4Block(const char *data, char *obuffer, int w, int h, in
 
 }
 
-void DecodeBC4Block(const char *data, char *obuffer, int w, int h, int width)
+ES_INLINE void DecodeBC4Block(const char *data, char *obuffer, int w, int h, int width)
 {
 	_DecodeBC4Block(data, obuffer, w, h, width);
 }
 
-void DecodeBC5Block(const char *data, char *obuffer, int w, int h, int width)
+ES_INLINE void DecodeBC5Block(const char *data, char *obuffer, int w, int h, int width)
 {
 	_DecodeBC4Block(data, obuffer + 1, w, h, width, 3);
 	_DecodeBC4Block(data + 8, obuffer + 2, w, h, width, 3);
 }
 
-void DecodeBC5BlockGA(const char *data, char *obuffer, int w, int h, int width)
+ES_INLINE void DecodeBC5BlockGA(const char *data, char *obuffer, int w, int h, int width)
 {
 	_DecodeBC4Block(data, obuffer, w, h, width, 2);
 	_DecodeBC4Block(data + 8, obuffer + 1, w, h, width, 2);
 }
 
-void DecodeBC3Block(const char *data, char *obuffer, int w, int h, int width)
+ES_INLINE void DecodeBC3Block(const char *data, char *obuffer, int w, int h, int width)
 {
 	_DecodeBC4Block(data, obuffer + 3, w, h, width, 4);
 	_DecodeBC1Block(data + 8, obuffer, w, h, width, 4);
