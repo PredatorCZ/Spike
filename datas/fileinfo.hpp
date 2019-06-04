@@ -50,6 +50,8 @@ public:
 
 		if (pathindex != fullPath.npos)
 			pathindex++;
+		else
+			pathindex = 0;
 
 		path = fullPath.substr(0, pathindex);
 		

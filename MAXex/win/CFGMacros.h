@@ -7,8 +7,6 @@
 #define IDConfigVisible(id) id##_enabled
 #define IDConfigIndex(id) id##_index
 
-#define IDDistributeBooleans(value) (1 << value) |
-
 #define NewIDConfigValue(id) float id##_value
 #define NewIDConfigIndex(id) int id##_index
 
