@@ -55,4 +55,13 @@ template<class C> ES_INLINE void FByteswapper(C &input)
 		_SwapClassEndian::evaluator<C>(nullptr, &input);
 }
 #pragma warning(pop)
+
+template<class E, class C> ES_INLINE void FArraySwapper(C &input)
+{
+	const size_t numItems = sizeof(C) / sizeof(E);
+	E *inputPtr = reinterpret_cast<E *>(&input);
+
+	for (size_t t = 0; t < numItems; t++)
+		FByteswapper(*(inputPtr + t));
+}
 #endif
