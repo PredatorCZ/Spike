@@ -19,6 +19,7 @@
 
 #ifndef ES_ENDIAN_DEFINED
 #define ES_ENDIAN_DEFINED
+#include <cstring>
 #include "supercore.hpp"
 class _SwapClassEndian
 {

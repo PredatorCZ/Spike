@@ -18,7 +18,9 @@
 
 
 #pragma once
-#include "datas\vectors.hpp"
+#include <cmath>
+#include <climits>
+#include "datas/vectors.hpp"
 
 void DecodeBC1Block(const char *data, char *obuffer, int w, int h, int width);
 void DecodeBC1BlockA(const char *data, char *obuffer, int w, int h, int width);

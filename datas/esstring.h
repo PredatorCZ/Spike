@@ -17,6 +17,7 @@
 */
 
 #pragma once
+#include <cstring>
 #include <locale>
 #include <codecvt>
 #include <ostream>

@@ -68,7 +68,7 @@ typedef UniString<TCHAR> TSTRING;
 #define ToTSTRING std::to_string
 #endif
 
-typedef typename std::conditional<ES_X64, uint64, uint>::type esIntPtr;
+typedef std::conditional<ES_X64, uint64, uint>::type esIntPtr;
 
 constexpr int CompileFourCC(const char *input, const int hash = 0, const int indexOffset = 0, const int currentIndex = 0)
 {
