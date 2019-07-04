@@ -22,7 +22,16 @@
 #include <codecvt>
 #include <locale>
 #include <fstream>
+
+#if _MSC_VER
 #include <tchar.h>
+#else
+#define _tcsftime strftime
+void localtime_s(tm* tmDest, time_t const* const sourceTime)
+{
+	*tmDest = *localtime(sourceTime);
+}
+#endif
 #include "reflector.hpp"
 #include "datas/masterprinter.hpp"
 
@@ -45,15 +54,18 @@ struct SettingsManager : private Reflector
 		localtime_s(&timeStruct, &curTime);
 		TSTRING dateBuffer;
 		dateBuffer.resize(31);
+		
 		_tcsftime(const_cast<TCHAR *>(dateBuffer.data()), 32, _T("_%y_%m_%d-%H.%M.%S"), &timeStruct);
 		logName.append(dateBuffer.c_str());
 		logName.append(_T(".txt"));
 		logger.open(logName, std::ios::out);
 
+#if UNICODE
 		std::locale utf8_locale = std::locale(std::locale(), new std::codecvt_utf8<TCHAR>());
 		logger.imbue(utf8_locale);
+#endif
 
-		printer.AddPrinterFunction(tprintf);
+		printer.AddPrinterFunction(reinterpret_cast<void*>(tprintf));
 
 		dateBuffer.resize(64);
 		_tcsftime(const_cast<TCHAR *>(dateBuffer.data()), 64, _T("%c %Z"), &timeStruct);

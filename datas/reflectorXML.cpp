@@ -21,6 +21,10 @@
 #include "masterprinter.hpp"
 #include "pugiex.hpp"
 
+#ifndef _MSC_VER
+#define sprintf_s(buffer, sizeofBuffer, format, ...) sprintf(buffer, format, __VA_ARGS__)
+#endif
+
 template<class _Ty0>
 Reflector::xmlNodePtr Reflector::_ToXML(const _Ty0 *filename, bool asNewNode) const
 {
