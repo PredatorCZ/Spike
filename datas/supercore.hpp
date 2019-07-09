@@ -38,6 +38,8 @@ typedef long long				int64;
 #define ES_INLINE inline
 #endif
 
+#if defined(__cplusplus) || defined(c_plusplus)
+
 typedef union { const char ACT[4]; const int NUM; } __es_endian_detector_u;
 
 static constexpr bool ES_LITTLE_ENDIAN = __es_endian_detector_u{ 1 }.ACT[0] == 1;
@@ -56,6 +58,10 @@ struct __es_reusePadding_detector_s : __es_reusePadding_detector_base_s
 
 static constexpr bool ES_REUSE_PADDING = sizeof(__es_reusePadding_detector_s) == 8;
 
+#else
+static const int ES_X64 = sizeof(void*) == 8;
+#endif
+
 #ifndef _TCHAR_DEFINED
 #ifdef _UNICODE
 typedef wchar_t     TCHAR;
@@ -63,6 +69,8 @@ typedef wchar_t     TCHAR;
 typedef char     TCHAR;
 #endif
 #endif
+
+#if defined(__cplusplus) || defined(c_plusplus)
 #include <string>
 template<class T>using UniString = std::basic_string<T, std::char_traits<T>, std::allocator<T>>;
 
@@ -80,3 +88,5 @@ constexpr int CompileFourCC(const char *input, const int hash = 0, const int ind
 {
 	return currentIndex > 3 ? hash : CompileFourCC(input, hash | (static_cast<int>(input[indexOffset + currentIndex]) << (currentIndex * 8)), indexOffset, currentIndex + 1);
 }
+
+#endif
