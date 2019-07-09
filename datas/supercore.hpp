@@ -27,6 +27,12 @@ typedef long long				int64;
 #if defined(__GNUC__) || defined(__GNUG__)
 #define ES_FORCEINLINE __attribute__((always_inline))
 #define ES_INLINE inline
+
+#if __GNUC__ < 7
+#undef offsetof
+#define offsetof(T, M) reinterpret_cast<size_t>(&(((T*)0)->M))
+#endif
+
 #elif defined(_MSC_VER)
 #define ES_FORCEINLINE __forceinline
 #define ES_INLINE inline

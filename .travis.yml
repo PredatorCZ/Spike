@@ -5,6 +5,17 @@ matrix:
   fast_finish: true
   include:
     - os: linux
+      name: "Compiler GCC 6"
+      addons:
+        apt:
+          sources:
+            - ubuntu-toolchain-r-test
+          packages:
+            - g++-6
+            - cmake
+      env:
+         - MATRIX_EVAL="CC=gcc-6 && CXX=g++-6"
+    - os: linux
       name: "Compiler GCC 7"
       addons:
         apt:
