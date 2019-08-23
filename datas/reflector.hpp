@@ -79,27 +79,91 @@ template <class C> struct _SubReflClassWrap { static const JenHash HASH = 0; };
       _getType<                                                                \
           std::remove_reference<decltype(classname::value)>::type>::HASH},
 
-#define REFLECTOR_START(classname, ...)                                        \
+#define _REFLECTOR_TYPES(classname, ...)                                       \
   static const reflType __##classname##_types[] = {                            \
-      StaticForArgID(_REFLECTOR_ADDN, classname, __VA_ARGS__)};                \
-  static const reflectorStatic __##classname##_statical = {                    \
-      VA_NARGS(__VA_ARGS__), __##classname##_types, nullptr, nullptr,          \
-      JenkinsHash(#classname, sizeof(#classname) - 1)};                        \
-  const reflectorStatic *classname::__rfPtrStatic = &__##classname##_statical;
+      StaticForArgID(_REFLECTOR_ADDN, classname, __VA_ARGS__)};
 
-#define REFLECTOR_START_WNAMES(classname, ...)                                 \
-  static const reflType __##classname##_types[] = {                            \
-      StaticForArgID(_REFLECTOR_ADDN, classname, __VA_ARGS__)};                \
-  static const char *__##classname##_typeNames[] = {                           \
-      StaticFor(_REFLECTOR_ADDN_ENUM, __VA_ARGS__)};                           \
+#define _REFLECTOR_MAIN_BODY(classname, namesbody, ...)                        \
   static const reflectorStatic __##classname##_statical = {                    \
-      VA_NARGS(__VA_ARGS__), __##classname##_types, __##classname##_typeNames, \
-      #classname, JenkinsHash(#classname, sizeof(#classname) - 1)};            \
-  const reflectorStatic *classname::__rfPtrStatic = &__##classname##_statical; \
+      VA_NARGS(__VA_ARGS__), __##classname##_types,                            \
+      namesbody JenkinsHash(#classname, sizeof(#classname) - 1)};
+
+#define _REFLECTOR_NAMES_VARNAMES(classname, ...)                              \
+  static const char *__##classname##_typeNames[] = {                           \
+      StaticFor(_REFLECTOR_ADDN_ENUM, __VA_ARGS__)};
+
+#define _REFLECTOR_NAMES_TEMPLATE(...)
+#define _REFLECTOR_NAMES_SUBCLASS(...)
+
+#define _REFLECTOR_NAMES_DEF_VARNAMES(classname)                               \
+  __##classname##_typeNames, #classname,
+#define _REFLECTOR_NAMES_DEF_TEMPLATE(classname)
+#define _REFLECTOR_NAMES_DEF_SUBCLASS(classname)
+
+#define _REFLECTOR_TEMPLATE_TEMPLATE template <>
+#define _REFLECTOR_TEMPLATE_SUBCLASS
+#define _REFLECTOR_TEMPLATE_VARNAMES
+
+#define _REFLECTOR_SUBCLASS_SUBCLASS(classname)                                \
   template <> struct _SubReflClassWrap<classname> {                            \
     static const JenHash HASH =                                                \
         JenkinsHash(#classname, sizeof(#classname) - 1);                       \
   };
+
+#define _REFLECTOR_SUBCLASS_TEMPLATE(classname)
+#define _REFLECTOR_SUBCLASS_VARNAMES(classname)
+
+#define _REFLECTOR_START_VER0(classname, ...)                                  \
+  _REFLECTOR_TYPES(classname, __VA_ARGS__)                                     \
+  _REFLECTOR_MAIN_BODY(classname, _REFLECTOR_NAMES_DEF_SUBCLASS(classname),    \
+                       __VA_ARGS__)                                            \
+  const reflectorStatic *classname::__rfPtrStatic = &__##classname##_statical;
+
+#define _REFLECTOR_START_VER1(classname, var01, ...)                           \
+  _REFLECTOR_TYPES(classname, __VA_ARGS__)                                     \
+  _REFLECTOR_NAMES_##var01(classname, __VA_ARGS__);                            \
+  _REFLECTOR_MAIN_BODY(classname, _REFLECTOR_NAMES_DEF_##var01(classname),     \
+                       __VA_ARGS__)                                            \
+  _REFLECTOR_TEMPLATE_##var01 const reflectorStatic                            \
+      *classname::__rfPtrStatic = &__##classname##_statical;                   \
+  _REFLECTOR_SUBCLASS_##var01(classname)
+
+#define _REFLECTOR_START_VER2(classname, var01, var02, ...)                    \
+  _REFLECTOR_TYPES(classname, __VA_ARGS__)                                     \
+  _REFLECTOR_NAMES_##var01(classname, __VA_ARGS__);                            \
+  _REFLECTOR_NAMES_##var02(classname, __VA_ARGS__);                            \
+  _REFLECTOR_MAIN_BODY(classname,                                              \
+                       _REFLECTOR_NAMES_DEF_##var01(classname)                 \
+                           _REFLECTOR_NAMES_DEF_##var02(classname),            \
+                       __VA_ARGS__)                                            \
+  _REFLECTOR_TEMPLATE_##var01 _REFLECTOR_TEMPLATE_##var02 const                \
+      reflectorStatic *classname::__rfPtrStatic = &__##classname##_statical;   \
+  _REFLECTOR_SUBCLASS_##var01(classname) _REFLECTOR_SUBCLASS_##var02(classname)
+
+#define _REFLECTOR_START_VER3(classname, var01, var02, ...)                    \
+  _REFLECTOR_TYPES(classname, __VA_ARGS__);                                    \
+  _REFLECTOR_NAMES_##var01(classname, __VA_ARGS__);                            \
+  _REFLECTOR_NAMES_##var02(classname, __VA_ARGS__);                            \
+  _REFLECTOR_NAMES_##var03(classname, __VA_ARGS__);                            \
+  _REFLECTOR_MAIN_BODY(classname,                                              \
+                       _REFLECTOR_NAMES_DEF_##var01(classname)                 \
+                           _REFLECTOR_NAMES_DEF_##var02(classname)             \
+                               _REFLECTOR_NAMES_DEF_##var03(classname),        \
+                       __VA_ARGS__)                                            \
+  _REFLECTOR_TEMPLATE_##var01 _REFLECTOR_TEMPLATE_##var02                      \
+      _REFLECTOR_TEMPLATE_##var03 const reflectorStatic                        \
+          *classname::__rfPtrStatic = &__##classname##_statical;               \
+  _REFLECTOR_SUBCLASS_##var01 _REFLECTOR_SUBCLASS_##var02                      \
+      _REFLECTOR_SUBCLASS_##var03(classname)
+
+#define REFLECTOR_CREATE(classname, version, ...)                              \
+  _REFLECTOR_START_VER##version(classname, __VA_ARGS__)
+
+#define REFLECTOR_START(classname, ...)                                        \
+  REFLECTOR_CREATE(classname, 0, __VA_ARGS__)
+
+#define REFLECTOR_START_WNAMES(classname, ...)                                 \
+  REFLECTOR_CREATE(classname, 2, VARNAMES, SUBCLASS, __VA_ARGS__)
 
 #define DECLARE_REFLECTOR                                                      \
   static const reflectorStatic *__rfPtrStatic;                                 \
@@ -130,6 +194,17 @@ struct reflectorStatic {
   const char *const *typeNames;
   const char *className;
   const JenHash classHash;
+
+  reflectorStatic(const int _nTypes, const reflType *_types,
+                  const char *const *_typeNames, const char *_className,
+                  const JenHash _classHash)
+      : nTypes(_nTypes), types(_types), typeNames(_typeNames),
+        className(_className), classHash(_classHash) {}
+
+  reflectorStatic(const int _nTypes, const reflType *_types,
+                  const JenHash _classHash)
+      : nTypes(_nTypes), types(_types), typeNames(nullptr), className(nullptr),
+        classHash(_classHash) {}
 };
 
 static const reflectorStatic __null_statical = {0, 0, 0, 0, 0};

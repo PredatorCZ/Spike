@@ -21,6 +21,7 @@
 #include "supercore.hpp"
 #include <ostream>
 #include <float.h>
+#include <cmath>
 
 #define FLTCMP(a, b) (a <= (b + FLT_EPSILON) && a >= (b - FLT_EPSILON))
 
