@@ -15,8 +15,7 @@
 	See the License for the specific language governing permissions and
 	limitations under the License.
 */
-
-REFLECTOR_ENUM_NAKED(XMLError,
+REFLECTOR_CREATE(XMLError, ENUM, 0,
 	status_ok,				// No error
 
 	status_file_not_found,		// File was not found during load_file()

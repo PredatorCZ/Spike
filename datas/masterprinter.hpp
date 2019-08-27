@@ -29,8 +29,8 @@ typedef char     TCHAR;
 #endif
 #define _T(x)       __T(x)
 
-#define printerror(x, ...) { SetConsoleTextColor(255, 0, 0); printer << _T("ERROR: ") << _T(x) __VA_ARGS__>> 1; RestoreConsoleTextColor();}
-#define printwarning(x, ...) { SetConsoleTextColor(255, 255, 0); printer << _T("WARNING: ") << _T(x) __VA_ARGS__>> 1; RestoreConsoleTextColor();}
+#define printerror(x, ...) { SetConsoleTextColor(255, 0, 0); printer << _T("ERROR: ") << _T(x) __VA_ARGS__>> 0; RestoreConsoleTextColor(); printer >> 1;}
+#define printwarning(x, ...) { SetConsoleTextColor(255, 255, 0); printer << _T("WARNING: ") << _T(x) __VA_ARGS__>> 0; RestoreConsoleTextColor(); printer >> 1;}
 #define printline(x, ...) printer << _T(x) __VA_ARGS__>> 1;
 
 thread_local static class MasterPrinterThread

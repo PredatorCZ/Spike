@@ -320,13 +320,25 @@ typedef t_Vector4<uchar> UCVector4;
 #ifndef ES_VECTORS_TEMPLATES_DEFINED
 #define ES_VECTORS_TEMPLATES_DEFINED
 template <class C> struct _getType<t_Vector2<C>> {
-	static const char TYPE = 15; static const JenHash HASH = _getType<C>::TYPE; static const uchar SUBSIZE = sizeof(C); static const ushort NUMITEMS = 2;
+  static const char TYPE = 15;
+  static const JenHash SUBTYPE = _getType<C>::TYPE;
+  static const uchar SUBSIZE = sizeof(C);
+  static const ushort NUMITEMS = 2;
+  static const JenHash HASH = _getType<C>::HASH;
 };
 template <class C> struct _getType<t_Vector<C>> {
-	static const char TYPE = 16; static const JenHash HASH = _getType<C>::TYPE; static const uchar SUBSIZE = sizeof(C); static const ushort NUMITEMS = 3;
+  static const char TYPE = 16;
+  static const JenHash SUBTYPE = _getType<C>::TYPE;
+  static const uchar SUBSIZE = sizeof(C);
+  static const ushort NUMITEMS = 3;
+  static const JenHash HASH = _getType<C>::HASH;
 };
 template <class C> struct _getType<t_Vector4<C>> {
-	static const char TYPE = 17; static const JenHash HASH = _getType<C>::TYPE; static const uchar SUBSIZE = sizeof(C); static const ushort NUMITEMS = 4;
+  static const char TYPE = 17;
+  static const JenHash SUBTYPE = _getType<C>::TYPE;
+  static const uchar SUBSIZE = sizeof(C);
+  static const ushort NUMITEMS = 4;
+  static const JenHash HASH = _getType<C>::HASH;
 };
 #endif
 #endif // ES_REFLECTOR_DEFINED

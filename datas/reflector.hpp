@@ -28,46 +28,106 @@
 #include <cstring>
 #include <string>
 
-#define _REFLECTOR_ADDN_ENUM(value) #value,
-#define _REFLECTOR_ADDN_ENUMVAL(value) value,
+constexpr uchar _GetReflEnumItemSize(const char *value, size_t curIndex = 0) {
+  return (value[curIndex] == '=' || value[curIndex] == 0)
+             ? curIndex - (value[curIndex] == '=' ? 1 : 0)
+             : _GetReflEnumItemSize(value, curIndex + 1);
+}
 
-#define REFLECTOR_ENUM_INCLASS(classname, ...)                                 \
-  static const int classname##_reflectedSize = VA_NARGS(__VA_ARGS__);          \
-  const char *classname##_reflected[classname##_reflectedSize] = {             \
-      StaticFor(_REFLECTOR_ADDN_ENUM, __VA_ARGS__)};                           \
-  enum classname { StaticFor(_REFLECTOR_ADDN_ENUMVAL, __VA_ARGS__) };
+#define _REFLECTOR_ADDN_ENUM(value) #value,
+#define _REFLECTOR_ADDN_ENUMSIZE(value) _GetReflEnumItemSize(#value),
+#define _REFLECTOR_ADDN_ENUMVAL(value) value,
+#define _REFLECTOR_ADDN_ENUMDUMMY(value) 0,
+
+#define _REFLECTOR_ENUM_CLASS_CLASS class
+#define _REFLECTOR_ENUM_CLASS_EXTERN
+#define _REFLECTOR_ENUM_CLASS_64
+#define _REFLECTOR_ENUM_CLASS_32
+#define _REFLECTOR_ENUM_CLASS_16
+#define _REFLECTOR_ENUM_CLASS_8
+
+#define _REFLECTOR_ENUM_NOREG_EXTERN(classname)                                \
+  static const int classname##_reflectedSize =                                 \
+      _EnumWrap<classname>::_reflectedSize;                                    \
+  static const char **classname##_reflected = _EnumWrap<classname>{}._reflected;
+#define _REFLECTOR_ENUM_NOREG_CLASS(classname)
+#define _REFLECTOR_ENUM_NOREG_64(classname)
+#define _REFLECTOR_ENUM_NOREG_32(classname)
+#define _REFLECTOR_ENUM_NOREG_16(classname)
+#define _REFLECTOR_ENUM_NOREG_8(classname)
+
+#define _REFLECTOR_ENUM_SIZE_64 : uint64
+#define _REFLECTOR_ENUM_SIZE_32 : uint
+#define _REFLECTOR_ENUM_SIZE_16 : ushort
+#define _REFLECTOR_ENUM_SIZE_8 : uchar
+#define _REFLECTOR_ENUM_SIZE_CLASS
+#define _REFLECTOR_ENUM_SIZE_EXTERN
+
+#define _REFLECTOR_ENUM_MAIN_BODY(classname, ...)                              \
+  {StaticFor(_REFLECTOR_ADDN_ENUMVAL, __VA_ARGS__)};                           \
+  template <> struct _EnumWrap<classname> {                                    \
+    static const int _reflectedSize = VA_NARGS(__VA_ARGS__);                   \
+    const char *_reflected[_reflectedSize] = {                                 \
+        StaticFor(_REFLECTOR_ADDN_ENUM, __VA_ARGS__)};                         \
+    const uchar _reflectedSizes[_reflectedSize] = {                            \
+        StaticFor(_REFLECTOR_ADDN_ENUMSIZE, __VA_ARGS__)};                     \
+    static uint64 _reflectedValues[_reflectedSize];                            \
+    static const JenHash HASH =                                                \
+        JenkinsHash(#classname, sizeof(#classname) - 1);                       \
+  };                                                                           \
+  uint64 _EnumWrap<                                                            \
+      classname>::_reflectedValues[_EnumWrap<classname>::_reflectedSize] = {};
+
+#define _REFLECTOR_ENUM_VER0(classname, ...)                                   \
+  enum classname _REFLECTOR_ENUM_MAIN_BODY(classname, __VA_ARGS__);
+
+#define _REFLECTOR_ENUM_VER1(classname, var01, ...)                            \
+  enum _REFLECTOR_ENUM_CLASS_##var01 classname                                 \
+      _REFLECTOR_ENUM_SIZE_##var01 _REFLECTOR_ENUM_MAIN_BODY(classname,        \
+                                                             __VA_ARGS__);     \
+  _REFLECTOR_ENUM_NOREG_##var01(classname)
+
+#define _REFLECTOR_ENUM_VER2(classname, var01, var02, ...)                     \
+  enum _REFLECTOR_ENUM_CLASS_##var01 _REFLECTOR_ENUM_CLASS_##var02 classname   \
+      _REFLECTOR_ENUM_SIZE_##var01 _REFLECTOR_ENUM_SIZE_##var02                \
+          _REFLECTOR_ENUM_MAIN_BODY(classname, __VA_ARGS__);                   \
+  _REFLECTOR_ENUM_NOREG_##var01(classname);                                    \
+  _REFLECTOR_ENUM_NOREG_##var02(classname);
+
+#define _REFLECTOR_ENUM_VER3(classname, var01, var02, var03, ...)              \
+  enum _REFLECTOR_ENUM_CLASS_##var01 _REFLECTOR_ENUM_CLASS_##var02             \
+      _REFLECTOR_ENUM_CLASS_##var03 classname                                  \
+          _REFLECTOR_ENUM_SIZE_##var01 _REFLECTOR_ENUM_SIZE_##var02            \
+              _REFLECTOR_ENUM_SIZE_##var03 _REFLECTOR_ENUM_MAIN_BODY(          \
+                  classname, __VA_ARGS__);                                     \
+  _REFLECTOR_ENUM_NOREG_##var01(classname);                                    \
+  _REFLECTOR_ENUM_NOREG_##var02(classname);                                    \
+  _REFLECTOR_ENUM_NOREG_##var03(classname);
+
+#define _REFLECTOR_START_VERENUM(classname, numFlags, ...)                     \
+  VA_NARGS_EVAL(_REFLECTOR_ENUM_VER##numFlags(classname, __VA_ARGS__))
 
 template <class E> struct _EnumWrap { static const JenHash HASH = 0; };
 
-#define REFLECTOR_ENUM2(classname, type, ...)                                  \
-  enum class classname : type {                                                \
-    StaticFor(_REFLECTOR_ADDN_ENUMVAL, __VA_ARGS__)                            \
-  };                                                                           \
-  template <> struct _EnumWrap<classname> {                                    \
-    static const int _reflectedSize = VA_NARGS(__VA_ARGS__);                   \
-    const char *_reflected[_reflectedSize] = {                                 \
-        StaticFor(_REFLECTOR_ADDN_ENUM, __VA_ARGS__)};                         \
-    static const JenHash HASH =                                                \
-        JenkinsHash(#classname, sizeof(#classname) - 1);                       \
-  };
-
-#define REFLECTOR_ENUM(classname, ...)                                         \
-  REFLECTOR_ENUM2(classname, int, __VA_ARGS__)
-
-#define REFLECTOR_ENUM_NAKED(classname, ...)                                   \
-  enum classname { StaticFor(_REFLECTOR_ADDN_ENUMVAL, __VA_ARGS__) };          \
-  template <> struct _EnumWrap<classname> {                                    \
-    static const int _reflectedSize = VA_NARGS(__VA_ARGS__);                   \
-    const char *_reflected[_reflectedSize] = {                                 \
-        StaticFor(_REFLECTOR_ADDN_ENUM, __VA_ARGS__)};                         \
-    static const JenHash HASH =                                                \
-        JenkinsHash(#classname, sizeof(#classname) - 1);                       \
-  };
-
 template <class C> struct _SubReflClassWrap { static const JenHash HASH = 0; };
+
+struct reflType {
+  uchar type;            // type of main element
+  uchar subType;         // type of sub elements (array item type)
+  uchar subSize;         // size if sub element
+  uchar ID;              // index of main element within master table
+  ushort numItems;       // number of sub elements
+  ushort offset;         // offset of main element
+  JenHash valueNameHash; // hash of main element's name
+  JenHash typeHash;      // lookup hash of main/sub element (enum, sublass)
+};
+const int __sizeof_RelfType = sizeof(reflType);
 
 #define _REFLECTOR_ADDN(classname, _id, value)                                 \
   reflType{                                                                    \
+      _getType<std::remove_reference<decltype(classname::value)>::type>::TYPE, \
+      _getType<                                                                \
+          std::remove_reference<decltype(classname::value)>::type>::SUBTYPE,   \
       _getType<                                                                \
           std::remove_reference<decltype(classname::value)>::type>::SUBSIZE,   \
       _id,                                                                     \
@@ -75,7 +135,6 @@ template <class C> struct _SubReflClassWrap { static const JenHash HASH = 0; };
           std::remove_reference<decltype(classname::value)>::type>::NUMITEMS,  \
       offsetof(classname, value),                                              \
       JenkinsHash(#value, sizeof(#value) - 1),                                 \
-      _getType<std::remove_reference<decltype(classname::value)>::type>::TYPE, \
       _getType<                                                                \
           std::remove_reference<decltype(classname::value)>::type>::HASH},
 
@@ -109,7 +168,6 @@ template <class C> struct _SubReflClassWrap { static const JenHash HASH = 0; };
     static const JenHash HASH =                                                \
         JenkinsHash(#classname, sizeof(#classname) - 1);                       \
   };
-
 #define _REFLECTOR_SUBCLASS_TEMPLATE(classname)
 #define _REFLECTOR_SUBCLASS_VARNAMES(classname)
 
@@ -140,7 +198,7 @@ template <class C> struct _SubReflClassWrap { static const JenHash HASH = 0; };
       reflectorStatic *classname::__rfPtrStatic = &__##classname##_statical;   \
   _REFLECTOR_SUBCLASS_##var01(classname) _REFLECTOR_SUBCLASS_##var02(classname)
 
-#define _REFLECTOR_START_VER3(classname, var01, var02, ...)                    \
+#define _REFLECTOR_START_VER3(classname, var01, var02, var03, ...)             \
   _REFLECTOR_TYPES(classname, __VA_ARGS__);                                    \
   _REFLECTOR_NAMES_##var01(classname, __VA_ARGS__);                            \
   _REFLECTOR_NAMES_##var02(classname, __VA_ARGS__);                            \
@@ -156,14 +214,35 @@ template <class C> struct _SubReflClassWrap { static const JenHash HASH = 0; };
   _REFLECTOR_SUBCLASS_##var01 _REFLECTOR_SUBCLASS_##var02                      \
       _REFLECTOR_SUBCLASS_##var03(classname)
 
-#define REFLECTOR_CREATE(classname, version, ...)                              \
-  _REFLECTOR_START_VER##version(classname, __VA_ARGS__)
+// Usable flags: VARNAMES, TEMPLATE, SUBCLASS
+// Usable enum flags: CLASS, EXTERN, size (64B or 32B or 16B or 8B)
+//@numFlags: [0,n] or ENUM, numEnumFlags
+#define REFLECTOR_CREATE(classname, numFlags, ...)                             \
+  VA_NARGS_EVAL(_REFLECTOR_START_VER##numFlags(classname, __VA_ARGS__))
 
+// Deprecated! Use REFLECTOR_CREATE instead.
 #define REFLECTOR_START(classname, ...)                                        \
-  REFLECTOR_CREATE(classname, 0, __VA_ARGS__)
+  REFLECTOR_CREATE(classname, 0, __VA_ARGS__)                                  \
+  ES_PRAGMA(message(__FILE__ " REFLECTOR_START is deprecated! Use "            \
+                             "REFLECTOR_CREATE instead."))
 
+// Deprecated! Use REFLECTOR_CREATE instead.
 #define REFLECTOR_START_WNAMES(classname, ...)                                 \
-  REFLECTOR_CREATE(classname, 2, VARNAMES, SUBCLASS, __VA_ARGS__)
+  REFLECTOR_CREATE(classname, 1, VARNAMES, __VA_ARGS__)                        \
+  ES_PRAGMA(message(__FILE__ " REFLECTOR_START_WNAMES is deprecated! Use "     \
+                             "REFLECTOR_CREATE instead."))
+
+// Deprecated! Use REFLECTOR_CREATE instead.
+#define REFLECTOR_ENUM(classname, ...)                                         \
+  _REFLECTOR_START_VERENUM(classname, 1, CLASS, __VA_ARGS__)                   \
+  ES_PRAGMA(message(__FILE__ " REFLECTOR_ENUM is deprecated! Use "             \
+                             "REFLECTOR_CREATE instead."))
+
+// Deprecated! Use REFLECTOR_CREATE instead.
+#define REFLECTOR_ENUM_NAKED(classname, ...)                                   \
+  _REFLECTOR_START_VERENUM(classname, 0, __VA_ARGS__)                          \
+  ES_PRAGMA(message(__FILE__ " REFLECTOR_ENUM_NAKED is deprecated! Use "       \
+                             "REFLECTOR_CREATE instead."))
 
 #define DECLARE_REFLECTOR                                                      \
   static const reflectorStatic *__rfPtrStatic;                                 \
@@ -176,17 +255,6 @@ namespace pugi {
 class xml_node;
 struct xml_node_struct;
 } // namespace pugi
-
-struct reflType {
-  uchar subSize;
-  uchar ID;
-  ushort numItems;
-  ushort offset;
-  JenHash valueNameHash;
-  JenHash typeHash;
-  JenHash subtypeHash;
-};
-const int __sizeof_RelfType = sizeof(reflType);
 
 struct reflectorStatic {
   const int nTypes;
@@ -344,34 +412,40 @@ template <typename _Ty> struct _getType {
       decltype(detectorFunc<_Ty>(nullptr))::value;
 
   static const char TYPE = static_cast<const char>(
-      std::is_enum<_Ty>::value ? 13 : (subReflected ? 21 : 0));
+      std::is_enum<_Ty>::value ? 13 : (subReflected ? 14 : 0));
   static const JenHash HASH =
       _EnumWrap<_Ty>::HASH + _SubReflClassWrap<_Ty>::HASH;
-  static const uchar SUBSIZE = 0;
+  static const JenHash SUBHASH = 0;
+  static const uchar SUBSIZE = TYPE == 13 ? sizeof(_Ty) : 0;
+  static const uchar SUBTYPE = 0;
   static const ushort NUMITEMS = 1;
 };
 template <> struct _getType<bool> {
   static const char TYPE = 1;
   static const JenHash HASH = 0;
   static const unsigned char SUBSIZE = 0;
+  static const uchar SUBTYPE = 0;
   static const ushort NUMITEMS = 1;
 };
 template <> struct _getType<char> {
   static const char TYPE = 2;
   static const JenHash HASH = 0;
   static const unsigned char SUBSIZE = 0;
+  static const uchar SUBTYPE = 0;
   static const ushort NUMITEMS = 1;
 };
 template <> struct _getType<signed char> {
   static const char TYPE = 2;
   static const JenHash HASH = 0;
   static const unsigned char SUBSIZE = 0;
+  static const uchar SUBTYPE = 0;
   static const ushort NUMITEMS = 1;
 };
 template <> struct _getType<uchar> {
   static const char TYPE = 3;
   static const JenHash HASH = 0;
   static const unsigned char SUBSIZE = 0;
+  static const uchar SUBTYPE = 0;
   static const ushort NUMITEMS = 1;
 };
 
@@ -379,24 +453,28 @@ template <> struct _getType<wchar_t> {
   static const char TYPE = 4;
   static const JenHash HASH = 0;
   static const unsigned char SUBSIZE = 0;
+  static const uchar SUBTYPE = 0;
   static const ushort NUMITEMS = 1;
 };
 template <> struct _getType<char16_t> {
   static const char TYPE = 4;
   static const JenHash HASH = 0;
   static const unsigned char SUBSIZE = 0;
+  static const uchar SUBTYPE = 0;
   static const ushort NUMITEMS = 1;
 };
 template <> struct _getType<short> {
   static const char TYPE = 4;
   static const JenHash HASH = 0;
   static const unsigned char SUBSIZE = 0;
+  static const uchar SUBTYPE = 0;
   static const ushort NUMITEMS = 1;
 };
 template <> struct _getType<ushort> {
   static const char TYPE = 5;
   static const JenHash HASH = 0;
   static const unsigned char SUBSIZE = 0;
+  static const uchar SUBTYPE = 0;
   static const ushort NUMITEMS = 1;
 };
 
@@ -404,30 +482,35 @@ template <> struct _getType<char32_t> {
   static const char TYPE = 6;
   static const JenHash HASH = 0;
   static const unsigned char SUBSIZE = 0;
+  static const uchar SUBTYPE = 0;
   static const ushort NUMITEMS = 1;
 };
 template <> struct _getType<int> {
   static const char TYPE = 6;
   static const JenHash HASH = 0;
   static const unsigned char SUBSIZE = 0;
+  static const uchar SUBTYPE = 0;
   static const ushort NUMITEMS = 1;
 };
 template <> struct _getType<uint> {
   static const char TYPE = 7;
   static const JenHash HASH = 0;
   static const unsigned char SUBSIZE = 0;
+  static const uchar SUBTYPE = 0;
   static const ushort NUMITEMS = 1;
 };
 template <> struct _getType<long> {
   static const char TYPE = 6;
   static const JenHash HASH = 0;
   static const unsigned char SUBSIZE = 0;
+  static const uchar SUBTYPE = 0;
   static const ushort NUMITEMS = 1;
 };
 template <> struct _getType<unsigned long> {
   static const char TYPE = 7;
   static const JenHash HASH = 0;
   static const unsigned char SUBSIZE = 0;
+  static const uchar SUBTYPE = 0;
   static const ushort NUMITEMS = 1;
 };
 
@@ -435,12 +518,14 @@ template <> struct _getType<int64> {
   static const char TYPE = 8;
   static const JenHash HASH = 0;
   static const unsigned char SUBSIZE = 0;
+  static const uchar SUBTYPE = 0;
   static const ushort NUMITEMS = 1;
 };
 template <> struct _getType<uint64> {
   static const char TYPE = 9;
   static const JenHash HASH = 0;
   static const unsigned char SUBSIZE = 0;
+  static const uchar SUBTYPE = 0;
   static const ushort NUMITEMS = 1;
 };
 
@@ -448,6 +533,7 @@ template <> struct _getType<float> {
   static const char TYPE = 10;
   static const JenHash HASH = 0;
   static const unsigned char SUBSIZE = 0;
+  static const uchar SUBTYPE = 0;
   static const ushort NUMITEMS = 1;
 };
 
@@ -455,12 +541,14 @@ template <> struct _getType<double> {
   static const char TYPE = 11;
   static const JenHash HASH = 0;
   static const unsigned char SUBSIZE = 0;
+  static const uchar SUBTYPE = 0;
   static const ushort NUMITEMS = 1;
 };
 template <> struct _getType<long double> {
   static const char TYPE = 11;
   static const JenHash HASH = 0;
   static const unsigned char SUBSIZE = 0;
+  static const uchar SUBTYPE = 0;
   static const ushort NUMITEMS = 1;
 };
 
@@ -468,6 +556,7 @@ template <> struct _getType<const char *> {
   static const char TYPE = 18;
   static const JenHash HASH = 0;
   static const unsigned char SUBSIZE = 0;
+  static const uchar SUBTYPE = 0;
   static const ushort NUMITEMS = 1;
 };
 
@@ -475,21 +564,24 @@ template <> struct _getType<std::string> {
   static const char TYPE = 19;
   static const JenHash HASH = 0;
   static const unsigned char SUBSIZE = 0;
+  static const uchar SUBTYPE = 0;
   static const ushort NUMITEMS = 1;
 };
 
 template <class C, size_t _Size> struct _getType<C[_Size]> {
   static const char TYPE = 20;
-  static const JenHash HASH = _getType<C>::TYPE;
+  static const JenHash HASH = _getType<C>::HASH;
   static const uchar SUBSIZE = sizeof(C);
+  static const uchar SUBTYPE = _getType<C>::TYPE;
   static const ushort NUMITEMS = _Size;
 };
 
 #ifdef _ARRAY_
 template <class C, size_t _Size> struct _getType<std::array<C, _Size>> {
   static const char TYPE = 20;
-  static const JenHash HASH = _getType<C>::TYPE;
+  static const JenHash HASH = _getType<C>::HASH;
   static const uchar SUBSIZE = sizeof(C);
+  static const uchar SUBTYPE = _getType<C>::TYPE;
   static const ushort NUMITEMS = _Size;
 };
 #endif

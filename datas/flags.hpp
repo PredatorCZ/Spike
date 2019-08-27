@@ -63,14 +63,6 @@ public:
 
 template <class T, class E> using EnumFlags = esFlags<T, E>;
 
-template <class T, class E> class esEnum {
-  T storage;
-
-public:
-  operator E() const { return static_cast<E>(storage); }
-  void operator=(E input) { storage = static_cast<T>(input); }
-};
-
 #endif // ES_FLAGS_DEFINED
 
 #ifdef ES_REFLECTOR_DEFINED
@@ -81,12 +73,7 @@ template <class C, class E> struct _getType<esFlags<C, E>> {
   static const JenHash HASH = _EnumWrap<E>::HASH;
   static const uchar SUBSIZE = sizeof(C);
   static const ushort NUMITEMS = 1;
-};
-template <class C, class E> struct _getType<esEnum<C, E>> {
-  static const char TYPE = 14;
-  static const JenHash HASH = _EnumWrap<E>::HASH;
-  static const uchar SUBSIZE = sizeof(C);
-  static const ushort NUMITEMS = 1;
+  static const uchar SUBTYPE = 0;
 };
 #endif
 #endif // ES_REFLECTOR_DEFINED
