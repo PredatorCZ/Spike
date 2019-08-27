@@ -39,7 +39,7 @@ struct RefEnumFunctions {
         enumInstance._reflectedValues[t] = lastValue++;
         continue;
       }
-      
+
       cName++;
 
       while (*cName == ' ')
@@ -55,11 +55,11 @@ struct RefEnumFunctions {
         for (int t = cLen; t > -1; t--)
           resVal |= atohLUT[cName[t]] << 4 * (cLen - t);
 
-        lastValue = resVal;
+        lastValue = resVal + 1;
       } else {
         resVal = std::atoll(cName);
 
-        lastValue = resVal;
+        lastValue = resVal + 1;
       }
 
       enumInstance._reflectedValues[t] = resVal;
@@ -132,7 +132,8 @@ void EnumMultiDestructor_t(std::string &output, uint64 value) {
       if (output.size())
         output.append(" | ");
 
-      output.append(enumInstance._reflected[i], enumInstance._reflectedSizes[i]);
+      output.append(enumInstance._reflected[i],
+                    enumInstance._reflectedSizes[i]);
     }
 
   if (!output.size())
@@ -144,16 +145,36 @@ template <class E> void EnumDestructor_t(std::string &output, uint64 value) {
 
   for (int t = 0; t < enumInstance._reflectedSize; t++)
     if (enumInstance._reflectedValues[t] == value)
-      output = std::string(enumInstance._reflected[t], enumInstance._reflectedSizes[t]);
+      output = std::string(enumInstance._reflected[t],
+                           enumInstance._reflectedSizes[t]);
 }
 
-#define REGISTER_ENUM(classname)                                               \
+#define _REFLECTOR_REGISTER_ENUM(classname)                                    \
   REFEnumStorage[static_cast<const JenHash>(_EnumWrap<classname>::HASH)] =     \
       RefEnumFunctions{EnumMultiConstructor_t<_EnumWrap<classname>>,           \
                        EnumMultiDestructor_t<_EnumWrap<classname>>,            \
                        EnumConstructor_t<_EnumWrap<classname>>,                \
                        EnumDestructor_t<_EnumWrap<classname>>}                 \
           .C<_EnumWrap<classname>>();
+
+#define _REFLECTOR_REGISTER_ENUM_EXTERN(classname)                             \
+  uint64 _EnumWrap<                                                            \
+      classname>::_reflectedValues[_EnumWrap<classname>::_reflectedSize] = {};
+
+#define REGISTER_ENUMS(...)                                                    \
+  static bool _localEnumInit = false;                                          \
+  static void RegisterLocalEnums() {                                           \
+    if (_localEnumInit)                                                        \
+      return;                                                                  \
+    StaticFor(_REFLECTOR_REGISTER_ENUM, __VA_ARGS__);                          \
+    _localEnumInit = true;                                                     \
+  };                                                                           \
+  StaticFor(_REFLECTOR_REGISTER_ENUM_EXTERN, __VA_ARGS__)
+
+#define REGISTER_ENUM(classname)                                               \
+  ES_PRAGMA(message(                                                           \
+      __FILE__ " REGISTER_ENUM is deprecated! Use REGISTER_ENUMS in global "   \
+               "and RegisterLocalEnums() in this scope instead."))
 
 struct reflectorStatic;
 

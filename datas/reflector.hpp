@@ -74,9 +74,7 @@ constexpr uchar _GetReflEnumItemSize(const char *value, size_t curIndex = 0) {
     static uint64 _reflectedValues[_reflectedSize];                            \
     static const JenHash HASH =                                                \
         JenkinsHash(#classname, sizeof(#classname) - 1);                       \
-  };                                                                           \
-  uint64 _EnumWrap<                                                            \
-      classname>::_reflectedValues[_EnumWrap<classname>::_reflectedSize] = {};
+  };
 
 #define _REFLECTOR_ENUM_VER0(classname, ...)                                   \
   enum classname _REFLECTOR_ENUM_MAIN_BODY(classname, __VA_ARGS__);
