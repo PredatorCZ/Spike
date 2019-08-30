@@ -41,41 +41,41 @@ static ES_INLINE void SetReflectedPrimitive(char *objAddr, uchar type,
     break;
 
   case 2:
-    *(objAddr) = static_cast<char>(atoi(value));
+    *(objAddr) = static_cast<char>(std::atoi(value));
     break;
   case 3:
     *(reinterpret_cast<unsigned char *>(objAddr)) =
-        static_cast<unsigned char>(atoi(value));
+        static_cast<unsigned char>(std::atoi(value));
     break;
 
   case 4:
-    *reinterpret_cast<short *>(objAddr) = static_cast<short>(atoi(value));
+    *reinterpret_cast<short *>(objAddr) = static_cast<short>(std::atoi(value));
     break;
   case 5:
     *reinterpret_cast<unsigned short *>(objAddr) =
-        static_cast<unsigned short>(atoi(value));
+        static_cast<unsigned short>(std::atoi(value));
     break;
 
   case 6:
-    *reinterpret_cast<int *>(objAddr) = atoi(value);
+    *reinterpret_cast<int *>(objAddr) = std::atoi(value);
     break;
   case 7:
     *reinterpret_cast<unsigned int *>(objAddr) =
-        static_cast<unsigned int>(atoll(value));
+        static_cast<unsigned int>(std::atoll(value));
     break;
 
   case 8:
-    *reinterpret_cast<int64 *>(objAddr) = atoll(value);
+    *reinterpret_cast<int64 *>(objAddr) = std::atoll(value);
     break;
   case 9:
-    *reinterpret_cast<uint64 *>(objAddr) = strtoull(value, nullptr, 10);
+    *reinterpret_cast<uint64 *>(objAddr) = std::strtoull(value, nullptr, 10);
     break;
 
   case 10:
-    *reinterpret_cast<float *>(objAddr) = static_cast<float>(atof(value));
+    *reinterpret_cast<float *>(objAddr) = static_cast<float>(std::atof(value));
     break;
   case 11:
-    *reinterpret_cast<double *>(objAddr) = atof(value);
+    *reinterpret_cast<double *>(objAddr) = std::atof(value);
     break;
 
   case 12: {

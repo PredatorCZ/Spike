@@ -18,7 +18,6 @@
 
 #pragma once
 #include <unordered_map>
-#include <cstdlib>
 
 struct RefEnumFunctions {
   uint64 (*MultiConstructor)(const char *);
@@ -58,7 +57,7 @@ struct RefEnumFunctions {
 
         lastValue = resVal + 1;
       } else {
-        resVal = atoll(cName);
+        resVal = std::atoll(cName);
 
         lastValue = resVal + 1;
       }
