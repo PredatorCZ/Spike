@@ -26,6 +26,7 @@ public:
 	virtual void Decode(char *buffer, size_t size) const = 0;
 	virtual bool Valid() const = 0;
 	virtual void SetKey(const char *inKey, int inSize) = 0;
+	virtual ~IEncryptor() {}
 };
 
 #endif

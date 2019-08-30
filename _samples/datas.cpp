@@ -117,12 +117,11 @@ REFLECTOR_CREATE(reflClass, 0, test1, test2, test3, test4, test5, test6, test7,
                  test16, test17, test18.data, test18.data2, test19, test20,
                  test21, test22, test23)
 
+REGISTER_ENUMS(EnumWrap00, EnumWrap02, EnumWrap03, EnumWrap04)
+
 // uses reflector, esstring as convertor, masterprinter
 reflClass ReflectorTest() {
-  REGISTER_ENUM(EnumWrap03);
-  REGISTER_ENUM(EnumWrap00);
-  REGISTER_ENUM(EnumWrap02);
-  REGISTER_ENUM(EnumWrap04);
+  RegisterLocalEnums();
   reflClass test = {};
 
   // Previews of reflType entries
@@ -287,6 +286,7 @@ struct class02 {
 
 struct ImasterClass {
   virtual int Func01() = 0;
+  virtual ~ImasterClass() {}
 };
 
 template <class _parent> struct masterClass_t : _parent {

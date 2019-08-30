@@ -131,7 +131,7 @@ const int __sizeof_RelfType = sizeof(reflType);
       _id,                                                                     \
       _getType<                                                                \
           std::remove_reference<decltype(classname::value)>::type>::NUMITEMS,  \
-      offsetof(classname, value),                                              \
+      static_cast<ushort>(offsetof(classname, value)),                                              \
       JenkinsHash(#value, sizeof(#value) - 1),                                 \
       _getType<                                                                \
           std::remove_reference<decltype(classname::value)>::type>::HASH},
