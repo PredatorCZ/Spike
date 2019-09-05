@@ -19,7 +19,7 @@
 #include "../datas/halfFloat.hpp"
 #include "../datas/masterprinter.hpp"
 #include "../datas/reflectorRegistry.hpp"
-#include "../datas/vectors.hpp"
+#include "../datas/VectorsSimd.hpp"
 #include "../datas/xorenc.hpp"
 
 // some headers should be included last, to activate all possible macro
@@ -77,7 +77,7 @@ struct _ReflClassData {
 
   Vector test15;
   Vector2 test16;
-  Vector4 test17;
+  Vector4A16 test17;
 
   int test21[4];
 
@@ -104,12 +104,16 @@ struct _ReflClassData {
     FByteswapper(test17);
     FByteswapper(test18);
   }
+
+  _ReflClassData() = default;
 };
 
 struct reflClass : Reflector, _ReflClassData {
   DECLARE_REFLECTOR;
 
   std::string test22;
+
+  reflClass() = default;
 };
 
 REFLECTOR_CREATE(reflClass, 0, test1, test2, test3, test4, test5, test6, test7,
@@ -421,5 +425,26 @@ int main(const int argc, const TCHAR **argv) {
     printer << s >> 1;
   }
 
-  return 0;
+
+  Vector4A16 tvec(argc + 1, argc + 2, argc + 3, argc + 4);
+  tvec += 10; // 11, 12, 13, 14
+  tvec /= 2; // 5.5, 6, 6.5, 7
+  tvec -= 1; // 4.5, 5, 5.5, 6 
+  tvec *= 1.5; // 6.75, 7.5, 8.25, 9
+  Vector4A16 tvec2 = -tvec;
+
+
+
+  float vLen = tvec.Length();
+  float vLen2 = Vector4(6.75, 7.5, 8.25, 9).Length();
+
+  float vDot = tvec.Dot(tvec);
+  float vDot2 = Vector4(6.75, 7.5, 8.25, 9).Dot({6.75, 7.5, 8.25, 9});
+
+  Vector4A16 tvec3(0.1, 0.2, 0.3, 0.4);
+  bool res = tvec3 != tvec3 + FLT_EPSILON + (FLT_EPSILON / 2);
+
+  bool sym = tvec.IsSymetrical();
+
+  return reinterpret_cast<int&> (tvec.X);
 }

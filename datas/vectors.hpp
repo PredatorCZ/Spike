@@ -65,6 +65,9 @@ public:
 
 	t_Vector2& operator-() { X *= -1; Y *= -1; return *this; }
 
+	//ES_FORCEINLINE t_Vector<T> ToVector() const { return t_Vector<T>(this->X, this->Y, 0.0f); }
+	//ES_FORCEINLINE t_Vector4<T> ToVector4() const { return t_Vector4<T>(this->X, this->Y, 0.0f, 0.0f); }
+
 	ES_FORCEINLINE T& operator [](char pos) { return *(reinterpret_cast<T*>(this) + pos); }
 	ES_FORCEINLINE const T& operator [](char pos) const { return *(reinterpret_cast<const T*>(this) + pos); }
 
@@ -157,6 +160,8 @@ public:
 	t_Vector& operator>>=(const int& input) { X >>= input; Y >>= input; Z >>= input; return *this; }
 	t_Vector& operator<<=(const int& input) { X <<= input; Y <<= input; Z <<= input; return *this; }
 
+	//ES_FORCEINLINE t_Vector4<T> ToVector4() const { return t_Vector4<T>(this->X, this->Y, this->Z, 0.0f); }
+	ES_FORCEINLINE t_Vector2<T> ToVector2() const { return t_Vector2<T>(this->X, this->Y); }
 
 	t_Vector& operator-() { X *= -1; Y *= -1; Z *= -1; return *this; }
 	
@@ -218,93 +223,126 @@ typedef t_Vector<ushort> USVector;
 typedef t_Vector<uchar> UCVector;
 
 template<typename T>
-class t_Vector4
+class V4ScalarType
 {
 public:
-	T X,Y,Z,W;
-	t_Vector4(void){Z = 0;X = 0;Y = 0;W = 0;}
-	t_Vector4(const T inx, const T iny, const T inz, const T inw) { X = inx; Y = iny; Z = inz; W = inw; }
+    typedef T eltype;
 
-	t_Vector4& operator+=(const t_Vector4& input) { X += input.X; Y += input.Y; Z += input.Z; W += input.W; return *this; }
-	t_Vector4& operator-=(const t_Vector4& input) { X -= input.X; Y -= input.Y; Z -= input.Z; W -= input.W; return *this; }
-	t_Vector4& operator*=(const t_Vector4& input) { X *= input.X; Y *= input.Y; Z *= input.Z; W *= input.W; return *this; }
-	t_Vector4& operator/=(const t_Vector4& input) { X /= input.X; Y /= input.Y; Z /= input.Z; W /= input.W; return *this; }
+    union {
+        eltype _arr[4];
+        struct {
+            eltype X, Y, Z, W;
+        };
+    };
 
-	t_Vector4 operator+(const t_Vector4& input) const { return t_Vector4(X + input.X, Y + input.Y, Z + input.Z, W + input.W); }
-	t_Vector4 operator-(const t_Vector4& input) const { return t_Vector4(X - input.X, Y - input.Y, Z - input.Z, W - input.W); }
-	t_Vector4 operator*(const t_Vector4& input) const { return t_Vector4(X * input.X, Y * input.Y, Z * input.Z, W * input.W); }
-	t_Vector4 operator/(const t_Vector4& input) const { return t_Vector4(X / input.X, Y / input.Y, Z / input.Z, W / input.W); }
+	V4ScalarType() : X(0), Y(0), Z(0), W(0) {}
+	V4ScalarType(T s) : X(s), Y(s), Z(s), W(s) {}
+	V4ScalarType(T x, T y, T z, T w) : X(x), Y(y), Z(z), W(w) {}
 
-	t_Vector4& operator+=(const T& input) { X += input; Y += input; Z += input; W += input; return *this; }
-	t_Vector4& operator-=(const T& input) { X -= input; Y -= input; Z -= input; W -= input; return *this; }
-	t_Vector4& operator*=(const T& input) { X *= input; Y *= input; Z *= input; W *= input; return *this; }
-	t_Vector4& operator/=(const T& input) { X /= input; Y /= input; Z /= input; W /= input; return *this; }	
+    V4ScalarType& operator+=(const V4ScalarType& input) { return *this = *this + input; }
+	V4ScalarType& operator-=(const V4ScalarType& input) { return *this = *this - input; }
+	V4ScalarType& operator*=(const V4ScalarType& input) { return *this = *this * input; }
+	V4ScalarType& operator/=(const V4ScalarType& input) { return *this = *this / input; }
 
-	t_Vector4 operator*(const T& input) const { return t_Vector4(X * input, Y * input, Z * input, W * input); }
-	t_Vector4 operator+(const T& input) const { return t_Vector4(X + input, Y + input, Z + input, W + input); }
-	t_Vector4 operator/(const T& input) const { return t_Vector4(X / input, Y / input, Z / input, W / input); }
-	t_Vector4 operator-(const T& input) const { return t_Vector4(X - input, Y - input, Z - input, W - input); }
+    V4ScalarType operator+(const V4ScalarType& input) const { return {X + input.X, Y + input.Y, Z + input.Z, W + input.W}; }
+	V4ScalarType operator-(const V4ScalarType& input) const { return {X - input.X, Y - input.Y, Z - input.Z, W - input.W}; }
+	V4ScalarType operator*(const V4ScalarType& input) const { return {X * input.X, Y * input.Y, Z * input.Z, W * input.W}; }
+	V4ScalarType operator/(const V4ScalarType& input) const { return {X / input.X, Y / input.Y, Z / input.Z, W / input.W}; }
 
-	t_Vector4 operator&(const T& input) const { return t_Vector4(X & input, Y & input, Z & input, W & input); }
-	t_Vector4 operator|(const T& input) const { return t_Vector4(X | input, Y | input, Z | input, W | input); }
-	t_Vector4 operator >> (const int input) const { return t_Vector4(X >> input, Y >> input, Z >> input, W >> input); }
-	t_Vector4 operator<<(const int input) const { return t_Vector4(X << input, Y << input, Z << input, W << input); }
+    V4ScalarType& operator+=(const eltype& input) { return *this = *this + input; }
+	V4ScalarType& operator-=(const eltype& input) { return *this = *this - input; }
+	V4ScalarType& operator*=(const eltype& input) { return *this = *this * input; }
+	V4ScalarType& operator/=(const eltype& input) { return *this = *this / input; }
 
-	t_Vector4& operator&=(const T& input) { X &= input; Y &= input; Z &= input; W &= input; return *this; }
-	t_Vector4& operator|=(const T& input) { X |= input; Y |= input; Z |= input; W |= input; return *this; }
-	t_Vector4& operator>>=(const int& input) { X >>= input; Y >>= input; Z >>= input; W >>= input; return *this; }
-	t_Vector4& operator<<=(const int& input) { X <<= input; Y <<= input; Z <<= input; W <<= input; return *this; }
+	V4ScalarType operator+(const eltype& input) { return *this = *this + V4ScalarType(input); }
+	V4ScalarType operator-(const eltype& input) { return *this = *this - V4ScalarType(input); }
+	V4ScalarType operator*(const eltype& input) { return *this = *this * V4ScalarType(input); }
+	V4ScalarType operator/(const eltype& input) { return *this = *this / V4ScalarType(input); }
 
+    V4ScalarType operator&(const V4ScalarType& input) const { return {X & input.X, Y & input.Y, Z & input.Z, W & input.W}; }
+	V4ScalarType operator|(const V4ScalarType& input) const { return {X | input.X, Y | input.Y, Z | input.Z, W | input.W}; }
 
-	t_Vector4& operator-() { X *= -1; Y *= -1; Z *= -1; W *= -1; return *this; }
+    V4ScalarType operator&(const eltype& input) const { return *this = *this & V4ScalarType(input); }
+	V4ScalarType operator|(const eltype& input) const { return *this = *this | V4ScalarType(input); }
 
-	template<typename _T = T>
-	typename std::enable_if<std::is_integral<_T>::value, bool>::type operator==(const t_Vector4 &input) const { return (X == input.X && Y == input.Y && Z == input.Z && W == input.W); }
+	V4ScalarType operator >> (const int& input) const { return {X >> input, Y >> input, Z >> input, W >> input}; }
+	V4ScalarType operator<<(const int& input) const { return {X << input, Y << input, Z << input, W << input}; }
+
+	V4ScalarType& operator&=(const T& input) { return *this = *this & input; }
+	V4ScalarType& operator|=(const T& input) { return *this = *this & input; }
+	V4ScalarType& operator>>=(const int& input) { return *this = *this >> input; }
+	V4ScalarType& operator<<=(const int& input) { return *this = *this << input; }
+
+    V4ScalarType operator-() const { return *this * -1.f; }
+	
+	ES_FORCEINLINE bool IsSymetrical() const { return (X == Y) && (X == Z) && (Z == W); }
+	
+	template<typename T2>ES_FORCEINLINE V4ScalarType<T2> Convert() const 
+	{ return V4ScalarType<T2>(static_cast<T2>(X), static_cast<T2>(Y), static_cast<T2>(Z), static_cast<T2>(W)); }
+	
+	ES_FORCEINLINE int Sign()const { return X * Y * Z * W < 0 ? -1 : 1; }
 	
 	template<typename _T = T>
-	typename std::enable_if<std::is_floating_point<_T>::value, bool>::type operator==(const t_Vector4 &input) const { return FLTCMP(X, input.X) && FLTCMP(Y, input.Y) && FLTCMP(Z, input.Z) && FLTCMP(W, input.W); }
+	typename std::enable_if<std::is_integral<_T>::value, bool>::type operator==(const V4ScalarType &input) const 
+	{ return (this->X == input.X && this->Y == input.Y && this->Z == input.Z && this->W == input.W); }
+	
+	template<typename _T = T>
+	typename std::enable_if<std::is_floating_point<_T>::value, bool>::type operator==(const V4ScalarType &input) const 
+	{ return FLTCMP(this->X, input.X) && FLTCMP(this->Y, input.Y) && FLTCMP(this->Z, input.Z) && FLTCMP(this->W, input.W); }
 
-	ES_FORCEINLINE bool operator!=(const t_Vector4 &input) const { return !(*this == input); }
-	ES_FORCEINLINE bool IsSymetrical() const { return (X == Y) && (X == Z) && (Z == W); }
+    ES_FORCEINLINE bool operator!=(const V4ScalarType &input) const { return !(*this == input); }
 
-	template<typename T2>ES_FORCEINLINE t_Vector4<T2> Convert() const { return t_Vector4<T2>(static_cast<T2>(X), static_cast<T2>(Y), static_cast<T2>(Z), static_cast<T2>(W)); }
-
-	ES_FORCEINLINE std::string ToString() const
-	{
-		return std::to_string(X) + ' ' + std::to_string(Y) + ' ' + std::to_string(Z) + ' ' + std::to_string(W);
-	}
-	ES_FORCEINLINE std::wstring ToStringW() const
-	{
-		return std::to_wstring(X) + L' ' + std::to_wstring(Y) + L' ' + std::to_wstring(Z) + L' ' + std::to_wstring(W);
-	}
-	ES_FORCEINLINE T& operator [](char pos) { return *(reinterpret_cast<T*>(this) + pos); }
-	ES_FORCEINLINE const T& operator [](char pos) const { return *(reinterpret_cast<const T*>(this) + pos); }
-	ES_FORCEINLINE int Sign()const { return X * Y * Z * W < 0 ? -1 : 1; }
-	ES_FORCEINLINE T Length()const { return static_cast<T>(sqrt(pow(X, 2) + pow(Y, 2) + pow(Z, 2) + pow(W, 2))); }
-	ES_FORCEINLINE T Dot(t_Vector4& input)const { return X*input.X + Y*input.Y + Z*input.Z + W*input.W; }
-	t_Vector4 &Normalize()
-	{
+	ES_FORCEINLINE T Length()const { return static_cast<T>(sqrt(pow(this->X, 2) + pow(this->Y, 2) + pow(this->Z, 2) + pow(this->W, 2))); }
+	ES_FORCEINLINE T Dot(const V4ScalarType& input)const { return this->X*input.X + this->Y*input.Y + this->Z*input.Z + this->W*input.W; }
+	V4ScalarType &Normalize() {
 		T len = Length();
+
 		if (!len) 
 			return *this;
-		X /=len;
-		Y /=len;
-		Z /=len;
-		W /=len;
-		return *this;
-	}
-	friend ES_INLINE std::ostream& operator<<(std::ostream &strm, const t_Vector4<T> &v) { return strm << v.X << " " << v.Y << " " << v.Z << " " << v.W; }
-#ifdef ES_ENDIAN_DEFINED 
-	ES_FORCEINLINE void SwapEndian()
-	{
-		FByteswapper(X);
-		FByteswapper(Y);
-		FByteswapper(Z);
-		FByteswapper(W);
-	}
 
+		return *this /= len;
+	}
+};
+
+template<class C>
+class _t_Vector4 : public C
+{
+public:
+    using C::C;
+    typedef typename C::eltype eltype;
+	_t_Vector4() = default;
+    _t_Vector4(const C &input) : C(input) {}
+    _t_Vector4(C && input) : C(input) {}
+
+    _t_Vector4 &operator=(const C &input) { *this = input; return *this; }
+    _t_Vector4 &operator=(C &&input) { *this = input; return *this; }
+
+	ES_FORCEINLINE t_Vector<eltype> ToVector() const { return t_Vector<eltype>(this->X, this->Y, this->Z); }
+	ES_FORCEINLINE t_Vector2<eltype> ToVector2() const { return t_Vector2<eltype>(this->X, this->Y); }
+
+    ES_FORCEINLINE std::string ToString() const
+	{ return std::to_string(this->X) + ' ' + std::to_string(this->Y) + ' ' + std::to_string(this->Z) + ' ' + std::to_string(this->W); }
+
+	ES_FORCEINLINE std::wstring ToStringW() const
+	{ return std::to_wstring(this->X) + ' ' + std::to_wstring(this->Y) + ' ' + std::to_wstring(this->Z) + ' ' + std::to_wstring(this->W); }
+
+	ES_FORCEINLINE eltype &operator [](char pos) { return this->_arr[pos]; }
+	ES_FORCEINLINE const eltype &operator [](char pos) const { return this->_arr[pos]; }
+
+    friend ES_INLINE std::ostream& operator<<(std::ostream &strm, const _t_Vector4 &v) { return strm << v.X << " " << v.Y << " " << v.Z << " " << v.W; }
+
+#ifdef ES_ENDIAN_DEFINED 
+	ES_FORCEINLINE void SwapEndian() {
+		FByteswapper(this->X);
+		FByteswapper(this->Y);
+		FByteswapper(this->Z);
+		FByteswapper(this->W);
+	}
 #endif
 };
+
+template<typename T> using t_Vector4 = _t_Vector4<V4ScalarType<T>>;
+
 typedef t_Vector4<float> Vector4;
 typedef Vector4 FVector4;
 typedef t_Vector4<int> IVector4;
@@ -333,12 +371,12 @@ template <class C> struct _getType<t_Vector<C>> {
   static const ushort NUMITEMS = 3;
   static const JenHash HASH = _getType<C>::HASH;
 };
-template <class C> struct _getType<t_Vector4<C>> {
+template <class C> struct _getType<_t_Vector4<C>> {
   static const char TYPE = 17;
-  static const JenHash SUBTYPE = _getType<C>::TYPE;
-  static const uchar SUBSIZE = sizeof(C);
+  static const JenHash SUBTYPE = _getType<typename C::eltype>::TYPE;
+  static const uchar SUBSIZE = sizeof(typename C::eltype);
   static const ushort NUMITEMS = 4;
-  static const JenHash HASH = _getType<C>::HASH;
+  static const JenHash HASH = _getType<typename C::eltype>::HASH;
 };
 #endif
 #endif // ES_REFLECTOR_DEFINED
