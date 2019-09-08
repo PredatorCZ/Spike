@@ -314,9 +314,6 @@ public:
     _t_Vector4(const C &input) : C(input) {}
     _t_Vector4(C && input) : C(input) {}
 
-    _t_Vector4 &operator=(const C &input) { *this = input; return *this; }
-    _t_Vector4 &operator=(C &&input) { *this = input; return *this; }
-
 	ES_FORCEINLINE t_Vector<eltype> ToVector() const { return t_Vector<eltype>(this->X, this->Y, this->Z); }
 	ES_FORCEINLINE t_Vector2<eltype> ToVector2() const { return t_Vector2<eltype>(this->X, this->Y); }
 

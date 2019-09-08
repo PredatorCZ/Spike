@@ -178,6 +178,8 @@ public:
   }
 };
 
+#ifdef ES_USE_MMX
+
 class alignas(8) V4MMXShrtType {
 public:
   typedef short eltype;
@@ -327,9 +329,12 @@ public:
   void empty() { _mm_empty(); }
 };
 
+typedef _t_Vector4<V4MMXShrtType> SVector4A8;
+
 ES_INLINE V4SimdFltType::operator V4MMXShrtType() {
   return _mm_cvtps_pi16(_data);
 }
+#endif
 
 typedef _t_Vector4<V4SimdFltType> Vector4A16;
-typedef _t_Vector4<V4MMXShrtType> SVector4A8;
+
