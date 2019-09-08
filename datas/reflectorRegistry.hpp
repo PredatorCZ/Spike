@@ -79,8 +79,11 @@ template <class E> uint64 EnumConstructor_t(const char *value) {
   while (*value == ' ')
     value++;
 
+  const int valueLen = strlen(value);
+
   for (int t = 0; t < enumInstance._reflectedSize; t++)
-    if (!memcmp(value, enumInstance._reflected[t],
+    if (valueLen == enumInstance._reflectedSizes[t] &&
+        !memcmp(value, enumInstance._reflected[t],
                 enumInstance._reflectedSizes[t])) {
       resval = enumInstance._reflectedValues[t];
       break;
@@ -100,7 +103,8 @@ template <class E> uint64 EnumMultiConstructor_t(const char *value) {
     if (*c == ' ' || *c == '|' || !*c || *c == ',') {
       if (currentValue.size()) {
         for (int t = 0; t < enumInstance._reflectedSize; t++)
-          if (!memcmp(enumInstance._reflected[t], currentValue.data(),
+          if (currentValue.size() == enumInstance._reflectedSizes[t] &&
+              !memcmp(enumInstance._reflected[t], currentValue.data(),
                       enumInstance._reflectedSizes[t])) {
             resval |= 1 << enumInstance._reflectedValues[t];
             break;
