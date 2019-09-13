@@ -18,8 +18,8 @@
 
 #pragma once
 #include "macroLoop.hpp"
-#define _DISABLER_E(funcName)template<class C> static constexpr std::true_type detector##funcName(detectorClass<C, &C::funcName>*);\
-template<class C> static constexpr std::false_type detector##funcName(...);
+#define _DISABLER_E(funcName)template<class _Cl> static constexpr std::true_type detector##funcName(detectorClass<_Cl, &_Cl::funcName>*);\
+template<class _Cl> static constexpr std::false_type detector##funcName(...);
 
 #define ADD_DISABLERS(classname, ...) typedef classname this_type;\
 template<typename U, void (U::*f)()> struct detectorClass {};\

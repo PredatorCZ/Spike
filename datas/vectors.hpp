@@ -25,6 +25,10 @@
 
 #define FLTCMP(a, b) (a <= (b + FLT_EPSILON) && a >= (b - FLT_EPSILON))
 
+template <typename T> class t_Vector;
+template <typename T> class _t_Vector4;
+template<typename T> class V4ScalarType;
+
 template<typename T>
 class t_Vector2
 {
@@ -63,7 +67,7 @@ public:
 	t_Vector2& operator>>=(const int& input) { X >>= input; Y >>= input; return *this; }
 	t_Vector2& operator<<=(const int& input) { X <<= input; Y <<= input; return *this; }
 
-	t_Vector2& operator-() { X *= -1; Y *= -1; return *this; }
+	t_Vector2 operator-() const { return *this * -1; }
 
 	//ES_FORCEINLINE t_Vector<T> ToVector() const { return t_Vector<T>(this->X, this->Y, 0.0f); }
 	//ES_FORCEINLINE t_Vector4<T> ToVector4() const { return t_Vector4<T>(this->X, this->Y, 0.0f, 0.0f); }
@@ -160,10 +164,10 @@ public:
 	t_Vector& operator>>=(const int& input) { X >>= input; Y >>= input; Z >>= input; return *this; }
 	t_Vector& operator<<=(const int& input) { X <<= input; Y <<= input; Z <<= input; return *this; }
 
-	//ES_FORCEINLINE t_Vector4<T> ToVector4() const { return t_Vector4<T>(this->X, this->Y, this->Z, 0.0f); }
-	ES_FORCEINLINE t_Vector2<T> ToVector2() const { return t_Vector2<T>(this->X, this->Y); }
+	template<typename R> operator _t_Vector4<R>() const;
+	operator t_Vector2<T>() const { return t_Vector2<T>(this->X, this->Y); }
 
-	t_Vector& operator-() { X *= -1; Y *= -1; Z *= -1; return *this; }
+	t_Vector operator-() const { return *this * -1; }
 	
 	template<typename _T = T>
 	typename std::enable_if<std::is_integral<_T>::value, bool>::type operator==(const t_Vector &input) const { return (X == input.X && Y == input.Y && Z == input.Z); }
@@ -314,8 +318,11 @@ public:
     _t_Vector4(const C &input) : C(input) {}
     _t_Vector4(C && input) : C(input) {}
 
-	ES_FORCEINLINE t_Vector<eltype> ToVector() const { return t_Vector<eltype>(this->X, this->Y, this->Z); }
-	ES_FORCEINLINE t_Vector2<eltype> ToVector2() const { return t_Vector2<eltype>(this->X, this->Y); }
+	_t_Vector4 &operator=(const C &input) { static_cast<C&>(*this) = input; return *this; }
+    _t_Vector4 &operator=(C &&input) { static_cast<C&>(*this) = input; return *this; }
+
+	operator t_Vector<eltype>() const { return t_Vector<eltype>(this->X, this->Y, this->Z); }
+	operator t_Vector2<eltype>() const { return t_Vector2<eltype>(this->X, this->Y); }
 
     ES_FORCEINLINE std::string ToString() const
 	{ return std::to_string(this->X) + ' ' + std::to_string(this->Y) + ' ' + std::to_string(this->Z) + ' ' + std::to_string(this->W); }
@@ -340,6 +347,9 @@ public:
 
 template<typename T> using t_Vector4 = _t_Vector4<V4ScalarType<T>>;
 
+template<typename T> template<typename R> t_Vector<T>::operator _t_Vector4<R>() const
+{ return _t_Vector4<R>(this->X, this->Y, this->Z, 0.0f); }
+
 typedef t_Vector4<float> Vector4;
 typedef Vector4 FVector4;
 typedef t_Vector4<int> IVector4;
@@ -348,6 +358,7 @@ typedef t_Vector4<char> CVector4;
 typedef t_Vector4<uint> UIVector4;
 typedef t_Vector4<ushort> USVector4;
 typedef t_Vector4<uchar> UCVector4;
+
 
 #endif // ES_VECTORS_DEFINED
 
