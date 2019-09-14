@@ -49,6 +49,9 @@ public:
   V4SimdFltType(const Vector &input, float w) {
      _data = _mm_set_ps(w, input.Z, input.Y, input.X);
   }
+  V4SimdFltType(const Vector4 &input) {
+    _data = _mm_set_ps(input.W, input.Z, input.Y, input.X);
+  }
 
   ES_FORCEINLINE static void SetEpsilon(float newEpsilon) {
     __V4SimdFltType_EPSILON = _mm_set1_ps(newEpsilon);
