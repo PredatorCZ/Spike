@@ -16,7 +16,6 @@
         limitations under the License.
 */
 
-#pragma once
 #include "Matrix44.hpp"
 
 void esMatrix44::Decompose(Vector4A16 &position, Vector4A16 &rotation,

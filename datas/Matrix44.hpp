@@ -26,6 +26,9 @@ public:
   esMatrix44(const Vector4A16 &row1, const Vector4A16 &row2,
              const Vector4A16 &row3)
       : r1(row1), r2(row2), r3(row3) {}
+  esMatrix44(const Vector4A16 &row1, const Vector4A16 &row2,
+             const Vector4A16 &row3, const Vector4A16 &row4)
+      : r1(row1), r2(row2), r3(row3), r4(row4) {}
   esMatrix44(const Vector4A16 &quat);
   esMatrix44(const Vector4A16 *rows)
       : r1(rows[0]), r2(rows[1]), r3(rows[2]), r4(rows[3]) {}

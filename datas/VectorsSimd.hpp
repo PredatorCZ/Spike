@@ -125,7 +125,7 @@ public:
   V4SimdFltType operator^(const V4SimdFltType &input) const {
     return _mm_xor_ps(_data, input._data);
   }
-  V4SimdFltType operator~() const { return *this ^ V4SimdFltType(0xffff); }
+  V4SimdFltType operator~() const { return *this ^ V4SimdFltType(_mm_castsi128_ps(_mm_set1_epi32(-1))); }
 
   V4SimdFltType &operator&=(const V4SimdFltType &input) {
     return *this = *this & input;
@@ -149,8 +149,8 @@ public:
 
   V4SimdFltType operator-() const { return *this * -1.f; }
 
-  operator V4MMXShrtType();
-  operator V4SimdIntType();
+  operator V4MMXShrtType() const;
+  operator V4SimdIntType() const;
 
   template <typename T> V4ScalarType<T> Convert() const {
     return V4ScalarType<T>(static_cast<T>(X), static_cast<T>(Y),
@@ -223,6 +223,9 @@ public:
   V4SimdIntType(eltype s) { _data = _mm_set1_epi32(s); }
   V4SimdIntType(eltype x, eltype y, eltype z, eltype w) {
     _data = _mm_set_epi32(w, z, y, x);
+  }
+  V4SimdIntType(const IVector4 &input) {
+    _data = _mm_set_epi32(input.W, input.Z, input.Y, input.X);
   }
 
   operator V4SimdFltType() { return _mm_cvtepi32_ps(_data); }
@@ -327,7 +330,7 @@ public:
   }
 };
 
-ES_INLINE V4SimdFltType::operator V4SimdIntType() {
+ES_INLINE V4SimdFltType::operator V4SimdIntType() const {
   return _mm_cvtps_epi32(_data);
 }
 
@@ -487,7 +490,7 @@ public:
 
 typedef _t_Vector4<V4MMXShrtType> SVector4A8;
 
-ES_INLINE V4SimdFltType::operator V4MMXShrtType() {
+ES_INLINE V4SimdFltType::operator V4MMXShrtType() const {
   return _mm_cvtps_pi16(_data);
 }
 #endif
