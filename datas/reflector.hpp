@@ -28,14 +28,15 @@
 #include <cstring>
 #include <string>
 
-constexpr uchar _GetReflEnumItemSize(const char *value, size_t curIndex = 0) {
+constexpr size_t _GetReflEnumItemSize(const char *value, size_t curIndex = 0) {
   return (value[curIndex] == '=' || value[curIndex] == 0)
              ? curIndex - (value[curIndex] == '=' ? 1 : 0)
              : _GetReflEnumItemSize(value, curIndex + 1);
 }
 
 #define _REFLECTOR_ADDN_ENUM(value) #value,
-#define _REFLECTOR_ADDN_ENUMSIZE(value) _GetReflEnumItemSize(#value),
+#define _REFLECTOR_ADDN_ENUMSIZE(value)                                        \
+  static_cast<uchar>(_GetReflEnumItemSize(#value)),
 #define _REFLECTOR_ADDN_ENUMVAL(value) value,
 #define _REFLECTOR_ADDN_ENUMDUMMY(value) 0,
 
@@ -131,7 +132,7 @@ const int __sizeof_RelfType = sizeof(reflType);
       _id,                                                                     \
       _getType<                                                                \
           std::remove_reference<decltype(classname::value)>::type>::NUMITEMS,  \
-      static_cast<ushort>(offsetof(classname, value)),                                              \
+      static_cast<ushort>(offsetof(classname, value)),                         \
       JenkinsHash(#value, sizeof(#value) - 1),                                 \
       _getType<                                                                \
           std::remove_reference<decltype(classname::value)>::type>::HASH},

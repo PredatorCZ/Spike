@@ -1,3 +1,21 @@
+/*      SIMD Vector Classes with Intel intrinsics
+        more info in README for PreCore Project
+
+        Copyright 2019 Lukas Cone
+
+        Licensed under the Apache License, Version 2.0 (the "License");
+        you may not use this file except in compliance with the License.
+        You may obtain a copy of the License at
+
+                http://www.apache.org/licenses/LICENSE-2.0
+
+        Unless required by applicable law or agreed to in writing, software
+        distributed under the License is distributed on an "AS IS" BASIS,
+        WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+        See the License for the specific language governing permissions and
+        limitations under the License.
+*/
+
 #pragma once
 #include "vectors.hpp"
 #include <pmmintrin.h>
@@ -5,7 +23,11 @@
 class V4MMXShrtType;
 class V4SimdIntType;
 
+#ifdef _MSC_VER
+thread_local static float __V4SimdFltType_EPSILON = FLT_EPSILON;
+#else
 thread_local static __m128 __V4SimdFltType_EPSILON = _mm_set1_ps(FLT_EPSILON);
+#endif
 
 class alignas(16) V4SimdFltType {
 public:
@@ -30,10 +52,19 @@ private:
     return _mm_hadd_ps(_mm_hadd_ps(input, input), input); // SSE3+ only
   }
 
+  ES_FORCEINLINE static __m128 GetEpsilon() {
+    return
+#ifdef _MSC_VER
+    _mm_set1_ps(__V4SimdFltType_EPSILON);
+#else
+    __V4SimdFltType_EPSILON;
+#endif
+  }
+
   ES_FORCEINLINE static bool Compare(__m128 input1, __m128 input2) {
-    const __m128 result = _mm_and_ps(
-        _mm_cmple_ps(input2, _mm_add_ps(input1, __V4SimdFltType_EPSILON)),
-        _mm_cmpge_ps(input2, _mm_sub_ps(input1, __V4SimdFltType_EPSILON)));
+    const __m128 result =
+        _mm_and_ps(_mm_cmple_ps(input2, _mm_add_ps(input1, GetEpsilon())),
+                   _mm_cmpge_ps(input2, _mm_sub_ps(input1, GetEpsilon())));
 
     return reinterpret_cast<const t_Vector4<int> &>(result) ==
            t_Vector4<int>(UINT32_MAX);
@@ -47,14 +78,19 @@ public:
     _data = _mm_set_ps(w, z, y, x);
   }
   V4SimdFltType(const Vector &input, float w) {
-     _data = _mm_set_ps(w, input.Z, input.Y, input.X);
+    _data = _mm_set_ps(w, input.Z, input.Y, input.X);
   }
   V4SimdFltType(const Vector4 &input) {
     _data = _mm_set_ps(input.W, input.Z, input.Y, input.X);
   }
 
   ES_FORCEINLINE static void SetEpsilon(float newEpsilon) {
-    __V4SimdFltType_EPSILON = _mm_set1_ps(newEpsilon);
+    __V4SimdFltType_EPSILON = 
+#ifdef _MSC_VER
+    newEpsilon;
+#else
+    _mm_set1_ps(newEpsilon);
+#endif
   }
 
   V4SimdFltType &operator+=(const V4SimdFltType &input) {
@@ -125,7 +161,9 @@ public:
   V4SimdFltType operator^(const V4SimdFltType &input) const {
     return _mm_xor_ps(_data, input._data);
   }
-  V4SimdFltType operator~() const { return *this ^ V4SimdFltType(_mm_castsi128_ps(_mm_set1_epi32(-1))); }
+  V4SimdFltType operator~() const {
+    return *this ^ V4SimdFltType(_mm_castsi128_ps(_mm_set1_epi32(-1)));
+  }
 
   V4SimdFltType &operator&=(const V4SimdFltType &input) {
     return *this = *this & input;
@@ -311,7 +349,6 @@ public:
     return *this = *this >> input;
   }
 
-
   V4SimdIntType operator-() const { return V4SimdIntType() - *this; }
 
   template <typename T> V4ScalarType<T> Convert() const {
@@ -321,8 +358,7 @@ public:
 
   bool operator==(const V4SimdIntType &input) const {
     const __m128i result = _mm_cmpeq_epi32(input._data, _data);
-    return reinterpret_cast<const t_Vector4<int> &>(result) !=
-           t_Vector4<int>(0.0f, 0.0f, 0.0f, 0.0f);
+    return reinterpret_cast<const t_Vector4<int> &>(result) != t_Vector4<int>();
   }
 
   bool operator!=(const V4SimdIntType &input) const {
