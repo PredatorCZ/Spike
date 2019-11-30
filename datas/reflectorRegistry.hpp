@@ -52,7 +52,7 @@ struct RefEnumFunctions {
 
         size_t cLen = strlen(cName) - 1;
 
-        for (int t = cLen; t > -1; t--)
+        for (size_t t = cLen; t > -1; t--)
           resVal |= atohLUT[cName[t]] << 4 * (cLen - t);
 
         lastValue = resVal + 1;
@@ -79,7 +79,7 @@ template <class E> uint64 EnumConstructor_t(const char *value) {
   while (*value == ' ')
     value++;
 
-  const int valueLen = strlen(value);
+  const int valueLen = static_cast<int>(strlen(value));
 
   for (int t = 0; t < enumInstance._reflectedSize; t++)
     if (valueLen == enumInstance._reflectedSizes[t] &&
@@ -106,7 +106,7 @@ template <class E> uint64 EnumMultiConstructor_t(const char *value) {
           if (currentValue.size() == enumInstance._reflectedSizes[t] &&
               !memcmp(enumInstance._reflected[t], currentValue.data(),
                       enumInstance._reflectedSizes[t])) {
-            resval |= 1 << enumInstance._reflectedValues[t];
+            resval |= 1ULL << enumInstance._reflectedValues[t];
             break;
           }
         currentValue.clear();
@@ -132,7 +132,7 @@ void EnumMultiDestructor_t(std::string &output, uint64 value) {
   E enumInstance = {};
 
   for (int i = 0; i < enumInstance._reflectedSize; i++)
-    if (value & (1 << enumInstance._reflectedValues[i])) {
+    if (value & (1ULL << enumInstance._reflectedValues[i])) {
       if (output.size())
         output.append(" | ");
 
