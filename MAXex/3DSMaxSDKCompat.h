@@ -24,7 +24,10 @@
 #define MAX_RELEASE_2018		20000
 //! 3ds Max R21 (2019)
 #define MAX_RELEASE_2019		21000
-
+//! 3ds Max R22 (2020)
+#define MAX_RELEASE_2020    22000
+//! 3ds Max R23 (2021)
+#define MAX_RELEASE_2021    23000
 
 //! 3ds Max R12 (2010) SDK
 #define MAX_API_2010	33	 
@@ -46,6 +49,8 @@
 #define MAX_API_2018	50
 //! 3ds Max R21 (2019) SDK
 #define MAX_API_2019	52
+//! 3ds Max R21 (2020) SDK
+#define MAX_API_2020 55
 
 #define _MAX_RELEASE_EVAL(x) MAX_RELEASE_##x
 #define _MAX_API_EVAL(x) MAX_API_##x
