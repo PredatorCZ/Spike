@@ -24,7 +24,9 @@ endif()
 
 function(build_target)
     cmake_parse_arguments(_arg "NO_PROJECT_H;NO_VERINFO" "TYPE;AUTHOR;DESCR;NAME;START_YEAR"
-        "SOURCES;DEFINITIONS;LINKS;INCLUDES;LINK_DIRS;PROPERTIES" ${ARGN})
+		"SOURCES;DEFINITIONS;LINKS;INCLUDES;LINK_DIRS;PROPERTIES" ${ARGN})
+	
+	link_directories(${_arg_LINK_DIRS})
 
 	if (_arg_TYPE STREQUAL APP)
 		add_executable(${PROJECT_NAME} ${_arg_SOURCES})
@@ -34,7 +36,6 @@ function(build_target)
 
 	target_compile_definitions(${PROJECT_NAME} PRIVATE ${_arg_DEFINITIONS})
 	target_include_directories(${PROJECT_NAME} PRIVATE ${_arg_INCLUDES})
-	target_link_directories(${PROJECT_NAME} PRIVATE ${_arg_LINK_DIRS})
 	target_link_libraries(${PROJECT_NAME} PRIVATE ${_arg_LINKS})
 
 	if (_arg_PROPERTIES)
