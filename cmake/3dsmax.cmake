@@ -36,7 +36,7 @@ endif()
 set (MaxSDKLibrariesPath ${MaxSDK}${_SDK_libs_path_prefix}/lib${_SDK_libs_path_suffix})
 set (MAX_EX_DIR ${PROJECT_SOURCE_DIR}/${TARGETEX_LOCATION}/../MAXex/)
 
-if (MAX_VERSION GREATER 2013)
+if (MAX_VERSION GREATER 2012)
     add_definitions(-D_UNICODE -DUNICODE)
     set(CHAR_TYPE UNICODE)
 else()
@@ -84,6 +84,12 @@ set(MaxProperties
     RUNTIME_OUTPUT_DIRECTORY_RELEASE ${CMAKE_SOURCE_DIR}/bin/${CMAKE_GENERATOR_PLATFORM}_${MAX_VERSION}
 )
 function(build_morpher)
+    if (${CMAKE_GENERATOR_PLATFORM} STREQUAL Win32)
+        set(_morpher_machine X86)
+    else()
+        set(_morpher_machine X64)
+    endif()
+
     add_custom_command(TARGET ${PROJECT_NAME} PRE_LINK COMMAND lib 
-	    ARGS /def:"${MAX_EX_DIR}Morpher${CMAKE_GENERATOR_PLATFORM}.def" /out:Morpher.lib /machine:${CMAKE_GENERATOR_PLATFORM})
+	    ARGS /def:"${MAX_EX_DIR}Morpher${_morpher_machine}.def" /out:Morpher.lib /machine:${_morpher_machine})
 endfunction()
