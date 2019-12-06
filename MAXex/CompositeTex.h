@@ -89,13 +89,13 @@ public:
 
 		if (index < 1 && numLayers == 1)
 		{
-			_DEBUG_ERROR("Cannot delete only last layer.");
+			assert(!"Cannot delete only last layer.");
 			return;
 		}
 
 		if (index >= numLayers)
 		{
-			_DEBUG_ERROR("Index out of range.");
+			assert(!"Index out of range.");
 			return;
 		}
 
@@ -109,7 +109,7 @@ public:
 	{
 		if (newSize < 1)
 		{
-			_DEBUG_ERROR("New size must be > 0");
+			assert(!"New size must be > 0");
 			return;
 		}
 
