@@ -65,7 +65,7 @@ struct SettingsManager : private Reflector
 		logger.imbue(utf8_locale);
 #endif
 
-		printer.AddPrinterFunction(reinterpret_cast<void*>(tprintf));
+		printer.AddPrinterFunction(reinterpret_cast<void*>(tprintf), false);
 
 		dateBuffer.resize(64);
 		_tcsftime(const_cast<TCHAR *>(dateBuffer.data()), 64, _T("%c %Z"), &timeStruct);
