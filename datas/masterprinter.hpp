@@ -52,11 +52,6 @@ public:
     return *this;
   }
 
-  template <> MasterPrinterThread &operator<<(const MPType input) {
-    cType = input;
-    return *this;
-  }
-
   void AddPrinterFunction(void *funcPtr, bool useColor = true);
   void FlushAll();
   void operator>>(int endWay);
@@ -68,6 +63,11 @@ public:
   MasterPrinterThread();
   ~MasterPrinterThread();
 } printer;
+
+template <> inline MasterPrinterThread &MasterPrinterThread::operator<<(const MPType input) {
+  cType = input;
+  return *this;
+}
 
 void SetConsoleTextColor(int red, int green, int blue);
 void RestoreConsoleTextColor();
