@@ -38,9 +38,17 @@ public:
 		BaseStream->seekp(position + ((relative && !vay) ? localseek : 0), vay);
 	}
 
-	ES_FORCEINLINE void Skip(const size_t length) const { Seek(length, std::ios_base::cur); }
+	ES_FORCEINLINE void Skip(const size_t length) const {
+		static constexpr char FILLBUFFER[32] = {};
+		const int numLoops = length / 32;
 
-	template<typename T> ES_FORCEINLINE void Skip() const { Seek(sizeof(T), std::ios_base::cur); }
+		for (int t = 0; t < numLoops; t++)
+			BaseStream->write(FILLBUFFER, 32);
+
+		BaseStream->write(FILLBUFFER, length % 32);
+	}
+
+	template<typename T> ES_FORCEINLINE void Skip() const { Skip(sizeof(T)); }
 };
 
 class BinWritter : public _BinCore<_BinCoreOut>
