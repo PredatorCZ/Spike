@@ -36,7 +36,7 @@ function(build_target)
 
 	target_compile_definitions(${PROJECT_NAME} PRIVATE ${_arg_DEFINITIONS})
 	target_include_directories(${PROJECT_NAME} PRIVATE ${_arg_INCLUDES})
-	target_link_libraries(${PROJECT_NAME} PRIVATE ${_arg_LINKS})
+	target_link_libraries(${PROJECT_NAME} ${_arg_LINKS})
 
 	if (_arg_PROPERTIES)
 		set_target_properties(${PROJECT_NAME} PROPERTIES ${_arg_PROPERTIES})
