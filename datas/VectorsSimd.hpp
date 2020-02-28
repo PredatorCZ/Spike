@@ -42,7 +42,7 @@ public:
   };
 
 private:
-  ES_FORCEINLINE __m128 CollectAdd(__m128 input) const {
+  __m128 CollectAdd(__m128 input) const {
     // input = _mm_add_ss(input, _mm_shuffle_ps(input, input, _MM_SHUFFLE(3, 2,
     // 0, 1)));
     //__m128 temp2 = _mm_movehl_ps(input, input);
@@ -52,7 +52,7 @@ private:
     return _mm_hadd_ps(_mm_hadd_ps(input, input), input); // SSE3+ only
   }
 
-  ES_FORCEINLINE static __m128 GetEpsilon() {
+  static __m128 GetEpsilon() {
     return
 #ifdef _MSC_VER
     _mm_set1_ps(__V4SimdFltType_EPSILON);
@@ -61,7 +61,7 @@ private:
 #endif
   }
 
-  ES_FORCEINLINE static bool Compare(__m128 input1, __m128 input2) {
+  static bool Compare(__m128 input1, __m128 input2) {
     const __m128 result =
         _mm_and_ps(_mm_cmple_ps(input2, _mm_add_ps(input1, GetEpsilon())),
                    _mm_cmpge_ps(input2, _mm_sub_ps(input1, GetEpsilon())));
@@ -84,7 +84,7 @@ public:
     _data = _mm_set_ps(input.W, input.Z, input.Y, input.X);
   }
 
-  ES_FORCEINLINE static void SetEpsilon(float newEpsilon) {
+  static void SetEpsilon(float newEpsilon) {
     __V4SimdFltType_EPSILON = 
 #ifdef _MSC_VER
     newEpsilon;
@@ -203,24 +203,24 @@ public:
     return !(*this == input);
   }
 
-  ES_FORCEINLINE bool IsSymetrical() const {
+  bool IsSymetrical() const {
     const __m128 temp = _mm_shuffle_ps(_data, _data, _MM_SHUFFLE(3, 1, 0, 2));
     return Compare(_mm_hsub_ps(_data, _data), _mm_hsub_ps(temp, temp));
   }
 
-  ES_FORCEINLINE int Sign() const { return _mm_movemask_ps(_data) ? -1 : 1; }
+  int Sign() const { return _mm_movemask_ps(_data) ? -1 : 1; }
 
-  ES_FORCEINLINE float Length() const {
+  float Length() const {
     __m128 temp = CollectAdd(_mm_mul_ps(_data, _data));
     temp = _mm_sqrt_ss(temp);
     return _mm_cvtss_f32(temp);
   }
 
-  ES_FORCEINLINE float Dot(const V4SimdFltType &input) const {
+  float Dot(const V4SimdFltType &input) const {
     return _mm_cvtss_f32(CollectAdd(_mm_mul_ps(_data, input._data)));
   }
 
-  ES_FORCEINLINE V4SimdFltType &Normalize() {
+  V4SimdFltType &Normalize() {
     float len = Length();
 
     if (!len)
@@ -229,11 +229,11 @@ public:
     return *this /= len;
   }
 
-  ES_FORCEINLINE V4SimdFltType QConjugate() const {
+  V4SimdFltType QConjugate() const {
     return *this * V4SimdFltType(-1.0f, -1.0f, -1.0f, 1.0f);
   }
 
-  ES_FORCEINLINE V4SimdFltType &QComputeElement(int elementIndex = 3) {
+  V4SimdFltType &QComputeElement(int elementIndex = 3) {
     _arr[elementIndex] =
         sqrtf(1.0f - _mm_cvtss_f32(CollectAdd(_mm_mul_ps(_data, _data))));
 
@@ -366,7 +366,7 @@ public:
   }
 };
 
-ES_INLINE V4SimdFltType::operator V4SimdIntType() const {
+V4SimdFltType::operator V4SimdIntType() const {
   return _mm_cvtps_epi32(_data);
 }
 
@@ -526,7 +526,7 @@ public:
 
 typedef _t_Vector4<V4MMXShrtType> SVector4A8;
 
-ES_INLINE V4SimdFltType::operator V4MMXShrtType() const {
+V4SimdFltType::operator V4MMXShrtType() const {
   return _mm_cvtps_pi16(_data);
 }
 #endif

@@ -1,113 +1,111 @@
-/*	TFileInfo class for parsing/exploding file paths
-	more info in README for PreCore Project
+/*  TFileInfo class for parsing/exploding file paths
+    more info in README for PreCore Project
 
-	Copyright 2015-2019 Lukas Cone
+    Copyright 2015-2020 Lukas Cone
 
-	Licensed under the Apache License, Version 2.0 (the "License");
-	you may not use this file except in compliance with the License.
-	You may obtain a copy of the License at
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
 
-		http://www.apache.org/licenses/LICENSE-2.0
+        http://www.apache.org/licenses/LICENSE-2.0
 
-	Unless required by applicable law or agreed to in writing, software
-	distributed under the License is distributed on an "AS IS" BASIS,
-	WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-	See the License for the specific language governing permissions and
-	limitations under the License.
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
 */
 
 #pragma once
+#include "string_view.hpp"
 #include "supercore.hpp"
-#include <string>
 #include <vector>
 
-template<class T> class _FileInfo_t
-{
+template <class T> class FileInfo {
 public:
-	typedef std::basic_string<T, std::char_traits<T>, std::allocator<T>> _strType;
-	typedef std::vector<_strType> _vecType;
+  typedef es::basic_string_view<T> stringref_type;
+  typedef std::basic_string<T, std::char_traits<T>, std::allocator<T>>
+      string_type;
+  typedef std::vector<stringref_type> explode_type;
+
 private:
-	_strType fullPath;
-	_strType path;
-	_strType filename;
-	_strType extension;
-	_strType filenameFull;
+  string_type fullPath;
+  size_t endFolder;
+  size_t lastDot;
+
 public:
-	ES_FORCEINLINE _FileInfo_t(const _strType &fname): _FileInfo_t(fname.c_str()){}
-	ES_FORCEINLINE _FileInfo_t(const T *fname )
-	{
-		fullPath = fname;
-		
-		if (!fullPath.size())
-			return;
+  FileInfo(stringref_type input) { Load(input); }
+  FileInfo() noexcept = default;
 
-		for (auto &c : fullPath)
-			if (c == '\\')
-				c = '/';
+  void Load(stringref_type input) {
+    fullPath = input;
 
-		size_t pathindex = fullPath.find_last_of('/');
-		size_t dotIndex = fullPath.find_last_of('.');
+    if (!fullPath.size())
+      return;
 
-		if (pathindex != fullPath.npos)
-			pathindex++;
-		else
-			pathindex = 0;
+    for (auto &c : fullPath)
+      if (c == '\\')
+        c = '/';
 
-		path = fullPath.substr(0, pathindex);
-		
-		if (dotIndex == fullPath.npos)
-			dotIndex = fullPath.size();
+    endFolder = fullPath.find_last_of('/');
+    lastDot = fullPath.find_last_of('.');
 
-		filename = fullPath.substr(pathindex, dotIndex - pathindex);
-		filenameFull = fullPath.substr(pathindex);	
-		extension = fullPath.substr(dotIndex);
-	}
-	ES_FORCEINLINE const _strType &GetFullPath() const {return fullPath;}
-	ES_FORCEINLINE const _strType &GetFilenameFull() const {return filenameFull;}
-	ES_FORCEINLINE const _strType &GetFileName() const {return filename;}
-	ES_FORCEINLINE const _strType &GetExtension() const {return extension;}
-	ES_FORCEINLINE const _strType &GetPath() const {return path;}
-	ES_FORCEINLINE void Explode(_vecType &rVec) const
-	{
-		const size_t fullSize = fullPath.size();
-		size_t lastOffset = 2;
+    if (endFolder != fullPath.npos)
+      endFolder++;
+    else
+      endFolder = 0;
 
-		for (size_t c = 0; c < fullSize; c++)
-			if (fullPath[c] == '/')
-				lastOffset++;
+    if (lastDot == fullPath.npos)
+      lastDot = fullPath.size();
+  }
 
-		rVec.reserve(lastOffset);
-		lastOffset = 0;
+  stringref_type GetFullPathNoExt() const { return {fullPath.data(), lastDot}; }
+  stringref_type GetFullPath() const { return fullPath; }
+  stringref_type GetFilenameExt() const {
+    return {fullPath.data() + endFolder};
+  }
+  stringref_type GetFilename() const {
+    return {fullPath.data() + endFolder, fullPath.data() + lastDot};
+  }
+  stringref_type GetExtension() const { return fullPath.data() + lastDot; }
+  stringref_type GetFolder() const { return {fullPath.data(), endFolder}; }
 
-		for (size_t c = 0; c < fullSize; c++)
-			if (fullPath[c] == '/')
-			{
-				size_t curOffset = lastOffset + (lastOffset ? 1 : 0);
-				rVec.push_back(fullPath.substr(curOffset, c - curOffset));
-				lastOffset = c;
-			}
+  explode_type Explode() const {
+    explode_type resVal;
+    const char *lastOffset = fullPath.data();
+    const size_t fullSize = fullPath.size();
+    const char *pathEnd = std::prev(fullPath.end()).operator->() + 1;
 
-		rVec.push_back(fullPath.substr(lastOffset + (lastOffset ? 1 : 0)));
-	}
-	ES_FORCEINLINE const _strType CatchBranch(const _strType &path) const
-	{
-		_vecType exVec = {};
-		Explode(exVec);
+    if (*lastOffset == '/')
+      lastOffset++;
 
-		size_t found = path.find(exVec[0].c_str());
+    for (size_t c = 1; c < fullSize; c++)
+      if (fullPath[c] == '/') {
+        resVal.emplace_back(lastOffset, fullPath.data() + c);
+        lastOffset = fullPath.data() + c + 1;
+      }
 
-		if (found == path.npos)
-			return path + GetFilenameFull();
-		else
-			return path.substr(0, found) + GetFullPath();
-	}
+    if (lastOffset != pathEnd)
+      resVal.emplace_back(lastOffset);
 
+    return resVal;
+  }
+
+  string_type CatchBranch(const stringref_type &path) const {
+    explode_type exVec = Explode();
+    const size_t found = path.find(exVec[0]);
+
+    if (found == path.npos)
+      return string_type(path).append(GetFilenameExt());
+    else
+      return string_type(path.begin(), found - 1).append(GetFullPath());
+  }
 };
 
-typedef _FileInfo_t<char> AFileInfo;
-typedef _FileInfo_t<wchar_t> WFileInfo;
+typedef FileInfo<char> AFileInfo;
+typedef FileInfo<wchar_t> WFileInfo;
 
-#ifdef _UNICODE
+#ifdef UNICODE
 typedef WFileInfo TFileInfo;
 #else
 typedef AFileInfo TFileInfo;

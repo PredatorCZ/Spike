@@ -22,7 +22,7 @@ static constexpr int hf_signMask = 0x8000;
 static constexpr int hf_exponentMask = 0x7C00;
 static constexpr int hf_fractionMask = (~(hf_exponentMask | hf_signMask)) & 0xffff;
 
-ES_INLINE float halfToFloat(unsigned short half)
+inline float halfToFloat(unsigned short half)
 {
 	int result = (half & hf_signMask) << 16;
 	int exponent = ((half & hf_exponentMask) >> 10) - 16;

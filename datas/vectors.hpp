@@ -69,11 +69,11 @@ public:
 
 	t_Vector2 operator-() const { return *this * -1; }
 
-	//ES_FORCEINLINE t_Vector<T> ToVector() const { return t_Vector<T>(this->X, this->Y, 0.0f); }
-	//ES_FORCEINLINE t_Vector4<T> ToVector4() const { return t_Vector4<T>(this->X, this->Y, 0.0f, 0.0f); }
+	//t_Vector<T> ToVector() const { return t_Vector<T>(this->X, this->Y, 0.0f); }
+	//t_Vector4<T> ToVector4() const { return t_Vector4<T>(this->X, this->Y, 0.0f, 0.0f); }
 
-	ES_FORCEINLINE T& operator [](char pos) { return *(reinterpret_cast<T*>(this) + pos); }
-	ES_FORCEINLINE const T& operator [](char pos) const { return *(reinterpret_cast<const T*>(this) + pos); }
+	T& operator [](char pos) { return *(reinterpret_cast<T*>(this) + pos); }
+	const T& operator [](char pos) const { return *(reinterpret_cast<const T*>(this) + pos); }
 
 	template<typename _T = T>
 	typename std::enable_if<std::is_integral<_T>::value, bool>::type operator==(const t_Vector2 &input) const { return (X == input.X && Y == input.Y); }
@@ -81,24 +81,24 @@ public:
 	template<typename _T = T>
 	typename std::enable_if<std::is_floating_point<_T>::value, bool>::type operator==(const t_Vector2 &input) const { return FLTCMP(X, input.X) && FLTCMP(Y, input.Y); }
 
-	ES_FORCEINLINE bool operator!=(const t_Vector2 &input) const { return !(*this == input); }
+	bool operator!=(const t_Vector2 &input) const { return !(*this == input); }
 
-	ES_FORCEINLINE bool IsSymetrical() const { return (X == Y); }
+	bool IsSymetrical() const { return (X == Y); }
 
-	template<typename T2>ES_FORCEINLINE t_Vector2<T2> Convert(void) const { return t_Vector2<T2>(static_cast<T2>(X), static_cast<T2>(Y)); }
-	ES_FORCEINLINE std::string ToString() const
+	template<typename T2>t_Vector2<T2> Convert(void) const { return t_Vector2<T2>(static_cast<T2>(X), static_cast<T2>(Y)); }
+	std::string ToString() const
 	{
 		return std::to_string(X) + ' ' + std::to_string(Y);
 	}
-	ES_FORCEINLINE std::wstring ToWString() const
+	std::wstring ToWString() const
 	{
 		return std::to_wstring(X) + L' ' + std::to_wstring(Y);
 	}
 
-	ES_FORCEINLINE T Length() const { return static_cast<T>(sqrt(pow(X, 2) + pow(Y, 2))); }
-	ES_FORCEINLINE int Sign() const { return X * Y < 0 ? -1 : 1; }
-	ES_FORCEINLINE T Dot(const t_Vector2& input) const { return X * input.X + Y * input.Y; }
-	friend ES_INLINE std::ostream& operator<<(std::ostream &strm, const t_Vector2<T> &v) { return strm << v.X << " " << v.Y; }
+	T Length() const { return static_cast<T>(sqrt(pow(X, 2) + pow(Y, 2))); }
+	int Sign() const { return X * Y < 0 ? -1 : 1; }
+	T Dot(const t_Vector2& input) const { return X * input.X + Y * input.Y; }
+	friend std::ostream& operator<<(std::ostream &strm, const t_Vector2<T> &v) { return strm << v.X << " " << v.Y; }
 
 	t_Vector2 &Normalize()
 	{
@@ -109,7 +109,7 @@ public:
 		return *this;
 	}
 #ifdef ES_ENDIAN_DEFINED 
-	ES_FORCEINLINE void SwapEndian()
+	void SwapEndian()
 	{
 		FByteswapper(X);
 		FByteswapper(Y);
@@ -118,12 +118,12 @@ public:
 };
 typedef t_Vector2<float> Vector2;
 typedef Vector2 FVector2;
-typedef t_Vector2<int> IVector2;
-typedef t_Vector2<short> SVector2;
-typedef t_Vector2<char> CVector2;
-typedef t_Vector2<uint> UIVector2;
-typedef t_Vector2<ushort> USVector2;
-typedef t_Vector2<uchar> UCVector2;
+typedef t_Vector2<int32> IVector2;
+typedef t_Vector2<int32> SVector2;
+typedef t_Vector2<int8> CVector2;
+typedef t_Vector2<uint32> UIVector2;
+typedef t_Vector2<uint32> USVector2;
+typedef t_Vector2<uint8> UCVector2;
 
 template<typename T>
 class t_Vector
@@ -175,28 +175,28 @@ public:
 	template<typename _T = T>
 	typename std::enable_if<std::is_floating_point<_T>::value, bool>::type operator==(const t_Vector &input) const { return FLTCMP(X, input.X) && FLTCMP(Y, input.Y) && FLTCMP(Z, input.Z); }
 
-	ES_FORCEINLINE bool operator!=(const t_Vector &input) const { return !(*this == input); }
+	bool operator!=(const t_Vector &input) const { return !(*this == input); }
 		
-	ES_FORCEINLINE T& operator [](char pos) { return *(reinterpret_cast<T*>(this) + pos); }
-	ES_FORCEINLINE const T& operator [](char pos) const { return *(reinterpret_cast<const T*>(this) + pos); }
+	T& operator [](char pos) { return *(reinterpret_cast<T*>(this) + pos); }
+	const T& operator [](char pos) const { return *(reinterpret_cast<const T*>(this) + pos); }
 	
-	ES_FORCEINLINE bool IsSymetrical() const { return (X == Y) && (X == Z); }
+	bool IsSymetrical() const { return (X == Y) && (X == Z); }
 
-	template<typename T2>ES_FORCEINLINE t_Vector<T2> Convert(void) const { return t_Vector<T2>(static_cast<T2>(X), static_cast<T2>(Y), static_cast<T2>(Z)); }
+	template<typename T2>t_Vector<T2> Convert(void) const { return t_Vector<T2>(static_cast<T2>(X), static_cast<T2>(Y), static_cast<T2>(Z)); }
 
-	ES_FORCEINLINE std::string ToString() const
+	std::string ToString() const
 	{
 		return std::to_string(X)+ ' ' + std::to_string(Y)+ ' ' + std::to_string(Z);
 	}
-	ES_FORCEINLINE std::wstring ToStringW() const
+	std::wstring ToStringW() const
 	{
 		return std::to_wstring(X) + L' ' + std::to_wstring(Y) + L' ' + std::to_wstring(Z);
 	}
-	ES_FORCEINLINE int Sign() const { return X * Y * Z < 0 ? -1 : 1; }
-	ES_FORCEINLINE T Length() const { return static_cast<T>(sqrt(pow(X, 2) + pow(Y, 2) + pow(Z, 2))); }
-	ES_FORCEINLINE T Dot(const t_Vector& input) const { return X*input.X + Y*input.Y + Z*input.Z; }
-	ES_FORCEINLINE t_Vector Cross(const t_Vector& input)const { return t_Vector((Y*input.Z - Z*input.Y), (Z*input.X - X*input.Z), (X*input.Y - Y*input.X)); }
-	friend ES_INLINE std::ostream& operator<<(std::ostream &strm, const t_Vector<T> &v) { return strm << v.X << " " << v.Y << " " << v.Z; }
+	int Sign() const { return X * Y * Z < 0 ? -1 : 1; }
+	T Length() const { return static_cast<T>(sqrt(pow(X, 2) + pow(Y, 2) + pow(Z, 2))); }
+	T Dot(const t_Vector& input) const { return X*input.X + Y*input.Y + Z*input.Z; }
+	t_Vector Cross(const t_Vector& input)const { return t_Vector((Y*input.Z - Z*input.Y), (Z*input.X - X*input.Z), (X*input.Y - Y*input.X)); }
+	friend std::ostream& operator<<(std::ostream &strm, const t_Vector<T> &v) { return strm << v.X << " " << v.Y << " " << v.Z; }
 
 	t_Vector &Normalize()
 	{
@@ -208,7 +208,7 @@ public:
 		return *this;
 	}
 #ifdef ES_ENDIAN_DEFINED 
-	ES_FORCEINLINE void SwapEndian()
+	void SwapEndian()
 	{
 		FByteswapper(X);
 		FByteswapper(Y);
@@ -219,12 +219,12 @@ public:
 };
 typedef t_Vector<float> Vector;
 typedef Vector FVector;
-typedef t_Vector<int> IVector;
-typedef t_Vector<short> SVector;
-typedef t_Vector<char> CVector;
-typedef t_Vector<uint> UIVector;
-typedef t_Vector<ushort> USVector;
-typedef t_Vector<uchar> UCVector;
+typedef t_Vector<int32> IVector;
+typedef t_Vector<int16> SVector;
+typedef t_Vector<int8> CVector;
+typedef t_Vector<uint32> UIVector;
+typedef t_Vector<uint16> USVector;
+typedef t_Vector<uint8> UCVector;
 
 template <typename T> class V4ScalarType {
 public:
@@ -321,16 +321,16 @@ public:
 
   V4ScalarType operator-() const { return *this * -1.f; }
 
-  ES_FORCEINLINE bool IsSymetrical() const {
+  bool IsSymetrical() const {
     return (X == Y) && (X == Z) && (Z == W);
   }
 
-  template <typename T2> ES_FORCEINLINE V4ScalarType<T2> Convert() const {
+  template <typename T2> V4ScalarType<T2> Convert() const {
     return V4ScalarType<T2>(static_cast<T2>(X), static_cast<T2>(Y),
                             static_cast<T2>(Z), static_cast<T2>(W));
   }
 
-  ES_FORCEINLINE int Sign() const { return X * Y * Z * W < 0 ? -1 : 1; }
+  int Sign() const { return X * Y * Z * W < 0 ? -1 : 1; }
 
   template <typename _T = T>
   typename std::enable_if<std::is_integral<_T>::value, bool>::type
@@ -346,15 +346,15 @@ public:
            FLTCMP(this->Z, input.Z) && FLTCMP(this->W, input.W);
   }
 
-  ES_FORCEINLINE bool operator!=(const V4ScalarType &input) const {
+  bool operator!=(const V4ScalarType &input) const {
     return !(*this == input);
   }
 
-  ES_FORCEINLINE T Length() const {
+  T Length() const {
     return static_cast<T>(sqrt(pow(this->X, 2) + pow(this->Y, 2) +
                                pow(this->Z, 2) + pow(this->W, 2)));
   }
-  ES_FORCEINLINE T Dot(const V4ScalarType &input) const {
+  T Dot(const V4ScalarType &input) const {
     return this->X * input.X + this->Y * input.Y + this->Z * input.Z +
            this->W * input.W;
   }
@@ -392,28 +392,28 @@ public:
     return t_Vector2<eltype>(this->X, this->Y);
   }
 
-  ES_FORCEINLINE std::string ToString() const {
+  std::string ToString() const {
     return std::to_string(this->X) + ' ' + std::to_string(this->Y) + ' ' +
            std::to_string(this->Z) + ' ' + std::to_string(this->W);
   }
 
-  ES_FORCEINLINE std::wstring ToStringW() const {
+  std::wstring ToStringW() const {
     return std::to_wstring(this->X) + ' ' + std::to_wstring(this->Y) + ' ' +
            std::to_wstring(this->Z) + ' ' + std::to_wstring(this->W);
   }
 
-  ES_FORCEINLINE eltype &operator[](char pos) { return this->_arr[pos]; }
-  ES_FORCEINLINE const eltype &operator[](char pos) const {
+  eltype &operator[](char pos) { return this->_arr[pos]; }
+  const eltype &operator[](char pos) const {
     return this->_arr[pos];
   }
 
-  friend ES_INLINE std::ostream &operator<<(std::ostream &strm,
+  friend std::ostream &operator<<(std::ostream &strm,
                                             const _t_Vector4 &v) {
     return strm << v.X << " " << v.Y << " " << v.Z << " " << v.W;
   }
 
 #ifdef ES_ENDIAN_DEFINED
-  ES_FORCEINLINE void SwapEndian() {
+  void SwapEndian() {
     FByteswapper(this->X);
     FByteswapper(this->Y);
     FByteswapper(this->Z);
@@ -432,12 +432,12 @@ t_Vector<T>::operator _t_Vector4<R>() const {
 
 typedef t_Vector4<float> Vector4;
 typedef Vector4 FVector4;
-typedef t_Vector4<int> IVector4;
-typedef t_Vector4<short> SVector4;
-typedef t_Vector4<char> CVector4;
-typedef t_Vector4<uint> UIVector4;
-typedef t_Vector4<ushort> USVector4;
-typedef t_Vector4<uchar> UCVector4;
+typedef t_Vector4<int32> IVector4;
+typedef t_Vector4<int16> SVector4;
+typedef t_Vector4<int8> CVector4;
+typedef t_Vector4<uint32> UIVector4;
+typedef t_Vector4<uint16> USVector4;
+typedef t_Vector4<uint8> UCVector4;
 
 
 #endif // ES_VECTORS_DEFINED
@@ -446,25 +446,25 @@ typedef t_Vector4<uchar> UCVector4;
 #ifndef ES_VECTORS_TEMPLATES_DEFINED
 #define ES_VECTORS_TEMPLATES_DEFINED
 template <class C> struct _getType<t_Vector2<C>> {
-  static const char TYPE = 15;
-  static const JenHash SUBTYPE = _getType<C>::TYPE;
-  static const uchar SUBSIZE = sizeof(C);
-  static const ushort NUMITEMS = 2;
-  static const JenHash HASH = _getType<C>::HASH;
+  static const REFType TYPE = REFType::Vector;
+  static const REFType SUBTYPE = _getType<C>::TYPE;
+  static const uint8 SUBSIZE = sizeof(C);
+  static const uint16 NUMITEMS = 2;
+  static const JenHash HASH = _CompileVectorHash(SUBTYPE, SUBSIZE, NUMITEMS);
 };
 template <class C> struct _getType<t_Vector<C>> {
-  static const char TYPE = 16;
-  static const JenHash SUBTYPE = _getType<C>::TYPE;
-  static const uchar SUBSIZE = sizeof(C);
-  static const ushort NUMITEMS = 3;
-  static const JenHash HASH = _getType<C>::HASH;
+  static const REFType TYPE = REFType::Vector;
+  static const REFType SUBTYPE = _getType<C>::TYPE;
+  static const uint8 SUBSIZE = sizeof(C);
+  static const uint16 NUMITEMS = 3;
+  static const JenHash HASH = _CompileVectorHash(SUBTYPE, SUBSIZE, NUMITEMS);
 };
 template <class C> struct _getType<_t_Vector4<C>> {
-  static const char TYPE = 17;
-  static const JenHash SUBTYPE = _getType<typename C::eltype>::TYPE;
-  static const uchar SUBSIZE = sizeof(typename C::eltype);
-  static const ushort NUMITEMS = 4;
-  static const JenHash HASH = _getType<typename C::eltype>::HASH;
+  static const REFType TYPE = REFType::Vector;
+  static const REFType SUBTYPE = _getType<typename C::eltype>::TYPE;
+  static const uint8 SUBSIZE = sizeof(typename C::eltype);
+  static const uint16 NUMITEMS = 4;
+  static const JenHash HASH = _CompileVectorHash(SUBTYPE, SUBSIZE, NUMITEMS);
 };
 #endif
 #endif // ES_REFLECTOR_DEFINED

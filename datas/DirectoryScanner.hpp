@@ -21,16 +21,15 @@
 #if defined(__GNUC__) || defined(__GNUG__)
 #include <dirent.h>
 #else
-#include <tchar.h>
 #include <windows.h>
 #endif
 #include <cstring>
 #include <vector>
-#include "esstring.h"
+#include "tchar.hpp"
 
 class DirectoryScanner
 {
-	ES_INLINE bool IsFilteredFile(const TCHAR *fileName)
+	bool IsFilteredFile(const TCHAR *fileName)
 	{
 		if (!filters.size())
 			return true;
@@ -48,10 +47,10 @@ public:
 
 	void Scan(const TSTRING & dir);
 
-	ES_FORCEINLINE iterator begin() { return files.begin(); }
-	ES_FORCEINLINE iterator end() { return files.end(); }
-	ES_FORCEINLINE const_iterator cbegin() const { return files.cbegin(); }
-	ES_FORCEINLINE const_iterator cend() const { return files.cend(); }
+	iterator begin() { return files.begin(); }
+	iterator end() { return files.end(); }
+	const_iterator cbegin() const { return files.cbegin(); }
+	const_iterator cend() const { return files.cend(); }
 	void AddFilter(TSTRING val) { filters.push_back(val); }
 	const storage_type &Files() const { return files; }
 
@@ -85,7 +84,7 @@ private:
 				!strcmp(cFile->d_name, ".."))
 				continue;
 
-			TSTRING miniFile = esString(cFile->d_name);
+			TSTRING miniFile = ToTSTRING(cFile->d_name);
 			TSTRING subFile = wdir;
 			subFile += miniFile;
 

@@ -35,8 +35,8 @@ public:
 		OFB
 	};
 protected:
-	uint pboxes[BF_NUMPBOXES];
-	uint sboxes[BF_NUMSBOXES];
+	uint32 pboxes[BF_NUMPBOXES];
+	uint32 sboxes[BF_NUMSBOXES];
 	mutable uint64 eVector;
 	int enabled;
 	Mode mode;
@@ -46,22 +46,22 @@ public:
 	void Encode(char *buffer, size_t size) const;
 	void Decode(char *buffer, size_t size) const;
 
-	ES_INLINE void EncodeECB(char *buffer, size_t size) const;
-	ES_INLINE void DecodeECB(char *buffer, size_t size) const;
-	ES_INLINE void EncodeCBC(char *buffer, size_t size) const;
-	ES_INLINE void DecodeCBC(char *buffer, size_t size) const;
-	ES_INLINE void EncodePCBC(char *buffer, size_t size) const;
-	ES_INLINE void DecodePCBC(char *buffer, size_t size) const;
-	ES_INLINE void EncodeCFB(char *buffer, size_t size) const;
-	ES_INLINE void DecodeCFB(char *buffer, size_t size) const;
-	ES_INLINE void EncodeOFB(char *buffer, size_t size) const;
-	ES_INLINE void DecodeOFB(char *buffer, size_t size) const;
+	void EncodeECB(char *buffer, size_t size) const;
+	void DecodeECB(char *buffer, size_t size) const;
+	void EncodeCBC(char *buffer, size_t size) const;
+	void DecodeCBC(char *buffer, size_t size) const;
+	void EncodePCBC(char *buffer, size_t size) const;
+	void DecodePCBC(char *buffer, size_t size) const;
+	void EncodeCFB(char *buffer, size_t size) const;
+	void DecodeCFB(char *buffer, size_t size) const;
+	void EncodeOFB(char *buffer, size_t size) const;
+	void DecodeOFB(char *buffer, size_t size) const;
 
-	ES_FORCEINLINE void Enable(bool enable = true) { enabled = enable; }
-	ES_FORCEINLINE bool Valid() const { return enabled != 0; }
-	ES_FORCEINLINE void Mode(Mode _mode) { mode = _mode; }
-	ES_FORCEINLINE void Vector(uint64 vec) { eVector = vec; }
-	ES_FORCEINLINE uint64 Vector() const { return eVector; }
+	void Enable(bool enable = true) { enabled = enable; }
+	bool Valid() const { return enabled != 0; }
+	void Mode(Mode _mode) { mode = _mode; }
+	void Vector(uint64 vec) { eVector = vec; }
+	uint64 Vector() const { return eVector; }
 private:
 	virtual void EncodeBlock(uint64 &block) const;
 	virtual void DecodeBlock(uint64 &block) const;
