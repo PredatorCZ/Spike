@@ -1,10 +1,28 @@
+/*  RIFF WAVE format header
+
+    Copyright 2019-2020 Lukas Cone
+
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
+
+      http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+*/
+
+#pragma once
 #include "datas/supercore.hpp"
 
 struct WAVEGenericHeader {
-  uint id;
-  uint chunkSize;
+  uint32 id;
+  uint32 chunkSize;
 
-  WAVEGenericHeader(uint type, uint chSize = 0) : id(type), chunkSize(chSize) {}
+  WAVEGenericHeader(uint32 type, uint32 chSize = 0) : id(type), chunkSize(chSize) {}
 
   WAVEGenericHeader *Next() {
     return reinterpret_cast<WAVEGenericHeader *>(
@@ -13,9 +31,9 @@ struct WAVEGenericHeader {
 };
 
 struct RIFFHeader : WAVEGenericHeader {
-  static constexpr int ID = CompileFourCC("RIFF");
+  static constexpr uint32 ID = CompileFourCC("RIFF");
 
-  int type;
+  uint32 type;
 
   RIFFHeader(uint fullSize)
       : WAVEGenericHeader(ID, fullSize - 8), type(CompileFourCC("WAVE")) {}
@@ -33,14 +51,14 @@ enum class WAVE_FORMAT : ushort {
 };
 
 struct WAVE_fmt : WAVEGenericHeader {
-  static constexpr int ID = CompileFourCC("fmt ");
+  static constexpr uint32 ID = CompileFourCC("fmt ");
 
   WAVE_FORMAT format;
-  ushort channels = 1;
-  uint sampleRate = 0;
-  uint sampleCount = 0;
-  ushort interleave = 0;
-  ushort bitsPerSample;
+  uint16 channels = 1;
+  uint32 sampleRate = 0;
+  uint32 sampleCount = 0;
+  uint16 interleave = 0;
+  uint16 bitsPerSample;
 
   WAVE_fmt(WAVE_FORMAT iFormat)
       : WAVEGenericHeader(ID, sizeof(WAVE_fmt) - 8), format(iFormat) {
@@ -69,20 +87,20 @@ struct WAVE_fmt : WAVEGenericHeader {
 };
 
 struct WAVE_fmt_MSADPCM : WAVE_fmt {
-  ushort extendedDataSize;
+  uint16 extendedDataSize;
   char extendedData[2];
 };
 
 struct WAVE_data : WAVEGenericHeader {
-  static constexpr int ID = CompileFourCC("data");
+  static constexpr uint32 ID = CompileFourCC("data");
 
   char *GetData() { return reinterpret_cast<char *>(this) + sizeof(WAVE_data); }
-  WAVE_data(uint dataSize) : WAVEGenericHeader(ID, dataSize) {}
+  WAVE_data(uint32 dataSize) : WAVEGenericHeader(ID, dataSize) {}
 };
 
 struct WAVE_fact : WAVEGenericHeader {
-  static constexpr int ID = CompileFourCC("fact");
-  int uncompressedSize;
+  static constexpr uint32 ID = CompileFourCC("fact");
+  uint32 uncompressedSize;
 };
 
 struct WAVE_smpl : WAVEGenericHeader {
@@ -93,17 +111,17 @@ struct WAVE_smpl : WAVEGenericHeader {
       TYPE_LOOP_BACKWARD
     };
 
-    int id;
+    uint32 id;
     Type type;
-    int start,
+    uint32 start,
       end,
       fraction,
       playCount;
   };
 
-  static constexpr int ID = CompileFourCC("smpl");
+  static constexpr uint32 ID = CompileFourCC("smpl");
 
-  int manufacturer,
+  uint32 manufacturer,
     product,
     samplePeriod,
     MIDIUnityNote,
@@ -116,7 +134,7 @@ struct WAVE_smpl : WAVEGenericHeader {
     SampleLoop *GetSampleLoops() {return reinterpret_cast<SampleLoop*>(this + 1);}
 };
 
-static bool IsValidWaveChunk(const WAVEGenericHeader &hdr) {
+static inline bool IsValidWaveChunk(const WAVEGenericHeader &hdr) {
   switch (hdr.id) {
   case WAVE_fmt::ID:
   case WAVE_data::ID:
