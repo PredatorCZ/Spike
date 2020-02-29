@@ -1,37 +1,27 @@
 ﻿cmake_minimum_required (VERSION 3.3)
+project(PreCore)
 
-project(PreCoreTesting)
+set(PRECORE_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR})
 
+#Secify what sources should be built for PreCore and sets them for current target
+function(set_precore_sources)
+	foreach(cFile ${ARGN})
+		file(GLOB_RECURSE _fndGlob_${cFile} "${PRECORE_SOURCE_DIR}/*${cFile}.cpp")
 
-set (UNICODE false)
-set (RELEASEVER false)
+		if (NOT EXISTS ${_fndGlob_${cFile}})
+			message(WARNING "Cannot find source: ${cFile}")
+		else()
+			target_sources(${PROJECT_NAME} PRIVATE ${_fndGlob_${cFile}})
+		endif()
+	endforeach()
+	link_directories(${PRECORE_SOURCE_DIR})
+endfunction()
 
-if (RELEASEVER)
-	set(CMAKE_BUILD_TYPE Release)
-else()
-	set(CMAKE_BUILD_TYPE Debug)
-endif()
+if (${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_CURRENT_SOURCE_DIR})
 
-set(CMAKE_CXX_STANDARD 11)
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/test)
 
-add_executable (PreCoreTesting "_samples/datas.cpp" "datas/reflector.cpp" "datas/MasterPrinter.cpp")
-include_directories("./")
+enable_testing()
+add_test(PreCoreTesting test/PreCoreTesting)
 
-set(CMAKE_THREAD_PREFER_PTHREAD TRUE)
-set(THREADS_PREFER_PTHREAD_FLAG TRUE)
-find_package(Threads REQUIRED)
-
-if (UNICODE)
-	add_definitions(-D_UNICODE -DUNICODE)
-endif()
-
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${CMAKE_THREAD_LIBS_INIT} -msse3")
-if (CMAKE_CXX_COMPILER_ID MATCHES Clang)
-	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${CMAKE_THREAD_LIBS_INIT}")
-	message("Compiler is Clang")
-elseif(CMAKE_COMPILER_IS_GNUCXX)
-	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-invalid-offsetof ${CMAKE_THREAD_LIBS_INIT}")
-	message("Compiler is GNU")
-else()
-	message("Unknown compiler: ${CMAKE_CXX_COMPILER_ID}")
 endif()
