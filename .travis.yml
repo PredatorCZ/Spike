@@ -95,6 +95,9 @@ matrix:
             - clang-8
       env:
          - MATRIX_EVAL="CC=clang-8 && CXX=clang++-8"
+
+    - os: windows
+      name: "Compiler MSVC"
          
 before_install:
     - eval "${MATRIX_EVAL}"
@@ -103,4 +106,5 @@ script:
   - mkdir build
   - cd build
   - cmake ..
-  - make -j4
+  - cmake --build . -j 4
+  - ctest --verbose

@@ -18,8 +18,8 @@
 
 #include "BlockDecoder.h"
 
-inline void _DecodeBC1Block(const char *data, char *obuffer, int w, int h,
-                            int width, const int pixeloffset = 3) {
+inline void _DecodeBC1Block(const char *data, char *obuffer, uint32 w, uint32 h,
+                            uint32 width, const uint32 pixeloffset = 3) {
   Vector color1, color2;
   DecodeRGB565Block(data, color1);
   data += 2;
@@ -54,15 +54,16 @@ inline void _DecodeBC1Block(const char *data, char *obuffer, int w, int h,
   }
 }
 
-inline void _DecodeBC1BlockA(const char *data, char *obuffer, int w, int h,
-                             int width, const int pixeloffset = 4) {
+inline void _DecodeBC1BlockA(const char *data, char *obuffer, uint32 w,
+                             uint32 h, uint32 width,
+                             const uint32 pixeloffset = 4) {
   Vector color1, color2;
   UCVector colors[4];
   DecodeRGB565Block(data, color1);
-  const ushort &cl1 = reinterpret_cast<const ushort &>(*data);
+  const uint16 &cl1 = reinterpret_cast<const uint16 &>(*data);
   data += 2;
   DecodeRGB565Block(data, color2);
-  const ushort &cl2 = reinterpret_cast<const ushort &>(*data);
+  const uint16 &cl2 = reinterpret_cast<const uint16 &>(*data);
   data += 2;
   h *= 4;
   w *= 4;
@@ -86,10 +87,10 @@ inline void _DecodeBC1BlockA(const char *data, char *obuffer, int w, int h,
   }
 
   for (int row = 0; row < 4; row++) {
-    const int d1 = *data & 3;
-    const int d2 = (*data & 0xc) >> 2;
-    const int d3 = (*data & 0x30) >> 4;
-    const int d4 = (*data & 0xc0) >> 6;
+    const uint32 d1 = *data & 3;
+    const uint32 d2 = (*data & 0xc) >> 2;
+    const uint32 d3 = (*data & 0x30) >> 4;
+    const uint32 d4 = (*data & 0xc0) >> 6;
 
     reinterpret_cast<UCVector &>(
         *(obuffer + ((h + row) * width + w) * pixeloffset)) = colors[d1];
@@ -118,8 +119,8 @@ inline void _DecodeBC1BlockA(const char *data, char *obuffer, int w, int h,
   }
 }
 
-inline void _DecodeBC2Block(const char *data, char *obuffer, int w, int h,
-                            int width, const int pixeloffset = 4) {
+inline void _DecodeBC2Block(const char *data, char *obuffer, uint32 w, uint32 h,
+                            uint32 width, const uint32 pixeloffset = 4) {
   h *= 4;
   w *= 4;
   width *= 4;
@@ -140,29 +141,29 @@ inline void _DecodeBC2Block(const char *data, char *obuffer, int w, int h,
   }
 }
 
-inline void DecodeBC1BlockA(const char *data, char *obuffer, int w, int h,
-                            int width) {
+inline void DecodeBC1BlockA(const char *data, char *obuffer, uint32 w, uint32 h,
+                            uint32 width) {
   _DecodeBC1BlockA(data, obuffer, w, h, width);
 }
 
-inline void DecodeBC2Block(const char *data, char *obuffer, int w, int h,
-                           int width) {
+inline void DecodeBC2Block(const char *data, char *obuffer, uint32 w, uint32 h,
+                           uint32 width) {
   _DecodeBC2Block(data, obuffer + 3, w, h, width);
   _DecodeBC1Block(data + 8, obuffer, w, h, width, 4);
 }
 
-inline void DecodeBC1Block(const char *data, char *obuffer, int w, int h,
-                           int width) {
+inline void DecodeBC1Block(const char *data, char *obuffer, uint32 w, uint32 h,
+                           uint32 width) {
   _DecodeBC1Block(data, obuffer, w, h, width);
 }
 
-inline void _DecodeBC4Block(const char *data, char *obuffer, int w, int h,
-                            int width, const int pixeloffset = 1) {
+inline void _DecodeBC4Block(const char *data, char *obuffer, uint32 w, uint32 h,
+                            uint32 width, const uint32 pixeloffset = 1) {
   h *= 4;
   w *= 4;
   width *= 4;
 
-  ushort alpha[8]{*reinterpret_cast<const uint8 *>(data++),
+  uint16 alpha[8]{*reinterpret_cast<const uint8 *>(data++),
                   *reinterpret_cast<const uint8 *>(data++)};
 
   if (*alpha > alpha[1]) {
@@ -206,25 +207,25 @@ inline void _DecodeBC4Block(const char *data, char *obuffer, int w, int h,
   }
 }
 
-inline void DecodeBC4Block(const char *data, char *obuffer, int w, int h,
-                           int width) {
+inline void DecodeBC4Block(const char *data, char *obuffer, uint32 w, uint32 h,
+                           uint32 width) {
   _DecodeBC4Block(data, obuffer, w, h, width);
 }
 
-inline void DecodeBC5Block(const char *data, char *obuffer, int w, int h,
-                           int width) {
+inline void DecodeBC5Block(const char *data, char *obuffer, uint32 w, uint32 h,
+                           uint32 width) {
   _DecodeBC4Block(data, obuffer + 1, w, h, width, 3);
   _DecodeBC4Block(data + 8, obuffer + 2, w, h, width, 3);
 }
 
-inline void DecodeBC5BlockGA(const char *data, char *obuffer, int w, int h,
-                             int width) {
+inline void DecodeBC5BlockGA(const char *data, char *obuffer, uint32 w,
+                             uint32 h, uint32 width) {
   _DecodeBC4Block(data, obuffer, w, h, width, 2);
   _DecodeBC4Block(data + 8, obuffer + 1, w, h, width, 2);
 }
 
-inline void DecodeBC3Block(const char *data, char *obuffer, int w, int h,
-                           int width) {
+inline void DecodeBC3Block(const char *data, char *obuffer, uint32 w, uint32 h,
+                           uint32 width) {
   _DecodeBC4Block(data, obuffer + 3, w, h, width, 4);
   _DecodeBC1Block(data + 8, obuffer, w, h, width, 4);
 }

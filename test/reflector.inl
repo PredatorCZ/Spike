@@ -808,7 +808,7 @@ int test_reflector_float(reflClass &input) {
   TEST_CHECK(std::isnan(input.test10));
   cPair = input.GetReflectedPair(9);
   TEST_EQUAL(cPair.name, "test10");
-  TEST_EQUAL(cPair.value, "-nan");
+  TEST_CHECK((cPair.value == "nan" || cPair.value == "-nan"));
 
   TEST_EQUAL(input.SetReflectedValue("test10", "inf"),
              Reflector::ErrorType::None);

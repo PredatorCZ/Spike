@@ -21,6 +21,7 @@
 #include "string_view.hpp"
 #include <algorithm>
 #include <cmath>
+#include <cctype>
 
 static Reflector::ErrorType
 SetReflectedMember(reflType reflValue, es::string_view value, char *objAddr);

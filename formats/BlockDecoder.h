@@ -21,13 +21,20 @@
 #include <climits>
 #include <cmath>
 
-void DecodeBC1Block(const char *data, char *obuffer, int w, int h, int width);
-void DecodeBC1BlockA(const char *data, char *obuffer, int w, int h, int width);
-void DecodeBC2Block(const char *data, char *obuffer, int w, int h, int width);
-void DecodeBC4Block(const char *data, char *obuffer, int w, int h, int width);
-void DecodeBC5Block(const char *data, char *obuffer, int w, int h, int width);
-void DecodeBC5BlockGA(const char *data, char *obuffer, int w, int h, int width);
-void DecodeBC3Block(const char *data, char *obuffer, int w, int h, int width);
+void DecodeBC1Block(const char *data, char *obuffer, uint32 w, uint32 h,
+                    uint32 width);
+void DecodeBC1BlockA(const char *data, char *obuffer, uint32 w, uint32 h,
+                     uint32 width);
+void DecodeBC2Block(const char *data, char *obuffer, uint32 w, uint32 h,
+                    uint32 width);
+void DecodeBC4Block(const char *data, char *obuffer, uint32 w, uint32 h,
+                    uint32 width);
+void DecodeBC5Block(const char *data, char *obuffer, uint32 w, uint32 h,
+                    uint32 width);
+void DecodeBC5BlockGA(const char *data, char *obuffer, uint32 w, uint32 h,
+                      uint32 width);
+void DecodeBC3Block(const char *data, char *obuffer, uint32 w, uint32 h,
+                    uint32 width);
 
 inline void DecodeRGB565Block(const char *data, Vector &color) {
   const short &col = reinterpret_cast<const short &>(*data);
@@ -36,8 +43,8 @@ inline void DecodeRGB565Block(const char *data, Vector &color) {
   color.Z = ((col & 0xf800) >> 11) * (1.0f / 31.0f);
 }
 
-inline void ComputeBC5Blue(char *buffer, int size) {
-  for (int p = 0; p < size; p += 3) {
+inline void ComputeBC5Blue(char *buffer, uint32 size) {
+  for (uint32 p = 0; p < size; p += 3) {
     const Vector2 RG(
         (reinterpret_cast<UCVector2 *>(buffer + p + 1)->Convert<float>() *
          (2.0f / UCHAR_MAX)) -

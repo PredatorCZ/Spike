@@ -35,11 +35,11 @@ struct RIFFHeader : WAVEGenericHeader {
 
   uint32 type;
 
-  RIFFHeader(uint fullSize)
+  RIFFHeader(uint32 fullSize)
       : WAVEGenericHeader(ID, fullSize - 8), type(CompileFourCC("WAVE")) {}
 };
 
-enum class WAVE_FORMAT : ushort {
+enum class WAVE_FORMAT : uint16 {
   UNKNOWN,
   PCM,
   MS_ADPCM,
