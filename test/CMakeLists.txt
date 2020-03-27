@@ -9,9 +9,6 @@ build_target(
 	TYPE APP
 	SOURCES 
 		datas.cpp
-		${PRECORE_SOURCES}
-	INCLUDES
-		${PRECORE_SOURCE_DIR}
 	NO_PROJECT_H
 	NO_VERINFO
 )

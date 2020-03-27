@@ -366,7 +366,7 @@ public:
   }
 };
 
-V4SimdFltType::operator V4SimdIntType() const {
+inline V4SimdFltType::operator V4SimdIntType() const {
   return _mm_cvtps_epi32(_data);
 }
 

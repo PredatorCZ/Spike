@@ -41,4 +41,13 @@ public:
   Vector4A16 RotatePoint(const Vector4A16 &input) const;
   void FromQuat(const Vector4A16 &q);
   Vector4A16 ToQuat() const;
+
+#ifdef ES_ENDIAN_DEFINED
+  void SwapEndian() {
+    FByteswapper(r1);
+    FByteswapper(r2);
+    FByteswapper(r3);
+    FByteswapper(r4);
+  }
+#endif
 };

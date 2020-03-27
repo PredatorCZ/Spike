@@ -1,7 +1,11 @@
 ﻿cmake_minimum_required (VERSION 3.3)
 project(PreCore)
 
-set(PRECORE_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR})
+if (${CMAKE_CURRENT_SOURCE_DIR} STREQUAL ${CMAKE_SOURCE_DIR})
+	set(PRECORE_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR})
+else()
+	set(PRECORE_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR} PARENT_SCOPE)
+endif()
 
 #Secify what sources should be built for PreCore and sets them for current target
 function(set_precore_sources)
@@ -15,6 +19,7 @@ function(set_precore_sources)
 		endif()
 	endforeach()
 	link_directories(${PRECORE_SOURCE_DIR})
+	target_include_directories(${PROJECT_NAME} PRIVATE ${PRECORE_SOURCE_DIR})
 endfunction()
 
 if (${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_CURRENT_SOURCE_DIR})
