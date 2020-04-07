@@ -19,6 +19,7 @@
 
 template <class _Traits> class BinReaderRef_t : public BinStreamNavi<_Traits> {
   using _Traits::Read;
+
 public:
   typedef BinStreamNavi<_Traits> navi_type;
 
@@ -26,46 +27,65 @@ public:
   BinReaderRef_t(typename _Traits::StreamType &stream) noexcept
       : _Traits::_Traits(stream) {}
 
-  void ReadBuffer(char *buffer, size_t size) const { _Traits::Read(buffer, size); }
+  void ReadBuffer(char *buffer, size_t size) const {
+    _Traits::Read(buffer, size);
+  }
 
-  // Will read any std container using std::allocator class, eg. vector,
-  // basic_string, etc.. swapType : will force not to swap endianess, when used
-  // with class that does not have SwapEndian method or is not defined for
-  // structural swap
+  // Will read any container (vector, basic_string, etc..)
+  // input -> must have resize(), operator[], value_type, begin(), end()
   template <class _containerClass,
             class T = typename _containerClass::value_type>
-  void ReadContainer(_containerClass &input, size_t numitems,
-                     _e_swapEndian) const {
+  void ReadContainer(_containerClass &input, size_t numitems) const {
     input.resize(numitems);
 
     if (!numitems)
       return;
 
-    const size_t elesize = sizeof(T);
-    const size_t arrsize = elesize * numitems;
-
-    ReadBuffer(reinterpret_cast<char *>(&input[0]), arrsize);
-
-#ifdef ES_ENDIAN_DEFINED
-    if (this->swapEndian && swapType && elesize > 1)
-      for (T &a : input)
-        FByteswapper(a);
-#endif
+    _ReadElements<T>(&input[0], numitems, 0);
   }
 
-  // Will read any std container using std::allocator class, eg. vector,
-  // basic_string, etc.. Will read number of items first swapType : will force
-  // not to swap endianess, when used with class that does not have SwapEndian
-  // method or is not defined for structural swap
+  // Will read any container (vector, basic_string, etc..)
+  // Will read number of items first.
+  // _countType -> type, class convertable into size_t, readable by this->Read
+  // method
+  // input -> must have resize(), operator[], value_type, begin(), end()
   template <class _countType = int, class _containerClass>
-  void ReadContainer(_containerClass &input, _e_swapEndian) const {
+  void ReadContainer(_containerClass &input) const {
     _countType numElements;
     Read(numElements);
-#ifdef ES_ENDIAN_DEFINED
-    ReadContainer(input, numElements, swapType);
-#else
     ReadContainer(input, numElements);
-#endif
+  }
+
+  // Will read any container (vector, basic_string, etc..) with lambda function
+  // per element
+  // input -> must have resize(), operator[], value_type, begin(), end()
+  // pred -> lambda with (BinReaderRef, <element type>), no return
+  template <class _containerClass,
+            class T = typename _containerClass::value_type, class _func>
+  void ReadContainerLambda(_containerClass &input, size_t numitems,
+                     _func func) const {
+    input.resize(numitems);
+
+    if (!numitems)
+      return;
+
+    for (auto &e : input) {
+      func(*this, e);
+    }
+  }
+
+  // Will read any container (vector, basic_string, etc..) with lambda function
+  // per element
+  // Will read number of items first.
+  // _countType -> type, class convertable into size_t, readable by this->Read 
+  // method 
+  // input -> must have resize(), operator[], value_type, begin(), end()
+  // pred -> lambda with (BinReaderRef, <element type>), no return
+  template <class _countType = int, class _containerClass, class _func>
+  void ReadContainerLambda(_containerClass &input, _func func) const {
+    _countType numElements;
+    Read(numElements);
+    ReadContainerLambda(input, numElements, func);
   }
 
   // Will read buffer until 0
@@ -77,15 +97,55 @@ public:
       input.push_back(tmp);
   }
 
-  // swapType : will force not to swap endianess, when used with class that does
-  // not have SwapEndian method or is not defined for structural swap
-  template <typename T>
-  void Read(T &value, const size_t size = sizeof(T), _e_swapEndian) const {
+  template <typename T, size_t _size> void Read(T (&value)[_size]) const {
+    const size_t size = sizeof(T);
+    const size_t arraySize = size * _size;
+
+    ReadBuffer(reinterpret_cast<char *>(value), arraySize);
+
+#ifdef ES_ENDIAN_DEFINED
+    if (this->swapEndian && size > 1)
+      FByteswapper(value);
+#endif
+  }
+
+  // SFINAE read class via Read(BinReaderRef_t) member method, or read type
+  // itself
+  template <typename T> void Read(T &value) const { _ReadSingle<T>(value, 0); }
+
+private:
+  template <class C, class D>
+  auto _ReadSingle(D &input, int) const
+      -> decltype(std::declval<C>().Read(*this), void()) {
+    input.Read(*this);
+  };
+
+  template <class C, class T> void _ReadSingle(T &value, ...) const {
+    const size_t size = sizeof(T);
     ReadBuffer(reinterpret_cast<char *>(&value), size);
 
 #ifdef ES_ENDIAN_DEFINED
-    if (this->swapEndian && swapType && size > 1)
+    if (this->swapEndian && size > 1)
       FByteswapper(value);
+#endif
+  }
+
+  template <class C, class D>
+  auto _ReadElements(D *input, size_t numElements, int) const
+      -> decltype(std::declval<C>().Read(*this), void()) {
+    for (size_t e = 0; e < numElements; e++)
+      (input + e)->Read(*this);
+  };
+
+  template <class C, class T>
+  void _ReadElements(T *value, size_t numElements, ...) const {
+    const size_t size = sizeof(T);
+    ReadBuffer(reinterpret_cast<char *>(value), size * numElements);
+
+#ifdef ES_ENDIAN_DEFINED
+    if (this->swapEndian && size > 1)
+      for (size_t e = 0; e < numElements; e++)
+        FByteswapper(*(value + e));
 #endif
   }
 };

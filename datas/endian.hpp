@@ -69,6 +69,11 @@ template <class C, class D> void fbswap(D &input, ...) {
 
 template <class C> void FByteswapper(C &input) { fbswap<C>(input, 0); }
 
+template <class C, size_t _size> void FByteswapper(C (&input)[_size]) {
+  for (auto &a : input)
+    fbswap<C>(a, 0);
+}
+
 template <class E, class C> void FArraySwapper(C &input) {
   const size_t numItems = sizeof(C) / sizeof(E);
   E *inputPtr = reinterpret_cast<E *>(&input);

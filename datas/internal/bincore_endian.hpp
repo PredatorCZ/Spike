@@ -16,7 +16,6 @@
 */
 
 #pragma once
-#include <type_traits>
 
 class BinSteamEndian {
 protected:
@@ -26,15 +25,7 @@ protected:
 
 public:
 #ifdef ES_ENDIAN_DEFINED
-  enum EndianSwap { DONT_SWAP, SWAP };
-
   void SwapEndian(bool swap) { swapEndian = swap; }
   bool SwappedEndian() { return swapEndian; }
 #endif
 };
-
-#ifdef ES_ENDIAN_DEFINED
-#define _e_swapEndian BinSteamEndian::EndianSwap swapType = BinSteamEndian::SWAP
-#else
-#define _e_swapEndian void * = nullptr
-#endif

@@ -51,9 +51,9 @@ public:
   };
 
   void ApplyPadding(int allignBytes = 16) const {
-    const size_t mask = allignBytes - 1;
+    const int mask = allignBytes - 1;
     const size_t iterPos = Tell();
-    const size_t result = iterPos & mask;
+    const int result = iterPos & mask;
 
     if (!result)
       return;
