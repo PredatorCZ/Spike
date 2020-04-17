@@ -16,7 +16,7 @@
 */
 
 #pragma once
-#include<cstddef>
+#include <cstddef>
 
 template <class _Traits> class BinStreamNavi : public _Traits {
   size_t savePos;
@@ -24,6 +24,8 @@ template <class _Traits> class BinStreamNavi : public _Traits {
 
 protected:
   BinStreamNavi() noexcept : savePos(0), localPos(0) {}
+  BinStreamNavi(typename _Traits::StreamType &stream) noexcept
+      : _Traits(stream), savePos(0), localPos(0) {}
 
 public:
   using _Traits::Skip;

@@ -18,6 +18,7 @@
 #pragma once
 #include "binwritter_stream.hpp"
 #include "internal/bincore_file.hpp"
+#include "tchar.hpp"
 
 class BinWritter : public BinWritterRef,
                    public BinStreamFile<std::ios::binary | std::ios::out> {

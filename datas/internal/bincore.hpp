@@ -18,6 +18,7 @@
 #pragma once
 #include "bincore_endian.hpp"
 #include "bincore_navi.hpp"
+#include <type_traits>
 
 #define getBlockSize(classname, startval, endval)                              \
   offsetof(classname, endval) - offsetof(classname, startval) +                \

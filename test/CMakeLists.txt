@@ -8,12 +8,12 @@ set(CMAKE_CXX_STANDARD 11)
 build_target(
 	TYPE APP
 	SOURCES 
-		datas.cpp
+		test.cpp
 	NO_PROJECT_H
 	NO_VERINFO
 )
 
-set_precore_sources(reflector reflector_io master_printer)
+set_precore_sources(reflector reflector_io master_printer matrix44)
 
 set(CMAKE_THREAD_PREFER_PTHREAD TRUE)
 set(THREADS_PREFER_PTHREAD_FLAG TRUE)

@@ -14,8 +14,10 @@
     See the License for the specific language governing permissions and
     limitations under the License.
 */
+
 #pragma once
 #include "internal/bincore.hpp"
+#include "internal/sc_type.hpp"
 
 template <class _Traits> class BinReaderRef_t : public BinStreamNavi<_Traits> {
   using _Traits::Read;
@@ -25,7 +27,7 @@ public:
 
   BinReaderRef_t() noexcept = default;
   BinReaderRef_t(typename _Traits::StreamType &stream) noexcept
-      : _Traits::_Traits(stream) {}
+      : navi_type(stream) {}
 
   void ReadBuffer(char *buffer, size_t size) const {
     _Traits::Read(buffer, size);
@@ -49,7 +51,7 @@ public:
   // _countType -> type, class convertable into size_t, readable by this->Read
   // method
   // input -> must have resize(), operator[], value_type, begin(), end()
-  template <class _countType = int, class _containerClass>
+  template <class _countType = uint32, class _containerClass>
   void ReadContainer(_containerClass &input) const {
     _countType numElements;
     Read(numElements);
@@ -59,11 +61,11 @@ public:
   // Will read any container (vector, basic_string, etc..) with lambda function
   // per element
   // input -> must have resize(), operator[], value_type, begin(), end()
-  // pred -> lambda with (BinReaderRef, <element type>), no return
+  // func -> lambda with (BinReaderRef, <element type>), no return
   template <class _containerClass,
             class T = typename _containerClass::value_type, class _func>
   void ReadContainerLambda(_containerClass &input, size_t numitems,
-                     _func func) const {
+                           _func func) const {
     input.resize(numitems);
 
     if (!numitems)
@@ -77,11 +79,11 @@ public:
   // Will read any container (vector, basic_string, etc..) with lambda function
   // per element
   // Will read number of items first.
-  // _countType -> type, class convertable into size_t, readable by this->Read 
-  // method 
+  // _countType -> type, class convertable into size_t, readable by this->Read
+  // method
   // input -> must have resize(), operator[], value_type, begin(), end()
-  // pred -> lambda with (BinReaderRef, <element type>), no return
-  template <class _countType = int, class _containerClass, class _func>
+  // func -> lambda with (BinReaderRef, <element type>), no return
+  template <class _countType = uint32, class _containerClass, class _func>
   void ReadContainerLambda(_containerClass &input, _func func) const {
     _countType numElements;
     Read(numElements);
@@ -109,8 +111,8 @@ public:
 #endif
   }
 
-  // SFINAE read class via Read(BinReaderRef_t) member method, or read type
-  // itself
+  // SFINAE
+  // Read class with its Read(BinReaderRef_t) member method, or read type itself
   template <typename T> void Read(T &value) const { _ReadSingle<T>(value, 0); }
 
 private:
