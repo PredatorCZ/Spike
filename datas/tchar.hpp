@@ -37,8 +37,23 @@ using UniString = std::basic_string<T, std::char_traits<T>, std::allocator<T>>;
 
 typedef UniString<TCHAR> TSTRING;
 
-#ifdef UNICODE
 namespace std {
+  inline string to_string(const wstring &type) {
+    return es::ToUTF8(type);
+  }
+
+  inline string to_string(const wchar_t *type) {
+    return es::ToUTF8(type);
+  }
+
+  inline string to_string(const string &type) {
+    return type;
+  }
+
+  inline string to_string(const char *type) {
+    return type;
+  }
+
   inline wstring to_wstring(const string &type) {
     return es::ToUTF1632(type);
   }
@@ -56,28 +71,12 @@ namespace std {
   }
 };
 
+
+#ifdef UNICODE
 template <typename T> TSTRING ToTSTRING(const T &type) {
   return std::to_wstring(type);
 }
 #else
-namespace std {
-  inline string to_string(const wstring &type) {
-    return es::ToUTF8(type);
-  }
-
-  inline string to_string(const wchar_t *type) {
-    return es::ToUTF8(type);
-  }
-
-  inline string to_string(const string &type) {
-    return type;
-  }
-
-  inline string to_string(const char *type) {
-    return type;
-  }
-};
-
 template <typename T> TSTRING ToTSTRING(const T &type) {
   return std::to_string(type);
 }

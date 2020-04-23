@@ -72,8 +72,8 @@ public:
 	//t_Vector<T> ToVector() const { return t_Vector<T>(this->X, this->Y, 0.0f); }
 	//t_Vector4<T> ToVector4() const { return t_Vector4<T>(this->X, this->Y, 0.0f, 0.0f); }
 
-	T& operator [](char pos) { return *(reinterpret_cast<T*>(this) + pos); }
-	const T& operator [](char pos) const { return *(reinterpret_cast<const T*>(this) + pos); }
+	T& operator[](size_t pos) { return *(reinterpret_cast<T*>(this) + pos); }
+	const T& operator[](size_t pos) const { return *(reinterpret_cast<const T*>(this) + pos); }
 
 	template<typename _T = T>
 	typename std::enable_if<std::is_integral<_T>::value, bool>::type operator==(const t_Vector2 &input) const { return (X == input.X && Y == input.Y); }
@@ -177,8 +177,8 @@ public:
 
 	bool operator!=(const t_Vector &input) const { return !(*this == input); }
 		
-	T& operator [](char pos) { return *(reinterpret_cast<T*>(this) + pos); }
-	const T& operator [](char pos) const { return *(reinterpret_cast<const T*>(this) + pos); }
+	T& operator[](size_t pos) { return *(reinterpret_cast<T*>(this) + pos); }
+	const T& operator[](size_t pos) const { return *(reinterpret_cast<const T*>(this) + pos); }
 	
 	bool IsSymetrical() const { return (X == Y) && (X == Z); }
 
@@ -402,8 +402,8 @@ public:
            std::to_wstring(this->Z) + ' ' + std::to_wstring(this->W);
   }
 
-  eltype &operator[](char pos) { return this->_arr[pos]; }
-  const eltype &operator[](char pos) const {
+  eltype &operator[](size_t pos) { return this->_arr[pos]; }
+  const eltype &operator[](size_t pos) const {
     return this->_arr[pos];
   }
 
