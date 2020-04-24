@@ -16,7 +16,7 @@
 */
 
 #pragma once
-#include "datas/Matrix44.hpp"
+#include "datas/matrix44.hpp"
 #include "element.hpp"
 #include "list.hpp"
 
@@ -31,14 +31,14 @@ public:
   virtual std::string Name() const = 0;
 };
 
-typedef Element<const List<Bone>> BonesConst;
-typedef Element<List<Bone>> Bones;
+typedef Element<const List<Bone>> SkeletonBonesConst;
+typedef Element<List<Bone>> SkeletonBones;
 
 class Skeleton {
 public:
-  typedef Bones::element_type::iterator_type iterator_type;
+  typedef SkeletonBonesConst::element_type::iterator_type iterator_type;
 
-  virtual BonesConst Bones() const = 0;
+  virtual SkeletonBonesConst Bones() const = 0;
   virtual std::string Name() const = 0;
 
   iterator_type begin() const { return Bones()->begin(); }

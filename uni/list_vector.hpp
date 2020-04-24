@@ -25,6 +25,8 @@ namespace uni {
 template <class _interface_type, class _class_type>
 class VectorList : public List<_interface_type> {
 public:
+  typedef List<_interface_type> list_type;
+  typedef typename list_type::pointer_type pointer_type;
   typedef _interface_type interface_type;
   typedef _class_type class_type;
   typedef Element<class_type> pointer_class_type;
@@ -34,7 +36,7 @@ public:
     return dynamic_cast<pointer_type>(storage.at(id).get());
   }
 
-  typedef VirtualIterator<List, &List::Size, pointer_type, &List::At>
+  typedef VirtualIterator<list_type, &list_type::Size, pointer_type, &list_type::At>
       iterator_type;
 
   const iterator_type begin() const { return iterator_type(this, 0); }

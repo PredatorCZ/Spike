@@ -28,6 +28,7 @@ public:
   using parent::parent;
   using parent::operator=;
 
+  Element() : parent() {} // GCC < 7 fix
   Element(const Element &right) : Element(right.get(), false) {}
 
   Element &operator=(const Element &right) {
