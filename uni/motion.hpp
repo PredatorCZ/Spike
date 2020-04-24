@@ -28,9 +28,9 @@ struct RTSValue {
   Vector4A16 scale;
 };
 
-class MotionCurve {
+class MotionTrack {
 public:
-  enum CurveType_e {
+  enum TrackType_e {
     Position,
     Rotation,
     Scale,
@@ -38,28 +38,13 @@ public:
     PositionRotationScale,
     SingleFloat
   };
-  virtual CurveType_e CurveType() const = 0;
+
+  virtual TrackType_e TrackType() const = 0;
   virtual size_t BoneIndex() const = 0;
   virtual void GetValue(RTSValue &output, float time) const = 0;
   virtual void GetValue(esMatrix44 &output, float time) const = 0;
   virtual void GetValue(Vector4A16 &output, float time) const = 0;
   virtual void GetValue(float &output, float time) const = 0;
-};
-
-typedef Element<const List<MotionCurve>> MotionCurvesConst;
-typedef Element<List<MotionCurve>> MotionCurves;
-
-// Each track can contains multiple curves, one for Rotation, one for Position,
-// etc.
-class MotionTrack {
-public:
-  typedef MotionCurves::element_type::iterator_type iterator_type;
-
-  virtual MotionCurvesConst Curves() const = 0;
-  virtual size_t Index() const = 0;
-
-  iterator_type begin() const { return Curves()->begin(); }
-  iterator_type end() const { return Curves()->end(); }
 };
 
 typedef Element<const List<MotionTrack>> MotionTracksConst;
