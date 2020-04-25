@@ -20,24 +20,5 @@
 #include <memory>
 
 namespace uni {
-template <class C>
-class Element : public std::unique_ptr<C, es::deleter_hybrid> {
-  typedef std::unique_ptr<C, es::deleter_hybrid> parent;
-
-public:
-  using parent::parent;
-  using parent::operator=;
-
-  Element() : parent() {} // GCC < 7 fix
-  Element(const Element &right) : Element(right.get(), false) {}
-
-  Element &operator=(const Element &right) {
-    if (&right != this) {
-      Element rCopy(right.get(), false);
-      operator=(std::move(rCopy));
-    }
-
-    return *this;
-  }
-};
+template <class C> using Element = std::unique_ptr<C, es::deleter_hybrid>;
 } // namespace uni

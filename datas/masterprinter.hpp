@@ -31,12 +31,14 @@ thread_local static class MasterPrinterThread {
   MPType cType = MPType::MSG;
 
 public:
+  typedef void (*print_func)(const char *c);
+
   template <class C> MasterPrinterThread &operator<<(const C input) {
     _masterstream << input;
     return *this;
   }
 
-  void AddPrinterFunction(void *funcPtr, bool useColor = true);
+  void AddPrinterFunction(print_func func, bool useColor = true);
   void FlushAll();
   void operator>>(int endWay);
   void PrintThreadID(bool yn);
@@ -48,7 +50,9 @@ public:
   ~MasterPrinterThread();
 } printer;
 
-template <> inline MasterPrinterThread &MasterPrinterThread::operator<<(const MPType input) {
+template <>
+inline MasterPrinterThread &
+MasterPrinterThread::operator<<(const MPType input) {
   cType = input;
   return *this;
 }

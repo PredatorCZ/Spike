@@ -15,43 +15,53 @@
 */
 
 #pragma once
+#include "string_view.hpp"
 #include "supercore.hpp"
 #include <codecvt>
 #include <locale>
 #include <string>
 
-namespace _es {
-class cvt168 : public std::codecvt<char16_t, char, std::mbstate_t> {};
-class cvt328 : public std::codecvt<char32_t, char, std::mbstate_t> {};
+#if _MSC_VER >= 1900 
+#define _ES_UTF16 int16
+#define _ES_UTF32 int32
+#else
+#define _ES_UTF16 char16_t
+#define _ES_UTF32 char32_t
+#endif
 
+namespace _es {
 template <typename _Ty, size_t _size> struct _utf8cvt {};
 
 template <typename _Ty> struct _utf8cvt<_Ty, 2> {
   static std::string Cvt(const _Ty *input) {
-    std::wstring_convert<cvt168, char16_t> converter;
-    const char16_t *data = reinterpret_cast<const char16_t *>(input);
-    return converter.to_bytes(data);
+    const es::basic_string_view<_Ty> sw(input);
+    std::wstring_convert<std::codecvt_utf8_utf16<_ES_UTF16>, _ES_UTF16> converter;
+    const _ES_UTF16 *first = reinterpret_cast<const _ES_UTF16 *>(&*sw.begin());
+    const _ES_UTF16 *last = reinterpret_cast<const _ES_UTF16 *>(&*sw.end());
+    return converter.to_bytes(first, last);
   }
 
   static std::string Cvt(const std::basic_string<_Ty> &input) {
-    std::wstring_convert<cvt168, char16_t> converter;
-    const char16_t *first = reinterpret_cast<const char16_t *>(&*input.begin());
-    const char16_t *last = reinterpret_cast<const char16_t *>(&*input.end());
+    std::wstring_convert<std::codecvt_utf8_utf16<_ES_UTF16>, _ES_UTF16> converter;
+    const _ES_UTF16 *first = reinterpret_cast<const _ES_UTF16 *>(&*input.begin());
+    const _ES_UTF16 *last = reinterpret_cast<const _ES_UTF16 *>(&*input.end());
     return converter.to_bytes(first, last);
   }
 };
 
 template <typename _Ty> struct _utf8cvt<_Ty, 4> {
   static std::string Cvt(const _Ty *input) {
-    std::wstring_convert<cvt328, char32_t> converter;
-    const char32_t *data = reinterpret_cast<const char32_t *>(input);
-    return converter.to_bytes(data);
+    const es::basic_string_view<_Ty> sw(input);
+    std::wstring_convert<std::codecvt_utf8<_ES_UTF32>, _ES_UTF32> converter;
+    const _ES_UTF32 *first = reinterpret_cast<const _ES_UTF32 *>(&*sw.begin());
+    const _ES_UTF32 *last = reinterpret_cast<const _ES_UTF32 *>(&*sw.end());
+    return converter.to_bytes(first, last);
   }
 
   static std::string Cvt(const std::basic_string<_Ty> &input) {
-    std::wstring_convert<cvt328, char32_t> converter;
-    const char32_t *first = reinterpret_cast<const char32_t *>(&*input.begin());
-    const char32_t *last = reinterpret_cast<const char32_t *>(&*input.end());
+    std::wstring_convert<std::codecvt_utf8<_ES_UTF32>, _ES_UTF32> converter;
+    const _ES_UTF32 *first = reinterpret_cast<const _ES_UTF32 *>(&*input.begin());
+    const _ES_UTF32 *last = reinterpret_cast<const _ES_UTF32 *>(&*input.end());
     return converter.to_bytes(first, last);
   }
 };
@@ -78,5 +88,4 @@ inline std::wstring ToUTF1632(const std::string &input) {
   std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>> converter;
   return converter.from_bytes(input);
 }
-
 }; // namespace es

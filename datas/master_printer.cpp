@@ -16,26 +16,15 @@
     limitations under the License.
 */
 
-#include "masterprinter.hpp"
 #include "flags.hpp"
-#include "tchar.hpp"
+#include "masterprinter.hpp"
 #include <mutex>
 #include <thread>
 #include <vector>
 
-#ifndef _TCHAR_DEFINED
-#ifdef _UNICODE
-#define tprintf swprintf
-#else
-#define tprintf snprintf
-#endif
-#endif
-
 #ifdef _MSC_VER
 #include <Windows.h>
 #endif
-
-
 
 enum MSVC_Console_Flags {
   MSC_Text_Blue,
@@ -48,10 +37,11 @@ typedef esFlags<short, MSVC_Console_Flags> consoleColorAttrFlags;
 
 static struct MasterPrinter {
   struct FuncType {
-    void *func;
+    typename MasterPrinterThread::print_func func;
     bool useColor;
 
-    FuncType(void *fp, bool cl) : func(fp), useColor(cl) {}
+    FuncType(typename MasterPrinterThread::print_func fp, bool cl)
+        : func(fp), useColor(cl) {}
   };
   std::vector<FuncType> functions;
   std::vector<bool> functionUseColor;
@@ -76,7 +66,6 @@ void SetConsoleTextColor(_Func fc, int red, int green, int blue) {
   newFlags.Set(MSC_Text_Red, red > 0);
   newFlags.Set(MSC_Text_Green, green > 0);
   newFlags.Set(MSC_Text_Blue, blue > 0);
-  
 
   SetConsoleTextAttribute(
       GetStdHandle(STD_OUTPUT_HANDLE),
@@ -97,11 +86,11 @@ template <class _Func> void RestoreConsoleTextColor(_Func fc) {
   fc("\033[0m");
 #endif
 }
-void MasterPrinterThread::AddPrinterFunction(void *funcPtr, bool useColor) {
+void MasterPrinterThread::AddPrinterFunction(print_func func, bool useColor) {
   for (auto &c : __MasterPrinter.functions)
-    if (c.func == funcPtr)
+    if (c.func == func)
       return;
-  __MasterPrinter.functions.emplace_back(funcPtr, useColor);
+  __MasterPrinter.functions.emplace_back(func, useColor);
 }
 
 void MasterPrinterThread::FlushAll() {
@@ -121,21 +110,17 @@ void MasterPrinterThread::FlushAll() {
 
   std::lock_guard<std::mutex> guard(__MasterPrinter._mutexPrint);
 
-  for (auto &f : __MasterPrinter.functions) {
-    int (*Func)(const TCHAR *) =
-        reinterpret_cast<int (*)(const TCHAR *)>(f.func);
-
+  for (auto &fc : __MasterPrinter.functions) {
     if (__MasterPrinter.printThreadID) {
-      Func(_T("Thread[0x"));
+      fc.func("Thread[0x");
       std::thread::id threadID = std::this_thread::get_id();
       char buffer[65];
-      printf(buffer, 65, "%X",
-              reinterpret_cast<uint32 &>(threadID));
-      Func(ToTSTRING(buffer).c_str());
-      Func(_T("] "));
+      printf(buffer, 65, "%X", reinterpret_cast<uint32 &>(threadID));
+      fc.func(buffer);
+      fc.func("] ");
     }
 
-    if (f.useColor) {
+    if (fc.useColor) {
       if (cType == MPType::WRN) {
         SetConsoleTextColor(255, 255, 0);
       } else if (cType == MPType::ERR) {
@@ -144,14 +129,14 @@ void MasterPrinterThread::FlushAll() {
     }
 
     if (cType == MPType::WRN) {
-      Func(_T("WARNING: "));
+      fc.func("WARNING: ");
     } else if (cType == MPType::ERR) {
-      Func(_T("ERROR: "));
+      fc.func("ERROR: ");
     }
 
-    Func(ToTSTRING(tempOut).c_str());
+    fc.func(tempOut);
 
-    if (f.useColor && cType != MPType::MSG)
+    if (fc.useColor && cType != MPType::MSG)
       RestoreConsoleTextColor();
   }
 
@@ -180,8 +165,7 @@ MasterPrinterThread::MasterPrinterThread() {
                              FOREGROUND_BLUE | FOREGROUND_INTENSITY);
 #endif
 }
-MasterPrinterThread::~MasterPrinterThread() {
-}
+MasterPrinterThread::~MasterPrinterThread() {}
 
 void SetConsoleTextColor(int red, int green, int blue) {
 #ifdef _MSC_VER
@@ -191,10 +175,7 @@ void SetConsoleTextColor(int red, int green, int blue) {
     if (!f.useColor)
       continue;
 
-    int (*Func)(const TCHAR *) =
-        reinterpret_cast<int (*)(const TCHAR *)>(f.func);
-
-    SetConsoleTextColor(Func, red, green, blue);
+    SetConsoleTextColor(f.func, red, green, blue);
   }
 #endif
 }
@@ -207,10 +188,7 @@ void RestoreConsoleTextColor() {
     if (!f.useColor)
       continue;
 
-    int (*Func)(const TCHAR *) =
-        reinterpret_cast<int (*)(const TCHAR *)>(f.func);
-
-    RestoreConsoleTextColor(Func);
+    RestoreConsoleTextColor(f.func);
   }
 #endif
 }

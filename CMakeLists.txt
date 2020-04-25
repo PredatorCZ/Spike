@@ -1,10 +1,10 @@
 ﻿cmake_minimum_required (VERSION 3.3)
 project(PreCore)
 
-if (${CMAKE_CURRENT_SOURCE_DIR} STREQUAL ${CMAKE_SOURCE_DIR})
-	set(PRECORE_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR})
-else()
-	set(PRECORE_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR} PARENT_SCOPE)
+set(PRECORE_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR} CACHE STRING "")
+
+if (CMAKE_CXX_COMPILER_ID MATCHES Clang OR CMAKE_COMPILER_IS_GNUCXX)
+	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -msse3" CACHE STRING "" FORCE)
 endif()
 
 #Secify what sources should be built for PreCore and sets them for current target

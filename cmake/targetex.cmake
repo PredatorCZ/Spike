@@ -82,12 +82,12 @@ function(build_target)
     endif()
     
     if(NOT _arg_NO_VERINFO)
-	    configure_file(${TARGETEX_LOCATION}/verinfo.rc.tmpl ${PROJECT_BINARY_DIR}/verinfo.rc)
+	    configure_file(${PRECORE_SOURCE_DIR}/cmake/verinfo.rc.tmpl ${PROJECT_BINARY_DIR}/verinfo.rc)
         target_sources(${PROJECT_NAME} PRIVATE ${PROJECT_BINARY_DIR}/verinfo.rc)
     endif()
     
     if(NOT _arg_NO_PROJECT_H)
-        configure_file(${TARGETEX_LOCATION}/project.h.tmpl ${PROJECT_SOURCE_DIR}/project.h)
+        configure_file(${PRECORE_SOURCE_DIR}/cmake/project.h.tmpl ${PROJECT_SOURCE_DIR}/project.h)
     endif()
 
 endfunction()

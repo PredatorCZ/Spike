@@ -18,13 +18,12 @@
 #pragma once
 #include "binreader_stream.hpp"
 #include "internal/bincore_file.hpp"
-#include "tchar.hpp"
 
 class BinReader : public BinReaderRef,
                   public BinStreamFile<std::ios::binary | std::ios::in> {
 public:
   BinReader() = default;
-  template <class T> BinReader(const UniString<T> &filePath) {
+  BinReader(const std::string &filePath) {
     this->Open(filePath);
     this->baseStream = &this->FileStream;
   }
@@ -32,11 +31,6 @@ public:
     this->Open(filePath);
     this->baseStream = &this->FileStream;
   }
-  BinReader(const wchar_t *filePath) {
-    this->Open(filePath);
-    this->baseStream = &this->FileStream;
-  }
-
   BinReader(const BinReader &rd) = delete;
   BinReader &operator=(const BinReader &other) = delete;
 };

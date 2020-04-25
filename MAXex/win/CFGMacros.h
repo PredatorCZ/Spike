@@ -1,6 +1,7 @@
 #pragma once
 #include "datas/flags.hpp"
 #include "datas/macroLoop.hpp"
+#include "datas/tchar.hpp"
 
 #define IDConfigValue(id) id##_value
 #define IDConfigBool(id) id##_checked
@@ -13,14 +14,14 @@
 #define IDConfigText(id) _T(# id)
 #define CFGBufferSize 16
 
-ES_FORCEINLINE uint GetBufferValue(const TCHAR *name, const TCHAR *CFGFile, const TCHAR *key, TCHAR *buffer, const int bufferSize = CFGBufferSize)
+static uint32 GetBufferValue(const TCHAR *name, const TCHAR *CFGFile, const TCHAR *key, TCHAR *buffer, const uint32 bufferSize = CFGBufferSize)
 {
 	*buffer = 0; 
 	return GetPrivateProfileString(name, key, _T(""), buffer, bufferSize, CFGFile);
 }
 
 template<class T, class E>
-ES_FORCEINLINE void Enabled(const TCHAR *name, EnumFlags<T,E> &storage, E item, const TCHAR *CFGFile, TCHAR *buffer, HWND hWnd)
+static void Enabled(const TCHAR *name, esFlags<T,E> &storage, E item, const TCHAR *CFGFile, TCHAR *buffer, HWND hWnd)
 {
 	GetBufferValue(name, CFGFile, _T("enabled"), buffer);
 	
@@ -29,14 +30,14 @@ ES_FORCEINLINE void Enabled(const TCHAR *name, EnumFlags<T,E> &storage, E item, 
 	if (*buffer)
 	{
 		value = *buffer == 't';
-		storage(item, value);
+		storage.Set(item, value);
 	}
 	
 	EnableWindow(hWnd, value);	
 }
 
 template<class T, class E>
-ES_FORCEINLINE void Checked(const TCHAR *name, EnumFlags<T, E> &storage, E item, const TCHAR *CFGFile, TCHAR *buffer, HWND hWnd, int dlgItem)
+static void Checked(const TCHAR *name, esFlags<T, E> &storage, E item, const TCHAR *CFGFile, TCHAR *buffer, HWND hWnd, int dlgItem)
 {
 	GetBufferValue(name, CFGFile, _T("checked"), buffer);
 
@@ -45,13 +46,13 @@ ES_FORCEINLINE void Checked(const TCHAR *name, EnumFlags<T, E> &storage, E item,
 	if (*buffer)
 	{
 		value = *buffer == 't';
-		storage(item, value);
+		storage.Set(item, value);
 	}
 	
 	CheckDlgButton(hWnd, dlgItem, value);
 }
 
-ES_FORCEINLINE void GetValue(const TCHAR *name, float &value, const TCHAR *CFGFile, TCHAR *buffer, const TCHAR *kVal = _T("value"))
+static void GetValue(const TCHAR *name, float &value, const TCHAR *CFGFile, TCHAR *buffer, const TCHAR *kVal = _T("value"))
 {
 	GetBufferValue(name, CFGFile, kVal, buffer);
 
@@ -61,7 +62,7 @@ ES_FORCEINLINE void GetValue(const TCHAR *name, float &value, const TCHAR *CFGFi
 	value = static_cast<float>(_ttof(buffer));
 }
 
-ES_FORCEINLINE void GetIndex(const TCHAR *name, int &value, const TCHAR *CFGFile, TCHAR *buffer, const TCHAR *kVal = _T("index"))
+static void GetIndex(const TCHAR *name, int &value, const TCHAR *CFGFile, TCHAR *buffer, const TCHAR *kVal = _T("index"))
 {
 	GetBufferValue(name, CFGFile, kVal, buffer);
 
@@ -71,7 +72,7 @@ ES_FORCEINLINE void GetIndex(const TCHAR *name, int &value, const TCHAR *CFGFile
 	value = _ttoi(buffer);
 }
 
-ES_FORCEINLINE void GetText(const TCHAR *name, TSTRING &value, const TCHAR *CFGFile, TCHAR *buffer, const TCHAR *kVal = _T("text"))
+static void GetText(const TCHAR *name, TSTRING &value, const TCHAR *CFGFile, TCHAR *buffer, const TCHAR *kVal = _T("text"))
 {
 	GetBufferValue(name, CFGFile, kVal, buffer);
 
@@ -81,7 +82,7 @@ ES_FORCEINLINE void GetText(const TCHAR *name, TSTRING &value, const TCHAR *CFGF
 	TSTRING initialBufferValue = buffer;
 	TCHAR countBuffer[3] = { *buffer, buffer[1], 0 };
 	size_t dummy = 0;
-	uint textSize = std::stoul(countBuffer, &dummy, 16);
+	uint32 textSize = std::stoul(countBuffer, &dummy, 16);
 
 	if (textSize > CFGBufferSize)
 	{
@@ -93,21 +94,21 @@ ES_FORCEINLINE void GetText(const TCHAR *name, TSTRING &value, const TCHAR *CFGF
 	value = initialBufferValue.substr(2);
 }
 
-ES_FORCEINLINE void WriteValue(const TCHAR *name, float value, const TCHAR *CFGFile, TCHAR *buffer, const TCHAR *kVal = _T("value"))
+static void WriteValue(const TCHAR *name, float value, const TCHAR *CFGFile, TCHAR *buffer, const TCHAR *kVal = _T("value"))
 {
 	_stprintf_s(buffer, CFGBufferSize, _T("%f"), value);
 	WritePrivateProfileString(name, kVal, buffer, CFGFile);
 }
 
-ES_FORCEINLINE void WriteIndex(const TCHAR *name, int value, const TCHAR *CFGFile, TCHAR *buffer, const TCHAR *kVal = _T("index"))
+static void WriteIndex(const TCHAR *name, int value, const TCHAR *CFGFile, TCHAR *buffer, const TCHAR *kVal = _T("index"))
 {
 	_stprintf_s(buffer, CFGBufferSize, _T("%i"), value);
 	WritePrivateProfileString(name, kVal, buffer, CFGFile);
 }
 
-ES_FORCEINLINE void WriteText(const TCHAR *name, const TSTRING value, const TCHAR *CFGFile, const TCHAR *kVal = _T("text"))
+static void WriteText(const TCHAR *name, const TSTRING value, const TCHAR *CFGFile, const TCHAR *kVal = _T("text"))
 {
-	const int strSize = static_cast<int>(value.size() + 3);
+	const uint32 strSize = static_cast<uint32>(value.size() + 3);
 
 	if (strSize < 3)
 		return;
@@ -115,7 +116,7 @@ ES_FORCEINLINE void WriteText(const TCHAR *name, const TSTRING value, const TCHA
 	TSTRING finalText;
 	finalText.reserve(strSize);
 	
-	int strOffset = 0;
+	uint32 strOffset = 0;
 
 	if (strSize < 16)
 	{
@@ -143,12 +144,12 @@ ES_FORCEINLINE void WriteText(const TCHAR *name, const TSTRING value, const TCHA
 #define SetCFGIndex(name) WriteIndex(_T(# name), name##_index, CFGFile, buffer)
 #define SetCFGText(name) WriteText(_T(# name), name, CFGFile)
 
-#define MSGCheckbox(itemid) case itemid: imp->flags(std::remove_pointer<decltype(imp)>::type::itemid##_checked, IsDlgButtonChecked(hWnd, itemid) != 0)
-#define MSGEnable(itemid, itemenable) imp->flags(std::remove_pointer<decltype(imp)>::type::itemenable##_enabled,  imp->flags[std::remove_pointer<decltype(imp)>::type::itemid##_checked]);\
+#define MSGCheckbox(itemid) case itemid: imp->flags.Set(std::remove_pointer<decltype(imp)>::type::itemid##_checked, IsDlgButtonChecked(hWnd, itemid) != 0)
+#define MSGEnable(itemid, itemenable) imp->flags.Set(std::remove_pointer<decltype(imp)>::type::itemenable##_enabled,  imp->flags[std::remove_pointer<decltype(imp)>::type::itemid##_checked]);\
 EnableWindow(GetDlgItem(hWnd, itemenable), imp->flags[std::remove_pointer<decltype(imp)>::type::itemenable##_enabled]);
 
 #define MSGEnableEnabled(itemid, itemenable) \
-imp->flags(\
+imp->flags.Set(\
 	std::remove_pointer<decltype(imp)>::type::itemenable##_enabled,\
 	imp->flags[std::remove_pointer<decltype(imp)>::type::itemid##_checked] && imp->flags[std::remove_pointer<decltype(imp)>::type::itemid##_enabled]\
 );\
@@ -158,7 +159,7 @@ static const TCHAR hkpresetgroup[] = _T("HK_PRESET");
 static const TCHAR _cormatElements[] = { 'X', 'Y', 'Z' };
 
 
-ES_INLINE void WriteCorrectionMatrix(const Matrix3 &value, const TCHAR *CFGFile, TCHAR *buffer, const TCHAR *name = hkpresetgroup)
+static void WriteCorrectionMatrix(const Matrix3 &value, const TCHAR *CFGFile, TCHAR *buffer, const TCHAR *name = hkpresetgroup)
 {
 	int bufferPos = 0;
 
@@ -177,7 +178,7 @@ ES_INLINE void WriteCorrectionMatrix(const Matrix3 &value, const TCHAR *CFGFile,
 	WritePrivateProfileString(name, _T("Matrix"), buffer, CFGFile);
 }
 
-ES_INLINE void GetCorrectionMatrix(Matrix3 &value, const TCHAR *CFGFile, TCHAR *buffer, const TCHAR *name = hkpresetgroup)
+static void GetCorrectionMatrix(Matrix3 &value, const TCHAR *CFGFile, TCHAR *buffer, const TCHAR *name = hkpresetgroup)
 {
 	GetBufferValue(name, CFGFile, _T("Matrix"), buffer);
 
@@ -185,9 +186,9 @@ ES_INLINE void GetCorrectionMatrix(Matrix3 &value, const TCHAR *CFGFile, TCHAR *
 		return;
 
 	float sign = 1.0f;
-	int curRow = 0;
+	uint32 curRow = 0;
 
-	for (int s = 0; s < 6 || curRow == 3; s++)
+	for (uint32 s = 0; s < 6 || curRow == 3; s++)
 	{
 		if (buffer[s] == '-')
 			sign = -1.0f;

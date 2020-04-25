@@ -18,11 +18,7 @@
 #include "../formats/WAVE.hpp"
 
 int main() {
-#ifndef UNICODE
-  printer.AddPrinterFunction(reinterpret_cast<void *>(printf));
-#else
-  printer.AddPrinterFunction(reinterpret_cast<void *>(wprintf));
-#endif
+  printer.AddPrinterFunction(UPrintf);
 
   printline("Compiler info:\n\tLittle Endian: "
             << ES_LITTLE_ENDIAN << "\n\tX64: " << ES_X64

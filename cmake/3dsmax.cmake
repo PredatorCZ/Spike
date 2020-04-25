@@ -1,6 +1,4 @@
 # A 3ds Max CMAKE Module
-# Required variales
-#  TARGETEX_LOCATION = a location to this module
 # Optional variables
 #  MAX_VERSION = set version of 3ds max
 #  MaxDirectory = a directory, where "3ds max yyyy" and it's SDK are located
@@ -12,7 +10,7 @@
 #  MaxProperties = target properties
 #  build_morpher() = building a morpher library
 
-include(${TARGETEX_LOCATION}/targetex.cmake)
+include(${PRECORE_SOURCE_DIR}/cmake/targetex.cmake)
 
 if (NOT DEFINED MAX_VERSION)
 	set (MAX_VERSION 2017)
@@ -34,7 +32,7 @@ else()
 endif()
 
 set (MaxSDKLibrariesPath ${MaxSDK}${_SDK_libs_path_prefix}/lib${_SDK_libs_path_suffix})
-set (MAX_EX_DIR ${PROJECT_SOURCE_DIR}/${TARGETEX_LOCATION}/../MAXex/)
+set (MAX_EX_DIR ${PRECORE_SOURCE_DIR}/MAXex/)
 
 if (MAX_VERSION GREATER 2012)
     add_definitions(-D_UNICODE -DUNICODE)
@@ -43,7 +41,7 @@ else()
     set(CHAR_TYPE CHAR)
 endif()
 
-include(${TARGETEX_LOCATION}/chartype.cmake)
+include(${PRECORE_SOURCE_DIR}/cmake/chartype.cmake)
 
 if (RELEASEVER EQUAL TRUE)
 	set (WPO /GL) #Whole program optimalization

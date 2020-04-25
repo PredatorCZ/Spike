@@ -36,7 +36,7 @@ public:
 
   void Seek(size_t position,
             typename _Traits::seekdir vay = _Traits::beg) const {
-    _Traits::Seek(vay == _Traits::beg ? position + localPos : position);
+    _Traits::Seek(vay == _Traits::beg ? position + localPos : position, vay);
   }
 
   template <typename T> void Skip() const { this->Skip(sizeof(T)); }

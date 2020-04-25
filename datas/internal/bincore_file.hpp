@@ -20,12 +20,6 @@
 #include <fstream>
 
 template <std::ios_base::openmode MODE> class BinStreamFile {
-  template <typename T> bool _Open(const T _fileName) {
-    FileStream.open(_fileName, MODE);
-
-    return !FileStream.fail();
-  }
-
 protected:
   std::fstream FileStream;
 
@@ -36,35 +30,23 @@ protected:
 
 public:
   bool Open(const char *_fileName) {
-#ifdef UNICODE
-    return _Open(es::ToUTF1632(_fileName));
+#if defined(UNICODE) && defined(_MSC_VER)
+    FileStream.open(es::ToUTF1632(_fileName), MODE);
 #else
-    return _Open(_fileName);
+    FileStream.open(_fileName, MODE);
 #endif
-  }
 
-  bool Open(const wchar_t *_fileName) {
-#ifdef UNICODE
-    return _Open(_fileName);
-#else
-    return _Open(es::ToUTF8(_fileName));
-#endif
+    return !FileStream.fail();
   }
 
   bool Open(const std::string &_fileName) {
-#ifdef UNICODE
-    return _Open(es::ToUTF1632(_fileName));
+#if defined(UNICODE) && defined(_MSC_VER)
+    FileStream.open(es::ToUTF1632(_fileName), MODE);
 #else
-    return _Open(_fileName);
+    FileStream.open(_fileName, MODE);
 #endif
-  }
 
-  bool Open(const std::wstring &_fileName) {
-#ifdef UNICODE
-    return _Open(_fileName);
-#else
-    return _Open(es::ToUTF8(_fileName));
-#endif
+    return !FileStream.fail();
   }
 
   bool IsValid() const { return !FileStream.fail(); }
