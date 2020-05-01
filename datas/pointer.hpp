@@ -21,7 +21,7 @@
 #include <vector>
 
 namespace es {
-thread_local static std::vector<void *> usedPts;
+thread_local extern std::vector<void *> usedPts;
 
 template <class C, typename B> union Pointer_t {
   typedef C value_type;
@@ -50,7 +50,7 @@ public:
   }
 
   bool Fixup(char *root, bool noCheck = false) {
-    if (!rawPtr || (!noCheck && Fixed())) {
+    if (!pointer || (!noCheck && Fixed())) {
       return false;
     }
 
