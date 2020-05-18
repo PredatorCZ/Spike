@@ -56,6 +56,22 @@ static inline size_t GetPadding(size_t value, size_t alignment) {
   return !result ? 0 : (alignment - result);
 }
 
+// Build a compile time fraction for number quantization
+template <size_t numBits> class GetFraction {
+  static constexpr size_t EXPONENT = (0x7f ^ numBits) << 23;
+  constexpr static size_t _MantissaBuilder(size_t lastValue = 0,
+                                           size_t shiftOffset = 0) {
+    return shiftOffset > 23
+               ? lastValue >> 1
+               : _MantissaBuilder(lastValue |
+                                      (1ULL << (24 - (numBits + shiftOffset))),
+                                  shiftOffset + numBits);
+  }
+
+public:
+  static constexpr size_t VALUE = _MantissaBuilder(numBits) | EXPONENT;
+};
+
 namespace es {
 
 template <class cnt>

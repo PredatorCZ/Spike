@@ -21,7 +21,8 @@
 #include <smmintrin.h>
 
 class V4MMXShrtType;
-class V4SimdIntType;
+template <class eType> class V4SimdIntType_t;
+typedef V4SimdIntType_t<int32> V4SimdIntType;
 
 #ifdef _MSC_VER
 thread_local static float __V4SimdFltType_EPSILON = FLT_EPSILON;
@@ -43,21 +44,15 @@ public:
 
 private:
   __m128 CollectAdd(__m128 input) const {
-    // input = _mm_add_ss(input, _mm_shuffle_ps(input, input, _MM_SHUFFLE(3, 2,
-    // 0, 1)));
-    //__m128 temp2 = _mm_movehl_ps(input, input);
-    // input = _mm_add_ss(input, temp2);
-    // input = _mm_add_ss(input, _mm_shuffle_ps(temp2, temp2, _MM_SHUFFLE(3, 2,
-    // 0, 1))); return input;
-    return _mm_hadd_ps(_mm_hadd_ps(input, input), input); // SSE3+ only
+    return _mm_hadd_ps(_mm_hadd_ps(input, input), input);
   }
 
   static __m128 GetEpsilon() {
     return
 #ifdef _MSC_VER
-    _mm_set1_ps(__V4SimdFltType_EPSILON);
+        _mm_set1_ps(__V4SimdFltType_EPSILON);
 #else
-    __V4SimdFltType_EPSILON;
+        __V4SimdFltType_EPSILON;
 #endif
   }
 
@@ -66,8 +61,7 @@ private:
         _mm_and_ps(_mm_cmple_ps(input2, _mm_add_ps(input1, GetEpsilon())),
                    _mm_cmpge_ps(input2, _mm_sub_ps(input1, GetEpsilon())));
 
-    return reinterpret_cast<const t_Vector4<int> &>(result) ==
-           t_Vector4<int>(UINT32_MAX);
+    return _mm_movemask_ps(result) == 0xF;
   }
 
 public:
@@ -85,11 +79,11 @@ public:
   }
 
   static void SetEpsilon(float newEpsilon) {
-    __V4SimdFltType_EPSILON = 
+    __V4SimdFltType_EPSILON =
 #ifdef _MSC_VER
-    newEpsilon;
+        newEpsilon;
 #else
-    _mm_set1_ps(newEpsilon);
+        _mm_set1_ps(newEpsilon);
 #endif
   }
 
@@ -216,7 +210,7 @@ public:
     return _mm_cvtss_f32(temp);
   }
 
-  float Dot(const V4SimdFltType &input) const { //use _mm_dp_ps
+  float Dot(const V4SimdFltType &input) const { // use _mm_dp_ps
     return _mm_cvtss_f32(CollectAdd(_mm_mul_ps(_data, input._data)));
   }
 
@@ -243,9 +237,11 @@ public:
 
 typedef _t_Vector4<V4SimdFltType> Vector4A16;
 
-class alignas(16) V4SimdIntType {
+template <class eType> class alignas(16) V4SimdIntType_t {
+  static const bool IS_UNSIGNED = std::is_unsigned<eType>::value;
+
 public:
-  typedef int eltype;
+  typedef eType eltype;
 
   union {
     __m128i _data;
@@ -255,119 +251,133 @@ public:
     };
   };
 
-public:
-  V4SimdIntType(const __m128i &input) { _data = input; }
-  V4SimdIntType() { _data = _mm_setzero_si128(); }
-  V4SimdIntType(eltype s) { _data = _mm_set1_epi32(s); }
-  V4SimdIntType(eltype x, eltype y, eltype z, eltype w) {
+  V4SimdIntType_t(const __m128i &input) { _data = input; }
+  V4SimdIntType_t() { _data = _mm_setzero_si128(); }
+  template <class _other0>
+  V4SimdIntType_t(const V4SimdIntType_t<_other0> &input) {
+    _data = input._data;
+  }
+  V4SimdIntType_t(eltype s) { _data = _mm_set1_epi32(s); }
+  V4SimdIntType_t(eltype x, eltype y, eltype z, eltype w) {
     _data = _mm_set_epi32(w, z, y, x);
   }
-  V4SimdIntType(const IVector4 &input) {
+  V4SimdIntType_t(const t_Vector4<eltype> &input) {
     _data = _mm_set_epi32(input.W, input.Z, input.Y, input.X);
   }
 
   operator V4SimdFltType() const { return _mm_cvtepi32_ps(_data); }
 
-  V4SimdIntType &operator+=(const V4SimdIntType &input) {
+  V4SimdIntType_t &operator+=(const V4SimdIntType_t &input) {
     return *this = *this + input;
   }
-  V4SimdIntType &operator-=(const V4SimdIntType &input) {
+  V4SimdIntType_t &operator-=(const V4SimdIntType_t &input) {
     return *this = *this - input;
   }
-  V4SimdIntType &operator*=(const V4SimdIntType &input) {
+  V4SimdIntType_t &operator*=(const V4SimdIntType_t &input) {
     return *this = *this * input;
   }
 
-  V4SimdIntType operator+(const V4SimdIntType &input) const {
+  V4SimdIntType_t operator+(const V4SimdIntType_t &input) const {
     return _mm_add_epi32(_data, input._data);
   }
-  V4SimdIntType operator-(const V4SimdIntType &input) const {
+  V4SimdIntType_t operator-(const V4SimdIntType_t &input) const {
     return _mm_sub_epi32(_data, input._data);
   }
-  V4SimdIntType operator*(const V4SimdIntType &input) const {
+  V4SimdIntType_t operator*(const V4SimdIntType_t &input) const {
     return _mm_mullo_epi32(_data, input._data);
   }
 
-  V4SimdIntType &operator+=(const eltype &input) {
+  V4SimdIntType_t &operator+=(const eltype &input) {
     return *this = *this + input;
   }
-  V4SimdIntType &operator-=(const eltype &input) {
+  V4SimdIntType_t &operator-=(const eltype &input) {
     return *this = *this - input;
   }
 
-  V4SimdIntType operator+(const eltype &input) const {
-    return *this + V4SimdIntType(input);
+  V4SimdIntType_t operator+(const eltype &input) const {
+    return *this + V4SimdIntType_t(input);
   }
-  V4SimdIntType operator-(const eltype &input) const {
-    return *this - V4SimdIntType(input);
-  }
-
-  V4SimdIntType operator&(const eltype &input) const {
-    return *this & V4SimdIntType(input);
-  }
-  V4SimdIntType operator|(const eltype &input) const {
-    return *this | V4SimdIntType(input);
+  V4SimdIntType_t operator-(const eltype &input) const {
+    return *this - V4SimdIntType_t(input);
   }
 
-  V4SimdIntType operator&(const V4SimdIntType &input) const {
+  V4SimdIntType_t operator&(const eltype &input) const {
+    return *this & V4SimdIntType_t(input);
+  }
+  V4SimdIntType_t operator|(const eltype &input) const {
+    return *this | V4SimdIntType_t(input);
+  }
+
+  V4SimdIntType_t operator&(const V4SimdIntType_t &input) const {
     return _mm_and_si128(_data, input._data);
   }
-  V4SimdIntType operator|(const V4SimdIntType &input) const {
+  V4SimdIntType_t operator|(const V4SimdIntType_t &input) const {
     return _mm_or_si128(_data, input._data);
   }
-  V4SimdIntType operator^(const V4SimdIntType &input) const {
+  V4SimdIntType_t operator^(const V4SimdIntType_t &input) const {
     return _mm_xor_si128(_data, input._data);
   }
 
-  V4SimdIntType operator<<(const eltype &input) const {
+  V4SimdIntType_t operator<<(const eltype &input) const {
     return _mm_slli_epi32(_data, input);
   }
 
-  V4SimdIntType operator>>(const eltype &input) const {
+  // Logical shift
+  template<class C = V4SimdIntType_t>
+  typename std::enable_if<IS_UNSIGNED, C>::type
+  operator>>(const eltype &input) const {
     return _mm_srli_epi32(_data, input);
   }
 
-  V4SimdIntType operator~() const { return *this ^ V4SimdIntType(0xffff); }
+  // Arithmetic shift
+  template<class C = V4SimdIntType_t>
+  typename std::enable_if<!IS_UNSIGNED, C>::type
+  operator>>(const eltype &input) const {
+    return _mm_srai_epi32(_data, input);
+  }
 
-  V4SimdIntType &operator&=(const V4SimdIntType &input) {
+  V4SimdIntType_t operator~() const {
+    return *this ^ V4SimdIntType_t(0xffffffff);
+  }
+
+  V4SimdIntType_t &operator&=(const V4SimdIntType_t &input) {
     return *this = *this & input;
   }
-  V4SimdIntType &operator|=(const V4SimdIntType &input) {
+  V4SimdIntType_t &operator|=(const V4SimdIntType_t &input) {
     return *this = *this | input;
   }
-  V4SimdIntType &operator^=(const V4SimdIntType &input) {
+  V4SimdIntType_t &operator^=(const V4SimdIntType_t &input) {
     return *this = *this ^ input;
   }
 
-  V4SimdIntType &operator&=(const eltype &input) {
+  V4SimdIntType_t &operator&=(const eltype &input) {
     return *this = *this & input;
   }
-  V4SimdIntType &operator|=(const eltype &input) {
+  V4SimdIntType_t &operator|=(const eltype &input) {
     return *this = *this | input;
   }
-  V4SimdIntType &operator^=(const eltype &input) {
+  V4SimdIntType_t &operator^=(const eltype &input) {
     return *this = *this ^ input;
   }
-  V4SimdIntType &operator<<=(const eltype &input) {
+  V4SimdIntType_t &operator<<=(const eltype &input) {
     return *this = *this << input;
   }
-  V4SimdIntType &operator>>=(const eltype &input) {
+  V4SimdIntType_t &operator>>=(const eltype &input) {
     return *this = *this >> input;
   }
-
-  V4SimdIntType operator-() const { return V4SimdIntType() - *this; }
 
   template <typename T> V4ScalarType<T> Convert() const {
     return V4ScalarType<T>(static_cast<T>(X), static_cast<T>(Y),
                            static_cast<T>(Z), static_cast<T>(W));
   }
 
-  bool operator==(const V4SimdIntType &input) const {
-    const __m128i result = _mm_cmpeq_epi32(input._data, _data);
-    return reinterpret_cast<const t_Vector4<int> &>(result) != t_Vector4<int>();
+  bool operator==(const V4SimdIntType_t &input) const {
+    const __m128i rsInt = _mm_cmpeq_epi32(input._data, _data);
+    const __m128 result = reinterpret_cast<const __m128 &>(rsInt);
+    return _mm_movemask_ps(result) == 0xF;
   }
 
-  bool operator!=(const V4SimdIntType &input) const {
+  bool operator!=(const V4SimdIntType_t &input) const {
     return !(*this == input);
   }
 };
@@ -377,7 +387,7 @@ inline V4SimdFltType::operator V4SimdIntType() const {
 }
 
 typedef _t_Vector4<V4SimdIntType> IVector4A16;
-typedef _t_Vector4<V4SimdIntType> UIVector4A16;
+typedef _t_Vector4<V4SimdIntType_t<uint32>> UIVector4A16;
 
 #ifdef ES_USE_MMX
 
@@ -532,7 +542,5 @@ public:
 
 typedef _t_Vector4<V4MMXShrtType> SVector4A8;
 
-V4SimdFltType::operator V4MMXShrtType() const {
-  return _mm_cvtps_pi16(_data);
-}
+V4SimdFltType::operator V4MMXShrtType() const { return _mm_cvtps_pi16(_data); }
 #endif

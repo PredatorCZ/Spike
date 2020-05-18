@@ -32,7 +32,6 @@
 *.app
 *.vs*
 *.aps
-image/*
 mfcex/*
 sound/*
 build/*

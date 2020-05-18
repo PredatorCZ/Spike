@@ -3,6 +3,7 @@
 #include "endian.inl"
 #include "fileinfo.inl"
 #include "flags.inl"
+#include "float.inl"
 #include "matrix44.inl"
 
 #include "bincore.inl"
@@ -16,6 +17,8 @@
 #include "../formats/FWSE.hpp"
 #include "../formats/MSF.hpp"
 #include "../formats/WAVE.hpp"
+
+#include "../uni/format.hpp"
 
 int main() {
   printer.AddPrinterFunction(UPrintf);
@@ -75,7 +78,8 @@ int main() {
              TEST_FUNC(test_binreader, rClass), TEST_FUNC(test_bincore_00),
              TEST_FUNC(test_bincore_01), TEST_FUNC(test_bincore_02),
              TEST_FUNC(test_matrix44_00), TEST_FUNC(test_matrix44_01),
-             TEST_FUNC(test_matrix44_02), TEST_FUNC(test_matrix44_03));
+             TEST_FUNC(test_matrix44_02), TEST_FUNC(test_matrix44_03),
+             TEST_FUNC(test_float_00), TEST_FUNC(test_float_01));
 
   return testResult;
 }
