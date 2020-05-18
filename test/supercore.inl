@@ -3,23 +3,23 @@
 
 ES_STATIC_ASSERT(CompileFourCC("ABCD") == 0x44434241);
 
-constexpr size_t frac00 = GetFraction<1>::VALUE;
-constexpr size_t frac01 = GetFraction<2>::VALUE;
-constexpr size_t frac02 = GetFraction<3>::VALUE;
-constexpr size_t frac03 = GetFraction<4>::VALUE;
-constexpr size_t frac04 = GetFraction<5>::VALUE;
-constexpr size_t frac05 = GetFraction<6>::VALUE;
-constexpr size_t frac06 = GetFraction<7>::VALUE;
-constexpr size_t frac07 = GetFraction<8>::VALUE;
-constexpr size_t frac08 = GetFraction<9>::VALUE;
-constexpr size_t frac09 = GetFraction<10>::VALUE;
-constexpr size_t frac10 = GetFraction<11>::VALUE;
-constexpr size_t frac11 = GetFraction<12>::VALUE;
-constexpr size_t frac12 = GetFraction<16>::VALUE;
-constexpr size_t frac13 = GetFraction<24>::VALUE;
-constexpr size_t frac14 = GetFraction<32>::VALUE;
-constexpr size_t frac15 = GetFraction<48>::VALUE;
-constexpr size_t frac16 = GetFraction<126>::VALUE;
+constexpr size_t frac00 = GetFraction_t<1>::VALUE;
+constexpr size_t frac01 = GetFraction_t<2>::VALUE;
+constexpr size_t frac02 = GetFraction_t<3>::VALUE;
+constexpr size_t frac03 = GetFraction_t<4>::VALUE;
+constexpr size_t frac04 = GetFraction_t<5>::VALUE;
+constexpr size_t frac05 = GetFraction_t<6>::VALUE;
+constexpr size_t frac06 = GetFraction_t<7>::VALUE;
+constexpr size_t frac07 = GetFraction_t<8>::VALUE;
+constexpr size_t frac08 = GetFraction_t<9>::VALUE;
+constexpr size_t frac09 = GetFraction_t<10>::VALUE;
+constexpr size_t frac10 = GetFraction_t<11>::VALUE;
+constexpr size_t frac11 = GetFraction_t<12>::VALUE;
+constexpr size_t frac12 = GetFraction_t<16>::VALUE;
+constexpr size_t frac13 = GetFraction_t<24>::VALUE;
+constexpr size_t frac14 = GetFraction_t<32>::VALUE;
+constexpr size_t frac15 = GetFraction_t<48>::VALUE;
+constexpr size_t frac16 = GetFraction_t<126>::VALUE;
 
 #define GF(frc) reinterpret_cast<const float &>(frc)
 

@@ -22,7 +22,7 @@
 using namespace uni;
 
 template <FormatType ftype, DataType dtype> FormatCodec *_makeCodec() {
-  return new FormatCodec_t<ftype, dtype>();
+  return new _FormatCodecImpl_t<ftype, dtype>();
 }
 
 #define _MAKE_CODEC_BASE(cname)                                                \
@@ -58,8 +58,7 @@ static const std::unordered_map<FormatDescr, FormatCodec *(*)()> registry = {
               R8G8B8, R8G8, R16, R5G6B5, R5G5B5A1, R8)
         StaticFor(_MAKE_CODEC_FLOAT, R32G32B32A32, R32G32B32, R16G16B16A16,
                   R32G32, R16G16B16, R32, R16G16, R11G11B10, R16)
-            StaticFor(_MAKE_CODEC_UFLOAT, R11G11B10)
-};
+            StaticFor(_MAKE_CODEC_UFLOAT, R11G11B10)};
 
 void FormatCodec::GetValue(IVector4A16 &, const char *) const {
   throw std::runtime_error("Invalid call for uni::format codec!");
@@ -69,13 +68,20 @@ void FormatCodec::GetValue(Vector4A16 &, const char *) const {
   throw std::runtime_error("Invalid call for uni::format codec!");
 }
 
-FormatCodec::ptr FormatCodec::Create(const FormatDescr &input) {
-    auto ctor = registry.find(input);
-
-    if (es::IsEnd(registry, ctor)){
-        return nullptr;
-    }
-
-    return FormatCodec::ptr(ctor->second());
+void FormatCodec::Sample(ivec &, const char *, size_t, size_t) const {
+  throw std::runtime_error("Invalid call for uni::format codec!");
 }
 
+void FormatCodec::Sample(fvec &, const char *, size_t, size_t) const {
+  throw std::runtime_error("Invalid call for uni::format codec!");
+}
+
+FormatCodec::ptr FormatCodec::Create(const FormatDescr &input) {
+  auto ctor = registry.find(input);
+
+  if (es::IsEnd(registry, ctor)) {
+    return nullptr;
+  }
+
+  return FormatCodec::ptr(ctor->second());
+}

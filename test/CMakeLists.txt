@@ -2,6 +2,7 @@
 
 include(../cmake/targetex.cmake)
 include(../cmake/chartype.cmake)
+set(CMAKE_CXX_STANDARD 11)
 
 build_target(
 	TYPE APP
@@ -42,7 +43,7 @@ add_test(test_base test_base)
 add_test(test_reflector test_reflector)
 add_test(test_uni test_uni)
 
-set(CMAKE_CXX_STANDARD 11)
+
 
 if (CMAKE_CXX_COMPILER_ID MATCHES Clang)
 	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall")

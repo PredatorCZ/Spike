@@ -58,14 +58,14 @@ static inline size_t GetPadding(size_t value, size_t alignment) {
 }
 
 // Build a compile time fraction for number quantization
-template <size_t numBits> class GetFraction {
+template <size_t numBits> class GetFraction_t {
   static_assert(numBits < 127, "Fraction overflow!");
   static constexpr size_t EXPONENT = (0x7f ^ numBits) << 23;
   constexpr static size_t _CMan(size_t shiftVal) {
     return shiftVal > 24 ? 0 : (1ULL << (24 - shiftVal));
   }
-  constexpr static size_t _MantissaBuilder(size_t lastValue = 0,
-                                           size_t shiftOffset = 0) {
+  constexpr static size_t _MantissaBuilder(size_t lastValue,
+                                           size_t shiftOffset) {
     return shiftOffset > 23
                ? lastValue >> 1
                : _MantissaBuilder(lastValue | _CMan(numBits + shiftOffset),
@@ -74,8 +74,12 @@ template <size_t numBits> class GetFraction {
 
 public:
   static constexpr size_t VALUE =
-      numBits < 2 ? 0x3f800000 : _MantissaBuilder() | EXPONENT;
+      numBits < 2 ? 0x3f800000 : _MantissaBuilder(0, 0) | EXPONENT;
 };
+
+constexpr float GetFraction(size_t numBits) {
+  return 1.f / static_cast<float>((1ULL << numBits) - 1);
+}
 
 namespace es {
 

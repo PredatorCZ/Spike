@@ -119,10 +119,10 @@ public:
 typedef t_Vector2<float> Vector2;
 typedef Vector2 FVector2;
 typedef t_Vector2<int32> IVector2;
-typedef t_Vector2<int32> SVector2;
+typedef t_Vector2<int16> SVector2;
 typedef t_Vector2<int8> CVector2;
 typedef t_Vector2<uint32> UIVector2;
-typedef t_Vector2<uint32> USVector2;
+typedef t_Vector2<uint16> USVector2;
 typedef t_Vector2<uint8> UCVector2;
 
 template<typename T>

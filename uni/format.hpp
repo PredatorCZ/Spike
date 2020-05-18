@@ -17,6 +17,8 @@
 
 #pragma once
 #include "datas/VectorsSimd.hpp"
+#include <memory>
+#include <vector>
 
 namespace uni {
 enum class FormatType : uint16 { INT, UINT, NORM, UNORM, FLOAT, UFLOAT };
@@ -74,13 +76,41 @@ struct FormatDescr {
 class FormatCodec {
 public:
   typedef std::unique_ptr<FormatCodec> ptr;
+  typedef std::vector<IVector4A16> ivec;
+  typedef std::vector<Vector4A16> fvec;
+
+  // Samples single integer value
+  // exceptions:
+  //             runtime_error for incorrect call (format isn't int)
   virtual void GetValue(IVector4A16 &out, const char *input) const;
+
+  // Samples single float value
+  // exceptions:
+  //             runtime_error for incorrect call (format is int)
   virtual void GetValue(Vector4A16 &out, const char *input) const;
+
+  // Samples an array of values
+  // count: if 0, count will be taken from 'out.size()'
+  // stride: if 0, stride will be taken from format's size
+  // exceptions:
+  //             runtime_error if 0 < stride < format size
+  //             runtime_error for incorrect call (format isn't int)
+  virtual void Sample(ivec &out, const char *input, size_t count,
+                      size_t stride = 0) const;
+
+  // Samples an array of values
+  // count: if 0, count will be taken from 'out.size()'
+  // stride: if 0, stride will be taken from format's size
+  // exceptions:
+  //             runtime_error if 0 < stride < format size
+  //             runtime_error for incorrect call (format is int)
+  virtual void Sample(fvec &out, const char *input, size_t count,
+                      size_t stride = 0) const;
 
   static ptr Create(const FormatDescr &input);
 };
 
-template <FormatType, DataType> class FormatCodec_t : public FormatCodec {};
+template <FormatType, DataType> class FormatCodec_t {};
 
 } // namespace uni
 
