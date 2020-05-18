@@ -18,7 +18,7 @@
 
 #pragma once
 #include "vectors.hpp"
-#include <pmmintrin.h>
+#include <smmintrin.h>
 
 class V4MMXShrtType;
 class V4SimdIntType;
@@ -216,7 +216,7 @@ public:
     return _mm_cvtss_f32(temp);
   }
 
-  float Dot(const V4SimdFltType &input) const {
+  float Dot(const V4SimdFltType &input) const { //use _mm_dp_ps
     return _mm_cvtss_f32(CollectAdd(_mm_mul_ps(_data, input._data)));
   }
 
@@ -266,7 +266,7 @@ public:
     _data = _mm_set_epi32(input.W, input.Z, input.Y, input.X);
   }
 
-  operator V4SimdFltType() { return _mm_cvtepi32_ps(_data); }
+  operator V4SimdFltType() const { return _mm_cvtepi32_ps(_data); }
 
   V4SimdIntType &operator+=(const V4SimdIntType &input) {
     return *this = *this + input;
@@ -274,12 +274,18 @@ public:
   V4SimdIntType &operator-=(const V4SimdIntType &input) {
     return *this = *this - input;
   }
+  V4SimdIntType &operator*=(const V4SimdIntType &input) {
+    return *this = *this * input;
+  }
 
   V4SimdIntType operator+(const V4SimdIntType &input) const {
     return _mm_add_epi32(_data, input._data);
   }
   V4SimdIntType operator-(const V4SimdIntType &input) const {
     return _mm_sub_epi32(_data, input._data);
+  }
+  V4SimdIntType operator*(const V4SimdIntType &input) const {
+    return _mm_mullo_epi32(_data, input._data);
   }
 
   V4SimdIntType &operator+=(const eltype &input) {
