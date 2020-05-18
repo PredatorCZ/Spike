@@ -16,7 +16,7 @@
 */
 
 #pragma once
-#include "datas/supercore.hpp"
+#include "datas/VectorsSimd.hpp"
 
 namespace uni {
 enum class FormatType : uint16 { INT, UINT, NORM, UNORM, FLOAT, UFLOAT };
@@ -64,16 +64,23 @@ UFLOAT:
 struct FormatDescr {
   FormatType outType;
   DataType compType;
+
+  bool operator==(const FormatDescr &input) const {
+    return reinterpret_cast<const uint32 &>(input) ==
+           reinterpret_cast<const uint32 &>(*this);
+  }
 };
 
 class FormatCodec {
 public:
+  typedef std::unique_ptr<FormatCodec> ptr;
   virtual void GetValue(IVector4A16 &out, const char *input) const;
   virtual void GetValue(Vector4A16 &out, const char *input) const;
+
+  static ptr Create(const FormatDescr &input);
 };
 
-template <FormatType otType, DataType cType>
-class FormatCodec_t : public FormatCodec {};
+template <FormatType, DataType> class FormatCodec_t : public FormatCodec {};
 
 } // namespace uni
 

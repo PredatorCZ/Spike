@@ -50,13 +50,17 @@
 #define TEST_FUNC(funcName, ...)                                               \
   {                                                                            \
     int _tstValLoc = funcName(__VA_ARGS__);                                    \
-    _tstVal |= _tstValLoc;                                                     \
+    _tstVal += _tstValLoc;                                                     \
     if (_tstValLoc) {                                                          \
       printerror("Method " #funcName " failed!");                              \
     }                                                                          \
   }
 
 #define TEST_CASES(resultVar, ...)                                             \
+  printline("Testing " << VA_NARGS(__VA_ARGS__) << " cases.");                 \
   int _tstVal = 0;                                                             \
   StaticFor(VA_NARGS_EVAL, __VA_ARGS__);                                       \
+  printline("Testing result: " << VA_NARGS(__VA_ARGS__) - _tstVal              \
+                               << " out of " << VA_NARGS(__VA_ARGS__)          \
+                               << " successed.");                              \
   resultVar = _tstVal

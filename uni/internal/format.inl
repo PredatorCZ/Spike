@@ -52,13 +52,6 @@ static constexpr size_t fmtBitmasks[]{
 } // namespace _uni_
 
 namespace uni {
-void FormatCodec::GetValue(IVector4A16 &, const char *) const {
-  throw std::runtime_error("Invalid call for uni::format codec!");
-}
-
-void FormatCodec::GetValue(Vector4A16 &, const char *) const {
-  throw std::runtime_error("Invalid call for uni::format codec!");
-}
 
 /***************************************/
 /* UINT ********************************/
@@ -305,7 +298,13 @@ class FormatCodec_t<FormatType::INT, cType>
     return reinterpret_cast<const __m128 &>(input);
   }
 
+  static const IVector4A16 _to_se(Vector4A16 input) {
+    return reinterpret_cast<const __m128i &>(input);
+  }
+
   void GetValue(IVector4A16 &out, const char *input) const override {
+    using namespace _uni_;
+    static const size_t nType = static_cast<size_t>(cType);
     static const IVector4A16 sBit(
         1 << ((fmtBitmasks[nType] & 0xff) - 1),
         1 << (((fmtBitmasks[nType] >> 8) & 0xff) - 1),
@@ -317,8 +316,8 @@ class FormatCodec_t<FormatType::INT, cType>
     const auto negated = out | sMask;
 
     const auto cmpRes = _mm_cmpeq_epi32(out._data, sBit._data);
-    out = _mm_blendv_ps(_to_ps(out)._data, _to_ps(negated)._data,
-                        _to_ps(cmpRes)._data);
+    out = _to_se(_mm_blendv_ps(_to_ps(out)._data, _to_ps(negated)._data,
+                        _to_ps(cmpRes)._data));
   }
 };
 
@@ -577,7 +576,6 @@ public:
     const uint32 rtVal = reinterpret_cast<const uint32 &>(*input);
     UIVector4A16 vctr(rtVal);
     vctr *= UIVector4A16(1 << 22, 1 << 12, 1 << 2, 0);
-    const float p0 = static_cast<float>(rtVal >> 30);
 
     return _mm_insert_epi32((vctr >> 22)._data, rtVal >> 30, 3);
   }
@@ -1058,7 +1056,8 @@ public:
 template <>
 class FormatCodec_t<FormatType::FLOAT, DataType::R16G16B16>
     : public FormatCodec {
-      typedef esFloat<10, 5, true> codec_type;
+  typedef esFloat<10, 5, true> codec_type;
+
 public:
   static Vector4A16 GetValue(const char *input) {
     typedef FormatCodec_t<FormatType::UNORM, DataType::R16G16B16> parent;
@@ -1073,6 +1072,7 @@ public:
 template <>
 class FormatCodec_t<FormatType::FLOAT, DataType::R16G16> : public FormatCodec {
   typedef esFloat<10, 5, true> codec_type;
+
 public:
   static Vector4A16 GetValue(const char *input) {
     typedef FormatCodec_t<FormatType::UNORM, DataType::R16G16> parent;
@@ -1087,6 +1087,7 @@ public:
 template <>
 class FormatCodec_t<FormatType::FLOAT, DataType::R16> : public FormatCodec {
   typedef esFloat<10, 5, true> codec_type;
+
 public:
   static Vector4A16 GetValue(const char *input) {
     const auto inputRC = *reinterpret_cast<const uint16 *>(input);
@@ -1098,10 +1099,12 @@ public:
 };
 
 template <>
-class FormatCodec_t<FormatType::FLOAT, DataType::R11G11B10> : public FormatCodec {
+class FormatCodec_t<FormatType::FLOAT, DataType::R11G11B10>
+    : public FormatCodec {
   typedef esFloat<5, 5, true> codec_type;
+
 public:
- static Vector4A16 GetValue(const char *input) {
+  static Vector4A16 GetValue(const char *input) {
     typedef FormatCodec_t<FormatType::UNORM, DataType::R11G11B10> parent;
     const UIVector4A16 result(parent::GetValueNoFrac(input));
 
@@ -1113,10 +1116,12 @@ public:
 };
 
 template <>
-class FormatCodec_t<FormatType::UFLOAT, DataType::R11G11B10> : public FormatCodec {
+class FormatCodec_t<FormatType::UFLOAT, DataType::R11G11B10>
+    : public FormatCodec {
   typedef esFloat<6, 5, false> codec_type;
+
 public:
- static Vector4A16 GetValue(const char *input) {
+  static Vector4A16 GetValue(const char *input) {
     typedef FormatCodec_t<FormatType::UNORM, DataType::R11G11B10> parent;
     const UIVector4A16 result(parent::GetValueNoFrac(input));
 

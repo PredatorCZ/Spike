@@ -43,10 +43,6 @@ public:
   };
 
 private:
-  __m128 CollectAdd(__m128 input) const {
-    return _mm_hadd_ps(_mm_hadd_ps(input, input), input);
-  }
-
   static __m128 GetEpsilon() {
     return
 #ifdef _MSC_VER
@@ -78,6 +74,8 @@ public:
     _data = _mm_set_ps(input.W, input.Z, input.Y, input.X);
   }
 
+  // Set thread safe global expsilon for comparing
+  // Default: FLT_EPSILON
   static void SetEpsilon(float newEpsilon) {
     __V4SimdFltType_EPSILON =
 #ifdef _MSC_VER
@@ -197,21 +195,26 @@ public:
     return !(*this == input);
   }
 
+  // Check if X == Y == Z == W
   bool IsSymetrical() const {
     const __m128 temp = _mm_shuffle_ps(_data, _data, _MM_SHUFFLE(3, 1, 0, 2));
     return Compare(_mm_hsub_ps(_data, _data), _mm_hsub_ps(temp, temp));
   }
 
+  // Return -1 if [X | Y | Z | W] < 0
   int Sign() const { return _mm_movemask_ps(_data) ? -1 : 1; }
 
   float Length() const {
-    __m128 temp = CollectAdd(_mm_mul_ps(_data, _data));
-    temp = _mm_sqrt_ss(temp);
+    const auto temp = _mm_sqrt_ss(DotV(*this)._data);
     return _mm_cvtss_f32(temp);
   }
 
-  float Dot(const V4SimdFltType &input) const { // use _mm_dp_ps
-    return _mm_cvtss_f32(CollectAdd(_mm_mul_ps(_data, input._data)));
+  float Dot(const V4SimdFltType &input) const {
+    return _mm_cvtss_f32(_mm_dp_ps(_data, input._data, 0xf1));
+  }
+
+  V4SimdFltType DotV(const V4SimdFltType &input) const {
+    return _mm_dp_ps(_data, input._data, 0xff);
   }
 
   V4SimdFltType &Normalize() {
@@ -227,9 +230,17 @@ public:
     return *this * V4SimdFltType(-1.0f, -1.0f, -1.0f, 1.0f);
   }
 
-  V4SimdFltType &QComputeElement(int elementIndex = 3) {
-    _arr[elementIndex] =
-        sqrtf(1.0f - _mm_cvtss_f32(CollectAdd(_mm_mul_ps(_data, _data))));
+  template <size_t elementIndex = 3> V4SimdFltType &QComputeElement() {
+    const auto res0 = V4SimdFltType(1.f) - DotV(*this);
+    const auto res1 = _mm_sqrt_ss(res0._data);
+
+    _data = _mm_insert_ps(_data, res1, _MM_MK_INSERTPS_NDX(0, elementIndex, 0));
+
+    return *this;
+  }
+
+  V4SimdFltType &QComputeElementVar(int elementIndex = 3) {
+    _arr[elementIndex] = sqrtf(1.0f - Dot(*this));
 
     return *this;
   }
@@ -323,14 +334,14 @@ public:
   }
 
   // Logical shift
-  template<class C = V4SimdIntType_t>
+  template <class C = V4SimdIntType_t>
   typename std::enable_if<IS_UNSIGNED, C>::type
   operator>>(const eltype &input) const {
     return _mm_srli_epi32(_data, input);
   }
 
   // Arithmetic shift
-  template<class C = V4SimdIntType_t>
+  template <class C = V4SimdIntType_t>
   typename std::enable_if<!IS_UNSIGNED, C>::type
   operator>>(const eltype &input) const {
     return _mm_srai_epi32(_data, input);

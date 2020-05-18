@@ -29,7 +29,7 @@ public:
       (0x3f800000 - ((EXPONENT_MASK_NS >> 1) << 23));
 
   static float ToFloat(size_t value) {
-    const IVector4A16 vtored(value);
+    const IVector4A16 vtored(static_cast<int32>(value));
     const IVector4A16 mskEMSM(vtored & IVector4A16(EXPONENT_MASK, MANTISSA_MASK,
                                                    SIGN_MASK, MANTISSA_MASK));
     const IVector4A16 shEMS(mskEMSM * IVector4A16(1 << (23 - _mantissa),

@@ -38,14 +38,15 @@ ES_STATIC_ASSERT(atohLUT[uint8('A')] == 10);
 ES_STATIC_ASSERT(atohLUT[uint8('F')] == 15);
 
 constexpr uint32 CompileFourCC(const char *input, const uint32 hash = 0,
-                            const uint32 indexOffset = 0,
-                            const uint32 currentIndex = 0) {
+                               const uint32 indexOffset = 0,
+                               const uint32 currentIndex = 0) {
   return currentIndex > 3
              ? hash
              : CompileFourCC(
                    input,
-                   hash | (static_cast<uint32>(input[indexOffset + currentIndex])
-                           << (currentIndex * 8)),
+                   hash |
+                       (static_cast<uint32>(input[indexOffset + currentIndex])
+                        << (currentIndex * 8)),
                    indexOffset, currentIndex + 1);
 }
 
@@ -58,18 +59,22 @@ static inline size_t GetPadding(size_t value, size_t alignment) {
 
 // Build a compile time fraction for number quantization
 template <size_t numBits> class GetFraction {
+  static_assert(numBits < 127, "Fraction overflow!");
   static constexpr size_t EXPONENT = (0x7f ^ numBits) << 23;
+  constexpr static size_t _CMan(size_t shiftVal) {
+    return shiftVal > 24 ? 0 : (1ULL << (24 - shiftVal));
+  }
   constexpr static size_t _MantissaBuilder(size_t lastValue = 0,
                                            size_t shiftOffset = 0) {
     return shiftOffset > 23
                ? lastValue >> 1
-               : _MantissaBuilder(lastValue |
-                                      (1ULL << (24 - (numBits + shiftOffset))),
+               : _MantissaBuilder(lastValue | _CMan(numBits + shiftOffset),
                                   shiftOffset + numBits);
   }
 
 public:
-  static constexpr size_t VALUE = _MantissaBuilder(numBits) | EXPONENT;
+  static constexpr size_t VALUE =
+      numBits < 2 ? 0x3f800000 : _MantissaBuilder() | EXPONENT;
 };
 
 namespace es {
