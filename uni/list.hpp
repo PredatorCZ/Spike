@@ -18,21 +18,26 @@
 #pragma once
 #include "virtual_iterator.hpp"
 
-namespace uni {
-template <class C> class List {
+namespace _uni_ {
+template <class C, class _const_type> class List {
 public:
-  typedef C *pointer_type;
   typedef C value_type;
+  typedef _const_type const_type;
 
   virtual size_t Size() const = 0;
-  virtual pointer_type At(size_t id) const = 0;
+  virtual const_type At(size_t id) const = 0;
 
-  typedef VirtualIterator<List, &List::Size, pointer_type, &List::At>
-      iterator_type;
+  typedef uni::VirtualIterator<List, &List::Size, const_type, &List::At>
+      iterator_type_const;
 
-  iterator_type begin() const { return iterator_type(this, 0); }
-  iterator_type end() const { return iterator_type(this); }
+  iterator_type_const begin() const { return iterator_type_const(this, 0); }
+  iterator_type_const end() const { return iterator_type_const(this); }
 
-  pointer_type operator[](size_t id) { return At(id); }
+  const_type operator[](size_t id) const { return At(id); }
 };
+}; // namespace _uni_
+
+namespace uni {
+template <class C> using List = _uni_::List<Element<C>, Element<const C>>;
+template <class C> using Vector = _uni_::List<C, const C>;
 } // namespace uni

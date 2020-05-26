@@ -62,4 +62,17 @@ public:
     return std::bind(Accessor, tClass, iterPos)();
   }
 };
+
+template <class containerClass, size_t (containerClass::*Counter)() const,
+          class returnType, returnType (containerClass::*Accessor)(size_t) const>
+class VirtualIteratorProxy {
+  typedef VirtualIterator<containerClass, Counter, returnType, Accessor> _iter;
+
+  const containerClass *_clsPtr;
+
+public:
+  explicit VirtualIteratorProxy(const containerClass *item) : _clsPtr(item) {}
+  const _iter begin() const { return _iter(_clsPtr, 0); }
+  const _iter end() const { return _iter(_clsPtr); }
+};
 } // namespace uni

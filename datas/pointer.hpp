@@ -90,11 +90,18 @@ public:
     if (!varPtr || (!noCheck && Fixed()))
       return false;
 
-    uintptr_t rawAddr = reinterpret_cast<uintptr_t>(root) + varPtr;
-    varPtr =
-        static_cast<uint32>(rawAddr - reinterpret_cast<uintptr_t>(&varPtr));
+    char *rawAddr = root + varPtr;
+    *this = reinterpret_cast<C *>(rawAddr);
     usedPts.push_back(&varPtr);
     return true;
+  }
+
+  PointerX86 &operator=(C *newDest) {
+    uintptr_t _rawDest = reinterpret_cast<uintptr_t>(newDest);
+    varPtr =
+        static_cast<uint32>(_rawDest - reinterpret_cast<uintptr_t>(&varPtr));
+
+    return *this;
   }
 };
 

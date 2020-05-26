@@ -16,18 +16,11 @@
 */
 
 #pragma once
+#include "common.hpp"
 #include "datas/matrix44.hpp"
-#include "element.hpp"
 #include "list.hpp"
 
 namespace uni {
-
-struct RTSValue {
-  Vector4A16 rotation;
-  Vector4A16 translation;
-  Vector4A16 scale;
-};
-
 class MotionTrack {
 public:
   enum TrackType_e {
@@ -41,10 +34,10 @@ public:
 
   virtual TrackType_e TrackType() const = 0;
   virtual size_t BoneIndex() const = 0;
-  virtual void GetValue(RTSValue &output, float time) const = 0;
-  virtual void GetValue(esMatrix44 &output, float time) const = 0;
-  virtual void GetValue(Vector4A16 &output, float time) const = 0;
-  virtual void GetValue(float &output, float time) const = 0;
+  virtual void GetValue(RTSValue &output, float time) const;
+  virtual void GetValue(esMatrix44 &output, float time) const;
+  virtual void GetValue(Vector4A16 &output, float time) const;
+  virtual void GetValue(float &output, float time) const;
 };
 
 typedef Element<const List<MotionTrack>> MotionTracksConst;
@@ -52,17 +45,19 @@ typedef Element<List<MotionTrack>> MotionTracks;
 
 class Motion {
 public:
-  typedef MotionTracks::element_type::iterator_type iterator_type;
+  typedef MotionTracks::element_type::iterator_type_const iterator_type_const;
   enum MotionType_e { Absolute, Relative, Additive, Delta };
 
-  virtual std::string Name() const = 0;
-  virtual void FrameRate(uint32 fps) = 0;
+  virtual es::string_view Name() const = 0;
+  virtual void FrameRate(uint32 fps);
   virtual uint32 FrameRate() const = 0;
   virtual float Duration() const = 0;
   virtual MotionTracksConst Tracks() const = 0;
   virtual MotionType_e MotionType() const = 0;
 
-  iterator_type begin() const { return Tracks()->begin(); }
-  iterator_type end() const { return Tracks()->end(); }
+  iterator_type_const begin() const { return Tracks()->begin(); }
+  iterator_type_const end() const { return Tracks()->end(); }
 };
 } // namespace uni
+
+#include "internal/motion.inl"

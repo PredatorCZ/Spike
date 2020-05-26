@@ -17,8 +17,27 @@
 
 #pragma once
 #include "datas/deleter_hybrid.hpp"
+#include "datas/VectorsSimd.hpp"
 #include <memory>
 
 namespace uni {
 template <class C> using Element = std::unique_ptr<C, es::deleter_hybrid>;
+
+struct RTSValue {
+  Vector4A16 translation;
+  Vector4A16 rotation;
+  Vector4A16 scale;
+
+  RTSValue()
+      : rotation(0, 0, 0, 1.f), translation(0), scale(1.f, 1.f, 1.f, 0) {}
+  RTSValue(const Vector4A16 &pos, const Vector4A16 &rot, const Vector4A16 &scl)
+      : translation(pos), rotation(rot), scale(scl) {}
+
+  bool operator==(const RTSValue &o) const {
+    return translation == o.translation && rotation == o.rotation &&
+           scale == o.scale;
+  }
+
+  bool operator!=(const RTSValue &o) const { return !(*this == o); }
+};
 } // namespace uni

@@ -17,18 +17,25 @@
 
 #pragma once
 #include "datas/matrix44.hpp"
-#include "element.hpp"
+#include "common.hpp"
 #include "list.hpp"
 
 namespace uni {
 
 class Bone {
 public:
-  virtual esMatrix44 Transform() const = 0;
+  enum TransformType {
+    TMTYPE_RTS,
+    TMTYPE_MATRIX
+  };
+
+  virtual TransformType TMType() const = 0;
+  virtual void GetTM(RTSValue &out) const;
+  virtual void GetTM(esMatrix44 &out) const;
   virtual const Bone *Parent() const = 0;
   // A special bone identicator, this is not a bone index within skeleton
   virtual size_t Index() const = 0;
-  virtual std::string Name() const = 0;
+  virtual es::string_view Name() const = 0;
 };
 
 typedef Element<const List<Bone>> SkeletonBonesConst;
@@ -36,12 +43,14 @@ typedef Element<List<Bone>> SkeletonBones;
 
 class Skeleton {
 public:
-  typedef SkeletonBonesConst::element_type::iterator_type iterator_type;
+  typedef SkeletonBonesConst::element_type::iterator_type_const iterator_type_const;
 
   virtual SkeletonBonesConst Bones() const = 0;
-  virtual std::string Name() const = 0;
+  virtual es::string_view Name() const = 0;
 
-  iterator_type begin() const { return Bones()->begin(); }
-  iterator_type end() const { return Bones()->end(); }
+  iterator_type_const begin() const { return Bones()->begin(); }
+  iterator_type_const end() const { return Bones()->end(); }
 };
 } // namespace uni
+
+#include "internal/skeleton.inl"

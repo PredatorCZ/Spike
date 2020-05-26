@@ -16,34 +16,32 @@
 */
 
 #pragma once
+#include "common.hpp"
 #include "list.hpp"
-#include "element.hpp"
-#include <memory>
 #include <vector>
 
 namespace uni {
-template <class _interface_type, class _class_type>
-class VectorList : public List<_interface_type> {
+template <class _interface_type, class _class_type,
+          template <class itype> class _list_type = List>
+class VectorList : public _list_type<_interface_type> {
 public:
-  typedef List<_interface_type> list_type;
-  typedef typename list_type::pointer_type pointer_type;
+  typedef _list_type<_interface_type> list_type;
   typedef _interface_type interface_type;
+  typedef typename list_type::const_type const_type;
   typedef _class_type class_type;
-  typedef Element<class_type> pointer_class_type;
 
   size_t Size() const override { return storage.size(); }
-  pointer_type At(size_t id) const override {
-    return dynamic_cast<pointer_type>(storage.at(id).get());
-  }
+  const_type At(size_t id) const override { return storage.at(id); }
 
-  typedef VirtualIterator<list_type, &list_type::Size, pointer_type, &list_type::At>
+  typedef VirtualIterator<list_type, &list_type::Size, const_type,
+                          &list_type::At>
       iterator_type;
 
-  const iterator_type begin() const { return iterator_type(this, 0); }
-  const iterator_type end() const { return iterator_type(this); }
+  iterator_type begin() const { return iterator_type(this, 0); }
+  iterator_type end() const { return iterator_type(this); }
 
-  pointer_type operator[](size_t id) { return At(id); }
+  const_type operator[](size_t id) const { return At(id); }
 
-  std::vector<pointer_class_type> storage;
+  std::vector<class_type> storage;
 };
 } // namespace uni
