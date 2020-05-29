@@ -88,15 +88,20 @@ bool IsEnd(const cnt &container, const typename cnt::const_iterator &iter) {
   return std::end(container) == iter;
 }
 
-template <class sview> sview SkipStartWhitespace(sview input) noexcept {
-  while ((input[0] == ' ' || input[0] == '\t') && !input.empty())
+template <class sview>
+sview SkipStartWhitespace(sview input, bool inclNewLine = false) noexcept {
+  while ((input[0] == ' ' || input[0] == '\t' ||
+          (inclNewLine && input[0] == '\n')) &&
+         !input.empty())
     input.remove_prefix(1);
 
   return input;
 }
 
-template <class sview> sview SkipEndWhitespace(sview input) noexcept {
-  while ((*std::prev(input.end()) == ' ' || *std::prev(input.end()) == '\t') &&
+template <class sview>
+sview SkipEndWhitespace(sview input, bool inclNewLine = false) noexcept {
+  while ((*std::prev(input.end()) == ' ' || *std::prev(input.end()) == '\t' ||
+          (inclNewLine && *std::prev(input.end()) == '\n')) &&
          !input.empty())
     input.remove_suffix(1);
 

@@ -23,7 +23,7 @@
 namespace uni {
 template <class _interface_type, class _class_type,
           template <class itype> class _list_type = List>
-class VectorList : public _list_type<_interface_type> {
+class VectorList : public virtual _list_type<_interface_type> {
 public:
   typedef _list_type<_interface_type> list_type;
   typedef _interface_type interface_type;

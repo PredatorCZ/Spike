@@ -28,6 +28,12 @@ class VirtualIterator {
   static const size_t npos = 0xffffffff;
 
 public:
+  using difference_type = size_t;
+  using iterator_category = std::input_iterator_tag;
+  using value_type      = returnType;
+  using pointer         = const value_type*;
+  using reference       = const value_type&;
+
   explicit VirtualIterator(const containerClass *cls, size_t _num = npos)
       : iterPos(_num >= npos ? std::bind(Counter, tClass)() : _num),
         tClass(cls) {}

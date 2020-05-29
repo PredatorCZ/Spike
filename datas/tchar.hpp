@@ -24,10 +24,12 @@
 #else
 #ifdef UNICODE
 typedef wchar_t TCHAR;
+#define _tmain wmain
 #define __T(x) L##x
 #else
 typedef char TCHAR;
 #define __T(x) x
+#define _tmain main
 #endif
 #define _T(x) __T(x)
 #endif

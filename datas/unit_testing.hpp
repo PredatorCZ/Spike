@@ -18,10 +18,51 @@
 #pragma once
 #include "macroLoop.hpp"
 #include "masterprinter.hpp"
+#include <type_traits>
 
 #define _CHECK_FAILED_TMP(...)                                                 \
   printerror("Check failed " << __FILE__ << '(' << __LINE__                    \
                              << "): " __VA_ARGS__)
+
+namespace es {
+template <class C, class D>
+auto append_scan(const D &input, const char *varName, int)
+    -> decltype(std::declval<std::ostream>() << std::declval<C>(), void()) {
+#if defined(__clang__) || __GNUC__ < 7
+  printer << varName;
+#else
+  printer << input;
+#endif
+};
+
+template <class C, class D>
+void append_scan(const D &, const char *varName, ...) {
+  printer << varName;
+}
+
+template <class C> struct ValuePrinter {
+  const C &value;
+  const char *valName;
+
+  ValuePrinter(const C &input, const char *vlName)
+      : value(input), valName(vlName) {}
+
+  friend std::ostream &operator<<(std::ostream &str, const ValuePrinter &val) {
+    append_scan<C, C>(val.value, val.valName, 0);
+    return str;
+  }
+};
+
+template <class A, class B>
+MasterPrinterThread &PrintCheckFailed(const A &aVal, const B &bVal,
+                                      const char *aName, const char *bName,
+                                      const char *op) {
+  _CHECK_FAILED_TMP(<< aName << op << bName << ", "
+                    << ValuePrinter<A>(aVal, aName) << op
+                    << ValuePrinter<B>(bVal, bName));
+  return printer;
+}
+} // namespace es
 
 #define TEST_CHECK(val)                                                        \
   if (!val) {                                                                  \
@@ -31,7 +72,31 @@
 
 #define TEST_EQUAL(val1, val2)                                                 \
   if (val1 != val2) {                                                          \
-    _CHECK_FAILED_TMP(#val1 " != " #val2);                                     \
+    es::PrintCheckFailed(val1, val2, #val1, #val2, " != ");                    \
+    return 1;                                                                  \
+  }
+
+#define TEST_GT(val1, val2)                                                    \
+  if (val1 <= val2) {                                                          \
+    es::PrintCheckFailed(val1, val2, #val1, #val2, " <= ");                    \
+    return 1;                                                                  \
+  }
+
+#define TEST_LE(val1, val2)                                                    \
+  if (val1 >= val2) {                                                          \
+    es::PrintCheckFailed(val1, val2, #val1, #val2, " >= ");                    \
+    return 1;                                                                  \
+  }
+
+#define TEST_GT_EQ(val1, val2)                                                 \
+  if (val1 < val2) {                                                           \
+    es::PrintCheckFailed(val1, val2, #val1, #val2, " < ");                     \
+    return 1;                                                                  \
+  }
+
+#define TEST_LE_EQ(val1, val2)                                                 \
+  if (val1 > val2) {                                                           \
+    es::PrintCheckFailed(val1, val2, #val1, #val2, " > ");                     \
     return 1;                                                                  \
   }
 
@@ -43,7 +108,7 @@
 
 #define TEST_NOT_EQUAL(val1, val2)                                             \
   if (val1 == val2) {                                                          \
-    _CHECK_FAILED_TMP(#val1 " != " #val2);                                     \
+    es::PrintCheckFailed(val1, val2, #val1, #val2, " == ");                    \
     return 1;                                                                  \
   }
 
