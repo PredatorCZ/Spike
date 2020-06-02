@@ -16,18 +16,16 @@
 */
 
 #pragma once
-#include "datas/matrix44.hpp"
 #include "common.hpp"
+#include "datas/matrix44.hpp"
+#include "datas/string_view.hpp"
 #include "list.hpp"
 
 namespace uni {
 
 class Bone {
 public:
-  enum TransformType {
-    TMTYPE_RTS,
-    TMTYPE_MATRIX
-  };
+  enum TransformType { TMTYPE_RTS, TMTYPE_MATRIX };
 
   virtual TransformType TMType() const = 0;
   virtual void GetTM(RTSValue &out) const;
@@ -43,7 +41,8 @@ typedef Element<List<Bone>> SkeletonBones;
 
 class Skeleton {
 public:
-  typedef SkeletonBonesConst::element_type::iterator_type_const iterator_type_const;
+  typedef SkeletonBonesConst::element_type::iterator_type_const
+      iterator_type_const;
 
   virtual SkeletonBonesConst Bones() const = 0;
   virtual es::string_view Name() const = 0;
