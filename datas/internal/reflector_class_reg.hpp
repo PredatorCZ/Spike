@@ -91,15 +91,3 @@ struct reflectorInstanceConst {
   const reflectorStatic *rfStatic;
   const void *rfInstance;
 };
-
-typedef std::unordered_map<unsigned int, const reflectorStatic *>
-    RefSubClassMapper;
-extern RefSubClassMapper REFSubClassStorage;
-
-#define REGISTER_CLASS(classname)                                              \
-  if (_SubReflClassWrap<classname>::HASH)                                      \
-    REFSubClassStorage[(const JenHash)_SubReflClassWrap<classname>::HASH] =    \
-        classname::__rfPtrStatic;                                              \
-  classname::_rfInit();
-
-#define REGISTER_CLASSES(...) StaticFor(REGISTER_CLASS, __VA_ARGS__)

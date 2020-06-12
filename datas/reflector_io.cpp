@@ -394,7 +394,8 @@ int ReflectorIO::Save(BinWritterRef wr) {
     }
 
     itemStringsFixups.FixupDestination();
-    wr.WriteT(e.name);
+    wr.WriteContainer(e.name);
+    wr.Skip(1);
   }
 
   hdr.bufferSize = static_cast<uint32>(wr.Tell());

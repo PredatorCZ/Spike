@@ -558,8 +558,8 @@ static es::string_view PrintEnumValue(JenHash hash, uint64 value,
   if (rEnumFallback)
     *rEnumFallback = &rEnum;
 
-  uint64 *valuesEnd = rEnum.values + rEnum.size();
-  uint64 *foundItem = std::find_if(
+  const uint64 *valuesEnd = rEnum.values + rEnum.size();
+  const uint64 *foundItem = std::find_if(
       rEnum.values, valuesEnd, [value](uint64 item) { return item == value; });
 
   if (foundItem == valuesEnd) {

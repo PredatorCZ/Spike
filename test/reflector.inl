@@ -198,8 +198,6 @@ REFLECTOR_CREATE(reflClass, 1, VARNAMES, test1, test2, test3, test4, test5,
                  test47, test48, test49, test50, test51, test52, test53, test54,
                  test55, test56, test57, test58, test59, test60, test61, test80)
 
-REGISTER_ENUMS(EnumWrap00, EnumWrap01, EnumWrap02, EnumWrap03, EnumWrap04)
-
 int test_reflector_bool(reflClass &input) {
   TEST_EQUAL(input.test1, false);
   TEST_EQUAL(input.SetReflectedValue("test1", "true"),

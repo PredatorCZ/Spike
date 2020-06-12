@@ -23,10 +23,9 @@
 #include "tchar.hpp"
 
 #include "internal/reflector_class.hpp"
-#include "internal/reflector_class_reg.hpp"
 #include "internal/reflector_enum.hpp"
-#include "internal/reflector_enum_reg.hpp"
 #include "internal/reflector_type.hpp"
+#include "internal/reflector_reg.hpp"
 
 // Usable flags: VARNAMES, TEMPLATE, SUBCLASS
 // Usable enum flags: CLASS, EXTERN, size (64B or 32B or 16B or 8B)

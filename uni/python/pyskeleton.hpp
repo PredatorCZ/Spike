@@ -6,8 +6,8 @@ namespace UniPy {
 
 struct BoneTMType {
   PyObject_HEAD;
-  PyObject *tmVector4;
-  PyObject *tmMatrix44;
+  int tmVector4;
+  int tmMatrix44;
 
   static void Dealloc(BoneTMType *self);
   static PyObject* New(PyTypeObject *type, PyObject *args, PyObject *kwds);

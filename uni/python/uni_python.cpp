@@ -10,8 +10,8 @@ static PyMappingMethods boneTMTypeMappingMethods[] = {
 };
 
 static PyMemberDef boneTMTypeMembers[] = {
-    {"TMTYPE_RTS", T_LONG, offsetof(BoneTMType, tmVector4), READONLY, ""},
-    {"TMTYPE_MATRIX", T_LONG, offsetof(BoneTMType, tmMatrix44), READONLY, ""},
+    {"TMTYPE_RTS", T_INT, offsetof(BoneTMType, tmVector4), READONLY, ""},
+    {"TMTYPE_MATRIX", T_INT, offsetof(BoneTMType, tmMatrix44), READONLY, ""},
     {NULL},
 };
 
@@ -57,8 +57,6 @@ static PyTypeObject boneTMTypeType = {
 };
 
 void BoneTMType::Dealloc(BoneTMType *self) {
-  Py_DECREF(self->tmMatrix44);
-  Py_DECREF(self->tmVector4);
   Py_TYPE(self)->tp_free(reinterpret_cast<PyObject *>(self));
 }
 
@@ -66,8 +64,8 @@ PyObject *BoneTMType::New(PyTypeObject *type, PyObject *, PyObject *) {
   BoneTMType *self = reinterpret_cast<BoneTMType *>(type->tp_alloc(type, 0));
 
   if (self) {
-    self->tmMatrix44 = PyInt_FromLong(uni::Bone::TMTYPE_MATRIX);
-    self->tmVector4 = PyInt_FromLong(uni::Bone::TMTYPE_RTS);
+    self->tmMatrix44 = uni::Bone::TMTYPE_MATRIX;
+    self->tmVector4 = uni::Bone::TMTYPE_RTS;
   }
 
   return reinterpret_cast<PyObject *>(self);
@@ -355,7 +353,7 @@ void Skeleton::InitType(PyObject *module) {
 
 PyTypeObject *Skeleton::GetType() { return &skeletonType; }
 
-void Skeleton::Dealloc(Skeleton *self) { std::move(self->skeleton); }
+void Skeleton::Dealloc(Skeleton *self) { auto t0 = std::move(self->skeleton); }
 
 PyObject *Skeleton::Name(Skeleton *self) {
   auto skName = self->skeleton->Name();

@@ -23,20 +23,58 @@
 #include <unordered_map>
 #include <vector>
 
+template <class E> static void _REnumInitializer() {
+  const size_t rEnumSize = _EnumWrap<E>::NUM_ITEMS;
+  const auto rEnumNames = _EnumWrap<E>::GetNames();
+  auto rEnumValues = _EnumWrap<E>::GetValues();
+
+  uint64 lastValue = 0;
+
+  for (size_t t = 0; t < rEnumSize; t++) {
+    es::string_view cName = rEnumNames[t].end();
+
+    while (cName[0] != '=' && !cName.empty())
+      cName.remove_prefix(1);
+
+    if (cName.empty() || (cName[0] == '=' && cName.size() < 2)) {
+      rEnumValues[t] = lastValue++;
+      continue;
+    }
+
+    cName.remove_prefix(1);
+    cName = es::SkipStartWhitespace(cName);
+
+    const int _base = !cName.compare(0, 2, "0x") ? 16 : 10;
+
+    uint64 resVal = std::strtoull(cName.data(), nullptr, _base);
+    lastValue = resVal + 1;
+    rEnumValues[t] = resVal;
+  }
+}
+
+template<class C> struct _ETag {};
+
 class ReflectedEnum : protected std::vector<es::string_view> {
 protected:
   typedef std::vector<es::string_view> parent;
 
 public:
-  uint64 *values;
-  const char *name;
+  const uint64 *values;
+  es::string_view name;
   JenHash hash;
 
-  ReflectedEnum() : values(nullptr), name(nullptr) {}
-  ReflectedEnum(int32 _numValues, const es::string_view *_names,
-                uint64 *_values, const char *_name, JenHash _hash)
-      : parent(_names, _names + _numValues), values(_values), name(_name),
-        hash(_hash) {
+  ReflectedEnum() = default;
+
+  template <class E>
+  ReflectedEnum(_ETag<E>)
+      : parent(_EnumWrap<E>::GetNames(),
+               _EnumWrap<E>::GetNames() + _EnumWrap<E>::NUM_ITEMS),
+        values(_EnumWrap<E>::GetValues()), name(_EnumWrap<E>::GetClassName()),
+        hash(_EnumWrap<E>::HASH) {
+    if (!_EnumWrap<E>::Initialized(false)) {
+      _REnumInitializer<E>();
+      _EnumWrap<E>::Initialized(true);
+    }
   }
 
   using parent::size;
@@ -48,63 +86,6 @@ public:
   using parent::iterator;
 };
 
-template <class E>
-static ReflectedEnum GetReflectedEnum() {
-  _EnumWrap<E> enumInstance = {};
-
-  return {
-      enumInstance._reflectedSize,
-      enumInstance._reflected,
-      enumInstance._reflectedValues,
-      enumInstance._name,
-      enumInstance.HASH,
-  };
+template <class E> static ReflectedEnum GetReflectedEnum() {
+  return {_ETag<E>{}};
 }
-
-static inline ReflectedEnum _REnumInitializer(ReflectedEnum rEnum) {
-  uint64 lastValue = 0;
-
-  for (size_t t = 0; t < rEnum.size(); t++) {
-    es::string_view cName = rEnum[t].end();
-
-    while (cName[0] != '=' && !cName.empty())
-      cName.remove_prefix(1);
-
-    if (cName.empty() || (cName[0] == '=' && cName.size() < 2)) {
-      rEnum.values[t] = lastValue++;
-      continue;
-    }
-
-    cName.remove_prefix(1);
-    cName = es::SkipStartWhitespace(cName);
-
-    const int _base = !cName.compare(0, 2, "0x") ? 16 : 10;
-
-    uint64 resVal = std::strtoull(cName.data(), nullptr, _base);
-    lastValue = resVal + 1;
-    rEnum.values[t] = resVal;
-  }
-
-  return rEnum;
-}
-
-typedef std::unordered_map<unsigned int, ReflectedEnum> RefEnumMapper;
-extern RefEnumMapper REFEnumStorage;
-
-#define _REFLECTOR_REGISTER_ENUM(classname)                                    \
-  REFEnumStorage[static_cast<const JenHash>(_EnumWrap<classname>::HASH)] =     \
-      _REnumInitializer(GetReflectedEnum<classname>());
-
-#define _REFLECTOR_REGISTER_ENUM_EXTERN(classname)                             \
-  uint64 _EnumWrap<                                                            \
-      classname>::_reflectedValues[_EnumWrap<classname>::_reflectedSize] = {};
-
-#define REGISTER_ENUMS(...)                                                    \
-  static bool _localEnumInit = false;                                          \
-  static void RegisterLocalEnums() {                                           \
-    if (_localEnumInit)                                                        \
-      return;                                                                  \
-    StaticFor(_REFLECTOR_REGISTER_ENUM, __VA_ARGS__);                          \
-    _localEnumInit = true;                                                     \
-  };                                                                           \
-  StaticFor(_REFLECTOR_REGISTER_ENUM_EXTERN, __VA_ARGS__)

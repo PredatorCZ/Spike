@@ -44,12 +44,26 @@ constexpr size_t _GetReflEnumItemSize(const char *value, size_t curIndex = 0) {
 #define _REFLECTOR_ENUM_MAIN_BODY(classname, ...)                              \
   {StaticFor(_REFLECTOR_ADDN_ENUMVAL, __VA_ARGS__)};                           \
   template <> struct _EnumWrap<classname> {                                    \
-    static const int32 _reflectedSize = VA_NARGS(__VA_ARGS__);                 \
-    const es::string_view _reflected[_reflectedSize] = {                       \
-        StaticFor(_REFLECTOR_ADDN_ENUM, __VA_ARGS__)};                         \
-    static uint64 _reflectedValues[_reflectedSize];                            \
-    const char *_name = #classname;                                            \
-    static const JenHash HASH = JenkinsHashC(#classname);                      \
+    static const size_t NUM_ITEMS = VA_NARGS(__VA_ARGS__);                     \
+    static const es::string_view *GetNames() {                                 \
+      static constexpr es::string_view names[] = {                             \
+          StaticFor(_REFLECTOR_ADDN_ENUM, __VA_ARGS__)};                       \
+      return names;                                                            \
+    }                                                                          \
+    static uint64 *GetValues() {                                               \
+      static uint64 _reflectedValues[NUM_ITEMS] = {};                          \
+      return _reflectedValues;                                                 \
+    }                                                                          \
+    static constexpr es::string_view GetClassName() { return #classname; }     \
+    static constexpr JenHash HASH = JenkinsHashC(#classname);                  \
+    static bool Initialized(bool yes) {                                        \
+      static bool inited = false;                                              \
+      if (!inited && yes) {                                                    \
+        inited = true;                                                         \
+        return true;                                                           \
+      }                                                                        \
+      return inited;                                                           \
+    }                                                                          \
   };
 
 #define _REFLECTOR_ENUM_VER0(classname, ...)                                   \

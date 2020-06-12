@@ -121,6 +121,12 @@ namespace es {
     /// \param end end iterator
     constexpr basic_string_view( const char_type* start, const char_type* end ) noexcept;
 
+    /// \brief Constructs a basic_string_view from a string literal
+    ///
+    /// \param str the string to view
+    template<size_t _size>
+    constexpr basic_string_view( const char_type* (&str)[_size]) noexcept : basic_string_view(str, _size) {}
+
     //------------------------------------------------------------------------
     // Assignment
     //------------------------------------------------------------------------
