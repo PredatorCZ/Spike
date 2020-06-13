@@ -3,7 +3,7 @@
 
 int test_reflector_alias() {
   roomInfo cClass{};
-  auto refInterface = cClass.GetReflector();
+  auto refInterface = ReflectorWrap<decltype(cClass)>(cClass);
 
   TEST_EQUAL(refInterface.GetReflectedValue("room_density"), "0");
   TEST_EQUAL(refInterface.SetReflectedValueFloat("room_density", 50.87),
@@ -26,7 +26,7 @@ int test_reflector_alias() {
 
 int test_reflector_desc() {
   roomInfo01 cClass{};
-  auto refInterface = cClass.GetReflector();
+  auto refInterface = ReflectorWrap<decltype(cClass)>(cClass);
 
   TEST_EQUAL(refInterface.GetReflectedValue("roomSize"), "0");
   TEST_EQUAL(refInterface.SetReflectedValueFloat("roomSize", 3.5),

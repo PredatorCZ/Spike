@@ -32,7 +32,9 @@ public:
   int Save(BinWritterRef wr);
 
   void AddClass(const reflectorStatic *ref) { classes.push_back(ref); }
-  template <class C> void AddClass() { classes.push_back(C::__rfPtrStatic); }
+  template <class C> void AddClass() {
+    classes.push_back(ReflectorInterface<C>::GetReflector());
+  }
   void AddEnum(const ReflectedEnum &enumRef) { enums.push_back(enumRef); }
   template <class C> void AddEnum() { enums.push_back(GetReflectedEnum<C>()); }
 
@@ -43,6 +45,7 @@ public:
 class ReflectorBinUtil {
   friend class ReflectorBinUtilFriend;
   static const reflType *Find(Reflector &ri, JenHash hash);
+
 public:
   static int Save(const Reflector &ri, BinWritterRef wr);
   static int Load(Reflector &ri, BinReaderRef rd);

@@ -55,7 +55,7 @@ constexpr size_t _GetReflEnumItemSize(const char *value, size_t curIndex = 0) {
       return _reflectedValues;                                                 \
     }                                                                          \
     static constexpr es::string_view GetClassName() { return #classname; }     \
-    static constexpr JenHash HASH = JenkinsHashC(#classname);                  \
+    static constexpr JenHash GetHash() { return JenkinsHashC(#classname); }    \
     static bool Initialized(bool yes) {                                        \
       static bool inited = false;                                              \
       if (!inited && yes) {                                                    \
@@ -89,4 +89,6 @@ constexpr size_t _GetReflEnumItemSize(const char *value, size_t curIndex = 0) {
 #define _REFLECTOR_START_VERENUM(classname, numFlags, ...)                     \
   VA_NARGS_EVAL(_REFLECTOR_ENUM_VER##numFlags(classname, __VA_ARGS__))
 
-template <class E> struct _EnumWrap { static const JenHash HASH = 0; };
+template <class E> struct _EnumWrap {
+  static constexpr JenHash GetHash() { return 0; }
+};

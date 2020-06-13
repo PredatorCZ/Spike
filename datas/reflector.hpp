@@ -24,32 +24,28 @@
 
 #include "internal/reflector_class.hpp"
 #include "internal/reflector_enum.hpp"
-#include "internal/reflector_type.hpp"
 #include "internal/reflector_reg.hpp"
+#include "internal/reflector_type.hpp"
 
-// Usable flags: VARNAMES, TEMPLATE, SUBCLASS
-// Usable enum flags: CLASS, EXTERN, size (64B or 32B or 16B or 8B)
-//@numFlags: [0,n] or ENUM, numEnumFlags
+// @numFlags: [0,n] or ENUM + numEnumFlags
+// Usable flags: VARNAMES or EXTENDED, TEMPLATE
+// VARNAMES: Saves variable names (do not use with EXTENDED)
+// EXTENDED: Each variable must have (<type>, varname, ...) format
+// EXTENDED <type>: A (use alias), D (use descriptor), AD (use both),
+//   <none> only variable name
+// EXTENDED examples:
+//   REFLECTOR_CREATE(myClass, 1, EXTENDED,
+//     (AD, var1, "var alias", "var descriptor"), (A, var2, "other alias"),
+//     (D, var3, "description"), (, var4), <other vars>...)
+// TEMPLATE: Allows usage of template arguments for class name.
+//   Class name must be in () braces
+// TEMPLATE examples:
+//   REFLECTOR_CREATE((myClass<int, other>), 1, TEMPLATE, <values>...)
+// Usable enum flags: CLASS, enum size (64 or 32 or 16 or 8)
+// ENUM examples:
+//   REFLECTOR_CREATE(myEnum, ENUM, 1 CLASS, var1, var2, <other vars>...)
 #define REFLECTOR_CREATE(classname, numFlags, ...)                             \
   VA_NARGS_EVAL(_REFLECTOR_START_VER##numFlags(classname, __VA_ARGS__))
-
-#define DECLARE_REFLECTOR                                                      \
-  static const reflectorStatic *__rfPtrStatic;                                 \
-  const reflectorInstanceConst _rfRetreive() const {                           \
-    return {__rfPtrStatic, this};                                              \
-  }                                                                            \
-  const reflectorInstance _rfRetreive() { return {__rfPtrStatic, this}; }      \
-  static void _rfInit();                                                       \
-  auto GetReflector()                                                          \
-      ->ReflectorWrap<typename std::remove_pointer<decltype(this)>::type> {    \
-    return {this};                                                             \
-  }                                                                            \
-  auto GetReflector() const->ReflectorWrapConst<                               \
-      typename std::remove_pointer<decltype(this)>::type> {                    \
-    return {this};                                                             \
-  }
-
-static const reflectorStatic __null_statical = {0, 0, 0, 0, 0};
 
 class Reflector {
   friend class ReflectorBinUtil;
@@ -84,12 +80,8 @@ public:
   };
 
 private:
-  virtual const reflectorInstanceConst _rfRetreive() const {
-    return {&__null_statical, nullptr};
-  }
-  virtual const reflectorInstance _rfRetreive() {
-    return {&__null_statical, nullptr};
-  }
+  virtual reflectorInstanceConst GetReflectedInstance() const = 0;
+  virtual reflectorInstance GetReflectedInstance() = 0;
   // clang-format off
 protected:
   const reflType *GetReflectedType(JenHashStrong hash) const;
@@ -147,38 +139,63 @@ public:
   // clang-format on
 };
 
+template <class C> struct ReflectorInterface;
+
 template <class C> class ReflectorWrap : public Reflector {
-  const reflectorInstanceConst _rfRetreive() const {
-    return static_cast<const C *>(data)->_rfRetreive();
+  reflectorInstanceConst GetReflectedInstance() const override {
+    return static_cast<const ReflectorInterface<C> *>(data)
+        ->GetReflectedInstance();
   }
-  const reflectorInstance _rfRetreive() { return data->_rfRetreive(); }
+  reflectorInstance GetReflectedInstance() override {
+    return data->GetReflectedInstance();
+  }
 
 public:
-  C *data;
-  ReflectorWrap(C *_data) : data(_data) {}
-  ReflectorWrap(C &_data) : data(&_data) {}
+  ReflectorInterface<C> *data;
+  ReflectorWrap(ReflectorInterface<C> *_data) : data(_data) {}
+  ReflectorWrap(ReflectorInterface<C> &_data) : data(&_data) {}
   ReflectorWrap() = delete;
 };
 
 template <class C> class ReflectorWrapConst : public Reflector {
-  const reflectorInstanceConst _rfRetreive() const {
-    return data->_rfRetreive();
+  reflectorInstanceConst GetReflectedInstance() const override {
+    return data->GetReflectedInstance();
+  }
+
+  reflectorInstance GetReflectedInstance() override {
+    static const reflectorStatic nullRefType = {_RTag<void>{}};
+    return {&nullRefType, nullptr};
   }
 
 public:
-  const C *data;
-  ReflectorWrapConst(const C *_data) : data(_data) {}
-  ReflectorWrapConst(const C &_data) : data(&_data) {}
+  const ReflectorInterface<C> *data;
+  ReflectorWrapConst(const ReflectorInterface<C> *_data) : data(_data) {}
+  ReflectorWrapConst(const ReflectorInterface<C> &_data) : data(&_data) {}
   ReflectorWrapConst() = delete;
 };
 
 class ReflectorSubClass : public Reflector {
-  const reflectorInstanceConst _rfRetreive() const { return data.instc; }
-  const reflectorInstance _rfRetreive() { return data.inst; }
+  reflectorInstanceConst GetReflectedInstance() const override {
+    return data.instc;
+  }
+  reflectorInstance GetReflectedInstance() override { return data.inst; }
 
 public:
   SubClass data;
   ReflectorSubClass(const SubClass &_data) : data(_data) {}
+};
+
+template <class C> class ReflectorBase : public Reflector {
+public:
+  static const reflectorStatic *GetReflector() {
+    return ReflectorInterface<C>::GetReflector();
+  }
+  reflectorInstanceConst GetReflectedInstance() const override {
+    return {GetReflector(), this};
+  }
+  reflectorInstance GetReflectedInstance() override {
+    return {GetReflector(), this};
+  }
 };
 
 #include "internal/reflector.inl"

@@ -27,7 +27,7 @@ static Reflector::ErrorType
 SetReflectedMember(reflType reflValue, es::string_view value, char *objAddr);
 
 const reflType *Reflector::GetReflectedType(const JenHashStrong hash) const {
-  const reflectorStatic *inst = _rfRetreive().rfStatic;
+  const reflectorStatic *inst = GetReflectedInstance().rfStatic;
   const size_t _ntypes = GetNumReflectedValues();
 
   for (size_t t = 0; t < _ntypes; t++)
@@ -443,7 +443,7 @@ SetReflectedMember(reflType reflValue, es::string_view value, char *objAddr) {
 
 Reflector::ErrorType Reflector::SetReflectedValue(reflType type,
                                                   es::string_view value) {
-  const reflectorInstance inst = _rfRetreive();
+  const reflectorInstance inst = GetReflectedInstance();
   char *thisAddr = static_cast<char *>(inst.rfInstance);
   thisAddr = thisAddr + type.offset;
 
@@ -452,7 +452,7 @@ Reflector::ErrorType Reflector::SetReflectedValue(reflType type,
 
 Reflector::ErrorType
 Reflector::SetReflectedValueInt(reflType reflValue, int64 value, size_t subID) {
-  const reflectorInstance inst = _rfRetreive();
+  const reflectorInstance inst = GetReflectedInstance();
   char *thisAddr = static_cast<char *>(inst.rfInstance);
   thisAddr = thisAddr + reflValue.offset;
 
@@ -483,7 +483,7 @@ Reflector::SetReflectedValueInt(reflType reflValue, int64 value, size_t subID) {
 Reflector::ErrorType Reflector::SetReflectedValueUInt(reflType reflValue,
                                                       uint64 value,
                                                       size_t subID) {
-  const reflectorInstance inst = _rfRetreive();
+  const reflectorInstance inst = GetReflectedInstance();
   char *thisAddr = static_cast<char *>(inst.rfInstance);
   thisAddr = thisAddr + reflValue.offset;
 
@@ -514,7 +514,7 @@ Reflector::ErrorType Reflector::SetReflectedValueUInt(reflType reflValue,
 Reflector::ErrorType Reflector::SetReflectedValueFloat(reflType reflValue,
                                                        double value,
                                                        size_t subID) {
-  const reflectorInstance inst = _rfRetreive();
+  const reflectorInstance inst = GetReflectedInstance();
   char *thisAddr = static_cast<char *>(inst.rfInstance);
   thisAddr = thisAddr + reflValue.offset;
 
@@ -748,7 +748,7 @@ std::string Reflector::GetReflectedValue(size_t id) const {
   if (id >= GetNumReflectedValues())
     return "";
 
-  const reflectorInstanceConst inst = _rfRetreive();
+  const reflectorInstanceConst inst = GetReflectedInstance();
   const char *thisAddr = static_cast<const char *>(inst.rfInstance);
   const reflType &reflValue = inst.rfStatic->types[id];
   const int valueOffset = reflValue.offset;
@@ -761,7 +761,7 @@ const Reflector::SubClass Reflector::GetReflectedSubClass(size_t id,
   if (id >= GetNumReflectedValues())
     return {};
 
-  const reflectorInstanceConst inst = _rfRetreive();
+  const reflectorInstanceConst inst = GetReflectedInstance();
   const reflType &reflValue = inst.rfStatic->types[id];
   const char *thisAddr =
       static_cast<const char *>(inst.rfInstance) + reflValue.offset;
@@ -791,7 +791,7 @@ const Reflector::SubClass Reflector::GetReflectedSubClass(size_t id,
   if (id >= GetNumReflectedValues())
     return {};
 
-  const reflectorInstance inst = _rfRetreive();
+  const reflectorInstance inst = GetReflectedInstance();
   const reflType &reflValue = inst.rfStatic->types[id];
   char *thisAddr = static_cast<char *>(inst.rfInstance) + reflValue.offset;
   REFType cType = reflValue.type;

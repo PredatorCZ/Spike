@@ -27,17 +27,19 @@ extern RefSubClassMapper REFSubClassStorage;
 
 template <class C>
 typename std::enable_if<std::is_class<C>::value>::type _RegisterRefClass() {
-  if (_SubReflClassWrap<C>::HASH) {
-    REFSubClassStorage[_SubReflClassWrap<C>::HASH] = C::__rfPtrStatic;
-  }
-  C::_rfInit();
+  REFSubClassStorage[ReflectorType<C>::Hash()] =
+      ReflectorInterface<C>::GetReflector();
 }
 
 template <class C>
 typename std::enable_if<std::is_enum<C>::value>::type _RegisterRefClass() {
-  REFEnumStorage[_EnumWrap<C>::HASH] = GetReflectedEnum<C>();
+  REFEnumStorage[_EnumWrap<C>::GetHash()] = GetReflectedEnum<C>();
 }
 
 #define _REFLECTOR_REGISTER(classname) _RegisterRefClass<classname>();
 
+
+// Adding reflected classes/enums into global registry
+// Required for enums/classes, if they are being used as a class member for
+// another reflected class or for a run-time serialization
 #define REFLECTOR_REGISTER(...) StaticFor(_REFLECTOR_REGISTER, __VA_ARGS__);

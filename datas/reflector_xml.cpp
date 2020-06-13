@@ -27,7 +27,7 @@
 
 pugi::xml_node ReflectorXMLUtil::Save(const Reflector &ri, pugi::xml_node node,
                                       bool asNewNode) {
-  const reflectorStatic *stat = ri._rfRetreive().rfStatic;
+  const reflectorStatic *stat = ri.GetReflectedInstance().rfStatic;
   pugi::xml_node thisNode = node;
 
   if (asNewNode) {
@@ -88,7 +88,7 @@ pugi::xml_node ReflectorXMLUtil::Save(const Reflector &ri, pugi::xml_node node,
 
 pugi::xml_node ReflectorXMLUtil::Load(Reflector &ri, pugi::xml_node node,
                                       bool lookupClassNode) {
-  const reflectorStatic *stat = ri._rfRetreive().rfStatic;
+  const reflectorStatic *stat = ri.GetReflectedInstance().rfStatic;
   pugi::xml_node thisNode;
 
   if (lookupClassNode) {

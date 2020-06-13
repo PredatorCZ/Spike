@@ -2,9 +2,7 @@
 #include "../datas/reflector_io.hpp"
 #include "../datas/unit_testing.hpp"
 
-struct refBasic {
-  DECLARE_REFLECTOR; 
-
+struct refBasic : ReflectorInterface<refBasic> {
   uint32 item00;
   int32 item01;
   uint64 item02;
@@ -14,7 +12,7 @@ struct refBasic {
 REFLECTOR_CREATE(refBasic, 0, item00, item01, item02, item03);
 
 int test_reflector_decl00(
-    const reflectorStatic *mainRefl = refBasic::__rfPtrStatic) {
+    const reflectorStatic *mainRefl = refBasic::GetReflector()) {
   TEST_EQUAL(mainRefl->className, nullptr);
   TEST_EQUAL(mainRefl->nTypes, 4);
   TEST_EQUAL(mainRefl->typeAliases, nullptr);
@@ -25,9 +23,7 @@ int test_reflector_decl00(
   return 0;
 }
 
-struct refTypeNames {
-  DECLARE_REFLECTOR;
-
+struct refTypeNames : ReflectorInterface<refTypeNames> {
   float pitch;
   float volume;
   uint64 seed;
@@ -36,7 +32,7 @@ struct refTypeNames {
 REFLECTOR_CREATE(refTypeNames, 1, VARNAMES, pitch, volume, seed);
 
 int test_reflector_decl01(
-    const reflectorStatic *mainRefl = refTypeNames::__rfPtrStatic) {
+    const reflectorStatic *mainRefl = refTypeNames::GetReflector()) {
   TEST_NOT_EQUAL(mainRefl->className, nullptr);
   TEST_EQUAL(es::string_view("refTypeNames"), mainRefl->className);
   TEST_EQUAL(mainRefl->nTypes, 3);
@@ -52,9 +48,7 @@ int test_reflector_decl01(
   return 0;
 }
 
-struct refTypeNames01 {
-  DECLARE_REFLECTOR;
-
+struct refTypeNames01 : ReflectorInterface<refTypeNames01> {
   float pitch;
   float volume;
   uint64 seed;
@@ -63,7 +57,7 @@ struct refTypeNames01 {
 REFLECTOR_CREATE(refTypeNames01, 1, EXTENDED, (, pitch), (, volume), (, seed));
 
 int test_reflector_decl02(
-    const reflectorStatic *mainRefl = refTypeNames01::__rfPtrStatic) {
+    const reflectorStatic *mainRefl = refTypeNames01::GetReflector()) {
   TEST_NOT_EQUAL(mainRefl->className, nullptr);
   TEST_EQUAL(es::string_view("refTypeNames01"), mainRefl->className);
   TEST_EQUAL(mainRefl->nTypes, 3);
@@ -86,9 +80,7 @@ int test_reflector_decl02(
   return 0;
 }
 
-struct roomInfo {
-  DECLARE_REFLECTOR;
-
+struct roomInfo : ReflectorInterface<roomInfo> {
   float roomSize;
   float roomDensity;
   float reverb;
@@ -100,7 +92,7 @@ REFLECTOR_CREATE(roomInfo, 1, EXTENDED, (A, roomSize, "room_size"),
                  (A, reverbType, "reverb_type"));
 
 int test_reflector_decl03(
-    const reflectorStatic *mainRefl = roomInfo::__rfPtrStatic) {
+    const reflectorStatic *mainRefl = roomInfo::GetReflector()) {
   TEST_NOT_EQUAL(mainRefl->className, nullptr);
   TEST_EQUAL(es::string_view("roomInfo"), mainRefl->className);
   TEST_EQUAL(mainRefl->nTypes, 4);
@@ -132,9 +124,7 @@ int test_reflector_decl03(
   return 0;
 }
 
-struct roomInfo01 {
-  DECLARE_REFLECTOR;
-
+struct roomInfo01 : ReflectorInterface<roomInfo01> {
   float roomSize;
   float roomDensity;
   float reverb;
@@ -147,7 +137,7 @@ REFLECTOR_CREATE(roomInfo01, 1, EXTENDED, (D, roomSize, "Size of room is%m3"),
                  (D, reverbDelay, "Reverb delay is%seconds"));
 
 int test_reflector_decl04(
-    const reflectorStatic *mainRefl = roomInfo01::__rfPtrStatic) {
+    const reflectorStatic *mainRefl = roomInfo01::GetReflector()) {
   TEST_NOT_EQUAL(mainRefl->className, nullptr);
   TEST_EQUAL(es::string_view("roomInfo01"), mainRefl->className);
   TEST_EQUAL(mainRefl->nTypes, 4);
@@ -178,9 +168,7 @@ int test_reflector_decl04(
   return 0;
 }
 
-struct roomInfo02 {
-  DECLARE_REFLECTOR;
-
+struct roomInfo02 : ReflectorInterface<roomInfo02> {
   float roomSize;
   float roomDensity;
   float reverb;
@@ -194,7 +182,7 @@ REFLECTOR_CREATE(roomInfo02, 1, EXTENDED,
                  (AD, reverbDelay, "reverb_delay", "Reverb delay is%seconds"));
 
 int test_reflector_decl05(
-    const reflectorStatic *mainRefl = roomInfo02::__rfPtrStatic) {
+    const reflectorStatic *mainRefl = roomInfo02::GetReflector()) {
   TEST_NOT_EQUAL(mainRefl->className, nullptr);
   TEST_EQUAL(es::string_view("roomInfo02"), mainRefl->className);
   TEST_EQUAL(mainRefl->nTypes, 4);
@@ -226,6 +214,31 @@ int test_reflector_decl05(
   TEST_EQUAL(es::string_view("room_density"), mainRefl->typeAliases[1]);
   TEST_EQUAL(mainRefl->typeAliases[2], nullptr);
   TEST_EQUAL(es::string_view("reverb_delay"), mainRefl->typeAliases[3]);
+
+  return 0;
+}
+
+template <class C1, class C2>
+struct templatedClass : ReflectorInterface<templatedClass<C1, C2>> {
+  C1 item0;
+  C2 item1;
+};
+
+REFLECTOR_CREATE((templatedClass<int, float>), 2, TEMPLATE, VARNAMES, item0,
+                 item1);
+
+int test_reflector_decl06(const reflectorStatic *mainRefl =
+                              templatedClass<int, float>::GetReflector()) {
+  TEST_NOT_EQUAL(mainRefl->className, nullptr);
+  TEST_EQUAL(es::string_view("templatedClass<int, float>"), mainRefl->className);
+  TEST_EQUAL(mainRefl->nTypes, 2);
+  TEST_EQUAL(mainRefl->typeAliases, nullptr);
+  TEST_EQUAL(mainRefl->typeDescs, nullptr);
+  TEST_NOT_EQUAL(mainRefl->typeNames, nullptr);
+  TEST_EQUAL(mainRefl->typeAliasHashes, nullptr);
+
+  TEST_EQUAL(es::string_view("item0"), mainRefl->typeNames[0]);
+  TEST_EQUAL(es::string_view("item1"), mainRefl->typeNames[1]);
 
   return 0;
 }

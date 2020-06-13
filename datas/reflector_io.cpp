@@ -507,7 +507,7 @@ static int SaveClass(const Reflector &ri, const reflectorInstanceConst &inst,
 }
 
 int ReflectorBinUtil::Save(const Reflector &ri, BinWritterRef wr) {
-  auto inst = ri._rfRetreive();
+  auto inst = ri.GetReflectedInstance();
   auto refData = inst.rfStatic;
 
   wr.Write(refData->classHash);
@@ -624,7 +624,7 @@ static int LoadClass(Reflector &ri, reflectorInstance &inst, BinReaderRef rd) {
 }
 
 int ReflectorBinUtil::Load(Reflector &ri, BinReaderRef rd) {
-  auto inst = ri._rfRetreive();
+  auto inst = ri.GetReflectedInstance();
   auto refData = inst.rfStatic;
   JenHash clsHash;
 

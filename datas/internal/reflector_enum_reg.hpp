@@ -70,7 +70,7 @@ public:
       : parent(_EnumWrap<E>::GetNames(),
                _EnumWrap<E>::GetNames() + _EnumWrap<E>::NUM_ITEMS),
         values(_EnumWrap<E>::GetValues()), name(_EnumWrap<E>::GetClassName()),
-        hash(_EnumWrap<E>::HASH) {
+        hash(_EnumWrap<E>::GetHash()) {
     if (!_EnumWrap<E>::Initialized(false)) {
       _REnumInitializer<E>();
       _EnumWrap<E>::Initialized(true);

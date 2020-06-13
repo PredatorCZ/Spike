@@ -4,7 +4,7 @@ inline const reflType *Reflector::GetReflectedType(es::string_view name) const {
 }
 
 inline const reflType *Reflector::GetReflectedType(size_t ID) const {
-  const reflectorStatic *inst = _rfRetreive().rfStatic;
+  const reflectorStatic *inst = GetReflectedInstance().rfStatic;
 
   if (ID >= inst->nTypes)
     return nullptr;
@@ -134,11 +134,11 @@ inline std::string Reflector::GetReflectedValue(es::string_view name) const {
 }
 
 inline size_t Reflector::GetNumReflectedValues() const {
-  return _rfRetreive().rfStatic->nTypes;
+  return GetReflectedInstance().rfStatic->nTypes;
 }
 
 inline bool Reflector::UseNames() const {
-  return _rfRetreive().rfStatic->typeNames != nullptr;
+  return GetReflectedInstance().rfStatic->typeNames != nullptr;
 }
 
 inline std::string Reflector::GetReflectedValue(JenHashStrong hash) const {
@@ -195,7 +195,7 @@ Reflector::GetReflectedPair(size_t id, const KVPairFormat &settings) const {
     return {};
 
   KVPair retval;
-  const auto refInt = _rfRetreive().rfStatic;
+  const auto refInt = GetReflectedInstance().rfStatic;
 
   if (UseNames()) {
     if (settings.aliasName && refInt->typeAliases[id]) {
@@ -231,7 +231,7 @@ Reflector::GetReflectedPair(JenHashStrong hash,
 }
 
 inline es::string_view Reflector::GetClassName() const {
-  return _rfRetreive().rfStatic->className;
+  return GetReflectedInstance().rfStatic->className;
 }
 
 inline bool Reflector::IsReflectedSubClass(es::string_view name) const {
@@ -252,7 +252,7 @@ inline bool Reflector::IsReflectedSubClass(size_t id) const {
   if (id >= GetNumReflectedValues())
     return false;
 
-  const reflType fl = _rfRetreive().rfStatic->types[id];
+  const reflType fl = GetReflectedInstance().rfStatic->types[id];
 
   return fl.type == REFType::Class ||
          (IsArray(fl.ID) && fl.subType == REFType::Class);
@@ -276,7 +276,7 @@ inline bool Reflector::IsArray(size_t id) const {
   if (id >= GetNumReflectedValues())
     return false;
 
-  const reflType fl = _rfRetreive().rfStatic->types[id];
+  const reflType fl = GetReflectedInstance().rfStatic->types[id];
 
   return fl.type == REFType::Array || fl.type == REFType::ArrayClass;
 }

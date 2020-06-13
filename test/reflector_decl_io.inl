@@ -6,7 +6,7 @@
 #include "../datas/binwritter.hpp"
 
 template <class C> int test_class(const reflectorStatic *input) {
-  auto orig = C::__rfPtrStatic;
+  auto orig = C::GetReflector();
 
   TEST_EQUAL(input->classHash, orig->classHash);
 
@@ -95,6 +95,7 @@ int test_reflector_decl_io() {
     rio.AddClass<roomInfo>();
     rio.AddClass<roomInfo01>();
     rio.AddClass<roomInfo02>();
+    rio.AddClass<templatedClass<int, float>>();
     rio.AddEnum<EnumWrap00>();
     rio.AddEnum<EnumWrap01>();
     rio.AddEnum<EnumWrap02>();
@@ -110,8 +111,10 @@ int test_reflector_decl_io() {
   auto classes = rio2.Classes();
   auto enums = rio2.Enums();
 
-  TEST_EQUAL(classes.size(), 8);
+  TEST_EQUAL(classes.size(), 9);
   TEST_EQUAL(enums.size(), 4);
+
+  using tclass = templatedClass<int, float>;
 
   TEST_CASES(int testResult, TEST_FUNC(test_class<reflClass>, classes[0]),
              TEST_FUNC(test_class<subrefl>, classes[1]),
@@ -121,6 +124,7 @@ int test_reflector_decl_io() {
              TEST_FUNC(test_class<roomInfo>, classes[5]),
              TEST_FUNC(test_class<roomInfo01>, classes[6]),
              TEST_FUNC(test_class<roomInfo02>, classes[7]),
+             TEST_FUNC(test_class<tclass>, classes[8]),
              TEST_FUNC(test_enum<EnumWrap00>, enums[0]),
              TEST_FUNC(test_enum<EnumWrap01>, enums[1]),
              TEST_FUNC(test_enum<EnumWrap02>, enums[2]),

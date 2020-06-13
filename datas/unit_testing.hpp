@@ -56,10 +56,11 @@ template <class C> struct ValuePrinter {
 template <class A, class B>
 MasterPrinterThread &PrintCheckFailed(const A &aVal, const B &bVal,
                                       const char *aName, const char *bName,
-                                      const char *op) {
-  _CHECK_FAILED_TMP(<< aName << op << bName << ", "
-                    << ValuePrinter<A>(aVal, aName) << op
-                    << ValuePrinter<B>(bVal, bName));
+                                      const char *op, const char *file,
+                                      int line) {
+  printerror("Check failed " << file << '(' << line << "): " << aName << op
+                             << bName << ", " << ValuePrinter<A>(aVal, aName)
+                             << op << ValuePrinter<B>(bVal, bName));
   return printer;
 }
 } // namespace es
@@ -72,31 +73,34 @@ MasterPrinterThread &PrintCheckFailed(const A &aVal, const B &bVal,
 
 #define TEST_EQUAL(val1, val2)                                                 \
   if (val1 != val2) {                                                          \
-    es::PrintCheckFailed(val1, val2, #val1, #val2, " != ");                    \
+    es::PrintCheckFailed(val1, val2, #val1, #val2, " != ", __FILE__,           \
+                         __LINE__);                                            \
     return 1;                                                                  \
   }
 
 #define TEST_GT(val1, val2)                                                    \
   if (val1 <= val2) {                                                          \
-    es::PrintCheckFailed(val1, val2, #val1, #val2, " <= ");                    \
+    es::PrintCheckFailed(val1, val2, #val1, #val2, " <= ", __FILE__,           \
+                         __LINE__);                                            \
     return 1;                                                                  \
   }
 
 #define TEST_LE(val1, val2)                                                    \
   if (val1 >= val2) {                                                          \
-    es::PrintCheckFailed(val1, val2, #val1, #val2, " >= ");                    \
+    es::PrintCheckFailed(val1, val2, #val1, #val2, " >= ", __FILE__,           \
+                         __LINE__);                                            \
     return 1;                                                                  \
   }
 
 #define TEST_GT_EQ(val1, val2)                                                 \
   if (val1 < val2) {                                                           \
-    es::PrintCheckFailed(val1, val2, #val1, #val2, " < ");                     \
+    es::PrintCheckFailed(val1, val2, #val1, #val2, " < ", __FILE__, __LINE__); \
     return 1;                                                                  \
   }
 
 #define TEST_LE_EQ(val1, val2)                                                 \
   if (val1 > val2) {                                                           \
-    es::PrintCheckFailed(val1, val2, #val1, #val2, " > ");                     \
+    es::PrintCheckFailed(val1, val2, #val1, #val2, " > ", __FILE__, __LINE__); \
     return 1;                                                                  \
   }
 
@@ -108,7 +112,8 @@ MasterPrinterThread &PrintCheckFailed(const A &aVal, const B &bVal,
 
 #define TEST_NOT_EQUAL(val1, val2)                                             \
   if (val1 == val2) {                                                          \
-    es::PrintCheckFailed(val1, val2, #val1, #val2, " == ");                    \
+    es::PrintCheckFailed(val1, val2, #val1, #val2, " == ", __FILE__,           \
+                         __LINE__);                                            \
     return 1;                                                                  \
   }
 

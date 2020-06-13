@@ -74,7 +74,7 @@ public:
 #define ES_FLAGS_TEMPLATES_DEFINED
 template <class C, class E> struct _getType<esFlags<C, E>> {
   static const REFType TYPE = REFType::EnumFlags;
-  static const JenHash HASH = _EnumWrap<E>::HASH;
+  static const JenHash HASH = _EnumWrap<E>::GetHash();
   static const uint8 SUBSIZE = sizeof(C);
   static const uint16 NUMITEMS = 1;
   static const REFType SUBTYPE = REFType::None;

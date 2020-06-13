@@ -35,6 +35,21 @@ struct _ReflDesc {
   es::string_view part1, part2;
 };
 
+template <class C> struct _RTag {};
+
+struct ReflectorTypeBase {
+  static constexpr JenHash Hash() { return 0; }
+  static constexpr const char *ClassName() { return nullptr; }
+  static constexpr size_t NumTypes() { return 0; }
+  static const reflType *Types() { return nullptr; }
+  static const char *const *TypeNames() { return nullptr; }
+  static const char *const *TypeAliases() { return nullptr; }
+  static const JenHash *TypeAliasHashes() { return nullptr; }
+  static const _ReflDesc *TypeDescriptors() { return nullptr; }
+};
+
+template <class C> struct ReflectorType : ReflectorTypeBase {};
+
 struct reflectorStatic_data {
   const JenHash classHash;
   const uint32 nTypes;
@@ -45,27 +60,15 @@ struct reflectorStatic_data {
   const JenHash *typeAliasHashes;
   const _ReflDesc *typeDescs;
 
-  reflectorStatic_data(const uint32 _nTypes, const reflType *_types,
-                       const char *const *_typeNames, const char *_className,
-                       const JenHash _classHash)
-      : classHash(_classHash), nTypes(_nTypes), types(_types),
-        typeNames(_typeNames), className(_className), typeAliases(nullptr),
-        typeAliasHashes(nullptr), typeDescs(nullptr) {}
-
-  reflectorStatic_data(const uint32 _nTypes, const reflType *_types,
-                       const JenHash _classHash)
-      : classHash(_classHash), nTypes(_nTypes), types(_types),
-        typeNames(nullptr), className(nullptr), typeAliases(nullptr),
-        typeAliasHashes(nullptr), typeDescs(nullptr) {}
-
-  reflectorStatic_data(const uint32 _nTypes, const reflType *_types,
-                       const char *const *_typeNames, const char *_className,
-                       const char *const *_typeAliases,
-                       const JenHash *_typeAliasHashes,
-                       const _ReflDesc *_typeDescs, const JenHash _classHash)
-      : classHash(_classHash), nTypes(_nTypes), types(_types),
-        typeNames(_typeNames), className(_className), typeAliases(_typeAliases),
-        typeAliasHashes(_typeAliasHashes), typeDescs(_typeDescs) {}
+  template <class C>
+  reflectorStatic_data(_RTag<C>)
+      : classHash(ReflectorType<C>::Hash()),
+        nTypes(ReflectorType<C>::NumTypes()), types(ReflectorType<C>::Types()),
+        typeNames(ReflectorType<C>::TypeNames()),
+        className(ReflectorType<C>::ClassName()),
+        typeAliases(ReflectorType<C>::TypeAliases()),
+        typeAliasHashes(ReflectorType<C>::TypeAliasHashes()),
+        typeDescs(ReflectorType<C>::TypeDescriptors()) {}
 };
 
 template <bool x64> struct reflectorStatic_t : reflectorStatic_data {
@@ -90,4 +93,15 @@ struct reflectorInstance {
 struct reflectorInstanceConst {
   const reflectorStatic *rfStatic;
   const void *rfInstance;
+};
+
+template <class C> struct ReflectorInterface {
+  static const reflectorStatic *GetReflector();
+  reflectorInstanceConst GetReflectedInstance() const {
+    return {GetReflector(), this};
+  }
+
+  reflectorInstance GetReflectedInstance() {
+    return {GetReflector(), this};
+  }
 };

@@ -112,8 +112,7 @@ int test_reflector_enum04() {
   return 0;
 }
 
-struct subrefl {
-  DECLARE_REFLECTOR;
+struct subrefl : ReflectorInterface<subrefl> {
   int data0;
   float data1;
 
@@ -123,7 +122,7 @@ struct subrefl {
   }
 };
 
-REFLECTOR_CREATE(subrefl, 2, VARNAMES, SUBCLASS, data0, data1);
+REFLECTOR_CREATE(subrefl, 1, VARNAMES, data0, data1);
 
 struct _ReflClassData {
   bool test1;
@@ -183,9 +182,7 @@ struct _ReflClassData {
   _ReflClassData() = default;
 };
 
-struct reflClass : Reflector, _ReflClassData {
-  DECLARE_REFLECTOR;
-
+struct reflClass : ReflectorBase<reflClass>, _ReflClassData {
   std::string test80;
 
   reflClass() = default;

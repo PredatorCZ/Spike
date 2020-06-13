@@ -58,154 +58,133 @@
   _REFLECTOR_EXTRACT_ALIASHASH value,
 #define _REFLECTOR_ADDN_ITEM_EXTNAME(value) _REFLECTOR_EXTRACT_0S value,
 #define _REFLECTOR_ADDN_ITEM(value) #value,
+#define _REFLECTOR_GET_CNAME(...) #__VA_ARGS__
+#define _REFLECTOR_GET_CLASS(...) __VA_ARGS__
 
 #define _REFLECTOR_ADDN(classname, _id, mvalue)                                \
-  BuildReflType<decltype(classname::mvalue)>(JenkinsHashC(#mvalue), _id),
+  BuildReflType<decltype(classname::mvalue)>(JenkinsHashC(#mvalue), _id,       \
+                                             offsetof(classname, mvalue)),
 
 #define _EXT_REFLECTOR_ADDN(classname, _id, value)                             \
   BuildReflType<decltype(classname::_REFLECTOR_EXTRACT_0 value)>(              \
-      JenkinsHashC(_REFLECTOR_EXTRACT_0S value), _id),
+      JenkinsHashC(_REFLECTOR_EXTRACT_0S value), _id,                          \
+      offsetof(classname, _REFLECTOR_EXTRACT_0 value)),
 
-#define _REFLECTOR_TYPES(classname, extType, ...)                              \
-  static const reflType __##classname##_types[] = {                            \
-      StaticForArgID(extType, classname, __VA_ARGS__)};
+#define _REFLECTOR_MAIN_BODY(extType, ...)                                     \
+  static const reflType *Types() {                                             \
+    static const reflType types[] = {                                          \
+        StaticForArgID(extType, value_type, __VA_ARGS__)};                     \
+    return types;                                                              \
+  }                                                                            \
+  static constexpr size_t NumTypes() { return VA_NARGS(__VA_ARGS__); }
 
-#define _REFLECTOR_MAIN_BODY(classname, namesbody, ...)                        \
-  static const reflectorStatic __##classname##_statical = {                    \
-      VA_NARGS(__VA_ARGS__), __##classname##_types,                            \
-      namesbody JenkinsHashC(#classname)};
+#define _REFLECTOR_MAIN_CLASSHASH(clseval, classname)                          \
+  static constexpr JenHash Hash() { return JenkinsHashC(clseval(classname)); }
 
-#define _REFLECTOR_NAMES_VARNAMES(classname, ...)                              \
-  static const char *__##classname##_typeNames[] = {                           \
-      StaticFor(_REFLECTOR_ADDN_ITEM, __VA_ARGS__)};
+#define _REFLECTOR_CNAME_VARNAMES(clseval, classname)                          \
+  static const char *ClassName() { return clseval(classname); }
+#define _REFLECTOR_CNAME_TEMPLATE(...)
+#define _REFLECTOR_CNAME_EXTENDED(clseval, classname)                          \
+  static const char *ClassName() { return clseval(classname); }
+
+#define _REFLECTOR_NAMES_VARNAMES(...)                                         \
+  static const char *const *TypeNames() {                                      \
+    static const char *typeNames[] = {                                         \
+        StaticFor(_REFLECTOR_ADDN_ITEM, __VA_ARGS__)};                         \
+    return typeNames;                                                          \
+  }
 
 #define _REFLECTOR_NAMES_TEMPLATE(...)
-#define _REFLECTOR_NAMES_SUBCLASS(...)
-#define _REFLECTOR_NAMES_EXTENDED(classname, ...)                              \
-  static const char *__##classname##_typeNames[] = {                           \
-      StaticFor(_REFLECTOR_ADDN_ITEM_EXTNAME, __VA_ARGS__)};                   \
-  static const char *__##classname##_typeAliases[] = {                         \
-      StaticFor(_REFLECTOR_ADDN_ITEM_ALIAS, __VA_ARGS__)};                     \
-  static const _ReflDesc __##classname##_typeDescs[] = {                       \
-      StaticFor(_REFLECTOR_ADDN_ITEM_DESC, __VA_ARGS__)};                      \
-  static const JenHash __##classname##_typeAliasHashes[] = {                   \
-      StaticFor(_REFLECTOR_ADDN_ITEM_ALIASHASH, __VA_ARGS__)};
+#define _REFLECTOR_NAMES_EXTENDED(...)                                         \
+  static const char *const *TypeNames() {                                      \
+    static const char *typeNames[] = {                                         \
+        StaticFor(_REFLECTOR_ADDN_ITEM_EXTNAME, __VA_ARGS__)};                 \
+    return typeNames;                                                          \
+  }                                                                            \
+  static const char *const *TypeAliases() {                                    \
+    static const char *typeAliases[] = {                                       \
+        StaticFor(_REFLECTOR_ADDN_ITEM_ALIAS, __VA_ARGS__)};                   \
+    return typeAliases;                                                        \
+  }                                                                            \
+  static const JenHash *TypeAliasHashes() {                                    \
+    static const JenHash typeAliasHashes[] = {                                 \
+        StaticFor(_REFLECTOR_ADDN_ITEM_ALIASHASH, __VA_ARGS__)};               \
+    return typeAliasHashes;                                                    \
+  }                                                                            \
+  static const _ReflDesc *TypeDescriptors() {                                  \
+    static const _ReflDesc typeDescriptors[] = {                               \
+        StaticFor(_REFLECTOR_ADDN_ITEM_DESC, __VA_ARGS__)};                    \
+    return typeDescriptors;                                                    \
+  }
 
-#define _REFLECTOR_NAMES_DEF_VARNAMES(classname)                               \
-  __##classname##_typeNames, #classname,
-#define _REFLECTOR_NAMES_DEF_TEMPLATE(classname)
-#define _REFLECTOR_NAMES_DEF_SUBCLASS(classname)
-#define _REFLECTOR_NAMES_DEF_EXTENDED(classname)                               \
-  __##classname##_typeNames, #classname, __##classname##_typeAliases,          \
-      __##classname##_typeAliasHashes, __##classname##_typeDescs,
+#define _REFLECTOR_CNAME(classname) #classname
+#define _TEMPLATE_REFLECTOR_CNAME(classname) _REFLECTOR_GET_CNAME classname
 
-#define _REFLECTOR_TEMPLATE_TEMPLATE template <>
-#define _REFLECTOR_TEMPLATE_SUBCLASS
+#define _REFLECTOR_CLASS(classname) classname
+#define _TEMPLATE_REFLECTOR_CLASS(classname) _REFLECTOR_GET_CLASS classname
+
+#define _REFLECTOR_TEMPLATE_TEMPLATE _TEMPLATE
 #define _REFLECTOR_TEMPLATE_VARNAMES
 #define _REFLECTOR_TEMPLATE_EXTENDED
 
 #define _REFLECTOR_EXTENDED_EXTENDED _EXT
 #define _REFLECTOR_EXTENDED_TEMPLATE
-#define _REFLECTOR_EXTENDED_SUBCLASS
 #define _REFLECTOR_EXTENDED_VARNAMES
 
-#define _REFLECTOR_SUBCLASS_SUBCLASS(classname)                                \
-  template <> struct _SubReflClassWrap<classname> {                            \
-    static const JenHash HASH = JenkinsHashC(#classname);                      \
-  };
-#define _REFLECTOR_SUBCLASS_TEMPLATE(classname)
-#define _REFLECTOR_SUBCLASS_VARNAMES(classname)
-#define _REFLECTOR_SUBCLASS_EXTENDED(classname)
-
-#define _REFLECTOR_INIT_ELEMENT(classname, id, value)                          \
-                                                                               \
-  classname::__rfPtrStatic->types[id].offset = offsetof(classname, value);
-
-#define _EXT_REFLECTOR_INIT_ELEMENT(classname, id, value)                      \
-                                                                               \
-  classname::__rfPtrStatic->types[id].offset =                                 \
-      offsetof(classname, _REFLECTOR_EXTRACT_0 value);
-
-#define _REFLECTOR_INIT_BODY(classname, filter, ...)                           \
-  void classname::_rfInit() {                                                  \
-    if (classname::__rfPtrStatic->types[0].offset != 0xffff)                   \
-      return;                                                                  \
-    StaticForArgID(filter, classname, __VA_ARGS__)                             \
+#define _REFLECTOR_INTERFACE(clseval, classname)                               \
+  template <>                                                                  \
+  const reflectorStatic *                                                      \
+  ReflectorInterface<clseval(classname)>::GetReflector() {                     \
+    static const reflectorStatic rclass(_RTag<clseval(classname)>{});          \
+    return &rclass;                                                            \
   }
 
 #define _REFLECTOR_START_VER0(classname, ...)                                  \
-  _REFLECTOR_TYPES(classname, _REFLECTOR_ADDN, __VA_ARGS__)                    \
-  _REFLECTOR_MAIN_BODY(classname, _REFLECTOR_NAMES_DEF_SUBCLASS(classname),    \
-                       __VA_ARGS__)                                            \
-  const reflectorStatic *classname::__rfPtrStatic = &__##classname##_statical; \
-  _REFLECTOR_INIT_BODY(classname, _REFLECTOR_INIT_ELEMENT, __VA_ARGS__)
+  template <> struct ReflectorType<classname> : ReflectorTypeBase {            \
+    using value_type = classname;                                              \
+    _REFLECTOR_MAIN_BODY(_REFLECTOR_ADDN, __VA_ARGS__);                        \
+  };                                                                           \
+  _REFLECTOR_INTERFACE(_REFLECTOR_CLASS, classname)
 
-#define _REFLECTOR_START_VER1(classname, var01, ...)                           \
-  _REFLECTOR_TYPES(classname,                                                  \
-                   _LOOPER_CAT2(_REFLECTOR_EXTENDED_##var01, _REFLECTOR_ADDN), \
-                   __VA_ARGS__)                                                \
-  _REFLECTOR_NAMES_##var01(classname, __VA_ARGS__);                            \
-  _REFLECTOR_MAIN_BODY(classname, _REFLECTOR_NAMES_DEF_##var01(classname),     \
-                       __VA_ARGS__)                                            \
-  _REFLECTOR_TEMPLATE_##var01 const reflectorStatic                            \
-      *classname::__rfPtrStatic = &__##classname##_statical;                   \
-  _REFLECTOR_SUBCLASS_##var01(classname);                                      \
-  _REFLECTOR_TEMPLATE_##var01 _REFLECTOR_INIT_BODY(                            \
-      classname,                                                               \
-      _LOOPER_CAT2(_REFLECTOR_EXTENDED_##var01, _REFLECTOR_INIT_ELEMENT),      \
-      __VA_ARGS__)
+// clang-format off
 
-#define _REFLECTOR_START_VER2(classname, var01, var02, ...)                    \
-  _REFLECTOR_TYPES(                                                            \
-      classname,                                                               \
-      _LOOPER_CAT2(_REFLECTOR_EXTENDED_##var01 _REFLECTOR_EXTENDED_##var02,    \
-                   _REFLECTOR_ADDN),                                           \
-      __VA_ARGS__)                                                             \
-  _REFLECTOR_NAMES_##var01(classname, __VA_ARGS__);                            \
-  _REFLECTOR_NAMES_##var02(classname, __VA_ARGS__);                            \
-  _REFLECTOR_MAIN_BODY(classname,                                              \
-                       _REFLECTOR_NAMES_DEF_##var01(classname)                 \
-                           _REFLECTOR_NAMES_DEF_##var02(classname),            \
-                       __VA_ARGS__)                                            \
-  _REFLECTOR_TEMPLATE_##var01 _REFLECTOR_TEMPLATE_##var02 const                \
-      reflectorStatic *classname::__rfPtrStatic = &__##classname##_statical;   \
-  _REFLECTOR_SUBCLASS_##var01(classname)                                       \
-      _REFLECTOR_SUBCLASS_##var02(classname);                                  \
-  _REFLECTOR_TEMPLATE_##var01 _REFLECTOR_TEMPLATE_##var02                      \
-      _REFLECTOR_INIT_BODY(                                                    \
-          classname,                                                           \
-          _LOOPER_CAT2(                                                        \
-              _REFLECTOR_EXTENDED_##var01 _REFLECTOR_EXTENDED_##var02,         \
-              _REFLECTOR_INIT_ELEMENT),                                        \
-          __VA_ARGS__)
+#define _REFLECTOR_START_VER1(classname, var01, ...)                                                          \
+  template <> struct ReflectorType<_LOOPER_CAT2(_REFLECTOR_TEMPLATE_##var01, _REFLECTOR_CLASS)(classname)>    \
+  : ReflectorTypeBase {                                                                                       \
+    using value_type = _LOOPER_CAT2(_REFLECTOR_TEMPLATE_##var01, _REFLECTOR_CLASS)(classname);                \
+    _REFLECTOR_MAIN_BODY(_LOOPER_CAT2(_REFLECTOR_EXTENDED_##var01, _REFLECTOR_ADDN), __VA_ARGS__)             \
+    _REFLECTOR_NAMES_##var01(__VA_ARGS__);                                                                    \
+    _REFLECTOR_CNAME_##var01(_LOOPER_CAT2(_REFLECTOR_TEMPLATE_##var01, _REFLECTOR_CNAME), classname)          \
+    _REFLECTOR_MAIN_CLASSHASH(_LOOPER_CAT2(_REFLECTOR_TEMPLATE_##var01, _REFLECTOR_CNAME), classname)         \
+  };                                                                                                          \
+  _REFLECTOR_INTERFACE(_LOOPER_CAT2(_REFLECTOR_TEMPLATE_##var01, _REFLECTOR_CLASS), classname)                \
 
-#define _REFLECTOR_START_VER3(classname, var01, var02, var03, ...)             \
-  _REFLECTOR_TYPES(                                                            \
-      classname,                                                               \
-      _LOOPER_CAT2(_REFLECTOR_EXTENDED_##var01 _REFLECTOR_EXTENDED_##var02     \
-                       _REFLECTOR_EXTENDED_##var03,                            \
-                   _REFLECTOR_ADDN),                                           \
-      __VA_ARGS__);                                                            \
-  _REFLECTOR_NAMES_##var01(classname, __VA_ARGS__);                            \
-  _REFLECTOR_NAMES_##var02(classname, __VA_ARGS__);                            \
-  _REFLECTOR_NAMES_##var03(classname, __VA_ARGS__);                            \
-  _REFLECTOR_MAIN_BODY(classname,                                              \
-                       _REFLECTOR_NAMES_DEF_##var01(classname)                 \
-                           _REFLECTOR_NAMES_DEF_##var02(classname)             \
-                               _REFLECTOR_NAMES_DEF_##var03(classname),        \
-                       __VA_ARGS__)                                            \
-  _REFLECTOR_TEMPLATE_##var01 _REFLECTOR_TEMPLATE_##var02                      \
-      _REFLECTOR_TEMPLATE_##var03 const reflectorStatic                        \
-          *classname::__rfPtrStatic = &__##classname##_statical;               \
-  _REFLECTOR_SUBCLASS_##var01 _REFLECTOR_SUBCLASS_##var02                      \
-      _REFLECTOR_SUBCLASS_##var03(classname);                                  \
-  _REFLECTOR_TEMPLATE_##var01 _REFLECTOR_TEMPLATE_##var02                      \
-      _REFLECTOR_TEMPLATE_##var03 _REFLECTOR_INIT_BODY(                        \
-          classname,                                                           \
-          _LOOPER_CAT2(_REFLECTOR_EXTENDED_##var01 _REFLECTOR_EXTENDED_##var02 \
-                           _REFLECTOR_EXTENDED_##var03,                        \
-                       _REFLECTOR_INIT_ELEMENT) __VA_ARGS__)
+#define _REFLECTOR_START_VER2(classname, var01, var02, ...)                                                                            \
+  template <> struct ReflectorType<_LOOPER_CAT2(_REFLECTOR_TEMPLATE_##var01 _REFLECTOR_TEMPLATE_##var02, _REFLECTOR_CLASS)(classname)> \
+  : ReflectorTypeBase {                                                                                                                \
+    using value_type = _LOOPER_CAT2(_REFLECTOR_TEMPLATE_##var01 _REFLECTOR_TEMPLATE_##var02, _REFLECTOR_CLASS)(classname);             \
+    _REFLECTOR_MAIN_BODY(_LOOPER_CAT2(_REFLECTOR_EXTENDED_##var01 _REFLECTOR_EXTENDED_##var02, _REFLECTOR_ADDN), __VA_ARGS__)          \
+    _REFLECTOR_NAMES_##var01(__VA_ARGS__);                                                                                             \
+    _REFLECTOR_NAMES_##var02(__VA_ARGS__);                                                                                             \
+    _REFLECTOR_CNAME_##var01(_LOOPER_CAT2(_REFLECTOR_TEMPLATE_##var01 _REFLECTOR_TEMPLATE_##var02, _REFLECTOR_CNAME), classname)       \
+    _REFLECTOR_CNAME_##var02(_LOOPER_CAT2(_REFLECTOR_TEMPLATE_##var01 _REFLECTOR_TEMPLATE_##var02, _REFLECTOR_CNAME), classname)       \
+    _REFLECTOR_MAIN_CLASSHASH(_LOOPER_CAT2(_REFLECTOR_TEMPLATE_##var01 _REFLECTOR_TEMPLATE_##var02, _REFLECTOR_CNAME), classname)      \
+  };                                                                                                                                   \
+  _REFLECTOR_INTERFACE(_LOOPER_CAT2(_REFLECTOR_TEMPLATE_##var01 _REFLECTOR_TEMPLATE_##var02, _REFLECTOR_CLASS), classname)
 
-template <class C> struct _SubReflClassWrap {
-  static constexpr JenHash HASH = 0;
-};
+#define _REFLECTOR_START_VER3(classname, var01, var02, var03, ...)                                                                                                 \
+  template <> struct ReflectorType<_LOOPER_CAT2(_REFLECTOR_TEMPLATE_##var01 _REFLECTOR_TEMPLATE_##var02 _REFLECTOR_TEMPLATE_##var03, _REFLECTOR_CLASS)(classname)> \
+  : ReflectorTypeBase {                                                                                                                                            \
+    using value_type = _LOOPER_CAT2(_REFLECTOR_TEMPLATE_##var01 _REFLECTOR_TEMPLATE_##var02 _REFLECTOR_TEMPLATE_##var03, _REFLECTOR_CLASS)(classname);             \
+    _REFLECTOR_MAIN_BODY(_LOOPER_CAT2(_REFLECTOR_EXTENDED_##var01 _REFLECTOR_EXTENDED_##var02 _REFLECTOR_EXTENDED_##var03, _REFLECTOR_ADDN), __VA_ARGS__)          \
+    _REFLECTOR_NAMES_##var01(__VA_ARGS__);                                                                                                                         \
+    _REFLECTOR_NAMES_##var02(__VA_ARGS__);                                                                                                                         \
+    _REFLECTOR_NAMES_##var03(__VA_ARGS__);                                                                                                                         \
+    _REFLECTOR_CNAME_##var01(_LOOPER_CAT2(_REFLECTOR_TEMPLATE_##var01 _REFLECTOR_TEMPLATE_##var02 _REFLECTOR_TEMPLATE_##var03, _REFLECTOR_CNAME), classname)       \
+    _REFLECTOR_CNAME_##var02(_LOOPER_CAT2(_REFLECTOR_TEMPLATE_##var01 _REFLECTOR_TEMPLATE_##var02 _REFLECTOR_TEMPLATE_##var03, _REFLECTOR_CNAME), classname)       \
+    _REFLECTOR_CNAME_##var03(_LOOPER_CAT2(_REFLECTOR_TEMPLATE_##var01 _REFLECTOR_TEMPLATE_##var02 _REFLECTOR_TEMPLATE_##var03, _REFLECTOR_CNAME), classname)       \
+    _REFLECTOR_MAIN_CLASSHASH(_LOOPER_CAT2(_REFLECTOR_TEMPLATE_##var01 _REFLECTOR_TEMPLATE_##var02 _REFLECTOR_TEMPLATE_##var03, _REFLECTOR_CNAME), classname)      \
+  };                                                                                                                                                               \
+  _REFLECTOR_INTERFACE(_LOOPER_CAT2(_REFLECTOR_TEMPLATE_##var01 _REFLECTOR_TEMPLATE_##var02 _REFLECTOR_TEMPLATE_##var03, _REFLECTOR_CLASS), classname)
+
+// clang-format on

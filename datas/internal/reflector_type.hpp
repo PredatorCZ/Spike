@@ -103,7 +103,7 @@ template <typename _Ty> struct refl_is_class_reflected {
 private:
   template <class C>
   static constexpr auto is_reflected(int)
-      -> decltype(std::declval<C>()._rfRetreive(), bool()) {
+      -> decltype(C::GetReflector(), bool()) {
     return true;
   }
 
@@ -124,7 +124,7 @@ template <typename _Ty> struct _getType {
                     ? REFType::Class
                     : (isArithmetic ? _GetTypeIndex<_Ty>() : REFType::None));
   static const JenHash HASH =
-      _EnumWrap<_Ty>::HASH + _SubReflClassWrap<_Ty>::HASH;
+      _EnumWrap<_Ty>::GetHash() + ReflectorType<_Ty>::Hash();
   static const JenHash SUBHASH = 0;
   static const uint8 SUBSIZE = sizeof(_Ty);
   static const REFType SUBTYPE = REFType::None;
@@ -178,7 +178,8 @@ union _DecomposedVectorHash {
 };
 
 template <class C>
-const reflType BuildReflType(const JenHash classHash, uint8 index) {
+const reflType BuildReflType(const JenHash classHash, uint8 index,
+                             size_t offset = 0xffff) {
   typedef typename std::remove_reference<C>::type unref_type;
   typedef _getType<unref_type> type_class;
   static_assert(type_class::TYPE != REFType::None,
@@ -189,7 +190,7 @@ const reflType BuildReflType(const JenHash classHash, uint8 index) {
                   type_class::SUBSIZE,
                   index,
                   type_class::NUMITEMS,
-                  0xffff,
+                  static_cast<decltype(reflType::offset)>(offset),
                   classHash,
                   type_class::HASH};
 }
