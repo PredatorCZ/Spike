@@ -34,6 +34,7 @@ public:
   // A special bone identicator, this is not a bone index within skeleton
   virtual size_t Index() const = 0;
   virtual es::string_view Name() const = 0;
+  virtual ~Bone() {}
 };
 
 typedef Element<const List<Bone>> SkeletonBonesConst;
@@ -46,6 +47,7 @@ public:
 
   virtual SkeletonBonesConst Bones() const = 0;
   virtual es::string_view Name() const = 0;
+  virtual ~Skeleton() {}
 
   iterator_type_const begin() const { return Bones()->begin(); }
   iterator_type_const end() const { return Bones()->end(); }

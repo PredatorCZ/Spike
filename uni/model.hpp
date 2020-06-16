@@ -36,12 +36,13 @@ public:
     Lerp  // min + (max - min) * x, x = [0, 1]
   };
 
-  const char *RawBuffer() const = 0;
-  size_t Stride() const = 0;
-  size_t Offset() const = 0;
-  FormatDescr Type() const = 0;
-  BBOX UnpackData() const = 0;
-  UnpackDataType_e UnpackDataType() const = 0;
+  virtual const char *RawBuffer() const = 0;
+  virtual size_t Stride() const = 0;
+  virtual size_t Offset() const = 0;
+  virtual FormatDescr Type() const = 0;
+  virtual BBOX UnpackData() const = 0;
+  virtual UnpackDataType_e UnpackDataType() const = 0;
+  virtual ~PrimitiveDescriptor() {}
 };
 
 typedef Element<const List<PrimitiveDescriptor>> PrimitiveDescriptorsConst;
@@ -51,12 +52,14 @@ class Primitive {
 public:
   enum class IndexType_e { None, Line, Triangle, Strip, Fan };
 
-  const char *RawIndexBuffer() const = 0;
-  const char *RawVertexBuffer(size_t id) const = 0;
-  PrimitiveDescriptorsConst Descriptors() const = 0;
-  IndexType_e IndexType() const = 0;
-  size_t IndexSize() const = 0;
-  size_t NumVertices() const = 0;
-  size_t NumVertexBuffers() const = 0;
-  size_t NumIndices() const = 0;
+  virtual const char *RawIndexBuffer() const = 0;
+  virtual const char *RawVertexBuffer(size_t id) const = 0;
+  virtual PrimitiveDescriptorsConst Descriptors() const = 0;
+  virtual IndexType_e IndexType() const = 0;
+  virtual size_t IndexSize() const = 0;
+  virtual size_t NumVertices() const = 0;
+  virtual size_t NumVertexBuffers() const = 0;
+  virtual size_t NumIndices() const = 0;
+  virtual ~Primitive() {}
+};
 } // namespace uni

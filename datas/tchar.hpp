@@ -66,5 +66,5 @@ static inline void UPrintf(const char *data) { wprintf(es::ToUTF1632(data).c_str
 template <typename T> TSTRING ToTSTRING(const T &type) {
   return std::to_string(type);
 }
-static inline void UPrintf(const char *data) { printf(data); }
+static inline void UPrintf(const char *data) { printf("%s", data); }
 #endif

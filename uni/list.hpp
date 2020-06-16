@@ -26,6 +26,7 @@ public:
 
   virtual size_t Size() const = 0;
   virtual const_type At(size_t id) const = 0;
+  virtual ~List() {}
 
   typedef uni::VirtualIterator<List, &List::Size, const_type, &List::At>
       iterator_type_const;

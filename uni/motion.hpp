@@ -38,6 +38,7 @@ public:
   virtual void GetValue(esMatrix44 &output, float time) const;
   virtual void GetValue(Vector4A16 &output, float time) const;
   virtual void GetValue(float &output, float time) const;
+  virtual ~MotionTrack() {}
 };
 
 typedef Element<const List<MotionTrack>> MotionTracksConst;
@@ -54,6 +55,7 @@ public:
   virtual float Duration() const = 0;
   virtual MotionTracksConst Tracks() const = 0;
   virtual MotionType_e MotionType() const = 0;
+  virtual ~Motion() {}
 
   iterator_type_const begin() const { return Tracks()->begin(); }
   iterator_type_const end() const { return Tracks()->end(); }
