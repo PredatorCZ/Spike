@@ -28,7 +28,7 @@ namespace es {
 template <class C, class D>
 auto append_scan(const D &input, const char *varName, int)
     -> decltype(std::declval<std::ostream>() << std::declval<C>(), void()) {
-#if defined(__clang__) || __GNUC__ < 7
+#if defined(__clang__) || (defined(__GNUC__) && __GNUC__ < 7)
   printer << varName;
 #else
   printer << input;
@@ -85,7 +85,7 @@ MasterPrinterThread &PrintCheckFailed(const A &aVal, const B &bVal,
     return 1;                                                                  \
   }
 
-#define TEST_LE(val1, val2)                                                    \
+#define TEST_LT(val1, val2)                                                    \
   if (val1 >= val2) {                                                          \
     es::PrintCheckFailed(val1, val2, #val1, #val2, " >= ", __FILE__,           \
                          __LINE__);                                            \
