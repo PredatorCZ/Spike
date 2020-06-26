@@ -5,6 +5,7 @@
 #include "flags.inl"
 #include "float.inl"
 #include "matrix44.inl"
+#include "multi_thread.inl"
 #include "supercore.inl"
 #include "vector_simd.inl"
 
@@ -33,7 +34,8 @@ int main() {
              TEST_FUNC(test_vector_simd_01), TEST_FUNC(test_vector_simd_02),
              TEST_FUNC(test_vector_simd_03), TEST_FUNC(test_vector_simd_10),
              TEST_FUNC(test_vector_simd_11), TEST_FUNC(test_vector_simd_12),
-             TEST_FUNC(test_supercore_00));
+             TEST_FUNC(test_supercore_00), TEST_FUNC(test_mt_thread00),
+             TEST_FUNC(test_mt_thread01));
 
   return testResult;
 }

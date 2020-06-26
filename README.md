@@ -1,148 +1,221 @@
 # PreCore
+
 [![Build Status](https://travis-ci.org/PredatorCZ/PreCore.svg?branch=master)](https://travis-ci.org/PredatorCZ/PreCore)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 
-PreCore is a library with helper classes.
-It contains IO classes, logging services, algorhitms, data types, extensions for other libraries and more.
+PreCore is a library with helper classes.\
+Main focus of this library is: Class/Enum RTTI and RTTR, SIMD classes like Vector and Matrix4x4, stream helpers, uni module.\
+It also contains logging services, algorhitms, data types, muti-threading queue classes, extensions for other libraries and many more.
 
-Library contains following folders:
-## _samples
-Contains practical usage of classes.
-## data
-Basic classes:
-### allocator_hybrid
-Is a modified std::allocator, where can be assigned already existant buffer.
-Usage is in data.cpp.
-### bincore
-An internal base class for Binreader/Binwritter.
-Usage is in data.cpp.
+## Main modules
 
-Macros:
+### RTTI/RTTR (Run Time Type Introspection/Reflection)
 
-- getBlockSize(classname, startval, endval): gets size between one struct member and another (including sizes of both members)
+**Headers:** reflector.hpp, reflector_io.hpp, reflector_xml.hpp\
+**Unit tests:** reflector_*.inl, test_reflector.cpp
 
-Functions:
+Reflector allows simple class reflection and de/serialization.\
+It also allows to fully reflect enumerations.
 
-- Seek : seek stream
-- Skip : skips bytes in stream
-- Tell : position within stream
-- SetStream : sets external stream object
-- GetStream : gets stream
-- SetRelativeOrigin : sets absolute position within stream as relative zero, affects Seek and Tell functions by default
-- ResetRelativeOrigin : resets relative position as absolute
-- Open : opens file
-- IsValid : is opened file valid one
-- SwapEndian : set data reading in opposite endian
-- SwappedEndian : uses opposite endian
-- Encryptor : setting, creating and getting ecryption class (only XOR so far, only if class is present)
-### binreader
-Reading binary data from stream object.
-Usage is in data.cpp.
+```plantuml
+title Basic workflow diagram
+package Header <<Frame>> {
+    class "ReflectorInterface<classType><template>" as ReflectorInterface {
+        +{static} GetReflector()
+        + GetReflectedInstance()
+    }
+    note bottom of ReflectorInterface
+        A non virtual,
+        non abstract,
+        zero size interface.
+    end note
+    object "REFLECTOR_CREATE(...)" as RCE
+    RCE : classType
+    RCE : ENUM
+    RCE : numFlags
+    RCE : enumFlags ...
+    RCE : class members
+    note bottom of RCE
+        A macro for creating
+        reflected enumeration
+    end note
+}
 
-Functions:
+package "Source Unit" <<Frame>> {
+    object "REFLECTOR_CREATE(...)" as REFLECTOR_CREATE
+    REFLECTOR_CREATE : classType
+    REFLECTOR_CREATE : numFlags
+    REFLECTOR_CREATE : flags ...
+    REFLECTOR_CREATE : class members
+    note bottom of REFLECTOR_CREATE
+        A macro for creating
+        reflection definition
+    end note
+    node "Single call function" {
+        object "REFLECTOR_REGISTER(...)" as REFLECTOR_REGISTER
+        REFLECTOR_REGISTER : classes and enums
+    }
+    note bottom of REFLECTOR_REGISTER
+        A macro for adding
+        reflected classes and
+        enums into global registry
+    end note
+}
+```
 
-- Savepos : saves current stream position away
-- Restorepos : seeks into saved stream position called by Savepos()
-- GetSize : Gets size of opened stream/file
-- ReadBuffer : reads a raw buffer
-- ReadContainer : reads container class (vector, string, wstring, etc)
-- ReadString : read pure string with \0 ending char, supports both string and wstring
-- Read : reads any type
+```plantuml
+title Reflector Relations
+class MyClass {
+    A normal class
+    declaration
+}
+class "ReflectorInterface<MyClass><template>" as ReflectorInterface
+abstract class Reflector
+class ReflectorStatic<<RTTI>>
+object classRegistry
+class ReflectorIO
+package Serializers {
+    object ReflectorBinUtil
+    object ReflectorXMLUtil
+    object "any other" as anyser
+}
+object "Reflected Enum" as refEnum
+object "GetReflectedEnum<enumType>()" as GRE
+object enumRegistry
 
-Read functions can handle endianness (more in endian section), and xor encoding if available.
+classRegistry : (optional)
 
-### binwritter
-Writing binary data into stream object.
-Usage is in data.cpp.
+MyClass *-- ReflectorInterface
+ReflectorInterface o-- ReflectorStatic
+Reflector o-- ReflectorStatic
+Reflector o-- ReflectorInterface
+ReflectorStatic *-- classRegistry
+ReflectorStatic o-- ReflectorIO
+Reflector o- classRegistry
+Reflector o-- Serializers
+refEnum o-- GRE
+enumRegistry *-- GRE
+enumRegistry o-- Reflector
+GRE o- ReflectorIO
+```
 
-Functions:
+**Strengths:**
 
-- WriteBuffer : writes raw buffer into stream
-- WriteContainer : writes any container class (vector, string, wstring, etc)
-- WriteContainerWCount : writes any container class (vector, string, wstring, etc) with number of elements
-- WriteT : writes pure text
-- Write : writes any type
+* Easy RTTI creation with ***REFLECTOR_CREATE*** macro
+* Loading/saving RTTI
+* Built-in XML/Binary de/serializers
+* Can apply other de/serializers with ease.
+* Doesn't eat any class space (except ReflectorBase)
+* Can have member alias and description in RTTI (EXTENDED flag)
 
-Write functions can handle endianness (more in endian section), and xor encoding if available.
+**Disadvantages, that shall be fixed:**
 
-### blowfish & blowfish2
-Blowfish block encryption algo, supports ECB, CBC, PCBC, CFB, OFB modes.
+* No reflection for heap containers (except std::string)
+* No run-time class creation
+* No RTTI saving for STL containers (possible, but unsafe) [won't be implemented]
 
-### disabler
-Disabler/enabler of functions for template interface classes.
-Usage is in data.cpp.
+### UNI
 
-### endian
-FByteSwapper function for swapping endianness on classes and data types.
+**Headers:** in uni folder\
+**Unit tests:** uni_*.inl, test_uni.cpp
 
-Can detect if input class have SwapEndian function, if it can find it, it'll call this function, where you can swap members individually. Otherwise it'll swap entire class.
+Set of abstract interfaces for polymorphic classes.\
+Contains python bindings and format codecs.
 
-Usage is in data.cpp.
+### Formats
 
-### esString
-Universal string class, can contain classic and unicode string, as-well convert between them.
-Usage is in data.cpp.
+**Headers:** in formats folder\
+**Unit tests:** none
 
-### fileinfo
-Class for filtering filepath elements, uses classic and unicode strings.
-Usage is in data.cpp.
+Set of headers for format structures and format codecs.
 
-### flags
-Classes for bitflag management.
-Usage is in data.cpp.
+### CMake
 
-Classes:
+Set of helper modules for CMake.
 
-- esFlags: can use enumeration class as bit flags
-- EnumFlags : compatibility typedef of esFlags
-- esEnum : enum with explicit size
+### Bincore
 
-### halfFloat
-Converting half float (16 bit floating point) into float.
+**Headers:** binreader*.hpp, binwritter*.hpp\
+**Unit Tests:** reflector_bindump.inl, bincore.inl
+**Used in:** Reflector
 
-### jenkinsHash
-Compile time Jenkins One At Time function.
+A set of classes, that helps with stream reading/writing.
 
-### macroloop
-Compile time for loop, 70 of maximum iterations.
+### Master Printer
 
-### masterPrinter
-Multithreaded logging service.
-Usage is in data.cpp.
+**Headers:** master_printer.hpp\
+**Unit Tests:** test_base.cpp (kinda of)\
+**Used in:** Reflector
 
-Functions:
+Global logger, that can log into a multiple places at the same time.\
+Can log from multiple threads at the same time.
 
-- operator << : appends data into stream, works like cout, wcout, istream
-- operator >> : flushes stream data, >> 1 : inserts newline, >> 0 : only flushes
-- FlushAll : works like operator >> 0
-- PrintThreadID : Allows to print thread ID before message
-- AddPrinterFunction : Adds cdecl function as output, functions like printf, wprintf, or custom ones
+## Other modules
 
-### matrix33simple
-Transformation matrix3x3 class.
+### Allocator hybrid
 
-### reflector
-Class reflection header.
-Usage is in data.cpp.
+**Headers:** allocator_hypbrid.hpp\
+**Unit Tests:** allocator_hypbrid.inl
 
-### reflectorRegistry
-Header for registering enum classes.
-Usage is in data.cpp.
+A special allocator that allows stl classes to read from constant or already allocated space.
 
-### vectors
-2,3,4 component vectors, vectors can store any datatype.
-Usage is in data.cpp.
+### Deleter hybrid
 
-### xorenc
-XOR encoder.
-Usage is in data.cpp.
+**Headers:** deleter_hybrid.hpp\
+**Unit Tests:** none\
+**Used in:** uni::Element
 
-### DirectoryScanner
-Class for recursively scanning files by their extension.
+A conditional deleter for smart pointers.
 
-### SettingsManager
-Base class used only for static classes, used for storing/reading/writing variables as application settings.
+### Endian
 
-## MAXEx
-Extension classes for 3ds max objects.
-Compatibility header for multiple 3ds max versions
+**Headers:** endian.hpp\
+**Unit Tests:** endian.inl
+
+A fast endianness swapper with SFINAE integration.
+
+### File Info
+
+**Headers:** fileinfo.hpp\
+**Unit Tests:** fileinfo.inl
+
+Class for a filepath splitting.
+
+### Flags
+
+**Headers:** flags.hpp\
+**Unit Tests:** flags.inl
+
+Allows setting bit flags with ease.\
+Supports Reflector.
+
+### Matrix44
+
+**Headers:** matrix44.hpp\
+**Unit Tests:** matrix44.inl
+
+A SIMD transform 4x4 matrix.
+
+### Vector4 SIMD
+
+**Headers:** vectors_simd.hpp\
+**Unit Tests:** vector_simd.inl
+**Used in:** matrix44, float, simd block decompressors
+
+A SIMD 4 component vector class for float and int.\
+Supports Reflector.
+
+### String View
+
+**Headers:** string_view.hpp\
+**Unit Tests:** none
+
+String view for C++11 standard.
+
+### Jenkins Hash
+
+**Headers:** jenkinshash.hpp\
+**Unit Tests:** none\
+**Used in:** Reflector
+
+Compile time Jenkins One at time hash function.

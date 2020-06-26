@@ -3,7 +3,7 @@
 #include "../datas/reflector_io.hpp"
 #include "../datas/unit_testing.hpp"
 
-#include "../datas/VectorsSimd.hpp"
+#include "../datas/vectors_simd.hpp"
 #include "../datas/flags.hpp"
 
 REFLECTOR_CREATE(EnumWrap00, ENUM, 1, CLASS, E1, E2,

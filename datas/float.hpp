@@ -16,7 +16,7 @@
 */
 
 #pragma once
-#include "VectorsSimd.hpp"
+#include "vectors_simd.hpp"
 
 template <size_t _mantissa, size_t _exponent, bool _sign> class esFloat {
 public:

@@ -17,7 +17,7 @@
 */
 
 #pragma once
-#include "VectorsSimd.hpp"
+#include "vectors_simd.hpp"
 
 class esMatrix44 {
 public:

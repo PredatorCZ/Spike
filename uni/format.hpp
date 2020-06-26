@@ -16,7 +16,7 @@
 */
 
 #pragma once
-#include "datas/VectorsSimd.hpp"
+#include "datas/vectors_simd.hpp"
 #include <memory>
 #include <vector>
 

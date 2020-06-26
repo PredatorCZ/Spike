@@ -1,5 +1,4 @@
 /*  a source for MasterPrinter class
-    more info in README for PreCore Project
 
     Copyright 2018-2020 Lukas Cone
 
@@ -17,7 +16,7 @@
 */
 
 #include "flags.hpp"
-#include "masterprinter.hpp"
+#include "master_printer.hpp"
 #include <mutex>
 #include <thread>
 #include <vector>
@@ -115,7 +114,7 @@ void MasterPrinterThread::FlushAll() {
       fc.func("Thread[0x");
       std::thread::id threadID = std::this_thread::get_id();
       char buffer[65];
-      printf(buffer, 65, "%X", reinterpret_cast<uint32 &>(threadID));
+      snprintf(buffer, 65, "%X", reinterpret_cast<uint32 &>(threadID));
       fc.func(buffer);
       fc.func("] ");
     }

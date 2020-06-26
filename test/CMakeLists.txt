@@ -38,11 +38,23 @@ build_target(
 
 set_precore_sources(master_printer uni_format)
 
+project(test_app)
+
+build_target(
+	TYPE APP
+	SOURCES 
+		test_app.cpp
+	NO_PROJECT_H
+	NO_VERINFO
+)
+
+set_precore_sources(master_printer directory_scanner reflector)
+
 enable_testing()
 add_test(test_base test_base)
 add_test(test_reflector test_reflector)
 add_test(test_uni test_uni)
-
+add_test(test_app test_app)
 
 
 if (CMAKE_CXX_COMPILER_ID MATCHES Clang)
