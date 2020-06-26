@@ -49,12 +49,13 @@ build_target(
 )
 
 set_precore_sources(master_printer directory_scanner reflector)
+enable_threads()
 
 enable_testing()
 add_test(test_base test_base)
 add_test(test_reflector test_reflector)
 add_test(test_uni test_uni)
-add_test(test_app test_app)
+add_test(NAME test_app COMMAND test_app WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
 
 
 if (CMAKE_CXX_COMPILER_ID MATCHES Clang)

@@ -24,6 +24,8 @@
 #include <windows.h>
 #endif
 
+#include <cstring>
+
 bool DirectoryScanner::IsFilteredFile(const std::string &fileName) {
   if (!filters.size())
     return true;
@@ -49,6 +51,8 @@ void DirectoryScanner::Scan(std::string dir) {
   }
 
 #if defined(__GNUC__) || defined(__GNUG__)
+  dir.push_back('.');
+  
   DIR *cDir = opendir(dir.data());
 
   if (!cDir) {
@@ -64,6 +68,7 @@ void DirectoryScanner::Scan(std::string dir) {
 
     std::string miniFile(cFile->d_name);
     std::string subFile = dir;
+    subFile.pop_back();
     subFile += miniFile;
 
     if (cFile->d_type == DT_DIR) {

@@ -27,8 +27,7 @@
 #include <locale>
 #include <thread>
 
-template<class Base>
-struct SettingsManager : private ReflectorBase<Base> {
+template <class Base> struct SettingsManager : private ReflectorBase<Base> {
   static std::ofstream &GetLogger() {
     static std::ofstream logger;
     return logger;
@@ -45,24 +44,24 @@ struct SettingsManager : private ReflectorBase<Base> {
 
     _tcsftime(dateBuffer, dateBufferSize, _T("_%y_%m_%d-%H.%M.%S"),
               &timeStruct);
-    logName.append(es::ToUTF8(dateBuffer));
+    logName.append(std::to_string(dateBuffer));
     logName.append(".txt");
     GetLogger().open(ToTSTRING(logName), std::ios::out);
     printer.AddPrinterFunction(SettingsManager::printf, false);
 
     _tcsftime(dateBuffer, dateBufferSize, _T("%c %Z"), &timeStruct);
 
-    GetLogger() << "Current time: " << es::ToUTF8(dateBuffer) << std::endl;
+    GetLogger() << "Current time: " << std::to_string(dateBuffer) << std::endl;
     GetLogger() << "Number of concurrent threads: "
                 << std::thread::hardware_concurrency() << std::endl;
     GetLogger() << "Configuration:" << std::endl;
 
-    const size_t numSettings = GetNumReflectedValues();
-	KVPairFormat prSettings;
-	prSettings.aliasName = true;
+    const size_t numSettings = this->GetNumReflectedValues();
+    Reflector::KVPairFormat prSettings;
+    prSettings.aliasName = true;
 
     for (int t = 0; t < numSettings; t++) {
-      KVPair pair = GetReflectedPair(t, prSettings);
+      Reflector::KVPair pair = this->GetReflectedPair(t, prSettings);
       GetLogger() << '\t' << pair.name << ": " << pair.value.c_str()
                   << std::endl;
     }

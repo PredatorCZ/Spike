@@ -17,87 +17,9 @@ It also contains logging services, algorhitms, data types, muti-threading queue 
 Reflector allows simple class reflection and de/serialization.\
 It also allows to fully reflect enumerations.
 
-```plantuml
-title Basic workflow diagram
-package Header <<Frame>> {
-    class "ReflectorInterface<classType><template>" as ReflectorInterface {
-        +{static} GetReflector()
-        + GetReflectedInstance()
-    }
-    note bottom of ReflectorInterface
-        A non virtual,
-        non abstract,
-        zero size interface.
-    end note
-    object "REFLECTOR_CREATE(...)" as RCE
-    RCE : classType
-    RCE : ENUM
-    RCE : numFlags
-    RCE : enumFlags ...
-    RCE : class members
-    note bottom of RCE
-        A macro for creating
-        reflected enumeration
-    end note
-}
+![Reflector Basic Workflow Diagram](http://www.plantuml.com/plantuml/proxy?cache=no&src=https://raw.github.com/predatorcz/precore/master/doc/ref_bwd.puml)
 
-package "Source Unit" <<Frame>> {
-    object "REFLECTOR_CREATE(...)" as REFLECTOR_CREATE
-    REFLECTOR_CREATE : classType
-    REFLECTOR_CREATE : numFlags
-    REFLECTOR_CREATE : flags ...
-    REFLECTOR_CREATE : class members
-    note bottom of REFLECTOR_CREATE
-        A macro for creating
-        reflection definition
-    end note
-    node "Single call function" {
-        object "REFLECTOR_REGISTER(...)" as REFLECTOR_REGISTER
-        REFLECTOR_REGISTER : classes and enums
-    }
-    note bottom of REFLECTOR_REGISTER
-        A macro for adding
-        reflected classes and
-        enums into global registry
-    end note
-}
-```
-
-```plantuml
-title Reflector Relations
-class MyClass {
-    A normal class
-    declaration
-}
-class "ReflectorInterface<MyClass><template>" as ReflectorInterface
-abstract class Reflector
-class ReflectorStatic<<RTTI>>
-object classRegistry
-class ReflectorIO
-package Serializers {
-    object ReflectorBinUtil
-    object ReflectorXMLUtil
-    object "any other" as anyser
-}
-object "Reflected Enum" as refEnum
-object "GetReflectedEnum<enumType>()" as GRE
-object enumRegistry
-
-classRegistry : (optional)
-
-MyClass *-- ReflectorInterface
-ReflectorInterface o-- ReflectorStatic
-Reflector o-- ReflectorStatic
-Reflector o-- ReflectorInterface
-ReflectorStatic *-- classRegistry
-ReflectorStatic o-- ReflectorIO
-Reflector o- classRegistry
-Reflector o-- Serializers
-refEnum o-- GRE
-enumRegistry *-- GRE
-enumRegistry o-- Reflector
-GRE o- ReflectorIO
-```
+![Reflector Relations](http://www.plantuml.com/plantuml/proxy?cache=no&src=https://raw.github.com/predatorcz/precore/master/doc/rf_rel.puml)
 
 **Strengths:**
 

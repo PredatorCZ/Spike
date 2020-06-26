@@ -1,0 +1,46 @@
+@startuml ref_bwd
+title Basic workflow diagram
+package Header <<Frame>> {
+    class "ReflectorInterface<classType><template>" as ReflectorInterface {
+        +{static} GetReflector()
+        + GetReflectedInstance()
+    }
+    note bottom of ReflectorInterface
+        A non virtual,
+        non abstract,
+        zero size interface.
+    end note
+    object "REFLECTOR_CREATE(...)" as RCE
+    RCE : classType
+    RCE : ENUM
+    RCE : numFlags
+    RCE : enumFlags ...
+    RCE : class members
+    note bottom of RCE
+        A macro for creating
+        reflected enumeration
+    end note
+}
+
+
+package "Source Unit" <<Frame>> {
+    object "REFLECTOR_CREATE(...)" as REFLECTOR_CREATE
+    REFLECTOR_CREATE : classType
+    REFLECTOR_CREATE : numFlags
+    REFLECTOR_CREATE : flags ...
+    REFLECTOR_CREATE : class members
+    note bottom of REFLECTOR_CREATE
+        A macro for creating
+        reflection definition
+    end note
+    node "Single call function" {
+        object "REFLECTOR_REGISTER(...)" as REFLECTOR_REGISTER
+        REFLECTOR_REGISTER : classes and enums
+    }
+    note bottom of REFLECTOR_REGISTER
+        A macro for adding
+        reflected classes and
+        enums into global registry
+    end note
+}
+@enduml

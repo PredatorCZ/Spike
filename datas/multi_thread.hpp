@@ -32,7 +32,7 @@ template <class Traits> void RunThreadedQueue(Traits &traits) {
   const size_t numQueues = traits.NumQueues();
   const size_t numHWThreads = std::thread::hardware_concurrency();
   const size_t numThreads = std::min(numHWThreads, numQueues);
-  using async_type = decltype(&Traits::RetreiveItem);
+
   using future_type = decltype(std::async(&Traits::RetreiveItem, traits));
   std::vector<future_type> workingThreads(numThreads);
 

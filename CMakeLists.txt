@@ -22,6 +22,16 @@ function(set_precore_sources)
 	target_include_directories(${PROJECT_NAME} PRIVATE ${PRECORE_SOURCE_DIR})
 endfunction()
 
+function(enable_threads)
+	if (CMAKE_CXX_COMPILER_ID MATCHES Clang OR CMAKE_COMPILER_IS_GNUCXX)
+		set(CMAKE_THREAD_PREFER_PTHREAD TRUE)
+		set(THREADS_PREFER_PTHREAD_FLAG TRUE)
+		find_package(Threads REQUIRED)
+
+		set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${CMAKE_THREAD_LIBS_INIT}" CACHE STRING "" FORCE)
+	endif()
+endfunction()
+
 if (${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_CURRENT_SOURCE_DIR})
 	add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/test)
 endif()

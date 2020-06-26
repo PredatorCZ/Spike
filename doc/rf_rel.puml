@@ -1,0 +1,35 @@
+@startuml rf_rel
+title Reflector Relations
+class MyClass {
+    A normal class
+    declaration
+}
+class "ReflectorInterface<MyClass><template>" as ReflectorInterface
+abstract class Reflector
+class ReflectorStatic<<RTTI>>
+object classRegistry
+class ReflectorIO
+package Serializers {
+    object ReflectorBinUtil
+    object ReflectorXMLUtil
+    object "any other" as anyser
+}
+object "Reflected Enum" as refEnum
+object "GetReflectedEnum<enumType>()" as GRE
+object enumRegistry
+
+classRegistry : (optional)
+
+MyClass *-- ReflectorInterface
+ReflectorInterface o-- ReflectorStatic
+Reflector o-- ReflectorStatic
+Reflector o-- ReflectorInterface
+ReflectorStatic *-- classRegistry
+ReflectorStatic o-- ReflectorIO
+Reflector o- classRegistry
+Reflector o-- Serializers
+refEnum o-- GRE
+enumRegistry *-- GRE
+enumRegistry o-- Reflector
+GRE o- ReflectorIO
+@enduml

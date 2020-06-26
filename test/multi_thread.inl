@@ -6,13 +6,13 @@
 
 int test_mt_thread00() {
   using vt_type = std::vector<size_t>;
-  typename vt_type pted;
-  std::atomic<typename vt_type *> apted(&pted);
+  vt_type pted;
+  std::atomic<vt_type *> apted(&pted);
 
   struct {
     size_t numQ;
     size_t curQ = 0;
-    std::atomic<typename vt_type *> *atom;
+    std::atomic<vt_type *> *atom;
 
     void RetreiveItem() { atom->load()->push_back(curQ); }
     operator bool() { return curQ < numQ; }
@@ -34,13 +34,13 @@ int test_mt_thread00() {
 
 int test_mt_thread01() {
   using vt_type = std::vector<size_t>;
-  typename vt_type pted;
-  std::atomic<typename vt_type *> apted(&pted);
+  vt_type pted;
+  std::atomic<vt_type *> apted(&pted);
 
   struct {
     size_t numQ;
     size_t curQ = 0;
-    std::atomic<typename vt_type *> *atom;
+    std::atomic<vt_type *> *atom;
 
     size_t RetreiveItem() {
       std::random_device rd;
