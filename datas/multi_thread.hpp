@@ -21,36 +21,28 @@
 #include <future>
 #include <thread>
 
-struct __exampleTraits {
-  void RetreiveItem();  // calling working function here
-  operator bool();      // true if queue is not finished
-  void operator++(int); // increase done queues by 1
-  size_t NumQueues() const;
-};
-
-template <class Traits> void RunThreadedQueue(Traits &traits) {
-  const size_t numQueues = traits.NumQueues();
+template <class lmBody> void RunThreadedQueue(size_t numTasks, lmBody &&fc) {
   const size_t numHWThreads = std::thread::hardware_concurrency();
-  const size_t numThreads = std::min(numHWThreads, numQueues);
-
-  using future_type = decltype(std::async(&Traits::RetreiveItem, traits));
+  const size_t numThreads = std::min(numHWThreads, numTasks);
+  size_t curTask = 0;
+  using future_type = std::future<decltype(fc(size_t()))>;
   std::vector<future_type> workingThreads(numThreads);
 
   for (auto &wt : workingThreads) {
-    wt = std::async(&Traits::RetreiveItem, traits);
-    traits++;
+    wt = std::async(std::launch::async, fc, curTask);
+    curTask++;
   }
 
-  while (traits) {
+  while (curTask < numTasks) {
     for (auto &wt : workingThreads) {
-      if (!traits) {
+      if (curTask >= numTasks) {
         break;
       }
 
       if ((wt.wait_for(std::chrono::milliseconds(2)) ==
            std::future_status::ready)) {
-        wt = std::async(&Traits::RetreiveItem, traits);
-        traits++;
+        wt = std::async(std::launch::async, fc, curTask);
+        curTask++;
       }
     }
   }

@@ -7,6 +7,8 @@ PreCore is a library with helper classes.\
 Main focus of this library is: Class/Enum RTTI and RTTR, SIMD classes like Vector and Matrix4x4, stream helpers, uni module.\
 It also contains logging services, algorhitms, data types, muti-threading queue classes, extensions for other libraries and many more.
 
+Library is made for C++11 standard and it's compilable under Clang 3.5+, GCC 5+, MSVC 2015+.
+
 ## Main modules
 
 ### RTTI/RTTR (Run Time Type Introspection/Reflection)
@@ -58,7 +60,7 @@ Set of helper modules for CMake.
 ### Bincore
 
 **Headers:** binreader*.hpp, binwritter*.hpp\
-**Unit Tests:** reflector_bindump.inl, bincore.inl
+**Unit Tests:** reflector_bindump.inl, bincore.inl\
 **Used in:** Reflector
 
 A set of classes, that helps with stream reading/writing.
@@ -121,7 +123,7 @@ A SIMD transform 4x4 matrix.
 ### Vector4 SIMD
 
 **Headers:** vectors_simd.hpp\
-**Unit Tests:** vector_simd.inl
+**Unit Tests:** vector_simd.inl\
 **Used in:** matrix44, float, simd block decompressors
 
 A SIMD 4 component vector class for float and int.\

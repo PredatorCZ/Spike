@@ -59,7 +59,7 @@ struct reflectorStatic_io {
   bool IsValid() const {
     return _x64Padding[0] == PAD_CHECK[0] && _x64Padding[1] == PAD_CHECK[1] &&
            _x64Padding[2] == PAD_CHECK[2] && _x64Padding[3] == PAD_CHECK[3] &&
-           _x64Padding[4] == PAD_CHECK[4] && _x64Padding[4] == PAD_CHECK[4];
+           _x64Padding[4] == PAD_CHECK[4] && _x64Padding[5] == PAD_CHECK[5];
   }
 };
 
@@ -224,12 +224,7 @@ int ReflectorIO::Save(BinWritterRef wr) {
   for (auto i : classes) {
     wr.Write(i->classHash);
     wr.Write(i->nTypes);
-    wr.Write(PAD_CHECK[0]);
-    wr.Write(PAD_CHECK[1]);
-    wr.Write(PAD_CHECK[2]);
-    wr.Write(PAD_CHECK[3]);
-    wr.Write(PAD_CHECK[4]);
-    wr.Write(PAD_CHECK[5]);
+    wr.Write(PAD_CHECK);
     itemFixups.AddPointer();
     wr.Skip<uint32>();
 

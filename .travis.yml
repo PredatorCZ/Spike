@@ -5,7 +5,17 @@ matrix:
   fast_finish: true
   include:
     - os: linux
-      name: "Compiler GCC 6"
+      name: "GCC 5"
+      addons:
+        apt:
+          sources:
+            - ubuntu-toolchain-r-test
+          packages:
+            - g++-5
+      env:
+         - MATRIX_EVAL="CC=gcc-5 && CXX=g++-5"
+    - os: linux
+      name: "GCC 6"
       addons:
         apt:
           sources:
@@ -15,7 +25,7 @@ matrix:
       env:
          - MATRIX_EVAL="CC=gcc-6 && CXX=g++-6"
     - os: linux
-      name: "Compiler GCC 7"
+      name: "GCC 7"
       addons:
         apt:
           sources:
@@ -25,7 +35,7 @@ matrix:
       env:
          - MATRIX_EVAL="CC=gcc-7 && CXX=g++-7"
     - os: linux
-      name: "Compiler GCC 8"
+      name: "GCC 8"
       addons:
         apt:
           sources:
@@ -35,7 +45,7 @@ matrix:
       env:
          - MATRIX_EVAL="CC=gcc-8 && CXX=g++-8"
     - os: linux
-      name: "Compiler GCC 9"
+      name: "GCC 9"
       addons:
         apt:
           sources:
@@ -46,7 +56,16 @@ matrix:
          - MATRIX_EVAL="CC=gcc-9 && CXX=g++-9"
 
     - os: linux
-      name: "Compiler Clang 4"
+      name: "Clang 3.5"
+      addons:
+        apt:
+          packages:
+            - clang-3.5
+      env:
+        - MATRIX_EVAL="CC=clang-3.5 && CXX=clang++-3.5"
+
+    - os: linux
+      name: "Clang 4"
       addons:
         apt:
           packages:
@@ -55,7 +74,7 @@ matrix:
          - MATRIX_EVAL="CC=clang-4.0 && CXX=clang++-4.0"
 
     - os: linux
-      name: "Compiler Clang 5"
+      name: "Clang 5"
       addons:
         apt:
           packages:
@@ -64,7 +83,7 @@ matrix:
          - MATRIX_EVAL="CC=clang-5.0 && CXX=clang++-5.0"
 
     - os: linux
-      name: "Compiler Clang 6"
+      name: "Clang 6"
       addons:
         apt:
           sources:
@@ -75,7 +94,7 @@ matrix:
          - MATRIX_EVAL="CC=clang-6.0 && CXX=clang++-6.0"
 
     - os: linux
-      name: "Compiler Clang 7"
+      name: "Clang 7"
       addons:
         apt:
           sources:
@@ -86,7 +105,7 @@ matrix:
          - MATRIX_EVAL="CC=clang-7 && CXX=clang++-7"
 
     - os: linux
-      name: "Compiler Clang 8"
+      name: "Clang 8"
       addons:
         apt:
           sources:
@@ -97,7 +116,7 @@ matrix:
          - MATRIX_EVAL="CC=clang-8 && CXX=clang++-8"
 
     - os: windows
-      name: "Compiler MSVC"
+      name: "MSVC"
          
 before_install:
     - eval "${MATRIX_EVAL}"
@@ -106,5 +125,6 @@ script:
   - mkdir build
   - cd build
   - cmake ..
-  - cmake --build . -j 4
-  - ctest --verbose
+  - cmake --build . -j 6 --config Release
+  - cd test
+  - ctest -V -C Release
