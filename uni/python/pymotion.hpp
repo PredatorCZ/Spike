@@ -1,4 +1,4 @@
-/*  Python binding classes for uni::Skeleton
+/*  Python binding classes for uni::Motion
     part of uni module
     Copyright 2020 Lukas Cone
 
@@ -16,38 +16,42 @@
 */
 
 #pragma once
-#include "uni/skeleton.hpp"
+#include "uni/motion.hpp"
 #include "datas/pythonex.hpp"
 
 namespace UniPy {
-
-struct Bone {
+struct MotionTrack {
   PyObject_HEAD;
-  uni::Element<const uni::Bone> item;
+  uni::Element<const uni::MotionTrack> item;
 
-  static void Dealloc(Bone *self);
-  static PyObject *GetTMType(Bone *self);
-  static PyObject *GetTM(Bone *self);
-  static PyObject *GetIndex(Bone *self);
-  static PyObject *GetName(Bone *self);
-  static PyObject *GetParent(Bone *self);
+  static void Dealloc(MotionTrack *self);
+  static PyObject *TrackType(MotionTrack *self);
+  static PyObject *BoneIndex(MotionTrack *self);
+  static PyObject *GetValues(MotionTrack *self, PyObject *time);
 
   static PyTypeObject *GetType();
 };
 
-struct Skeleton {
+struct Motion {
   PyObject_HEAD;
-  uni::Element<const uni::Skeleton> item;
+  union {
+    uni::Element<const uni::Motion> item;
+    uni::Element<uni::Motion> sitem;
+  };
 
-  static void Dealloc(Skeleton *self);
-  static PyObject *Name(Skeleton *self);
-  static PyObject *Bones(Skeleton *self);
+  static void Dealloc(Motion *self);
+  static PyObject *Name(Motion *self);
+  static PyObject *Duration(Motion *self);
+  static PyObject *Tracks(Motion *self);
+  static PyObject *MotionType(Motion *self);
+  static PyObject *FrameRate(Motion *self);
+
+  static int SetFrameRate(Motion *self, PyObject *var);
 
   static void InitType(PyObject *module);
   static PyTypeObject *GetType();
   static PyTypeObject *GetListType();
-
-  static PyObject *Create(uni::SkeletonsConst &&tp);
-  static Skeleton *Create(uni::Element<const uni::Skeleton> &&tp);
+  static PyObject *Create(uni::MotionsConst &&tp);
+  static Motion *Create(uni::Element<const uni::Motion> &&tp);
 };
 } // namespace UniPy

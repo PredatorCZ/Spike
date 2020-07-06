@@ -52,6 +52,9 @@ public:
   iterator_type_const begin() const { return Bones()->begin(); }
   iterator_type_const end() const { return Bones()->end(); }
 };
+
+typedef Element<const List<Skeleton>> SkeletonsConst;
+typedef Element<List<Skeleton>> Skeletons;
 } // namespace uni
 
 #include "internal/skeleton.inl"

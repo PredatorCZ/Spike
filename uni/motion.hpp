@@ -60,6 +60,10 @@ public:
   iterator_type_const begin() const { return Tracks()->begin(); }
   iterator_type_const end() const { return Tracks()->end(); }
 };
+
+typedef Element<const List<Motion>> MotionsConst;
+typedef Element<List<Motion>> Motions;
+
 } // namespace uni
 
 #include "internal/motion.inl"

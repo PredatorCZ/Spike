@@ -17,6 +17,7 @@
 
 #pragma once
 #include "virtual_iterator.hpp"
+#include "common.hpp"
 
 namespace _uni_ {
 template <class C, class _const_type> class List {

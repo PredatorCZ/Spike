@@ -17,7 +17,7 @@
 
 #pragma once
 #include "datas/deleter_hybrid.hpp"
-#include "datas/VectorsSimd.hpp"
+#include "datas/vectors_simd.hpp"
 #include <memory>
 
 namespace uni {

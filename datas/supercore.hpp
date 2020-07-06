@@ -83,8 +83,8 @@ constexpr float GetFraction(size_t numBits) {
 
 namespace es {
 
-template <class cnt>
-bool IsEnd(const cnt &container, const typename cnt::const_iterator &iter) {
+template <class cnt, class iterType>
+bool IsEnd(const cnt &container, const iterType &iter) {
   return std::end(container) == iter;
 }
 

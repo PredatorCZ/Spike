@@ -17,7 +17,7 @@
 */
 
 #include "reflector_xml.hpp"
-#include "masterprinter.hpp"
+#include "master_printer.hpp"
 #include "pugiex.hpp"
 
 #ifndef _MSC_VER
