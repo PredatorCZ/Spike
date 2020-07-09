@@ -5,45 +5,19 @@ matrix:
   fast_finish: true
   include:
     - os: linux
-      name: "GCC 5"
-      addons:
-        apt:
-          sources:
-            - ubuntu-toolchain-r-test
-          packages:
-            - g++-5
-      env:
-         - MATRIX_EVAL="CC=gcc-5 && CXX=g++-5"
-    - os: linux
-      name: "GCC 6"
-      addons:
-        apt:
-          sources:
-            - ubuntu-toolchain-r-test
-          packages:
-            - g++-6
-      env:
-         - MATRIX_EVAL="CC=gcc-6 && CXX=g++-6"
-    - os: linux
-      name: "GCC 7"
-      addons:
-        apt:
-          sources:
-            - ubuntu-toolchain-r-test
-          packages:
-            - g++-7
-      env:
-         - MATRIX_EVAL="CC=gcc-7 && CXX=g++-7"
-    - os: linux
-      name: "GCC 8"
-      addons:
-        apt:
-          sources:
-            - ubuntu-toolchain-r-test
-          packages:
-            - g++-8
-      env:
-         - MATRIX_EVAL="CC=gcc-8 && CXX=g++-8"
+      name: "GCC 5 + GCOV"
+      before_install:
+        - pip install --user cpp-coveralls
+      script:
+        - mkdir build
+        - cd build
+        - cmake .. -DUSE_GCOV=TRUE
+        - cmake --build . -j 6 --config Release
+        - cd test
+        - ctest -V -C Release
+      after_success:
+        - cd ../.. && coveralls -E ".*build/.*.c((pp)|(c)|(xx))?$" -e MAXex -e test --gcov-options '\-lp'
+
     - os: linux
       name: "GCC 9"
       addons:
@@ -65,46 +39,6 @@ matrix:
         - MATRIX_EVAL="CC=clang-3.5 && CXX=clang++-3.5"
 
     - os: linux
-      name: "Clang 4"
-      addons:
-        apt:
-          packages:
-            - clang-4.0
-      env:
-         - MATRIX_EVAL="CC=clang-4.0 && CXX=clang++-4.0"
-
-    - os: linux
-      name: "Clang 5"
-      addons:
-        apt:
-          packages:
-            - clang-5.0
-      env:
-         - MATRIX_EVAL="CC=clang-5.0 && CXX=clang++-5.0"
-
-    - os: linux
-      name: "Clang 6"
-      addons:
-        apt:
-          sources:
-            - llvm-toolchain-xenial-6.0
-          packages:
-            - clang-6.0
-      env:
-         - MATRIX_EVAL="CC=clang-6.0 && CXX=clang++-6.0"
-
-    - os: linux
-      name: "Clang 7"
-      addons:
-        apt:
-          sources:
-            - llvm-toolchain-xenial-7
-          packages:
-            - clang-7
-      env:
-         - MATRIX_EVAL="CC=clang-7 && CXX=clang++-7"
-
-    - os: linux
       name: "Clang 8"
       addons:
         apt:
@@ -117,7 +51,7 @@ matrix:
 
     - os: windows
       name: "MSVC"
-         
+
 before_install:
     - eval "${MATRIX_EVAL}"
 

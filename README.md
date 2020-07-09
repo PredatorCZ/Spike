@@ -2,6 +2,8 @@
 
 [![Build Status](https://travis-ci.org/PredatorCZ/PreCore.svg?branch=master)](https://travis-ci.org/PredatorCZ/PreCore)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
+[![Codacy Badge](https://app.codacy.com/project/badge/Grade/50479b1d15d848bcb389dc2166c294e2)](https://www.codacy.com/manual/PredatorCZ/PreCore?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=PredatorCZ/PreCore&amp;utm_campaign=Badge_Grade)
+[![Coverage Status](https://coveralls.io/repos/github/PredatorCZ/PreCore/badge.svg?branch=master)](https://coveralls.io/github/PredatorCZ/PreCore?branch=master)
 
 PreCore is a library with helper classes.\
 Main focus of this library is: Class/Enum RTTI and RTTR, SIMD classes like Vector and Matrix4x4, stream helpers, uni module.\
@@ -41,7 +43,7 @@ It also allows to fully reflect enumerations.
 ### UNI
 
 **Headers:** in uni folder\
-**Unit tests:** uni_*.inl, test_uni.cpp
+**Unit tests:** uni_\*.inl, test_uni.cpp
 
 Set of abstract interfaces for polymorphic classes.\
 Contains python bindings and format codecs.
@@ -59,7 +61,7 @@ Set of helper modules for CMake.
 
 ### Bincore
 
-**Headers:** binreader*.hpp, binwritter*.hpp\
+**Headers:** binreader\*.hpp, binwritter\*.hpp\
 **Unit Tests:** reflector_bindump.inl, bincore.inl\
 **Used in:** Reflector
 

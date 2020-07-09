@@ -352,7 +352,7 @@ namespace es {
   {
     const size_type max_index = m_size - v.size();
 
-    for( size_type i = std::min(max_index-1,pos); i >= 0; --i ) {
+    for( size_type i = std::min(max_index-1,pos); i != npos; --i ) {
       size_type j = 0;
       for( ; j < v.size(); ++j ) {
         if( v[j] != m_str[i-j] ) {
@@ -536,7 +536,7 @@ namespace es {
                                                        size_type pos )
     const
   {
-    for( size_type i = std::min(m_size-1,pos); i >= 0; --i ) {
+    for( size_type i = std::min(m_size-1,pos); i != npos; --i ) {
       for( size_type j = 0; j < v.size(); ++j ) {
         if( v[j] == m_str[i] ) {
           break;

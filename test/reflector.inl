@@ -1792,9 +1792,3 @@ int test_reflector(reflClass &input) {
 
   return 0;
 }
-
-reflClass ReflectorTest() {
-  reflClass test = {};
-  test.SetReflectedValue("test22", "test string");
-  return test;
-}

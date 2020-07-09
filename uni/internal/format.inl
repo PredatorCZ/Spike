@@ -250,12 +250,16 @@ class FormatCodec_t<FormatType::INT, cType>
 public:
   static IVector4A16 GetValue(const char *input) {
     using namespace _uni_;
-    static const size_t nType = static_cast<size_t>(cType);
-    static const IVector4A16 sBit(
-        1 << ((fmtBitmasks[nType] & 0xff) - 1),
-        1 << (((fmtBitmasks[nType] >> 8) & 0xff) - 1),
-        1 << (((fmtBitmasks[nType] >> 16) & 0xff) - 1),
-        1 << (((fmtBitmasks[nType] >> 24) & 0xff) - 1));
+    static constexpr size_t nType = static_cast<size_t>(cType);
+    static constexpr size_t sBit00 = fmtBitmasks[nType] & 0xff;
+    static constexpr size_t sBit10 = (fmtBitmasks[nType] >> 8) & 0xff;
+    static constexpr size_t sBit20 = (fmtBitmasks[nType] >> 16) & 0xff;
+    static constexpr size_t sBit30 = (fmtBitmasks[nType] >> 24) & 0xff;
+    static constexpr size_t sBit01 = sBit00 ? 1 << (sBit00 - 1) : 0;
+    static constexpr size_t sBit11 = sBit10 ? 1 << (sBit10 - 1) : 0;
+    static constexpr size_t sBit21 = sBit20 ? 1 << (sBit20 - 1) : 0;
+    static constexpr size_t sBit31 = sBit30 ? 1 << (sBit30 - 1) : 0;
+    static const IVector4A16 sBit(sBit01, sBit11, sBit21, sBit31);
     static const IVector4A16 sMaskLow(sBit - 1);
     static const IVector4A16 sMask((((sMaskLow) << 1) | 1) ^ 0xffffffff);
 

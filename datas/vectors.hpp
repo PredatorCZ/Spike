@@ -35,7 +35,7 @@ class t_Vector2
 public:
 	T X,Y;
 	t_Vector2(void) :X(0), Y(0) {}
-	t_Vector2(const T inx, const T iny) { X = inx; Y = iny; }
+	t_Vector2(const T inx, const T iny) : X(inx), Y(iny) {}
 	
 	t_Vector2& operator+=(const t_Vector2& input) { X += input.X; Y += input.Y; return *this; }
 	t_Vector2& operator-=(const t_Vector2& input) { X -= input.X; Y -= input.Y; return *this; }
@@ -131,7 +131,7 @@ class t_Vector
 public:
 	T X,Y,Z;
 	t_Vector(void) : X(0), Y(0), Z(0) {}
-	t_Vector(const T inx, const T iny, const T inz) { X = inx; Y = iny; Z = inz; }
+	t_Vector(const T inx, const T iny, const T inz) : X(inx), Y(iny), Z(inz) {}
 
 
 	t_Vector operator+(const t_Vector& input) const { return t_Vector(X + input.X, Y + input.Y, Z + input.Z); }
