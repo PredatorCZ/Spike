@@ -37,10 +37,8 @@ struct TrackTypeInfo {
   using value_type = decltype(trackTypes[0]);
   using iterator_type = std::add_pointer<value_type>::type;
 
-  static constexpr const char *const GetName() { return "uniMotionTrackType"; }
-  static constexpr const char *const GetDoc() {
-    return "Uni Motion Track Type Enum";
-  }
+  static constexpr const char *GetName() { return "uniMotionTrackType"; }
+  static constexpr const char *GetDoc() { return "Uni Motion Track Type Enum"; }
   static size_t Len() { return sizeof(trackTypes) / sizeof(value_type); }
   static iterator_type begin() { return std::begin(trackTypes); }
   static iterator_type end() { return std::end(trackTypes); }
@@ -62,8 +60,8 @@ struct MotionTypeInfo {
   using value_type = decltype(motionTypes[0]);
   using iterator_type = std::add_pointer<value_type>::type;
 
-  static constexpr const char *const GetName() { return "uniMotionType"; }
-  static constexpr const char *const GetDoc() { return "Uni Motion Type Enum"; }
+  static constexpr const char *GetName() { return "uniMotionType"; }
+  static constexpr const char *GetDoc() { return "Uni Motion Type Enum"; }
   static size_t Len() { return sizeof(motionTypes) / sizeof(value_type); }
   static iterator_type begin() { return std::begin(motionTypes); }
   static iterator_type end() { return std::end(motionTypes); }
@@ -74,10 +72,8 @@ using MotionTypeEnum = Enum<MotionTypeInfo>;
 struct MotionTrackListInfo {
   using item_type = uni::MotionTrack;
   using wrap_type = MotionTrack;
-  static constexpr const char *const GetName() {
-    return "uni::MotionTrackList";
-  }
-  static constexpr const char *const GetDoc() {
+  static constexpr const char *GetName() { return "uni::MotionTrackList"; }
+  static constexpr const char *GetDoc() {
     return "Uni MotionTracks iterator/list";
   }
 };
@@ -87,10 +83,8 @@ using MotionTrackList = List<MotionTrackListInfo>;
 struct MotionListInfo {
   using item_type = uni::Motion;
   using wrap_type = Motion;
-  static constexpr const char *const GetName() { return "uni::MotionList"; }
-  static constexpr const char *const GetDoc() {
-    return "Uni Motion iterator/list";
-  }
+  static constexpr const char *GetName() { return "uni::MotionList"; }
+  static constexpr const char *GetDoc() { return "Uni Motion iterator/list"; }
 };
 
 using MotionList = List<MotionListInfo>;
@@ -164,7 +158,7 @@ PyObject *MotionTrack::BoneIndex(MotionTrack *self) {
 }
 
 PyObject *MotionTrack::GetValues(MotionTrack *self, PyObject *index) {
-  PyListObject *pTimes;
+  PyListObject *pTimes = nullptr;
 
   if (!PyArg_ParseTuple(index, "O!", &PyList_Type, pTimes)) {
     return nullptr;

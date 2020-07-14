@@ -16,6 +16,8 @@
 */
 
 #include "reflector_io.hpp"
+#include "base_128.hpp"
+#include <sstream>
 
 struct Fixups {
   struct Fixup {
@@ -412,12 +414,27 @@ static int SaveClass(const Reflector &ri, const reflectorInstanceConst &inst,
 static int WriteDataItem(const Reflector &ri, BinWritterRef wr,
                          const char *objAddr, reflType type) {
   switch (type.type) {
-  case REFType::Bool:
+
   case REFType::Integer:
-  case REFType::UnsignedInteger:
-  case REFType::FloatingPoint:
   case REFType::Enum:
+    if (type.subSize > 8) {
+      bint128 tvar;
+      memcpy(&tvar, objAddr, type.subSize);
+      wr.Write(tvar);
+      return 0;
+    }
+
+  case REFType::UnsignedInteger:
   case REFType::EnumFlags:
+    if (type.subSize > 8) {
+      buint128 tvar;
+      memcpy(&tvar, objAddr, type.subSize);
+      wr.Write(tvar);
+      return 0;
+    }
+
+  case REFType::Bool:
+  case REFType::FloatingPoint:
     wr.WriteBuffer(objAddr, type.subSize);
     return 0;
 
@@ -463,22 +480,18 @@ static int WriteDataItem(const Reflector &ri, BinWritterRef wr,
 static int SaveClass(const Reflector &ri, const reflectorInstanceConst &inst,
                      BinWritterRef wr) {
   auto refData = inst.rfStatic;
-  const uint32 numItems = refData->nTypes;
+  const buint128 numItems = refData->nTypes;
   const char *thisAddr = static_cast<const char *>(inst.rfInstance);
-  BinWritterRef wrTmpClass(wr);
+  std::stringstream tmpClassBuffer;
 
-  wrTmpClass.Push();
-  wrTmpClass.Skip<uint32>();
-  wrTmpClass.SetRelativeOrigin(wrTmpClass.Tell(), false);
-  wr.Write(numItems);
+  BinWritterRef wrTmpClass(tmpClassBuffer);
+  wrTmpClass.Write(numItems);
 
-  for (uint32 i = 0; i < numItems; i++) {
-    wr.Write(refData->types[i].valueNameHash);
+  for (size_t i = 0; i < numItems; i++) {
+    wrTmpClass.Write(refData->types[i].valueNameHash);
 
-    BinWritterRef wrTmp(wr);
-    wrTmp.Push();
-    wrTmp.Skip<uint16>();
-    wrTmp.SetRelativeOrigin(wrTmp.Tell(), false);
+    std::stringstream tmpValueBuffer;
+    BinWritterRef wrTmp(tmpValueBuffer);
 
     int rVal = WriteDataItem(ri, wrTmp, thisAddr + refData->types[i].offset,
                              refData->types[i]);
@@ -486,17 +499,12 @@ static int SaveClass(const Reflector &ri, const reflectorInstanceConst &inst,
     if (rVal)
       return rVal;
 
-    wr.Push();
-    const uint16 fieldSize = static_cast<uint16>(wrTmp.Tell());
-    wrTmp.Pop();
-    wrTmp.Write(fieldSize);
-    wr.Pop();
+    const auto sVarBuffer = tmpValueBuffer.str();
+    wrTmpClass.WriteContainerWCount<buint128>(sVarBuffer);
   }
 
-  const uint32 fieldSize = static_cast<uint32>(wrTmpClass.Tell());
-  wrTmpClass.Pop();
-  wrTmpClass.Write(fieldSize);
-  wr.Pop();
+  const auto sClassBuffer = tmpClassBuffer.str();
+  wr.WriteContainerWCount<buint128>(sClassBuffer);
 
   return 0;
 }
@@ -515,12 +523,26 @@ static int LoadClass(Reflector &ri, reflectorInstance &inst, BinReaderRef rd);
 static int LoadDataItem(Reflector &ri, BinReaderRef rd, char *objAddr,
                         reflType type) {
   switch (type.type) {
-  case REFType::Bool:
   case REFType::Integer:
-  case REFType::UnsignedInteger:
-  case REFType::FloatingPoint:
   case REFType::Enum:
+    if (type.subSize > 8) {
+      bint128 tvar;
+      rd.Read(tvar);
+      memcpy(objAddr, &tvar, type.subSize);
+      return 0;
+    }
+
+  case REFType::UnsignedInteger:
   case REFType::EnumFlags:
+    if (type.subSize > 8) {
+      buint128 tvar;
+      rd.Read(tvar);
+      memcpy(objAddr, &tvar, type.subSize);
+      return 0;
+    }
+
+  case REFType::Bool:
+  case REFType::FloatingPoint:
     rd.ReadBuffer(objAddr, type.subSize);
     return 0;
 
@@ -576,11 +598,11 @@ static int LoadClass(Reflector &ri, reflectorInstance &inst, BinReaderRef rd) {
   auto refData = inst.rfStatic;
   const uint32 numItems = refData->nTypes;
   char *thisAddr = static_cast<char *>(inst.rfInstance);
-  uint32 chunkSize;
+  buint128 chunkSize;
   rd.Read(chunkSize);
   rd.Push();
 
-  uint32 numIOItems;
+  buint128 numIOItems;
   rd.Read(numIOItems);
 
   if (numIOItems != numItems) {
@@ -594,7 +616,7 @@ static int LoadClass(Reflector &ri, reflectorInstance &inst, BinReaderRef rd) {
   for (uint32 i = 0; i < numItems; i++) {
     BinReaderRef rf(rd);
     JenHash valueNameHash;
-    uint16 valueChunkSize;
+    buint128 valueChunkSize;
     rd.Read(valueNameHash);
     rd.Read(valueChunkSize);
     rd.Push();

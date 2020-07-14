@@ -28,12 +28,12 @@ private:
   T value;
 
   template <typename _Type> const T _eval(const T val, _Type input) {
-    return val | (1 << input);
+    return val | (1 << static_cast<T>(input));
   }
 
   template <typename _Type, typename... _Others>
   const T _eval(const T val, _Type input, _Others... inputs) {
-    return _eval(val | (1 << input), inputs...);
+    return _eval(val | (1 << static_cast<T>(input)), inputs...);
   }
 
 public:

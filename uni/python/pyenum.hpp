@@ -24,9 +24,9 @@ template <class Info> struct Enum {
   PyObject_HEAD;
 
   static PyTypeObject *GetType() {
-    static PyMappingMethods mappingMethods[] = {
+    static PyMappingMethods mappingMethods = {
         (lenfunc)Info::Len,
-        (binaryfunc)Subscript,
+        Subscript,
         0,
     };
 
@@ -43,7 +43,7 @@ template <class Info> struct Enum {
         0,                             /* tp_repr */
         0,                             /* tp_as_number */
         0,                             /* tp_as_sequence */
-        mappingMethods,                /* tp_as_mapping */
+        &mappingMethods,               /* tp_as_mapping */
         0,                             /* tp_hash */
         0,                             /* tp_call */
         0,                             /* tp_str */
@@ -78,7 +78,7 @@ template <class Info> struct Enum {
     return type->tp_alloc(type, 0);
   }
 
-  static PyObject *Subscript(Enum *self, PyObject *index) {
+  static PyObject *Subscript(PyObject *, PyObject *index) {
     return SubscriptRaw(PyInt_AsSsize_t(index));
   }
 
@@ -93,7 +93,7 @@ template <class Info> struct Enum {
     return PyString_FromStringAndSize(cName.data(), cName.size());
   }
 
-  static PyObject *GetAttribute(PyObject *self, char *attrName) {
+  static PyObject *GetAttribute(PyObject *, char *attrName) {
     es::string_view attrNameRef(attrName);
     const auto foundEnum = std::find_if(Info::begin(), Info::end(),
                                         [&](typename Info::value_type &typ) {

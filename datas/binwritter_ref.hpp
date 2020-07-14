@@ -46,7 +46,7 @@ public:
   // method (optional)
   // input -> must have size(), data(), value_type
   template <class _countType = uint32, class _containerClass>
-  const void WriteContainerWCount(const _containerClass &input) const {
+  void WriteContainerWCount(const _containerClass &input) const {
     const _countType numElements = static_cast<_countType>(input.size());
     Write(numElements);
     WriteContainer(input);
@@ -60,7 +60,7 @@ public:
   // input -> must have size(), data(), value_type
   // func -> lambda with (BinWritterRef, <element type>), no return
   template <class _countType = uint32, class _containerClass, class _func>
-  void ReadContainerLambda(_containerClass &input, _func func) const {
+  void WriteContainerLambda(_containerClass &input, _func func) const {
     _countType numElements = static_cast<_countType>(input.size());
     Write(numElements);
 

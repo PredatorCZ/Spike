@@ -18,11 +18,11 @@
 #include "exception.hpp"
 
 namespace uni {
-inline void Bone::GetTM(RTSValue &out) const {
+inline void Bone::GetTM(RTSValue &) const {
   throw _uni_::ThrowVoidCall<Bone::TransformType, Bone::TMTYPE_RTS>(
       this->TMType());
 }
-inline void Bone::GetTM(esMatrix44 &out) const {
+inline void Bone::GetTM(esMatrix44 &) const {
   throw _uni_::ThrowVoidCall<Bone::TransformType, Bone::TMTYPE_MATRIX>(
       this->TMType());
 }

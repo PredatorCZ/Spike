@@ -34,7 +34,7 @@ template <class Info> struct List {
 
   static PyTypeObject *GetType() {
 
-    static PyMappingMethods mappingMethods[] = {
+    static PyMappingMethods mappingMethods = {
         (lenfunc)List::Len,
         (binaryfunc)List::Subscript,
         0,
@@ -53,7 +53,7 @@ template <class Info> struct List {
         0,                                           /* tp_repr */
         0,                                           /* tp_as_number */
         0,                                           /* tp_as_sequence */
-        mappingMethods,                              /* tp_as_mapping */
+        &mappingMethods,                             /* tp_as_mapping */
         0,                                           /* tp_hash */
         0,                                           /* tp_call */
         0,                                           /* tp_str */

@@ -30,13 +30,13 @@ class VirtualIterator {
 public:
   using difference_type = size_t;
   using iterator_category = std::input_iterator_tag;
-  using value_type      = returnType;
-  using pointer         = const value_type*;
-  using reference       = const value_type&;
+  using value_type = returnType;
+  using pointer = const value_type *;
+  using reference = const value_type &;
 
   explicit VirtualIterator(const containerClass *cls, size_t _num = npos)
-      : iterPos(_num >= npos ? std::bind(Counter, tClass)() : _num),
-        tClass(cls) {}
+      : tClass(cls),
+        iterPos(_num >= npos ? std::bind(Counter, tClass)() : _num) {}
 
   VirtualIterator &operator++() {
     iterPos++;
@@ -70,7 +70,8 @@ public:
 };
 
 template <class containerClass, size_t (containerClass::*Counter)() const,
-          class returnType, returnType (containerClass::*Accessor)(size_t) const>
+          class returnType,
+          returnType (containerClass::*Accessor)(size_t) const>
 class VirtualIteratorProxy {
   typedef VirtualIterator<containerClass, Counter, returnType, Accessor> _iter;
 

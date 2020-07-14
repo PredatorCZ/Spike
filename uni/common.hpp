@@ -29,7 +29,7 @@ struct RTSValue {
   Vector4A16 scale;
 
   RTSValue()
-      : rotation(0, 0, 0, 1.f), translation(0), scale(1.f, 1.f, 1.f, 0) {}
+      : translation(0), rotation(0, 0, 0, 1.f), scale(1.f, 1.f, 1.f, 0) {}
   RTSValue(const Vector4A16 &pos, const Vector4A16 &rot, const Vector4A16 &scl)
       : translation(pos), rotation(rot), scale(scl) {}
 

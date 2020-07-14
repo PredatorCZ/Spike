@@ -9,6 +9,7 @@
 #include "supercore.inl"
 #include "vector_simd.inl"
 
+#include "base128.inl"
 #include "bincore.inl"
 
 int main() {
@@ -35,7 +36,8 @@ int main() {
              TEST_FUNC(test_vector_simd_03), TEST_FUNC(test_vector_simd_10),
              TEST_FUNC(test_vector_simd_11), TEST_FUNC(test_vector_simd_12),
              TEST_FUNC(test_supercore_00), TEST_FUNC(test_mt_thread00),
-             TEST_FUNC(test_mt_thread01));
+             TEST_FUNC(test_mt_thread01), TEST_FUNC(test_base128),
+             TEST_FUNC(test_ubase128));
 
   return testResult;
 }

@@ -33,10 +33,8 @@ struct BoneTMTypeInfo {
   using value_type = decltype(boneTMTypes[0]);
   using iterator_type = std::add_pointer<value_type>::type;
 
-  static constexpr const char *const GetName() { return "uniBoneTMType"; }
-  static constexpr const char *const GetDoc() {
-    return "Uni Bone TM Type Enum";
-  }
+  static constexpr const char *GetName() { return "uniBoneTMType"; }
+  static constexpr const char *GetDoc() { return "Uni Bone TM Type Enum"; }
   static size_t Len() { return sizeof(boneTMTypes) / sizeof(value_type); }
   static iterator_type begin() { return std::begin(boneTMTypes); }
   static iterator_type end() { return std::end(boneTMTypes); }
@@ -47,10 +45,8 @@ using BoneTMTypeEnum = Enum<BoneTMTypeInfo>;
 struct BoneListInfo {
   using item_type = uni::Bone;
   using wrap_type = Bone;
-  static constexpr const char *const GetName() { return "uni::BoneList"; }
-  static constexpr const char *const GetDoc() {
-    return "Uni Bone iterator/list";
-  }
+  static constexpr const char *GetName() { return "uni::BoneList"; }
+  static constexpr const char *GetDoc() { return "Uni Bone iterator/list"; }
 };
 
 using BoneList = List<BoneListInfo>;
@@ -58,10 +54,8 @@ using BoneList = List<BoneListInfo>;
 struct SkeletonListInfo {
   using item_type = uni::Skeleton;
   using wrap_type = Skeleton;
-  static constexpr const char *const GetName() { return "uni::SkeletonList"; }
-  static constexpr const char *const GetDoc() {
-    return "Uni Skeleton iterator/list";
-  }
+  static constexpr const char *GetName() { return "uni::SkeletonList"; }
+  static constexpr const char *GetDoc() { return "Uni Skeleton iterator/list"; }
 };
 
 using SkeletonList = List<SkeletonListInfo>;
@@ -84,7 +78,7 @@ static PyTypeObject boneType = {
     0,                                           /* tp_print */
     0,                                           /* tp_getattr */
     0,                                           /* tp_setattr */
-    0,                                           /* tp_compare */
+    (cmpfunc)Bone::Compare,                      /* tp_compare */
     0,                                           /* tp_repr */
     0,                                           /* tp_as_number */
     0,                                           /* tp_as_sequence */
@@ -171,6 +165,14 @@ PyObject *Bone::GetParent(Bone *self) {
   } else {
     return Py_None;
   }
+}
+
+int Bone::Compare(Bone *self, Bone *other) {
+  const auto i0d = self->item.get();
+  const auto i1d = other->item.get();
+  const bool eq = (i0d == i1d) ||
+                  (i0d->Index() == i1d->Index() && i0d->Name() == i1d->Name());
+  return eq ? 0 : 1;
 }
 
 static PyGetSet skeletonGetSets[] = {

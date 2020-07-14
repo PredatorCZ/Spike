@@ -60,7 +60,7 @@ template <class Base> struct SettingsManager : private ReflectorBase<Base> {
     Reflector::KVPairFormat prSettings;
     prSettings.aliasName = true;
 
-    for (int t = 0; t < numSettings; t++) {
+    for (size_t t = 0; t < numSettings; t++) {
       Reflector::KVPair pair = this->GetReflectedPair(t, prSettings);
       GetLogger() << '\t' << pair.name << ": " << pair.value.c_str()
                   << std::endl;

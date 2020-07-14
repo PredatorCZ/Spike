@@ -12,7 +12,7 @@ build_target(
 	NO_VERINFO
 )
 
-set_precore_sources(master_printer matrix44)
+set_precore_sources(master_printer matrix44 multi_thread)
 
 project(test_reflector)
 
@@ -49,7 +49,26 @@ build_target(
 )
 
 set_precore_sources(master_printer directory_scanner reflector)
-enable_threads()
+
+if (${RELEASEVER})
+	find_package(Python2 COMPONENTS Development Interpreter)
+
+	if (${Python2_FOUND})
+		project(test_unipy)
+
+		build_target(
+			TYPE PYMODULE
+			SOURCES 
+				test_unipy.cpp
+			NO_PROJECT_H
+			NO_VERINFO
+		)
+		
+		set_precore_sources(uni_format uni_python matrix44)
+		add_test(NAME test_unipy COMMAND ${Python2_EXECUTABLE} test_uni.py
+		WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/test)
+	endif()
+endif()
 
 enable_testing()
 add_test(test_base test_base)
@@ -59,10 +78,10 @@ add_test(NAME test_app COMMAND test_app WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
 
 
 if (CMAKE_CXX_COMPILER_ID MATCHES Clang)
-	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall")
+	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra")
 	message("Compiler is Clang")
 elseif(CMAKE_COMPILER_IS_GNUCXX)
-	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall")
+	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra")
 	message("Compiler is GNU")
 elseif (CMAKE_CXX_COMPILER_ID MATCHES MSVC)
 	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -W4")

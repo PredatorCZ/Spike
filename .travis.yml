@@ -6,17 +6,18 @@ matrix:
   include:
     - os: linux
       name: "GCC 5 + GCOV"
+      addons:
+        apt:
+          packages:
+            - python2.7-dev
       before_install:
         - pip install --user cpp-coveralls
       script:
-        - mkdir build
-        - cd build
-        - cmake .. -DUSE_GCOV=TRUE
-        - cmake --build . -j 6 --config Release
-        - cd test
-        - ctest -V -C Release
+        - mkdir build && cd build && cmake .. -DUSE_GCOV=TRUE
+        - cmake --build . -j 6
+        - cd test && ctest -V
       after_success:
-        - cd ../.. && coveralls -E ".*build/.*.c((pp)|(c)|(xx))?$" -e MAXex -e test --gcov-options '\-lp'
+        - cd ../.. && coveralls -E ".*build/.*.c((pp)|(c)|(xx))?$" -e MAXex -e test -e datas/unit_testing.hpp --gcov-options '\-lp'
 
     - os: linux
       name: "GCC 9"
@@ -56,9 +57,6 @@ before_install:
     - eval "${MATRIX_EVAL}"
 
 script:
-  - mkdir build
-  - cd build
-  - cmake ..
+  - mkdir build && cd build && cmake ..
   - cmake --build . -j 6 --config Release
-  - cd test
-  - ctest -V -C Release
+  - cd test && ctest -V -C Release

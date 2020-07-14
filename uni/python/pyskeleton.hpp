@@ -31,6 +31,7 @@ struct Bone {
   static PyObject *GetIndex(Bone *self);
   static PyObject *GetName(Bone *self);
   static PyObject *GetParent(Bone *self);
+  static int Compare(Bone *self, Bone *other);
 
   static PyTypeObject *GetType();
 };
