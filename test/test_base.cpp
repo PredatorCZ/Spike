@@ -16,7 +16,7 @@ int main() {
   printer.AddPrinterFunction(UPrintf);
 
   printline("Compiler info:\n\tLittle Endian: "
-            << ES_LITTLE_ENDIAN << "\n\tX64: " << ES_X64
+            << LittleEndian() << "\n\tX64: " << ES_X64
             << "\n\tClass padding optimalization: " << ES_REUSE_PADDING);
 
   printerror("I am error and I'm red.");

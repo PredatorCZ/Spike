@@ -18,6 +18,7 @@
 #include "pyenum.hpp"
 #include "pylist.hpp"
 #include "pymotion.hpp"
+#include <vector>
 
 namespace UniPy {
 

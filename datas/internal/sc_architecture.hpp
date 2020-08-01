@@ -33,13 +33,15 @@
 
 #if defined(__cplusplus) || defined(c_plusplus)
 
-typedef union {
-  const int NUM;
-  const char ACT[4];
-} __es_endian_detector_u;
+static inline bool LittleEndian() {
+  static const union {
+    const int NUM;
+    const char ACT[4];
+  } end_dec{1};
 
-static constexpr __es_endian_detector_u _ES_LITTLE_ENDIAN = {1};
-static const bool ES_LITTLE_ENDIAN = _ES_LITTLE_ENDIAN.ACT[0] == 1;
+  return end_dec.ACT[0] == 1;
+}
+
 static constexpr bool ES_X64 = sizeof(void *) == 8;
 
 struct __es_reusePadding_detector_superbase_s {};

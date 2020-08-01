@@ -57,11 +57,10 @@ PyObject *GetSkeletonData() {
   bone1.mval.r3 = Vector4A16(9, 10, 11, 12);
   bone1.mval.r4 = Vector4A16(13, 14, 15, 16);
 
-  PyObject *retVal = PyType_GenericAlloc(UniPy::Skeleton::GetType(), 0);
-  auto rtVal = reinterpret_cast<UniPy::Skeleton *>(retVal);
-  rtVal->item = decltype(rtVal->item){skel};
+  PyObject *obj = reinterpret_cast<PyObject *>(
+      UniPy::Skeleton::Create(uni::Element<const uni::Skeleton>(skel)));
 
-  return retVal;
+  return obj;
 }
 
 static PyMethodDef methods[]{

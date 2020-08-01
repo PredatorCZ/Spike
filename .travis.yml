@@ -6,10 +6,6 @@ matrix:
   include:
     - os: linux
       name: "GCC 5 + GCOV"
-      addons:
-        apt:
-          packages:
-            - python2.7-dev
       before_install:
         - pip install --user cpp-coveralls
       script:

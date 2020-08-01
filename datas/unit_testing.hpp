@@ -30,8 +30,10 @@ auto append_scan(const D &input, const char *varName, int)
     -> decltype(std::declval<std::ostream>() << std::declval<C>(), void()) {
 #if defined(__clang__) || (defined(__GNUC__) && __GNUC__ < 7)
   printer << varName;
+  (void)input;
 #else
   printer << input;
+  (void)varName;
 #endif
 };
 
