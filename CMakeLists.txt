@@ -3,9 +3,9 @@ project(PreCore)
 
 set(PRECORE_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR} CACHE STRING "")
 
-set(_is_cool_compiler FALSE)
+set(_is_cool_compiler FALSE CACHE BOOL "")
 if (CMAKE_CXX_COMPILER_ID MATCHES Clang OR CMAKE_COMPILER_IS_GNUCXX)
-	set(_is_cool_compiler TRUE)
+	set(_is_cool_compiler TRUE CACHE BOOL "" FORCE)
 endif()
 
 if (CMAKE_COMPILER_IS_GNUCXX AND USE_GCOV)

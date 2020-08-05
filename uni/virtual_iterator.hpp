@@ -53,18 +53,7 @@ public:
   bool operator!=(VirtualIterator input) const {
     return iterPos != input.iterPos;
   }
-
-  template <class ptrTest = returnType>
-  typename std::enable_if<
-      std::is_pointer<ptrTest>::value,
-      typename std::remove_pointer<returnType>::type &>::type
-  operator*() const {
-    return *std::bind(Accessor, tClass, iterPos)();
-  }
-
-  template <class ptrTest = returnType>
-  typename std::enable_if<!std::is_pointer<ptrTest>::value, returnType>::type
-  operator*() const {
+  returnType operator*() const {
     return std::bind(Accessor, tClass, iterPos)();
   }
 };

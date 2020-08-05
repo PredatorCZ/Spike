@@ -18,6 +18,7 @@ endif()
 #   DESCR <Product description string>
 #   NAME <Product name string>
 #   START_YEAR <year when the project started>
+#   PIC <bool>
 #   PROPERTIES ...
 #   NO_PROJECT_H
 #   NO_VERINFO
@@ -26,7 +27,7 @@ endif()
 
 function(build_target)
   cmake_parse_arguments(
-    _arg "NO_PROJECT_H;NO_VERINFO" "TYPE;AUTHOR;DESCR;NAME;START_YEAR"
+    _arg "NO_PROJECT_H;NO_VERINFO" "TYPE;AUTHOR;DESCR;NAME;START_YEAR;PIC"
     "SOURCES;DEFINITIONS;LINKS;INCLUDES;LINK_DIRS;PROPERTIES" ${ARGN})
 
   link_directories(${_arg_LINK_DIRS})
@@ -100,13 +101,19 @@ function(build_target)
                    ${PROJECT_SOURCE_DIR}/project.h)
   endif()
 
+  if((CMAKE_CXX_COMPILER_ID MATCHES Clang OR CMAKE_COMPILER_IS_GNUCXX) AND _arg_PIC)
+    if (${_arg_PIC})
+      target_compile_options(${PROJECT_NAME} PRIVATE -fPIC)
+    endif()
+  endif()
+  
+  if(CMAKE_CXX_COMPILER_ID MATCHES Clang OR CMAKE_COMPILER_IS_GNUCXX)
+    target_compile_options(${PROJECT_NAME} PRIVATE -fvisibility=hidden)
+  endif()
+
   if(${_is_python_module})
     if(WIN32)
       set_target_properties(${PROJECT_NAME} PROPERTIES SUFFIX .pyd)
-    endif()
-
-    if(CMAKE_CXX_COMPILER_ID MATCHES Clang OR CMAKE_COMPILER_IS_GNUCXX)
-      target_compile_options(${PROJECT_NAME} PRIVATE -fPIC -fvisibility=hidden)
     endif()
 
     set_target_properties(
