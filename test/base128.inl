@@ -507,5 +507,26 @@ int test_ubase128() {
 
   TEST_EQUAL(var, 0x7777777777777777);
 
+  var = 0xFFFFBB4700DA18D7;
+
+  ss = std::stringstream();
+  wr.Write(var);
+  str = ss.str();
+  rdt = reinterpret_cast<const uint8 *>(str.data());
+
+  TEST_EQUAL(rdt[0], 0xd7);
+  TEST_EQUAL(rdt[1], (((0xFFFFBB4700DA18D7 >> 7) & 0xff) | 0x80));
+  TEST_EQUAL(rdt[2], (((0xFFFFBB4700DA18D7 >> 14) & 0xff) | 0x80));
+  TEST_EQUAL(rdt[3], (((0xFFFFBB4700DA18D7 >> 21) & 0xff) | 0x80));
+  TEST_EQUAL(rdt[4], (((0xFFFFBB4700DA18D7 >> 28) & 0xff) | 0x80));
+  TEST_EQUAL(rdt[5], (((0xFFFFBB4700DA18D7 >> 35) & 0xff) | 0x80));
+  TEST_EQUAL(rdt[6], (((0xFFFFBB4700DA18D7 >> 42) & 0xff) | 0x80));
+  TEST_EQUAL(rdt[7], (((0xFFFFBB4700DA18D7 >> 49) & 0xff) | 0x80));
+  TEST_EQUAL(rdt[8], ((0xFFFFBB4700DA18D7 >> 56) & 0xff));
+
+  rd.Read(var);
+
+  TEST_EQUAL(var, 0xFFFFBB4700DA18D7);
+
   return 0;
 }

@@ -9,13 +9,6 @@ inline const reflType *Reflector::GetReflectedType(size_t ID) const {
   if (ID >= inst->nTypes)
     return nullptr;
 
-  const reflType *cItem = inst->types + ID;
-
-  if (cItem->offset == 0xffff)
-    throw std::runtime_error(
-        "Register your class: " +
-        (inst->className ? inst->className : std::to_string(inst->classHash)));
-
   return inst->types + ID;
 }
 

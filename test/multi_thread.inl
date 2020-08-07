@@ -10,13 +10,18 @@ int test_mt_thread00() {
   std::atomic<vt_type *> apted(&pted);
   const size_t numTasks = 3;
   pted.reserve(numTasks);
+  printer.PrintThreadID(true);
 
-  RunThreadedQueue(numTasks,
-                   [&](size_t curTask) { apted.load()->push_back(curTask); });
+  RunThreadedQueue(numTasks, [&](size_t curTask) {
+    printline("Hello thread.");
+    apted.load()->push_back(curTask);
+  });
 
   for (size_t i = 0; i < numTasks; i++) {
     TEST_NOT_CHECK(es::IsEnd(pted, std::find(pted.begin(), pted.end(), i)));
   }
+
+  printer.PrintThreadID(false);
 
   return 0;
 }

@@ -417,16 +417,18 @@ static int WriteDataItem(const Reflector &ri, BinWritterRef wr,
 
   case REFType::Integer:
   case REFType::Enum:
-    if (type.subSize > 8) {
+    if (type.subSize > 1) {
       bint128 tvar;
       memcpy(&tvar, objAddr, type.subSize);
+      const size_t shValue = 64 - (type.subSize * 8);
+      tvar.value = (tvar.value << shValue) >> shValue;
       wr.Write(tvar);
       return 0;
     }
 
   case REFType::UnsignedInteger:
   case REFType::EnumFlags:
-    if (type.subSize > 8) {
+    if (type.subSize > 1) {
       buint128 tvar;
       memcpy(&tvar, objAddr, type.subSize);
       wr.Write(tvar);
@@ -525,7 +527,7 @@ static int LoadDataItem(Reflector &ri, BinReaderRef rd, char *objAddr,
   switch (type.type) {
   case REFType::Integer:
   case REFType::Enum:
-    if (type.subSize > 8) {
+    if (type.subSize > 1) {
       bint128 tvar;
       rd.Read(tvar);
       memcpy(objAddr, &tvar, type.subSize);
@@ -534,7 +536,7 @@ static int LoadDataItem(Reflector &ri, BinReaderRef rd, char *objAddr,
 
   case REFType::UnsignedInteger:
   case REFType::EnumFlags:
-    if (type.subSize > 8) {
+    if (type.subSize > 1) {
       buint128 tvar;
       rd.Read(tvar);
       memcpy(objAddr, &tvar, type.subSize);

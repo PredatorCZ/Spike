@@ -160,7 +160,7 @@ Vector4A16 esMatrix44::ToQuat() const {
       tmp00 *= 0.5f / sqrtf(tmp00.X);
 
       return Vector4A16(
-          _mm_shuffle_ps(tmp00._data, tmp00._data, _MM_SHUFFLE(0, 1, 3, 2)));
+          _mm_shuffle_ps(tmp00._data, tmp00._data, _MM_SHUFFLE(2, 0, 1, 3)));
     } else {
       tmp00 *= Vector4A16(1.f, -1.f, 1.f, 1.f);
       tmp01 *= Vector4A16(1.f, 1.f, -1.f, -1.f);
@@ -168,7 +168,7 @@ Vector4A16 esMatrix44::ToQuat() const {
       tmp00 *= 0.5f / sqrtf(tmp00.X);
 
       return Vector4A16(
-          _mm_shuffle_ps(tmp00._data, tmp00._data, _MM_SHUFFLE(2, 3, 1, 0)));
+          _mm_shuffle_ps(tmp00._data, tmp00._data, _MM_SHUFFLE(0, 2, 3, 1)));
     }
   }
 }

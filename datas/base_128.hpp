@@ -99,7 +99,12 @@ struct buint128 {
     for (size_t id = 0; id < 9; id++) {
       uint8 cNum;
       rd.Read(cNum);
-      value |= static_cast<uint64>(cNum & 0x7f) << (7 * id);
+
+      if (id == 8) {
+        value |= static_cast<uint64>(cNum) << 56;
+      } else {
+        value |= static_cast<uint64>(cNum & 0x7f) << (7 * id);
+      }
 
       if (!(cNum & 0x80)) {
         break;
@@ -111,17 +116,20 @@ struct buint128 {
 
   void Write(BinWritterRef wr) const {
     uint64 valueCopy = value;
+    size_t index = 0;
 
     while (true) {
       const auto lastValue = static_cast<uint8>(valueCopy);
       valueCopy >>= 7;
 
-      if (!valueCopy) {
+      if (!valueCopy || index == 8) {
         wr.Write(lastValue);
         break;
       } else {
         wr.Write<uint8>(lastValue | 0x80);
       }
+
+      index++;
     }
   }
 };

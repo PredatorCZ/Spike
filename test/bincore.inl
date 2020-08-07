@@ -66,6 +66,23 @@ int test_bincore_00() {
   TEST_EQUAL(tst.v2, 3);
   TEST_EQUAL(tst.v3, 12418651);
 
+  mwr.Seek(5);
+  mwr.Skip(-2);
+
+  TEST_EQUAL(mwr.Tell(), 3);
+
+  mrd.Seek(0);
+
+  TEST_EQUAL(mrd.Tell(), 0);
+
+  mrd.Skip(10);
+
+  TEST_EQUAL(mrd.Tell(), 10);
+
+  mrd.Skip(-3);
+
+  TEST_EQUAL(mrd.Tell(), 7);
+
   return 0;
 };
 

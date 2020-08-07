@@ -17,6 +17,24 @@ int test_matrix44_00() {
   TEST_EQUAL(mtx.r3, Vector4A16(0, 0, 1, 0));
   TEST_EQUAL(mtx.r4, Vector4A16(0, 0, 0, 1));
 
+  Vector4A16 qt, pos, scale;
+  
+  mtx.Decompose(pos, qt, scale);
+
+  TEST_EQUAL(qt, Vector4A16(0, 0, 0, 1));
+  TEST_EQUAL(pos, Vector4A16(0, 0, 0, 1));
+  TEST_EQUAL(scale, Vector4A16(1, 1, 1, 0));
+
+  pos = Vector4A16(10, 20, 30, 1);
+  scale = Vector4A16(2, 3, 4, 0);
+
+  mtx.Compose(pos, qt, scale);
+
+  TEST_EQUAL(mtx.r1, Vector4A16(2, 0, 0, 0));
+  TEST_EQUAL(mtx.r2, Vector4A16(0, 3, 0, 0));
+  TEST_EQUAL(mtx.r3, Vector4A16(0, 0, 4, 0));
+  TEST_EQUAL(mtx.r4, Vector4A16(10, 20, 30, 1));
+
   return 0;
 }
 
@@ -56,14 +74,14 @@ int test_matrix44_02() {
                    {-0.17365f, 0.90652f, 0.3848f, 0}, {0, 0, 0, 1});
 
   qt = mtx.ToQuat();
-  TEST_EQUAL(qt, Vector4A16(0.7567f, 0.4509f, 0.3219f, 0.3471f));
+  TEST_EQUAL(qt, Vector4A16(0.4509f, 0.3219f, 0.3471f, 0.7567f));
 
   mtx = esMatrix44({-0.42858f, -0.05421f, 0.90187f, 0},
                    {0.74233f, -0.59015f, 0.31729f, 0},
                    {0.51504f, 0.80547f, 0.29317f, 0}, {0, 0, 0, 1});
 
   qt = mtx.ToQuat();
-  TEST_EQUAL(qt, Vector4A16(0.2619f, 0.4659f, 0.3692f, 0.7602f));
+  TEST_EQUAL(qt, Vector4A16(0.4659f, 0.3692f, 0.7602f, 0.2619f));
 
   return 0;
 }

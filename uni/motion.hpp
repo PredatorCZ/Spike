@@ -19,6 +19,7 @@
 #include "common.hpp"
 #include "datas/matrix44.hpp"
 #include "list.hpp"
+#include "datas/string_view.hpp"
 
 namespace uni {
 class MotionTrack {

@@ -161,18 +161,19 @@ PyObject *MotionTrack::BoneIndex(MotionTrack *self) {
 PyObject *MotionTrack::GetValues(MotionTrack *self, PyObject *index) {
   PyListObject *pTimes = nullptr;
 
-  if (!PyArg_ParseTuple(index, "O!", &PyList_Type, pTimes)) {
+  if (!PyArg_ParseTuple(index, "O!", &PyList_Type, &pTimes)) {
     return nullptr;
   }
 
   std::vector<float> times(PyList_Size((PyObject *)pTimes));
-  auto cObj = *pTimes->ob_item;
+  auto cObj = pTimes->ob_item;
 
   for (auto &t : times) {
-    t = static_cast<float>(PyFloat_AsDouble(cObj++));
+    t = static_cast<float>(PyFloat_AsDouble(*cObj++));
   }
 
   auto retList = PyList_New(times.size());
+  size_t curItem = 0;
 
   switch (self->item->TrackType()) {
   case uni::MotionTrack::Position:
@@ -182,7 +183,7 @@ PyObject *MotionTrack::GetValues(MotionTrack *self, PyObject *index) {
     for (auto &t : times) {
       self->item->GetValue(rtVal, t);
       auto cVal = Py_BuildValue("(ffff)", rtVal.X, rtVal.Y, rtVal.Z, rtVal.W);
-      PyList_Append(retList, cVal);
+      PyList_SetItem(retList, curItem++, cVal);
     }
     break;
   }
@@ -191,7 +192,7 @@ PyObject *MotionTrack::GetValues(MotionTrack *self, PyObject *index) {
     for (auto &t : times) {
       self->item->GetValue(rtVal, t);
       auto cVal = PyFloat_FromDouble(rtVal);
-      PyList_Append(retList, cVal);
+      PyList_SetItem(retList, curItem++, cVal);
     }
     break;
   }
@@ -207,7 +208,7 @@ PyObject *MotionTrack::GetValues(MotionTrack *self, PyObject *index) {
                         rts.rotation.Z, rts.rotation.W,       /**************/
                         rts.scale.X, rts.scale.Y, rts.scale.Z, rts.scale.W ///
           );
-      PyList_Append(retList, cVal);
+        PyList_SetItem(retList, curItem++, cVal);
     }
     break;
   }
@@ -222,7 +223,7 @@ PyObject *MotionTrack::GetValues(MotionTrack *self, PyObject *index) {
                         mtx.r3.X, mtx.r3.Y, mtx.r3.Z, mtx.r3.W, /************/
                         mtx.r4.X, mtx.r4.Y, mtx.r4.Z, mtx.r4.W  /************/
           );
-      PyList_Append(retList, cVal);
+      PyList_SetItem(retList, curItem++, cVal);
     }
     break;
   }

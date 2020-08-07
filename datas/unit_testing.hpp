@@ -67,6 +67,24 @@ MasterPrinterThread &PrintCheckFailed(const A &aVal, const B &bVal,
 }
 } // namespace es
 
+#define TEST_THROW(what, ...)                                                  \
+  {                                                                            \
+    bool thrown = false;                                                       \
+    try {                                                                      \
+      __VA_ARGS__                                                              \
+    } catch (what &) {                                                         \
+      thrown = true;                                                           \
+    } catch (...) {                                                            \
+      printerror("Unhandled exception " << __FILE__ << '(' << __LINE__         \
+                                        << "): Expected " << #what);           \
+      return 1;                                                                \
+    }                                                                          \
+    if (!thrown) {                                                             \
+      printerror("Expected throw " << __FILE__ << '(' << __LINE__ << ')');     \
+      return 1;                                                                \
+    }                                                                          \
+  }
+
 #define TEST_CHECK(val)                                                        \
   if (!val) {                                                                  \
     _CHECK_FAILED_TMP(#val);                                                   \

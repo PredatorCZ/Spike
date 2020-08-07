@@ -3,8 +3,8 @@
 #include "../datas/reflector_io.hpp"
 #include "../datas/unit_testing.hpp"
 
-#include "../datas/vectors_simd.hpp"
 #include "../datas/flags.hpp"
+#include "../datas/vectors_simd.hpp"
 
 REFLECTOR_CREATE(EnumWrap00, ENUM, 1, CLASS, E1, E2,
                  E3 = 0x7); // as enum class EnumWrap00 {};
@@ -1775,7 +1775,8 @@ int test_reflector_array_subclass(reflClass &input) {
 
 int test_reflector_string(reflClass &input) {
   TEST_CHECK(input.test80.empty());
-  TEST_EQUAL(input.SetReflectedValue("test80", "This is a test string"), Reflector::ErrorType::None);
+  TEST_EQUAL(input.SetReflectedValue("test80", "This is a test string"),
+             Reflector::ErrorType::None);
   TEST_EQUAL(input.test80, "This is a test string");
   Reflector::KVPair cPair = input.GetReflectedPair(44);
   TEST_EQUAL(cPair.name, "test80");
@@ -1789,6 +1790,29 @@ int test_reflector(reflClass &input) {
   TEST_EQUAL(input.GetClassName(), es::string_view("reflClass"));
   TEST_EQUAL(input.SetReflectedValue("pest", ""),
              Reflector::ErrorType::InvalidDestination);
+  TEST_CHECK(input.GetReflectedValue(200).empty());
+  TEST_EQUAL(input.SetReflectedValueFloat("non existant", 0.0),
+             Reflector::ErrorType::InvalidDestination);
+  TEST_EQUAL(input.SetReflectedValueInt("non existant", 0),
+             Reflector::ErrorType::InvalidDestination);
+  TEST_EQUAL(input.SetReflectedValueUInt("non existant", 0),
+             Reflector::ErrorType::InvalidDestination);
+  auto noClass = input.GetReflectedSubClass(0);
+
+  TEST_NOT_CHECK(noClass.instc.rfInstance);
+  TEST_NOT_CHECK(noClass.instc.rfStatic);
+  TEST_NOT_CHECK(noClass.inst.rfInstance);
+  TEST_NOT_CHECK(noClass.inst.rfStatic);
+
+  auto noPair = input.GetReflectedPair(200);
+
+  TEST_CHECK(noPair.name.empty());
+  TEST_CHECK(noPair.value.empty());
+
+  TEST_NOT_CHECK(input.IsReflectedSubClass(0));
+  TEST_NOT_CHECK(input.IsReflectedSubClass("non existant"));
+  TEST_NOT_CHECK(input.IsArray(0));
+  TEST_NOT_CHECK(input.IsArray("non existant"));
 
   return 0;
 }
