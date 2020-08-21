@@ -3,12 +3,11 @@
 #  MAX_VERSION = set version of 3ds max
 #  MaxDirectory = a directory, where "3ds max yyyy" and it's SDK are located
 # Output variables
+#  MaxSDKTarget = interface target
+#  build_morpher() = building a morpher library
+#  MaxProperties = target properties
 #  MaxSDK = a path to a SDK
 #  MaxPlugins = a path to a "3ds max yyyy/plugins" folder
-#  MaxSDKLibrariesPath = a path to a lib folder from SDK
-#  MaxDefinitions = target definitions
-#  MaxProperties = target properties
-#  build_morpher() = building a morpher library
 
 include(${PRECORE_SOURCE_DIR}/cmake/targetex.cmake)
 
@@ -16,11 +15,27 @@ if (NOT DEFINED MAX_VERSION)
 	set (MAX_VERSION 2017)
 endif()
 
-if (NOT MaxDirectory)
-    set(MaxDirectory "C:/Program Files/Autodesk/3ds Max ${MAX_VERSION}")
+if (CMAKE_SIZEOF_VOID_P EQUAL 8)
+    set(_MAX_PLATFORM X64)
+else()
+    set(_MAX_PLATFORM X86)
 endif()
 
-set (MaxSDK "${MaxDirectory} SDK/maxsdk")
+set(MaxSDK $ENV{ADSK_3DSMAX_SDK_${MAX_VERSION}})
+
+if (NOT MaxDirectory)
+    set(MaxDirectory $ENV{ADSK_3DSMAX_${_MAX_PLATFORM}_${MAX_VERSION}})
+    if (NOT MaxDirectory)
+        set(MaxDirectory "C:/Program Files/Autodesk/3ds Max ${MAX_VERSION}")
+    else()
+        get_filename_component(MaxDirectory ${MaxDirectory} ABSOLUTE)
+    endif()
+endif()
+
+if(NOT MaxSDK)
+    set (MaxSDK "${MaxDirectory} SDK/maxsdk")
+endif()
+
 set (MaxPlugins "${MaxDirectory}/plugins")
 
 if (MAX_VERSION LESS 2014)
@@ -31,7 +46,6 @@ else()
 	set (_SDK_libs_path_suffix /x64/Release)
 endif()
 
-set (MaxSDKLibrariesPath ${MaxSDK}${_SDK_libs_path_prefix}/lib${_SDK_libs_path_suffix})
 set (MAX_EX_DIR ${PRECORE_SOURCE_DIR}/MAXex/)
 
 if (MAX_VERSION GREATER 2012)
@@ -47,7 +61,12 @@ if (RELEASEVER EQUAL TRUE)
 	set (WPO /GL) #Whole program optimalization
 endif()
 
-set(MaxDefinitions 
+add_library(MaxSDKTarget INTERFACE)
+
+target_include_directories(MaxSDKTarget INTERFACE ${MaxSDK}/include)
+link_directories(${MaxSDK}${_SDK_libs_path_prefix}/lib${_SDK_libs_path_suffix})
+
+target_compile_definitions(MaxSDKTarget INTERFACE
     #Defines
     -D_USRDLL -DWINVER=0x0601 -D_WIN32_WINNT=0x0601 -D_WIN32_WINDOWS=0x0601
     -D_WIN32_IE=0x0800 -D_WINDOWS -D_CRT_SECURE_NO_DEPRECATE -D_CRT_NONSTDC_NO_DEPRECATE
@@ -76,18 +95,14 @@ set(MaxDefinitions
     /w34996 /we4706 /we4390 /we4557 /we4546 /we4545 /we4295 /we4310
     /we4130 /we4611 /we4213 /we4121 /we4715 /w34701 /w34265 /wd4244 /wd4018 /wd4819
 )
+
 set(MaxProperties
     RUNTIME_OUTPUT_DIRECTORY_RELWITHDEBINFO ${MaxPlugins}
     RUNTIME_OUTPUT_DIRECTORY_DEBUG ${MaxPlugins}
     RUNTIME_OUTPUT_DIRECTORY_RELEASE ${CMAKE_SOURCE_DIR}/bin/${CMAKE_GENERATOR_PLATFORM}_${MAX_VERSION}
 )
-function(build_morpher)
-    if (${CMAKE_GENERATOR_PLATFORM} STREQUAL Win32)
-        set(_morpher_machine X86)
-    else()
-        set(_morpher_machine X64)
-    endif()
 
+function(build_morpher)
     add_custom_command(TARGET ${PROJECT_NAME} PRE_LINK COMMAND lib 
-	    ARGS /def:"${MAX_EX_DIR}Morpher${_morpher_machine}.def" /out:Morpher.lib /machine:${_morpher_machine})
+	    ARGS /def:"${PRECORE_SOURCE_DIR}/MAXex/Morpher${_MAX_PLATFORM}.def" /out:Morpher.lib /machine:${_MAX_PLATFORM})
 endfunction()
