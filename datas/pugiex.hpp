@@ -39,5 +39,3 @@ REFLECTOR_CREATE(XMLError, ENUM, 0,
 
 	status_no_document_element	// Parsing resulted in a document without element nodes
 );
-
-#define GetXMLErrorMessage(var) _EnumWrap<XMLError>{}._reflected[var.status]

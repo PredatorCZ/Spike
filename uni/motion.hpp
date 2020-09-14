@@ -19,7 +19,6 @@
 #include "common.hpp"
 #include "datas/matrix44.hpp"
 #include "list.hpp"
-#include "datas/string_view.hpp"
 
 namespace uni {
 class MotionTrack {
@@ -50,7 +49,7 @@ public:
   typedef MotionTracks::element_type::iterator_type_const iterator_type_const;
   enum MotionType_e { Absolute, Relative, Additive, Delta };
 
-  virtual es::string_view Name() const = 0;
+  virtual std::string Name() const = 0;
   virtual void FrameRate(uint32 fps);
   virtual uint32 FrameRate() const = 0;
   virtual float Duration() const = 0;

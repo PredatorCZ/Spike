@@ -1,3 +1,4 @@
+#include "../datas/string_view.hpp"
 #include "../uni/list_vector.hpp"
 #include "../uni/python/pymotion.hpp"
 #include "../uni/python/pyskeleton.hpp"
@@ -17,7 +18,7 @@ public:
   void GetTM(esMatrix44 &out) const override { out = mval; }
   const Bone *Parent() const override { return parent; }
   size_t Index() const override { return ID; }
-  es::string_view Name() const override { return name; }
+  std::string Name() const override { return name; }
   operator uni::Element<const uni::Bone>() const {
     return {static_cast<const uni::Bone *>(this), false};
   }
@@ -31,12 +32,12 @@ public:
     return uni::SkeletonBonesConst(&bones, false);
   }
 
-  es::string_view Name() const override { return "Sample name."; }
+  std::string Name() const override { return "Sample name."; }
 };
 
 class SkeletonMock2 : public SkeletonMock {
 public:
-  es::string_view Name() const override { return "skeleton_1"; }
+  std::string Name() const override { return "skeleton_1"; }
 };
 
 PyObject *GetSkeletonData() {
@@ -118,7 +119,7 @@ public:
   MotionTracksMock tcks;
   uint32 frameRate = 30;
 
-  es::string_view Name() const override { return "Sample motion."; }
+  std::string Name() const override { return "Sample motion."; }
   void FrameRate(uint32 fps) override { frameRate = fps; }
   uint32 FrameRate() const override { return frameRate; }
   float Duration() const override { return 1.5f; }

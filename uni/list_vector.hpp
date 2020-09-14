@@ -44,4 +44,28 @@ public:
 
   std::vector<class_type> storage;
 };
+
+template <class _interface_type, class _class_type,
+          template <class ...itype> class _smart_type = std::unique_ptr>
+class PolyVectorList : public virtual List<_interface_type> {
+public:
+  typedef List<_interface_type> list_type;
+  typedef _interface_type interface_type;
+  typedef typename list_type::const_type const_type;
+  typedef _smart_type<_class_type> class_type;
+
+  size_t Size() const override { return storage.size(); }
+  const_type At(size_t id) const override { return {storage.at(id).get(), false}; }
+
+  typedef VirtualIterator<list_type, &list_type::Size, const_type,
+                          &list_type::At>
+      iterator_type;
+
+  iterator_type begin() const { return iterator_type(this, 0); }
+  iterator_type end() const { return iterator_type(this); }
+
+  const_type operator[](size_t id) const { return At(id); }
+
+  std::vector<class_type> storage;
+};
 } // namespace uni

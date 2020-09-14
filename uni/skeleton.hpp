@@ -18,7 +18,6 @@
 #pragma once
 #include "common.hpp"
 #include "datas/matrix44.hpp"
-#include "datas/string_view.hpp"
 #include "list.hpp"
 
 namespace uni {
@@ -33,7 +32,7 @@ public:
   virtual const Bone *Parent() const = 0;
   // A special bone identicator, this is not a bone index within skeleton
   virtual size_t Index() const = 0;
-  virtual es::string_view Name() const = 0;
+  virtual std::string Name() const = 0;
   virtual ~Bone() {}
 };
 
@@ -46,7 +45,7 @@ public:
       iterator_type_const;
 
   virtual SkeletonBonesConst Bones() const = 0;
-  virtual es::string_view Name() const = 0;
+  virtual std::string Name() const = 0;
   virtual ~Skeleton() {}
 
   iterator_type_const begin() const { return Bones()->begin(); }
