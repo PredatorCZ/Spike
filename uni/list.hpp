@@ -20,16 +20,16 @@
 #include "common.hpp"
 
 namespace _uni_ {
-template <class C, class _const_type> class List {
+template <class C, class _const_type> class _List {
 public:
   typedef C value_type;
   typedef _const_type const_type;
 
   virtual size_t Size() const = 0;
   virtual const_type At(size_t id) const = 0;
-  virtual ~List() {}
+  virtual ~_List() {}
 
-  typedef uni::VirtualIterator<List, &List::Size, const_type, &List::At>
+  typedef uni::VirtualIterator<_List, &_List::Size, const_type, &_List::At>
       iterator_type_const;
 
   iterator_type_const begin() const { return iterator_type_const(this, 0); }
@@ -40,6 +40,6 @@ public:
 }; // namespace _uni_
 
 namespace uni {
-template <class C> using List = _uni_::List<Element<C>, Element<const C>>;
-template <class C> using Vector = _uni_::List<C, const C>;
+template <class C> using List = _uni_::_List<Element<C>, Element<const C>>;
+template <class C> using Vector = _uni_::_List<C, const C>;
 } // namespace uni
