@@ -50,7 +50,7 @@ public:
   enum MotionType_e { Absolute, Relative, Additive, Delta };
 
   virtual std::string Name() const = 0;
-  virtual void FrameRate(uint32 fps);
+  virtual void FrameRate(uint32 fps) const;
   virtual uint32 FrameRate() const = 0;
   virtual float Duration() const = 0;
   virtual MotionTracksConst Tracks() const = 0;

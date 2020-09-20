@@ -77,18 +77,16 @@ function(build_target)
   set(PROJECT_DESC ${_arg_DESCR})
   set(PROJECT_PRODUCT_NAME ${_arg_NAME})
 
-  if(PROJECT_AUTHOR)
-    string(TIMESTAMP _PROJECT_DATE_YYYY "%Y")
-    set(PROJECT_COPYRIGHT "Copyright (C) ")
+  string(TIMESTAMP _PROJECT_DATE_YYYY "%Y")
+  set(PROJECT_COPYRIGHT "Copyright (C) ")
 
-    if(_arg_START_YEAR)
-      if(NOT ${_PROJECT_DATE_YYYY} STREQUAL ${_arg_START_YEAR})
-        string(APPEND PROJECT_COPYRIGHT ${_arg_START_YEAR} -)
-      endif()
+  if(_arg_START_YEAR)
+    if(NOT ${_PROJECT_DATE_YYYY} STREQUAL ${_arg_START_YEAR})
+      string(APPEND PROJECT_COPYRIGHT ${_arg_START_YEAR} -)
     endif()
-
-    string(APPEND PROJECT_COPYRIGHT "${_PROJECT_DATE_YYYY} ${PROJECT_AUTHOR}")
   endif()
+
+    string(APPEND PROJECT_COPYRIGHT "${_PROJECT_DATE_YYYY} ")
 
   if(NOT _arg_NO_VERINFO)
     configure_file(${PRECORE_SOURCE_DIR}/cmake/verinfo.rc.tmpl

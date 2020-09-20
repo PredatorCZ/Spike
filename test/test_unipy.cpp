@@ -117,10 +117,10 @@ public:
 class MotionMock : public uni::Motion {
 public:
   MotionTracksMock tcks;
-  uint32 frameRate = 30;
+  mutable uint32 frameRate = 30;
 
   std::string Name() const override { return "Sample motion."; }
-  void FrameRate(uint32 fps) override { frameRate = fps; }
+  void FrameRate(uint32 fps) const override { frameRate = fps; }
   uint32 FrameRate() const override { return frameRate; }
   float Duration() const override { return 1.5f; }
   uni::MotionTracksConst Tracks() const override { return {&tcks, false}; }

@@ -38,6 +38,6 @@ inline void MotionTrack::GetValue(float &, float) const {
                              MotionTrack::SingleFloat>(this->TrackType());
 }
 
-inline void Motion::FrameRate(uint32) { throw ModifyError("FrameRate"); }
+inline void Motion::FrameRate(uint32) const { throw ModifyError("FrameRate"); }
 
 } // namespace uni
