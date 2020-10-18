@@ -83,7 +83,8 @@ namespace es {
 
 template <class cnt, class iterType>
 bool IsEnd(const cnt &container, const iterType &iter) {
-  return std::end(container) == iter;
+  using std::end;
+  return end(container) == iter;
 }
 
 template <class sview>
