@@ -15,7 +15,6 @@
 */
 
 #pragma once
-#include "../internal/reflector_enum.hpp"
 #include "../internal/reflector_enum_reg.hpp"
 #include <Python.h>
 

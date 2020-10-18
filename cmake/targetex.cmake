@@ -8,6 +8,7 @@ endif()
 
 # ~~~
 # build_target(
+#   NAME <name of target>
 #   TYPE <library type or APP>
 #   SOURCES <source files> ...
 #   LINKS <link targets> ...
@@ -16,9 +17,8 @@ endif()
 #   LINK_DIRS ...
 #   AUTHOR <author string>
 #   DESCR <Product description string>
-#   NAME <Product name string>
 #   START_YEAR <year when the project started>
-#   PIC <bool>
+#   PIC
 #   PROPERTIES ...
 #   NO_PROJECT_H
 #   NO_VERINFO
@@ -27,7 +27,7 @@ endif()
 
 function(build_target)
   cmake_parse_arguments(
-    _arg "NO_PROJECT_H;NO_VERINFO" "TYPE;AUTHOR;DESCR;NAME;START_YEAR;PIC"
+    _arg "NO_PROJECT_H;NO_VERINFO;PIC" "TYPE;AUTHOR;DESCR;NAME;START_YEAR"
     "SOURCES;DEFINITIONS;LINKS;INCLUDES;LINK_DIRS;PROPERTIES" ${ARGN})
 
   link_directories(${_arg_LINK_DIRS})
@@ -38,32 +38,32 @@ function(build_target)
   endif()
 
   if(_arg_TYPE STREQUAL APP)
-    add_executable(${PROJECT_NAME} ${_arg_SOURCES})
+    add_executable(${_arg_NAME} ${_arg_SOURCES})
   else()
-    add_library(${PROJECT_NAME} ${_arg_TYPE} ${_arg_SOURCES})
+    add_library(${_arg_NAME} ${_arg_TYPE} ${_arg_SOURCES})
   endif()
 
-  target_compile_definitions(${PROJECT_NAME} PRIVATE ${_arg_DEFINITIONS})
-  target_include_directories(${PROJECT_NAME} PRIVATE ${_arg_INCLUDES})
-  target_link_libraries(${PROJECT_NAME} ${_arg_LINKS})
+  target_compile_definitions(${_arg_NAME} PRIVATE ${_arg_DEFINITIONS})
+  target_include_directories(${_arg_NAME} PRIVATE ${_arg_INCLUDES})
+  target_link_libraries(${_arg_NAME} ${_arg_LINKS})
 
   if(_arg_PROPERTIES)
-    set_target_properties(${PROJECT_NAME} PROPERTIES ${_arg_PROPERTIES})
+    set_target_properties(${_arg_NAME} PROPERTIES ${_arg_PROPERTIES})
   endif()
 
-  get_target_property(PROJECT_PREFIX ${PROJECT_NAME} PREFIX)
+  get_target_property(TARGET_PREFIX ${_arg_NAME} PREFIX)
 
-  if(NOT PROJECT_PREFIX)
-    set(PROJECT_PREFIX)
+  if(NOT TARGET_PREFIX)
+    set(TARGET_PREFIX)
   endif()
 
-  get_target_property(PROJECT_SUFFIX ${PROJECT_NAME} SUFFIX)
+  get_target_property(TARGET_SUFFIX ${_arg_NAME} SUFFIX)
 
-  if(NOT PROJECT_SUFFIX)
-    set(PROJECT_SUFFIX)
+  if(NOT TARGET_SUFFIX)
+    set(TARGET_SUFFIX)
   endif()
 
-  get_target_property(PROJECT_TYPE ${PROJECT_NAME} TYPE)
+  get_target_property(TARGET_TYPE ${_arg_NAME} TYPE)
 
   if(NOT PROJECT_VERSION_PATCH)
     set(PROJECT_VERSION_PATCH 0)
@@ -73,55 +73,58 @@ function(build_target)
     set(PROJECT_VERSION_TWEAK 0)
   endif()
 
-  set(PROJECT_AUTHOR ${_arg_AUTHOR})
-  set(PROJECT_DESC ${_arg_DESCR})
-  set(PROJECT_PRODUCT_NAME ${_arg_NAME})
+  set(TARGET_AUTHOR ${_arg_AUTHOR})
+  set(TARGET_DESC ${_arg_DESCR})
+  set(TARGET_PRODUCT_NAME ${_arg_NAME})
 
-  string(TIMESTAMP _PROJECT_DATE_YYYY "%Y")
-  set(PROJECT_COPYRIGHT "Copyright (C) ")
+  string(TIMESTAMP _TARGET_DATE_YYYY "%Y")
+  set(TARGET_COPYRIGHT "Copyright (C) ")
 
   if(_arg_START_YEAR)
-    if(NOT ${_PROJECT_DATE_YYYY} STREQUAL ${_arg_START_YEAR})
-      string(APPEND PROJECT_COPYRIGHT ${_arg_START_YEAR} -)
+    if(NOT ${_TARGET_DATE_YYYY} STREQUAL ${_arg_START_YEAR})
+      string(APPEND TARGET_COPYRIGHT ${_arg_START_YEAR} -)
     endif()
   endif()
 
-    string(APPEND PROJECT_COPYRIGHT "${_PROJECT_DATE_YYYY} ")
+  string(APPEND TARGET_COPYRIGHT "${_TARGET_DATE_YYYY} ")
 
   if(NOT _arg_NO_VERINFO)
     configure_file(${PRECORE_SOURCE_DIR}/cmake/verinfo.rc.tmpl
-                   ${PROJECT_BINARY_DIR}/verinfo.rc)
-    target_sources(${PROJECT_NAME} PRIVATE ${PROJECT_BINARY_DIR}/verinfo.rc)
+                   ${PROJECT_BINARY_DIR}/${_arg_NAME}/verinfo.rc)
+    target_sources(${_arg_NAME} PRIVATE ${PROJECT_BINARY_DIR}/${_arg_NAME}/verinfo.rc)
   endif()
 
   if(NOT _arg_NO_PROJECT_H)
     configure_file(${PRECORE_SOURCE_DIR}/cmake/project.h.tmpl
-                   ${PROJECT_SOURCE_DIR}/project.h)
+                   ${PROJECT_BINARY_DIR}/${_arg_NAME}/project.h)
+    target_include_directories(${_arg_NAME}
+                               PRIVATE ${PROJECT_BINARY_DIR}/${_arg_NAME})
   endif()
 
-  if((CMAKE_CXX_COMPILER_ID MATCHES Clang OR CMAKE_COMPILER_IS_GNUCXX) AND _arg_PIC)
-    if (${_arg_PIC})
-      target_compile_options(${PROJECT_NAME} PRIVATE -fPIC)
+  if((CMAKE_CXX_COMPILER_ID MATCHES Clang OR CMAKE_COMPILER_IS_GNUCXX)
+     AND _arg_PIC)
+    if(${_arg_PIC})
+      target_compile_options(${_arg_NAME} PRIVATE -fPIC)
     endif()
   endif()
-  
+
   if(CMAKE_CXX_COMPILER_ID MATCHES Clang OR CMAKE_COMPILER_IS_GNUCXX)
-    target_compile_options(${PROJECT_NAME} PRIVATE -fvisibility=hidden)
+    target_compile_options(${_arg_NAME} PRIVATE -fvisibility=hidden)
   endif()
 
   if(${_is_python_module})
     if(WIN32)
-      set_target_properties(${PROJECT_NAME} PROPERTIES SUFFIX .pyd)
+      set_target_properties(${_arg_NAME} PROPERTIES SUFFIX .pyd)
     endif()
 
     set_target_properties(
-      ${PROJECT_NAME}
+      ${_arg_NAME}
       PROPERTIES PREFIX ""
                  RUNTIME_OUTPUT_DIRECTORY_RELWITHDEBINFO
                  "${CMAKE_SOURCE_DIR}/lib"
                  RUNTIME_OUTPUT_DIRECTORY_RELEASE "${CMAKE_SOURCE_DIR}/lib"
                  LIBRARY_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/lib")
-    target_include_directories(${PROJECT_NAME} PRIVATE ${Python2_INCLUDE_DIRS})
-    target_link_libraries(${PROJECT_NAME} ${Python2_LIBRARIES})
+    target_include_directories(${_arg_NAME} PRIVATE ${Python2_INCLUDE_DIRS})
+    target_link_libraries(${_arg_NAME} ${Python2_LIBRARIES})
   endif()
 endfunction()

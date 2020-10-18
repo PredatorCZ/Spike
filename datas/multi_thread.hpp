@@ -19,6 +19,7 @@
 #include <algorithm>
 #include <chrono>
 #include <future>
+#include <vector>
 #include <thread>
 
 template <class lmBody> void RunThreadedQueue(size_t numTasks, lmBody &&fc) {

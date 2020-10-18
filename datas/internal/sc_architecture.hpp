@@ -17,6 +17,7 @@
 
 #pragma once
 #include <type_traits>
+#include "sc_type.hpp"
 
 #if defined(__GNUC__) || defined(__GNUG__)
 #define ES_PRAGMA(command) _Pragma(#command)

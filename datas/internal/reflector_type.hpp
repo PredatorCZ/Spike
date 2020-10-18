@@ -19,6 +19,8 @@
 #pragma once
 #include "../jenkinshash.hpp"
 #include "../supercore.hpp"
+#include "reflector_enum.hpp"
+#include "reflector_class_reg.hpp"
 
 enum class REFType : uint8 {
   None,

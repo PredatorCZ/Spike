@@ -19,6 +19,7 @@
 #include "internal/bincore.hpp"
 #include "internal/sc_type.hpp"
 #include <cstring>
+#include <cwchar>
 
 template <class _Traits> class BinWritterRef_t : public BinStreamNavi<_Traits> {
 public:

@@ -19,6 +19,7 @@
 #pragma once
 #include "../string_view.hpp"
 #include "../supercore.hpp"
+#include "reflector_enum.hpp"
 #include <cstring>
 #include <unordered_map>
 #include <vector>
@@ -52,7 +53,7 @@ template <class E> static void _REnumInitializer() {
   }
 }
 
-template<class C> struct _ETag {};
+template <class C> struct _ETag {};
 
 class ReflectedEnum : protected std::vector<es::string_view> {
 protected:

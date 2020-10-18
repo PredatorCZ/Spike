@@ -18,8 +18,6 @@
 
 #pragma once
 
-#include "internal/sc_type.hpp"
-
 #include "internal/sc_architecture.hpp"
 #include <iterator>
 
