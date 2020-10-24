@@ -17,6 +17,7 @@
 
 #pragma once
 #include "../jenkinshash.hpp"
+#include <cstddef>
 
 #define _REFLECTOR_EXTRACT_0(flags, item, ...) item
 #define _REFLECTOR_EXTRACT_0S(flags, item, ...) #item

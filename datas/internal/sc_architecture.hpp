@@ -21,17 +21,10 @@
 
 #if defined(__GNUC__) || defined(__GNUG__)
 #define ES_PRAGMA(command) _Pragma(#command)
-
 #define ES_EXPORT __attribute__((visibility("default")))
 #define ES_IMPORT
 #define ES_EXPORT_FN(what) what ES_EXPORT
 #define ES_IMPORT_FN(what) what ES_IMPORT
-
-#if __GNUC__ < 7
-#undef offsetof
-#define offsetof(T, M) reinterpret_cast<size_t>(&(((T *)0)->M))
-#endif
-
 #elif defined(_MSC_VER)
 #define ES_PRAGMA(command) __pragma(command)
 #define ES_EXPORT __declspec(dllexport)
@@ -40,7 +33,7 @@
 #define ES_IMPORT_FN(what) ES_IMPORT what
 #endif
 
-#define ES_STATIC_ASSERT(eval) static_assert(eval, #eval)
+#define ES_STATIC_ASSERT(what) static_assert(what, #what)
 
 #if defined(__cplusplus) || defined(c_plusplus)
 
