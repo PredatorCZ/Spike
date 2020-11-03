@@ -19,65 +19,83 @@
 #define ES_FLAGS_DEFINED
 #include "supercore.hpp"
 
-template <class T, class E = int> class esFlags {
+namespace es {
+template <class enum_type, class store_override_type =
+                               typename TypeFromSize<sizeof(enum_type)>::type>
+class Flags {
 public:
-  typedef E EnumClass;
-  typedef T ValueType;
+  using EnumClass = enum_type;
+  using ValueType = store_override_type;
 
-private:
-  T value;
+  constexpr Flags() noexcept : value() {}
 
-  template <typename _Type> const T _eval(const T val, _Type input) {
-    return val | (1 << static_cast<T>(input));
+  template <typename... args>
+  constexpr Flags(args... inputs) noexcept : value() {
+    unpack_(inputs...);
   }
 
-  template <typename _Type, typename... _Others>
-  const T _eval(const T val, _Type input, _Others... inputs) {
-    return _eval(val | (1 << static_cast<T>(input)), inputs...);
+  void operator=(ValueType inval) noexcept { value = inval; }
+
+  constexpr bool operator[](EnumClass pos) const noexcept {
+    return (value & MakeMask_(pos)) != 0;
   }
 
-public:
-  esFlags() noexcept : value() {}
-  template <typename... _Type> esFlags(const _Type... inputs) {
-    value = _eval(0, inputs...);
+  void Set(EnumClass pos, bool val) noexcept {
+    val ? value |= MakeMask_(pos) : value &= ~MakeMask_(pos);
+  }
+  Flags &operator+=(EnumClass input) noexcept {
+    Set(input, true);
+    return *this;
+  }
+  Flags &operator-=(EnumClass input) noexcept {
+    Set(input, false);
+    return *this;
   }
 
-  void operator=(T inval) noexcept { value = inval; }
-
-  bool operator[](E pos) const {
-    return (value & (1 << static_cast<T>(pos))) != 0;
-  }
-
-  void Set(E pos, bool val) {
-    val ? value |= (1 << static_cast<T>(pos))
-        : value &= ~(1 << static_cast<T>(pos));
-  }
-  esFlags &operator+=(E input) { Set(input, true); return *this; }
-  esFlags &operator-=(E input) { Set(input, false); return *this; }
-
-  bool operator==(const esFlags &input) const noexcept {
+  constexpr bool operator==(const Flags &input) const noexcept {
     return value == input.value;
   }
 
-  bool operator!=(const esFlags &input) const noexcept {
+  constexpr bool operator!=(const Flags &input) const noexcept {
     return value != input.value;
   }
 
-  bool operator==(E input) { return operator[](input); }
-  bool operator!=(E input) { return !operator[](input); }
-};
+  constexpr bool operator==(EnumClass input) const noexcept {
+    return operator[](input);
+  }
+  constexpr bool operator!=(EnumClass input) const noexcept {
+    return !operator[](input);
+  }
 
+  constexpr explicit operator ValueType() const noexcept { return value; }
+
+private:
+  static constexpr ValueType MakeMask_(EnumClass at) {
+    return static_cast<ValueType>(1) << static_cast<ValueType>(at);
+  }
+
+  constexpr void unpack_(EnumClass input) { value |= MakeMask_(input); }
+
+  template <typename... Others>
+  constexpr void unpack_(EnumClass input, Others... inputs) {
+    value |= MakeMask_(input);
+    unpack_(inputs...);
+  }
+
+  ValueType value;
+};
+}
 #endif // ES_FLAGS_DEFINED
 
 #ifdef ES_REFLECTOR_DEFINED
 #ifndef ES_FLAGS_TEMPLATES_DEFINED
 #define ES_FLAGS_TEMPLATES_DEFINED
-template <class C, class E> struct _getType<esFlags<C, E>> {
-  static const REFType TYPE = REFType::EnumFlags;
-  static const JenHash HASH = _EnumWrap<E>::GetHash();
-  static const uint8 SUBSIZE = sizeof(C);
-  static const uint16 NUMITEMS = 1;
-  static const REFType SUBTYPE = REFType::None;
+template <class C, class E>
+struct _getType<es::Flags<E, C>> : reflTypeDefault_ {
+  static constexpr REFType TYPE = REFType::EnumFlags;
+  static constexpr JenHash Hash() { return _EnumWrap<E>::GetHash(); }
+  static constexpr uint8 SUBSIZE = sizeof(C);
+  static constexpr uint16 NUMITEMS = 1;
 };
 #endif
 #endif // ES_REFLECTOR_DEFINED

@@ -26,7 +26,7 @@
 static Reflector::ErrorType
 SetReflectedMember(reflType reflValue, es::string_view value, char *objAddr);
 
-const reflType *Reflector::GetReflectedType(const JenHashStrong hash) const {
+const reflType *Reflector::GetReflectedType(const JenHash hash) const {
   const reflectorStatic *inst = GetReflectedInstance().rfStatic;
   const size_t _ntypes = GetNumReflectedValues();
 

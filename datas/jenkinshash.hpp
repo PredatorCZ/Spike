@@ -1,7 +1,8 @@
-/*  compile time Jenkins one at time hashing function
+/*  constexpr Jenkins one at time class
     more info in README for PreCore Project
 
     Copyright 2018-2020 Lukas Cone
+    Algorithm by Bob Jenkins
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -17,56 +18,49 @@
 */
 
 #pragma once
+#include "internal/sc_type.hpp"
 #include "string_view.hpp"
 
-typedef unsigned long long _SuperJenHash;
-typedef unsigned int JenHash;
+template <typename T = uint64>
+constexpr uint32 JenkinsHash_(es::string_view input) {
+  T result = 0;
 
-struct JenHashStrong {
+  for (const auto c : input) {
+    const T cChar = static_cast<uint8>(c);
+    result += cChar;
+    result += result << 10;
+    result ^= result >> 6;
+    result = static_cast<uint32>(result);
+  }
+
+  result += result << 3;
+  result ^= result >> 11;
+  result += result << 15;
+
+  return static_cast<uint32>(result);
+}
+
+template <typename I> struct JenHash_t {
+  constexpr JenHash_t() : value_() {}
+  constexpr JenHash_t(JenHash_t &&) = default;
+  constexpr JenHash_t(const JenHash_t &) = default;
+  constexpr JenHash_t(uint32 in) : value_(in) {}
+  template <size_t n>
+  constexpr explicit JenHash_t(const char (&input)[n])
+      : value_(JenkinsHash_<I>({input, n - 1})) {}
+  constexpr JenHash_t(es::string_view input) : value_(JenkinsHash_<I>(input)) {}
+
+  constexpr JenHash_t &operator=(const JenHash_t&) = default;
+  constexpr JenHash_t &operator=(JenHash_t&&) = default;
+
+  constexpr operator uint32() const { return value_; }
+
 private:
-  JenHash _value;
-
-public:
-  explicit constexpr JenHashStrong(JenHash _in) : _value(_in) {}
-  explicit constexpr operator JenHash() const { return _value; };
-  constexpr bool operator==(JenHash _in) const { return _in == _value; }
-  constexpr bool operator==(JenHashStrong _in) const {
-    return _in._value == _value;
-  }
-
-  friend constexpr bool operator==(JenHash _v0, JenHashStrong _v1) {
-    return _v1 == _v0;
-  }
+  uint32 value_;
 };
 
-#define _SuperResVal static_cast<_SuperJenHash>(resval)
+using JenHash = JenHash_t<uint64>;
+using JenHashCannon = JenHash_t<uint32>;
 
-// clang-format off
-constexpr JenHash _JenkinsHash(es::string_view input, JenHash resval = 0U, size_t index = 0)
-{
-  return index < input.size() ? _JenkinsHash(
-    input,
-      (
-        (_SuperResVal + static_cast<JenHash>(static_cast<const unsigned char>(input[index]))) + 
-        ((_SuperResVal + static_cast<JenHash>(static_cast<const unsigned char>(input[index]))) << 10)
-      ) ^
-      ((
-        (_SuperResVal + static_cast<JenHash>(static_cast<const unsigned char>(input[index]))) + 
-        ((_SuperResVal + static_cast<JenHash>(static_cast<const unsigned char>(input[index]))) << 10)
-      ) >> 6), 
-    index + 1) :
-    ((_SuperResVal + (_SuperResVal << 3)) ^ ((_SuperResVal + (_SuperResVal << 3)) >> 11)) + 
-    (((_SuperResVal + (_SuperResVal << 3)) ^ ((_SuperResVal + (_SuperResVal << 3)) >> 11)) << 15);
-}
-// clang-format on
-
-constexpr JenHash JenkinsHash(es::string_view input) {
-  return _JenkinsHash(input);
-}
-
-template<typename T, size_t _size>
-constexpr JenHash JenkinsHashC(const T (&input)[_size]) {
-  return JenkinsHash({input, _size - 1});
-}
-
-static_assert(JenkinsHashC("bug") == 0x54908567, "JOAAT Failed");
+static_assert(JenHash("bug") == 0x54908567, "JenkinsHash Failed");
+static_assert(JenHashCannon("bug") == 0xF37C8567, "JOAAT Failed");

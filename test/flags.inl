@@ -1,8 +1,12 @@
 #include "../datas/flags.hpp"
 #include "../datas/unit_testing.hpp"
 
+constexpr auto flgtest00 = es::Flags<uint8>(1, 2);
+
+ES_STATIC_ASSERT(static_cast<uint8>(flgtest00) == 0b110);
+
 int test_flags_00() {
-  esFlags<uint8> flags;
+  es::Flags<uint8> flags;
   uint8 &flagsRaw = reinterpret_cast<uint8 &>(flags);
 
   flags += 0;
@@ -51,9 +55,9 @@ int test_flags_00() {
 }
 
 int test_flags_01() {
-  enum testEnum { flag0, flag1, flag2 };
+  enum testEnum : uint8 { flag0, flag1, flag2 };
 
-  esFlags<uint8, testEnum> flags;
+  es::Flags<testEnum> flags;
   uint8 &flagsRaw = reinterpret_cast<uint8 &>(flags);
 
   flags += flag0;
@@ -95,7 +99,7 @@ int test_flags_01() {
 }
 
 int test_flags_02() {
-  esFlags<uint8> flags(1, 3, 5, 7);
+  es::Flags<uint8> flags(1, 3, 5, 7);
 
   TEST_NOT_EQUAL(flags, 0);
   TEST_EQUAL(flags, 1);

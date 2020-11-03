@@ -35,25 +35,28 @@ ES_STATIC_ASSERT(atohLUT[uint8('f')] == 15);
 ES_STATIC_ASSERT(atohLUT[uint8('A')] == 10);
 ES_STATIC_ASSERT(atohLUT[uint8('F')] == 15);
 
-constexpr uint32 CompileFourCC(const char *input, const uint32 hash = 0,
-                               const uint32 indexOffset = 0,
-                               const uint32 currentIndex = 0) {
-  return currentIndex > 3
-             ? hash
-             : CompileFourCC(
-                   input,
-                   hash |
-                       (static_cast<uint32>(input[indexOffset + currentIndex])
-                        << (currentIndex * 8)),
-                   indexOffset, currentIndex + 1);
+template<size_t n>
+constexpr uint32 CompileFourCC(const char (&input)[n]) {
+  uint32 retVal = 0;
+  for (size_t i = 0; i < sizeof(retVal); i++) {
+    const uint32 tmp = input[i];
+    retVal |= tmp << (8 * i);
+  }
+
+  return retVal;
 }
 
-static inline size_t GetPadding(size_t value, size_t alignment) {
+ES_STATIC_ASSERT(CompileFourCC("ABCD") == 0x44434241);
+
+constexpr size_t GetPadding(size_t value, size_t alignment) {
   const size_t mask = alignment - 1;
   const size_t result = value & mask;
 
   return !result ? 0 : (alignment - result);
 }
+
+ES_STATIC_ASSERT(GetPadding(7, 8) == 1);
+ES_STATIC_ASSERT(GetPadding(7, 16) == 9);
 
 // Build a compile time fraction for number quantization
 template <size_t numBits> class GetFraction_t {
@@ -111,6 +114,17 @@ template <class sview> sview TrimWhitespace(sview input) noexcept {
   input = SkipStartWhitespace(input);
   return SkipEndWhitespace(input);
 }
+
+template<class C>
+void Dispose(C &item) {
+  auto removed = std::move(item);
+}
+
+template <size_t size> struct TypeFromSize { typedef void type; };
+template <> struct TypeFromSize<1> { typedef uint8 type; };
+template <> struct TypeFromSize<2> { typedef uint16 type; };
+template <> struct TypeFromSize<4> { typedef uint32 type; };
+template <> struct TypeFromSize<8> { typedef uint64 type; };
 
 } // namespace es
 

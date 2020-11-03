@@ -111,10 +111,10 @@ int test_reflector_decl03(
   TEST_EQUAL(mainRefl->typeAliases[2], nullptr);
   TEST_EQUAL(es::string_view("reverb_type"), mainRefl->typeAliases[3]);
 
-  TEST_EQUAL(JenkinsHashC("room_size"), mainRefl->typeAliasHashes[0]);
-  TEST_EQUAL(JenkinsHashC("room_density"), mainRefl->typeAliasHashes[1]);
+  TEST_EQUAL(JenHash("room_size"), mainRefl->typeAliasHashes[0]);
+  TEST_EQUAL(JenHash("room_density"), mainRefl->typeAliasHashes[1]);
   TEST_EQUAL(mainRefl->typeAliasHashes[2], 0);
-  TEST_EQUAL(JenkinsHashC("reverb_type"), mainRefl->typeAliasHashes[3]);
+  TEST_EQUAL(JenHash("reverb_type"), mainRefl->typeAliasHashes[3]);
 
   for (uint32 i = 0; i < mainRefl->nTypes; i++) {
     TEST_CHECK(mainRefl->typeDescs[i].part1.empty());
@@ -196,10 +196,10 @@ int test_reflector_decl05(
   TEST_EQUAL(es::string_view("reverb"), mainRefl->typeNames[2]);
   TEST_EQUAL(es::string_view("reverbDelay"), mainRefl->typeNames[3]);
 
-  TEST_EQUAL(JenkinsHashC("room_size"), mainRefl->typeAliasHashes[0]);
-  TEST_EQUAL(JenkinsHashC("room_density"), mainRefl->typeAliasHashes[1]);
+  TEST_EQUAL(JenHash("room_size"), mainRefl->typeAliasHashes[0]);
+  TEST_EQUAL(JenHash("room_density"), mainRefl->typeAliasHashes[1]);
   TEST_EQUAL(0, mainRefl->typeAliasHashes[2]);
-  TEST_EQUAL(JenkinsHashC("reverb_delay"), mainRefl->typeAliasHashes[3]);
+  TEST_EQUAL(JenHash("reverb_delay"), mainRefl->typeAliasHashes[3]);
 
   TEST_EQUAL(mainRefl->typeDescs[0].part1, "Size of room is");
   TEST_EQUAL(mainRefl->typeDescs[0].part2, "m3");

@@ -446,25 +446,25 @@ typedef t_Vector4<uint8> UCVector4;
 #ifndef ES_VECTORS_TEMPLATES_DEFINED
 #define ES_VECTORS_TEMPLATES_DEFINED
 template <class C> struct _getType<t_Vector2<C>> {
-  static const REFType TYPE = REFType::Vector;
-  static const REFType SUBTYPE = _getType<C>::TYPE;
-  static const uint8 SUBSIZE = sizeof(C);
-  static const uint16 NUMITEMS = 2;
-  static const JenHash HASH = _CompileVectorHash(SUBTYPE, SUBSIZE, NUMITEMS);
+  static constexpr REFType TYPE = REFType::Vector;
+  static constexpr REFType SUBTYPE = _getType<C>::TYPE;
+  static constexpr uint8 SUBSIZE = sizeof(C);
+  static constexpr uint16 NUMITEMS = 2;
+  static constexpr JenHash Hash() { return  _CompileVectorHash(SUBTYPE, SUBSIZE, NUMITEMS); }
 };
 template <class C> struct _getType<t_Vector<C>> {
-  static const REFType TYPE = REFType::Vector;
-  static const REFType SUBTYPE = _getType<C>::TYPE;
-  static const uint8 SUBSIZE = sizeof(C);
-  static const uint16 NUMITEMS = 3;
-  static const JenHash HASH = _CompileVectorHash(SUBTYPE, SUBSIZE, NUMITEMS);
+  static constexpr REFType TYPE = REFType::Vector;
+  static constexpr REFType SUBTYPE = _getType<C>::TYPE;
+  static constexpr uint8 SUBSIZE = sizeof(C);
+  static constexpr uint16 NUMITEMS = 3;
+  static constexpr JenHash Hash() { return  _CompileVectorHash(SUBTYPE, SUBSIZE, NUMITEMS); }
 };
 template <class C> struct _getType<_t_Vector4<C>> {
-  static const REFType TYPE = REFType::Vector;
-  static const REFType SUBTYPE = _getType<typename C::eltype>::TYPE;
-  static const uint8 SUBSIZE = sizeof(typename C::eltype);
-  static const uint16 NUMITEMS = 4;
-  static const JenHash HASH = _CompileVectorHash(SUBTYPE, SUBSIZE, NUMITEMS);
+  static constexpr REFType TYPE = REFType::Vector;
+  static constexpr REFType SUBTYPE = _getType<typename C::eltype>::TYPE;
+  static constexpr uint8 SUBSIZE = sizeof(typename C::eltype);
+  static constexpr uint16 NUMITEMS = 4;
+  static constexpr JenHash Hash() { return  _CompileVectorHash(SUBTYPE, SUBSIZE, NUMITEMS); }
 };
 #endif
 #endif // ES_REFLECTOR_DEFINED

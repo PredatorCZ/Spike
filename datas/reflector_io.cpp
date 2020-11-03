@@ -593,7 +593,7 @@ public:
 };
 
 const reflType *ReflectorBinUtil::Find(Reflector &ri, JenHash hash) {
-  return ri.GetReflectedType(JenHashStrong(hash));
+  return ri.GetReflectedType(hash);
 }
 
 static int LoadClass(Reflector &ri, reflectorInstance &inst, BinReaderRef rd) {

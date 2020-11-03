@@ -16,13 +16,14 @@
 */
 
 #pragma once
-#include <array>
 #include "internal/reflector_type.hpp"
+#include <array>
 
-template <class C, size_t _Size> struct _getType<std::array<C, _Size>> {
-  static const REFType TYPE = REFType::Array;
-  static const JenHash HASH = _getType<C>::HASH;
-  static const uint8 SUBSIZE = sizeof(C);
-  static const REFType SUBTYPE = _getType<C>::TYPE;
-  static const uint16 NUMITEMS = _Size;
+template <class C, size_t _Size>
+struct _getType<std::array<C, _Size>> : reflTypeDefault_ {
+  static constexpr REFType TYPE = REFType::Array;
+  static constexpr JenHash Hash() { return _getType<C>::Hash(); }
+  static constexpr uint8 SUBSIZE = sizeof(C);
+  static constexpr REFType SUBTYPE = _getType<C>::TYPE;
+  static constexpr uint16 NUMITEMS = _Size;
 };

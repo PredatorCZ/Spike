@@ -121,12 +121,6 @@ namespace es {
     /// \param end end iterator
     constexpr basic_string_view( const char_type* start, const char_type* end ) noexcept;
 
-    /// \brief Constructs a basic_string_view from a string literal
-    ///
-    /// \param str the string to view
-    template<size_t _size>
-    constexpr basic_string_view( const char_type* (&str)[_size]) noexcept : basic_string_view(str, _size) {}
-
     //------------------------------------------------------------------------
     // Assignment
     //------------------------------------------------------------------------
@@ -408,18 +402,18 @@ namespace es {
     /// \brief Retrieves the begin iterator for this basic_string_view
     ///
     /// \return the begin iterator
-    const_iterator begin() const noexcept;
+    constexpr const_iterator begin() const noexcept;
 
     /// \brief Retrieves the end iterator for this basic_string_view
     ///
     /// \return the end iterator
-    const_iterator end() const noexcept;
+    constexpr const_iterator end() const noexcept;
 
     /// \copydoc basic_string_view::begin()
-    const_iterator cbegin() const noexcept;
+    constexpr const_iterator cbegin() const noexcept;
 
     /// \copydoc basic_string_view::end()
-    const_iterator cend() const noexcept;
+    constexpr const_iterator cend() const noexcept;
 
     //------------------------------------------------------------------------
     // Private Member
@@ -513,6 +507,11 @@ namespace es {
   using wstring_view   = basic_string_view<wchar_t>;
   using u16string_view = basic_string_view<char16_t>;
   using u32string_view = basic_string_view<char32_t>;
+
+  template<size_t n, typename c>
+  constexpr auto MakeStringView(const c (&input)[n]) {
+    return basic_string_view<c>{input, n - 1};
+  }
 
 } // namespace es
 

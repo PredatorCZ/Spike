@@ -19,16 +19,30 @@
 #include "../jenkinshash.hpp"
 #include <cstddef>
 
+template <size_t n> constexpr size_t _GetReflDescPart(const char (&value)[n]) {
+  size_t cutter = 0;
+
+  for (auto c : value) {
+    if (!c || c == '%') {
+      break;
+    }
+
+    cutter++;
+  }
+
+  return cutter;
+}
+
 #define _REFLECTOR_EXTRACT_0(flags, item, ...) item
 #define _REFLECTOR_EXTRACT_0S(flags, item, ...) #item
 
 #define _REFLECTOR_EXTRACT_ALIASHASH(flags, ...)                               \
   VA_NARGS_EVAL(_REFLECTOR_EXTRACT_ALIASHASH_##flags(__VA_ARGS__))
-#define _REFLECTOR_EXTRACT_ALIASHASH_A(x, al, ...) JenkinsHashC(al)
-#define _REFLECTOR_EXTRACT_ALIASHASH_D(x, ds, ...) 0
-#define _REFLECTOR_EXTRACT_ALIASHASH_AD(x, al, ...) JenkinsHashC(al)
-#define _REFLECTOR_EXTRACT_ALIASHASH_(x, ...) 0
-#define _REFLECTOR_EXTRACT_ALIASHASH_N(x, ...) 0
+#define _REFLECTOR_EXTRACT_ALIASHASH_A(x, al, ...) JenHash{al}
+#define _REFLECTOR_EXTRACT_ALIASHASH_D(x, ds, ...) {}
+#define _REFLECTOR_EXTRACT_ALIASHASH_AD(x, al, ...) JenHash{al}
+#define _REFLECTOR_EXTRACT_ALIASHASH_(x, ...) {}
+#define _REFLECTOR_EXTRACT_ALIASHASH_N(x, ...) {}
 
 #define _REFLECTOR_EXTRACT_ALIAS(flags, ...)                                   \
   VA_NARGS_EVAL(_REFLECTOR_EXTRACT_ALIAS_##flags(__VA_ARGS__))
@@ -39,7 +53,7 @@
 #define _REFLECTOR_EXTRACT_ALIAS_N(x, ...) nullptr
 
 #define _REFLECTOR_DESCBUILDER(item)                                           \
-  { {item, _GetReflDescPart(item, 0)}, &item[_GetReflDescPart(item, 1)] }
+  { {item, _GetReflDescPart(item)}, &item[_GetReflDescPart(item) + 1] }
 
 #define _REFLECTOR_EXTRACT_DESC(flags, ...)                                    \
   VA_NARGS_EVAL(_REFLECTOR_EXTRACT_DESC_##flags(__VA_ARGS__))
@@ -63,12 +77,12 @@
 #define _REFLECTOR_GET_CLASS(...) __VA_ARGS__
 
 #define _REFLECTOR_ADDN(classname, _id, mvalue)                                \
-  BuildReflType<decltype(classname::mvalue)>(JenkinsHashC(#mvalue), _id,       \
+  BuildReflType<decltype(classname::mvalue)>(JenHash(#mvalue), _id,            \
                                              offsetof(classname, mvalue)),
 
 #define _EXT_REFLECTOR_ADDN(classname, _id, value)                             \
   BuildReflType<decltype(classname::_REFLECTOR_EXTRACT_0 value)>(              \
-      JenkinsHashC(_REFLECTOR_EXTRACT_0S value), _id,                          \
+      JenHash(_REFLECTOR_EXTRACT_0S value), _id,                               \
       offsetof(classname, _REFLECTOR_EXTRACT_0 value)),
 
 #define _REFLECTOR_MAIN_BODY(extType, ...)                                     \
@@ -80,7 +94,7 @@
   static constexpr size_t NumTypes() { return VA_NARGS(__VA_ARGS__); }
 
 #define _REFLECTOR_MAIN_CLASSHASH(clseval, classname)                          \
-  static constexpr JenHash Hash() { return JenkinsHashC(clseval(classname)); }
+  static constexpr JenHash Hash() { return JenHash(clseval(classname)); }
 
 #define _REFLECTOR_CNAME_VARNAMES(clseval, classname)                          \
   static const char *ClassName() { return clseval(classname); }

@@ -1,7 +1,7 @@
 ﻿include(../cmake/targetex.cmake)
 include(../cmake/chartype.cmake)
 include(../cmake/odr_test.cmake)
-set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD 14)
 
 test_odr(
   PATHS

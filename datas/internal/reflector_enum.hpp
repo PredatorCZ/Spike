@@ -20,10 +20,19 @@
 #include "../jenkinshash.hpp"
 #include <cstdlib>
 
-constexpr size_t _GetReflEnumItemSize(const char *value, size_t curIndex = 0) {
-  return (value[curIndex] == '=' || value[curIndex] == 0)
-             ? curIndex - (value[curIndex] == '=' ? 1 : 0)
-             : _GetReflEnumItemSize(value, curIndex + 1);
+template <size_t n>
+constexpr size_t _GetReflEnumItemSize(const char (&value)[n]) {
+  size_t curIndex = 1;
+
+  for (const auto c : value) {
+    if (c == '=' || c == ' ' || !c) {
+      curIndex--;
+      break;
+    }
+    curIndex++;
+  }
+
+  return curIndex;
 }
 
 #define _REFLECTOR_ADDN_ENUM(value) {#value, _GetReflEnumItemSize(#value)},
@@ -56,7 +65,7 @@ constexpr size_t _GetReflEnumItemSize(const char *value, size_t curIndex = 0) {
       return _reflectedValues;                                                 \
     }                                                                          \
     static constexpr es::string_view GetClassName() { return #classname; }     \
-    static constexpr JenHash GetHash() { return JenkinsHashC(#classname); }    \
+    static constexpr JenHash GetHash() { return JenHash(#classname); }         \
     static bool Initialized(bool yes) {                                        \
       static bool inited = false;                                              \
       if (!inited && yes) {                                                    \
@@ -91,5 +100,5 @@ constexpr size_t _GetReflEnumItemSize(const char *value, size_t curIndex = 0) {
   VA_NARGS_EVAL(_REFLECTOR_ENUM_VER##numFlags(classname, __VA_ARGS__))
 
 template <class E> struct _EnumWrap {
-  static constexpr JenHash GetHash() { return 0; }
+  static constexpr JenHash GetHash() { return {}; }
 };

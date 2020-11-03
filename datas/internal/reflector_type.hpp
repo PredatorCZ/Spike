@@ -19,8 +19,8 @@
 #pragma once
 #include "../jenkinshash.hpp"
 #include "../supercore.hpp"
-#include "reflector_enum.hpp"
 #include "reflector_class_reg.hpp"
+#include "reflector_enum.hpp"
 
 enum class REFType : uint8 {
   None,
@@ -55,119 +55,86 @@ ES_STATIC_ASSERT(__sizeof_RelfType == 16);
 
 struct reflectorInstance;
 
-template <typename T> class _REFGetPrimType {
-private:
-  struct _REFPrimTypeFLP {
-    constexpr static REFType value = REFType::FloatingPoint;
-  };
-  struct _REFPrimTypeUNS {
-    constexpr static REFType value = REFType::UnsignedInteger;
-  };
-  struct _REFPrimTypeSIG {
-    constexpr static REFType value = REFType::Integer;
-  };
-  struct _REFPrimTypeUNK {
-    constexpr static REFType value = REFType::None;
-  };
-
-  constexpr static REFType _type00 =
-      std::conditional<std::is_floating_point<T>::value, _REFPrimTypeFLP,
-                       _REFPrimTypeUNK>::type::value;
-
-  constexpr static REFType _type01 =
-      std::conditional<std::is_unsigned<T>::value, _REFPrimTypeUNS,
-                       _REFPrimTypeSIG>::type::value;
-
-public:
-  constexpr static REFType value = _type00 == REFType::None ? _type01 : _type00;
-};
-
-ES_STATIC_ASSERT(_REFGetPrimType<float>::value == REFType::FloatingPoint);
-ES_STATIC_ASSERT(_REFGetPrimType<int>::value == REFType::Integer);
-ES_STATIC_ASSERT(_REFGetPrimType<unsigned>::value == REFType::UnsignedInteger);
-
-template <typename T> constexpr REFType _GetTypeIndex() {
-  return _REFGetPrimType<T>::value;
+template <class C>
+constexpr auto refl_is_reflected_(int) -> decltype(C::GetReflector(), bool()) {
+  return true;
 }
 
-ES_STATIC_ASSERT(_GetTypeIndex<int32>() == REFType::Integer);
-ES_STATIC_ASSERT(_GetTypeIndex<float>() == REFType::FloatingPoint);
-ES_STATIC_ASSERT(_GetTypeIndex<uint32>() == REFType::UnsignedInteger);
-ES_STATIC_ASSERT(_GetTypeIndex<int64>() == REFType::Integer);
-ES_STATIC_ASSERT(_GetTypeIndex<double>() == REFType::FloatingPoint);
-ES_STATIC_ASSERT(_GetTypeIndex<uint64>() == REFType::UnsignedInteger);
-ES_STATIC_ASSERT(_GetTypeIndex<int8>() == REFType::Integer);
-ES_STATIC_ASSERT(_GetTypeIndex<uint8>() == REFType::UnsignedInteger);
-ES_STATIC_ASSERT(_GetTypeIndex<int16>() == REFType::Integer);
-ES_STATIC_ASSERT(_GetTypeIndex<uint16>() == REFType::UnsignedInteger);
+template <class C> constexpr bool refl_is_reflected_(...) { return false; }
 
-template <typename _Ty> struct refl_is_class_reflected {
-private:
-  template <class C>
-  static constexpr auto is_reflected(int)
-      -> decltype(C::GetReflector(), bool()) {
-    return true;
+template <class C>
+constexpr bool refl_is_reflected_v_ = refl_is_reflected_<C>(0);
+
+template <class C> constexpr REFType RefGetType() {
+  if (refl_is_reflected_v_<C>) {
+    return REFType::Class;
+  } else if (std::is_enum<C>::value) {
+    return REFType::Enum;
+  } else if (std::is_arithmetic<C>::value) {
+    if (std::is_floating_point<C>::value) {
+      return REFType::FloatingPoint;
+    } else if (std::is_unsigned<C>::value) {
+      return REFType::UnsignedInteger;
+    } else {
+      return REFType::Integer;
+    }
+  } else {
+    return REFType::None;
   }
+}
 
-  template <class C> static constexpr bool is_reflected(...) { return false; }
+ES_STATIC_ASSERT(RefGetType<int32>() == REFType::Integer);
+ES_STATIC_ASSERT(RefGetType<float>() == REFType::FloatingPoint);
+ES_STATIC_ASSERT(RefGetType<uint32>() == REFType::UnsignedInteger);
+ES_STATIC_ASSERT(RefGetType<int64>() == REFType::Integer);
+ES_STATIC_ASSERT(RefGetType<double>() == REFType::FloatingPoint);
+ES_STATIC_ASSERT(RefGetType<uint64>() == REFType::UnsignedInteger);
+ES_STATIC_ASSERT(RefGetType<int8>() == REFType::Integer);
+ES_STATIC_ASSERT(RefGetType<uint8>() == REFType::UnsignedInteger);
+ES_STATIC_ASSERT(RefGetType<int16>() == REFType::Integer);
+ES_STATIC_ASSERT(RefGetType<uint16>() == REFType::UnsignedInteger);
 
-public:
-  static constexpr bool value = is_reflected<_Ty>(0);
+struct reflTypeDefault_ {
+  static constexpr JenHash Hash() { return {}; }
+  static constexpr JenHash SubHash() { return {}; }
+  static constexpr REFType SUBTYPE = REFType::None;
+  static constexpr uint16 NUMITEMS = 0;
 };
 
-template <typename _Ty> struct _getType {
-  static constexpr bool subReflected = refl_is_class_reflected<_Ty>::value;
-  static constexpr bool isEnum = std::is_enum<_Ty>::value;
-  static constexpr bool isArithmetic = std::is_arithmetic<_Ty>::value;
-
-  static const REFType TYPE =
-      isEnum ? REFType::Enum
-             : (subReflected
-                    ? REFType::Class
-                    : (isArithmetic ? _GetTypeIndex<_Ty>() : REFType::None));
-  static const JenHash HASH =
-      _EnumWrap<_Ty>::GetHash() + ReflectorType<_Ty>::Hash();
-  static const JenHash SUBHASH = 0;
-  static const uint8 SUBSIZE = sizeof(_Ty);
-  static const REFType SUBTYPE = REFType::None;
-  static const uint16 NUMITEMS = 0;
+template <typename _Ty> struct _getType : reflTypeDefault_ {
+  static constexpr REFType TYPE = RefGetType<_Ty>();
+  static constexpr JenHash Hash() {
+    return _EnumWrap<_Ty>::GetHash() + ReflectorType<_Ty>::Hash();
+  }
+  static constexpr uint8 SUBSIZE = sizeof(_Ty);
 };
-template <> struct _getType<bool> {
-  static const REFType TYPE = REFType::Bool;
-  static const JenHash HASH = 0;
-  static const uint8 SUBSIZE = 1;
-  static const REFType SUBTYPE = REFType::None;
-  static const uint16 NUMITEMS = 0;
+template <> struct _getType<bool> : reflTypeDefault_ {
+  static constexpr REFType TYPE = REFType::Bool;
+  static constexpr uint8 SUBSIZE = 1;
 };
 
-template <> struct _getType<const char *> {
-  static const REFType TYPE = REFType::CString;
-  static const JenHash HASH = 0;
-  static const uint8 SUBSIZE = 0;
-  static const REFType SUBTYPE = REFType::None;
-  static const uint16 NUMITEMS = 0;
+template <> struct _getType<const char *> : reflTypeDefault_ {
+  static constexpr REFType TYPE = REFType::CString;
+  static constexpr uint8 SUBSIZE = 0;
 };
 
-template <> struct _getType<std::string> {
-  static const REFType TYPE = REFType::String;
-  static const JenHash HASH = 0;
-  static const uint8 SUBSIZE = 0;
-  static const REFType SUBTYPE = REFType::None;
-  static const uint16 NUMITEMS = 0;
+template <> struct _getType<std::string> : reflTypeDefault_ {
+  static constexpr REFType TYPE = REFType::String;
+  static constexpr uint8 SUBSIZE = 0;
 };
 
-template <class C, size_t _Size> struct _getType<C[_Size]> {
-  static const REFType TYPE = REFType::Array;
-  static const JenHash HASH = _getType<C>::HASH;
-  static const uint8 SUBSIZE = sizeof(C);
-  static const REFType SUBTYPE = _getType<C>::TYPE;
-  static const uint16 NUMITEMS = _Size;
+template <class C, size_t _Size> struct _getType<C[_Size]> : reflTypeDefault_ {
+  static constexpr REFType TYPE = REFType::Array;
+  static constexpr JenHash Hash() { return _getType<C>::Hash(); }
+  static constexpr uint8 SUBSIZE = sizeof(C);
+  static constexpr REFType SUBTYPE = _getType<C>::TYPE;
+  static constexpr uint16 NUMITEMS = _Size;
 };
 
 constexpr JenHash _CompileVectorHash(REFType type, uint8 size,
                                      uint16 numItems) {
-  return static_cast<JenHash>(type) | static_cast<JenHash>(size) << 8 |
-         static_cast<JenHash>(numItems) << 16;
+  return {static_cast<uint32>(type) | static_cast<uint32>(size) << 8 |
+          static_cast<uint32>(numItems) << 16};
 }
 
 union _DecomposedVectorHash {
@@ -180,7 +147,7 @@ union _DecomposedVectorHash {
 };
 
 template <class C>
-const reflType BuildReflType(const JenHash classHash, uint8 index,
+const reflType BuildReflType(JenHash classHash, uint8 index,
                              size_t offset = 0xffff) {
   typedef typename std::remove_reference<C>::type unref_type;
   typedef _getType<unref_type> type_class;
@@ -194,5 +161,5 @@ const reflType BuildReflType(const JenHash classHash, uint8 index,
                   type_class::NUMITEMS,
                   static_cast<decltype(reflType::offset)>(offset),
                   classHash,
-                  type_class::HASH};
+                  type_class::Hash()};
 }

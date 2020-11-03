@@ -22,13 +22,6 @@
 #include "../supercore.hpp"
 #include <unordered_map>
 
-constexpr size_t _GetReflDescPart(const char *value, int add,
-                                  size_t curIndex = 0) {
-  return (value[curIndex] == '%' || value[curIndex] == 0)
-             ? curIndex + (value[curIndex] == '%' ? add : 0)
-             : _GetReflDescPart(value, add, curIndex + 1);
-}
-
 struct reflType;
 
 struct _ReflDesc {
@@ -38,7 +31,7 @@ struct _ReflDesc {
 template <class C> struct _RTag {};
 
 struct ReflectorTypeBase {
-  static constexpr JenHash Hash() { return 0; }
+  static constexpr JenHash Hash() { return {}; }
   static constexpr const char *ClassName() { return nullptr; }
   static constexpr size_t NumTypes() { return 0; }
   static const reflType *Types() { return nullptr; }
@@ -101,7 +94,5 @@ template <class C> struct ReflectorInterface {
     return {GetReflector(), this};
   }
 
-  reflectorInstance GetReflectedInstance() {
-    return {GetReflector(), this};
-  }
+  reflectorInstance GetReflectedInstance() { return {GetReflector(), this}; }
 };

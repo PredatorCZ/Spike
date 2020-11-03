@@ -579,7 +579,7 @@ namespace es {
   //--------------------------------------------------------------------------
 
   template<typename CharT, typename Traits>
-  inline typename basic_string_view<CharT,Traits>::const_iterator
+  constexpr  typename basic_string_view<CharT,Traits>::const_iterator
     basic_string_view<CharT,Traits>::begin()
     const noexcept
   {
@@ -587,7 +587,7 @@ namespace es {
   }
 
   template<typename CharT, typename Traits>
-  inline typename basic_string_view<CharT,Traits>::const_iterator
+  constexpr  typename basic_string_view<CharT,Traits>::const_iterator
     basic_string_view<CharT,Traits>::end()
     const noexcept
   {
@@ -595,7 +595,7 @@ namespace es {
   }
 
   template<typename CharT, typename Traits>
-  inline typename basic_string_view<CharT,Traits>::const_iterator
+  constexpr  typename basic_string_view<CharT,Traits>::const_iterator
     basic_string_view<CharT,Traits>::cbegin()
     const noexcept
   {
@@ -603,7 +603,7 @@ namespace es {
   }
 
   template<typename CharT, typename Traits>
-  inline typename basic_string_view<CharT,Traits>::const_iterator
+  constexpr  typename basic_string_view<CharT,Traits>::const_iterator
     basic_string_view<CharT,Traits>::cend()
     const noexcept
   {

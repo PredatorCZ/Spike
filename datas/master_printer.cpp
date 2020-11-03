@@ -32,7 +32,7 @@ enum MSVC_Console_Flags {
   MSC_Text_Intensify,
 };
 
-typedef esFlags<short, MSVC_Console_Flags> consoleColorAttrFlags;
+typedef es::Flags<MSVC_Console_Flags> consoleColorAttrFlags;
 
 static struct MasterPrinter {
   struct FuncType {

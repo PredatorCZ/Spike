@@ -24,7 +24,7 @@ ES_STATIC_ASSERT(sizeof(EnumWrap04) == 4);
 int test_reflector_enum00() {
   ReflectedEnum rEnum = GetReflectedEnum<EnumWrap00>();
 
-  TEST_EQUAL(rEnum.hash, JenkinsHashC("EnumWrap00"));
+  TEST_EQUAL(rEnum.hash, JenHash("EnumWrap00"));
   TEST_EQUAL(rEnum.size(), 3);
   TEST_EQUAL(rEnum.name, std::string("EnumWrap00"));
 
@@ -42,7 +42,7 @@ int test_reflector_enum00() {
 int test_reflector_enum01() {
   ReflectedEnum rEnum = GetReflectedEnum<EnumWrap01>();
 
-  TEST_EQUAL(rEnum.hash, JenkinsHashC("EnumWrap01"));
+  TEST_EQUAL(rEnum.hash, JenHash("EnumWrap01"));
   TEST_EQUAL(rEnum.size(), 3);
   TEST_EQUAL(rEnum.name, std::string("EnumWrap01"));
 
@@ -61,7 +61,7 @@ int test_reflector_enum01() {
 int test_reflector_enum02() {
   ReflectedEnum rEnum = GetReflectedEnum<EnumWrap02>();
 
-  TEST_EQUAL(rEnum.hash, JenkinsHashC("EnumWrap02"));
+  TEST_EQUAL(rEnum.hash, JenHash("EnumWrap02"));
   TEST_EQUAL(rEnum.size(), 3);
   TEST_EQUAL(rEnum.name, std::string("EnumWrap02"));
 
@@ -79,7 +79,7 @@ int test_reflector_enum02() {
 int test_reflector_enum03() {
   ReflectedEnum rEnum = GetReflectedEnum<EnumWrap03>();
 
-  TEST_EQUAL(rEnum.hash, JenkinsHashC("EnumWrap03"));
+  TEST_EQUAL(rEnum.hash, JenHash("EnumWrap03"));
   TEST_EQUAL(rEnum.size(), 3);
   TEST_EQUAL(rEnum.name, std::string("EnumWrap03"));
 
@@ -97,7 +97,7 @@ int test_reflector_enum03() {
 int test_reflector_enum04() {
   ReflectedEnum rEnum = GetReflectedEnum<EnumWrap04>();
 
-  TEST_EQUAL(rEnum.hash, JenkinsHashC("EnumWrap04"));
+  TEST_EQUAL(rEnum.hash, JenHash("EnumWrap04"));
   TEST_EQUAL(rEnum.size(), 3);
   TEST_EQUAL(rEnum.name, std::string("EnumWrap04"));
 
@@ -137,8 +137,8 @@ struct _ReflClassData {
   float test10;
   double test11;
 
-  esFlags<uint8, EnumWrap00> test12;
-  esFlags<uint16, EnumWrap01> test13;
+  es::Flags<EnumWrap00, uint8> test12;
+  es::Flags<EnumWrap01, uint16> test13;
 
   EnumWrap00 test14;
   EnumWrap02 test15;
@@ -164,8 +164,8 @@ struct _ReflClassData {
   float test49[2];
   double test50[4];
 
-  esFlags<int8, EnumWrap00> test51[2];
-  esFlags<uint16, EnumWrap01> test52[4];
+  es::Flags<EnumWrap00, uint8> test51[2];
+  es::Flags<EnumWrap01, uint16> test52[4];
 
   EnumWrap00 test53[2];
   EnumWrap02 test54[4];
