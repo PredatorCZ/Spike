@@ -31,6 +31,7 @@ public:
     this->Open(filePath);
     this->baseStream = &this->FileStream;
   }
-  BinReader(const BinReader &rd) = delete;
+  BinReader(const BinReader &) = delete;
+  BinReader(BinReader &&) = default;
   BinReader &operator=(const BinReader &other) = delete;
 };

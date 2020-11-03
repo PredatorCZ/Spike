@@ -33,5 +33,6 @@ public:
   }
 
   BinWritter(const BinWritter &rd) = delete;
+  BinWritter(BinWritter &&) = default;
   BinWritter &operator=(const BinWritter &other) = delete;
 };

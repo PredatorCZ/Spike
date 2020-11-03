@@ -68,15 +68,18 @@ private:
 
 public:
   operator C *() {
-    return reinterpret_cast<C *>(reinterpret_cast<char *>(&varPtr) + varPtr);
+    return varPtr ? reinterpret_cast<C *>(reinterpret_cast<char *>(&varPtr) +
+                                          varPtr)
+                  : nullptr;
   }
 
   C &operator*() { return *static_cast<C *>(*this); }
   C *operator->() { return *this; }
 
   operator const C *() const {
-    return reinterpret_cast<const C *>(reinterpret_cast<const char *>(&varPtr) +
-                                       varPtr);
+    return varPtr ? reinterpret_cast<const C *>(
+                        reinterpret_cast<const char *>(&varPtr) + varPtr)
+                  : nullptr;
   }
   const C &operator*() const { return *static_cast<C *>(*this); }
   const C *operator->() const { return *this; }
