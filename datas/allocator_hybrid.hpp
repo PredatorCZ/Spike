@@ -21,8 +21,8 @@
 #define _DECLSPEC_ALLOCATOR
 #endif
 
-#include <type_traits>
 #include <cstddef>
+#include <type_traits>
 
 namespace es {
 
@@ -78,23 +78,18 @@ template <class _Ty> struct allocator_hybrid : allocator_hybrid_base {
       return;
     }
 
-    // for some reason GCC cannot pick correct delete (void*,size_t) function
-    // std::size_t sizeToDestroy = count * sizeof(value_type);
     operator delete(ptr);
-  }
-
-  template <class _Uty> void destroy(_Uty *ptr) {
-    if (!buffer)
-      ptr->~_Uty();
   }
 };
 
 template <class T, class O>
-bool operator==(const allocator_hybrid<T> &t, const allocator_hybrid<O> &o) noexcept {
-  return static_cast<void*>(t.buffer) == static_cast<void*>(o.buffer);
+bool operator==(const allocator_hybrid<T> &t,
+                const allocator_hybrid<O> &o) noexcept {
+  return static_cast<void *>(t.buffer) == static_cast<void *>(o.buffer);
 }
 template <class T, class O>
-bool operator!=(const allocator_hybrid<T> &t, const allocator_hybrid<O> &o) noexcept {
+bool operator!=(const allocator_hybrid<T> &t,
+                const allocator_hybrid<O> &o) noexcept {
   return !(t == o);
 }
 } // namespace es

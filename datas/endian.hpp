@@ -23,12 +23,6 @@
 
 namespace {
 
-template <size_t size> struct _TypeFromSize { typedef char type; };
-template <> struct _TypeFromSize<1> { typedef uint8 type; };
-template <> struct _TypeFromSize<2> { typedef uint16 type; };
-template <> struct _TypeFromSize<4> { typedef uint32 type; };
-template <> struct _TypeFromSize<8> { typedef uint64 type; };
-
 template <class C> C _fbswap(C) {
   throw std::logic_error("Invalid swap type!");
 }
@@ -56,13 +50,13 @@ ES_STATIC_ASSERT(_fbswap<uint32>(0x89abcdef) == 0xefcdab89);
 ES_STATIC_ASSERT(_fbswap<uint64>(0x0123456789abcdef) == 0xefcdab8967452301);
 
 template <class C, class D>
-auto fbswap(D &input, int) -> decltype(std::declval<C>().SwapEndian(), void()){
+auto fbswap(D &input, int) -> decltype(std::declval<C>().SwapEndian(), void()) {
   input.SwapEndian();
 };
 
 template <class C, class D> void fbswap(D &input, ...) {
   auto rType = _fbswap(
-      reinterpret_cast<typename _TypeFromSize<sizeof(C)>::type &>(input));
+      reinterpret_cast<typename es::TypeFromSize<sizeof(C)>::type &>(input));
   input = reinterpret_cast<C &>(rType);
 }
 } // namespace

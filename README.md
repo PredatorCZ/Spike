@@ -9,7 +9,7 @@ PreCore is a library with helper classes.\
 Main focus of this library is: Class/Enum RTTI and RTTR, SIMD classes like Vector and Matrix4x4, stream helpers, uni module.\
 It also contains logging services, algorhitms, data types, muti-threading queue classes, extensions for other libraries and many more.
 
-Library is made for C++11 standard and it's compilable under Clang 3.5+, GCC 5+, MSVC 2015+.
+Library is made for C++14 standard and it's compilable under Clang 3.5+, GCC 5+, MSVC 2015+.
 
 ## Main modules
 
@@ -144,4 +144,4 @@ String view for C++11 standard.
 **Unit Tests:** none\
 **Used in:** Reflector
 
-Compile time Jenkins One at time hash function.
+Compile time Jenkins One at time hash class.
