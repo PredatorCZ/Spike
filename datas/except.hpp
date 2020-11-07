@@ -74,7 +74,8 @@ public:
   explicit InvalidHeaderError() : parent("Invalid format.") {}
   InvalidHeaderError(es::string_view magic)
       : parent("Invalid format: " + magic.to_string()) {}
-  InvalidHeaderError(size_t magic, size_t size = sizeof(size_t))
+  template <typename T>
+  InvalidHeaderError(T magic, size_t size = sizeof(T))
       : parent("Invalid format: " + DecompileFourCC(magic, size)) {}
 };
 
@@ -87,10 +88,10 @@ public:
       : parent("Invalid version: " + std::to_string(version)) {}
 };
 
-class UnexpectedEOS: public std::runtime_error {
+class UnexpectedEOS : public std::runtime_error {
   using parent = std::runtime_error;
 
 public:
-  UnexpectedEOS() : parent("Unexpected enf of stream.") {}
+  UnexpectedEOS() : parent("Unexpected end of stream.") {}
 };
 } // namespace es

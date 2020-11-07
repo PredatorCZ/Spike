@@ -34,6 +34,11 @@ public:
     unpack_(inputs...);
   }
 
+  template <typename... args>
+  constexpr Flags(const Flags &input, args... inputs) noexcept : value(input) {
+    unpack_(inputs...);
+  }
+
   void operator=(ValueType inval) noexcept { value = inval; }
 
   constexpr bool operator[](EnumClass pos) const noexcept {

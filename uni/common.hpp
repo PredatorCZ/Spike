@@ -23,6 +23,14 @@
 namespace uni {
 template <class C> using Element = std::unique_ptr<C, es::deleter_hybrid>;
 
+template <class C> auto ToElement(std::unique_ptr<C> &uptr) {
+  return Element<C>{uptr.release()};
+}
+
+template <class C> auto ToElement(std::unique_ptr<C> &&uptr) {
+  return Element<C>{uptr.release()};
+}
+
 struct RTSValue {
   Vector4A16 translation;
   Vector4A16 rotation;

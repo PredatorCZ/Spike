@@ -25,21 +25,32 @@ extern RefEnumMapper REFEnumStorage;
 typedef std::unordered_map<uint32, const reflectorStatic *> RefSubClassMapper;
 extern RefSubClassMapper REFSubClassStorage;
 
-template <class C>
-typename std::enable_if<std::is_class<C>::value>::type _RegisterRefClass() {
-  REFSubClassStorage[ReflectorType<C>::Hash()] =
-      ReflectorInterface<C>::GetReflector();
-}
+template <class C> struct RegisterReflectedType {
+  template <class C_ = C>
+  static typename std::enable_if<std::is_class<C_>::value>::type
+  RegisterRefClass() {
+    REFSubClassStorage[ReflectorType<C>::Hash()] =
+        ReflectorInterface<C>::GetReflector();
+  }
 
-template <class C>
-typename std::enable_if<std::is_enum<C>::value>::type _RegisterRefClass() {
-  REFEnumStorage[_EnumWrap<C>::GetHash()] = GetReflectedEnum<C>();
-}
-
-#define _REFLECTOR_REGISTER(classname) _RegisterRefClass<classname>();
-
+  template <class C_ = C>
+  static typename std::enable_if<std::is_enum<C_>::value>::type
+  RegisterRefClass() {
+    REFEnumStorage[_EnumWrap<C>::GetHash()] = GetReflectedEnum<C>();
+  }
+  RegisterReflectedType() { RegisterRefClass(); }
+};
 
 // Adding reflected classes/enums into global registry
 // Required for enums/classes, if they are being used as a class member for
 // another reflected class or for a run-time serialization
-#define REFLECTOR_REGISTER(...) StaticFor(_REFLECTOR_REGISTER, __VA_ARGS__);
+template <class... C>
+struct RegisterReflectedTypes : RegisterReflectedType<C>... {};
+
+#define _REFLECTOR_REGISTER(classname)                                         \
+  RegisterReflectedType<classname>::RegisterRefClass();
+
+#define REFLECTOR_REGISTER(...)                                                \
+  StaticFor(_REFLECTOR_REGISTER, __VA_ARGS__);                                 \
+  ES_PRAGMA(message("REFLECTOR_REGISTER is deprecated, use "                   \
+                    "RegisterReflectedTypes instead."))

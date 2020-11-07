@@ -20,11 +20,6 @@
 #include "master_printer.hpp"
 #include "pugiex.hpp"
 
-#ifndef _MSC_VER
-#define sprintf_s(buffer, sizeofBuffer, format, ...)                           \
-  sprintf(buffer, format, __VA_ARGS__)
-#endif
-
 pugi::xml_node ReflectorXMLUtil::Save(const Reflector &ri, pugi::xml_node node,
                                       bool asNewNode) {
   const reflectorStatic *stat = ri.GetReflectedInstance().rfStatic;
@@ -37,8 +32,8 @@ pugi::xml_node ReflectorXMLUtil::Save(const Reflector &ri, pugi::xml_node node,
       className = stat->className;
     else {
       className.resize(15);
-      sprintf_s(const_cast<char *>(className.c_str()), 15, "h:%X",
-                stat->classHash);
+      const uint32 cHash = stat->classHash;
+      snprintf(&className[0], 15, "h:%X", cHash);
     }
 
     thisNode = node.append_child(className.c_str());
@@ -59,8 +54,8 @@ pugi::xml_node ReflectorXMLUtil::Save(const Reflector &ri, pugi::xml_node node,
         varName.replace(fndBrace, 1, 1, ':');
     } else {
       varName.resize(15);
-      sprintf_s(const_cast<char *>(varName.c_str()), 15, "h:%X",
-                stat->types[t].valueNameHash);
+      const uint32 cHash = stat->types[t].valueNameHash;
+      snprintf(&varName[0], 15, "h:%X", cHash);
     }
 
     pugi::xml_node cNode = thisNode.append_child(varName.c_str());
@@ -71,7 +66,9 @@ pugi::xml_node ReflectorXMLUtil::Save(const Reflector &ri, pugi::xml_node node,
 
         for (int s = 0; s < numItems; s++) {
           ReflectorSubClass subCl(ri.GetReflectedSubClass(t, s));
-          ReflectorXMLUtil::Save(subCl, cNode.append_child(("i:" + std::to_string(s)).c_str()), false);
+          ReflectorXMLUtil::Save(
+              subCl, cNode.append_child(("i:" + std::to_string(s)).c_str()),
+              false);
         }
 
       } else {
@@ -91,14 +88,17 @@ pugi::xml_node ReflectorXMLUtil::Load(Reflector &ri, pugi::xml_node node,
   const reflectorStatic *stat = ri.GetReflectedInstance().rfStatic;
   pugi::xml_node thisNode;
 
+  auto MakeHash = [](auto &a) -> JenHash {
+    if (*a.name() == 'h' && *(a.name() + 1) == ':') {
+      return strtoul(a.name() + 2, nullptr, 16);
+    } else {
+      return {a.name()};
+    }
+  };
+
   if (lookupClassNode) {
     for (auto &a : node.children()) {
-      JenHash vHash =
-          (*a.name() == 'h' && *(a.name() + 1) == ':')
-              ? strtoul(a.name() + 2, nullptr, 16)
-              : JenkinsHash(a.name());
-
-      if (vHash == stat->classHash) {
+      if (MakeHash(a) == stat->classHash) {
         thisNode = a;
         break;
       }
@@ -108,12 +108,7 @@ pugi::xml_node ReflectorXMLUtil::Load(Reflector &ri, pugi::xml_node node,
 
   if (!thisNode.empty())
     for (auto &a : thisNode.children()) {
-      JenHash vHash =
-          (*a.name() == 'h' && *(a.name() + 1) == ':')
-              ? strtoul(a.name() + 2, nullptr, 16)
-              : JenkinsHash(a.name());
-
-      ri.SetReflectedValue(vHash, a.text().as_string());
+      ri.SetReflectedValue(MakeHash(a), a.text().as_string());
     }
 
   return thisNode;
