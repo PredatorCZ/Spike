@@ -35,8 +35,7 @@ ES_STATIC_ASSERT(atohLUT[uint8('f')] == 15);
 ES_STATIC_ASSERT(atohLUT[uint8('A')] == 10);
 ES_STATIC_ASSERT(atohLUT[uint8('F')] == 15);
 
-template<size_t n>
-constexpr uint32 CompileFourCC(const char (&input)[n]) {
+template <size_t n> constexpr uint32 CompileFourCC(const char (&input)[n]) {
   uint32 retVal = 0;
   for (size_t i = 0; i < sizeof(retVal); i++) {
     const uint32 tmp = input[i];
@@ -102,8 +101,8 @@ sview SkipStartWhitespace(sview input, bool inclNewLine = false) noexcept {
 
 template <class sview>
 sview SkipEndWhitespace(sview input, bool inclNewLine = false) noexcept {
-  while ((*std::prev(input.end()) == ' ' || *std::prev(input.end()) == '\t' ||
-          (inclNewLine && *std::prev(input.end()) == '\n')) &&
+  while ((input.back() == ' ' || input.back() == '\t' ||
+          (inclNewLine && input.back() == '\n')) &&
          !input.empty())
     input.remove_suffix(1);
 
@@ -115,10 +114,7 @@ template <class sview> sview TrimWhitespace(sview input) noexcept {
   return SkipEndWhitespace(input);
 }
 
-template<class C>
-void Dispose(C &item) {
-  auto removed = std::move(item);
-}
+template <class C> void Dispose(C &item) { auto removed = std::move(item); }
 
 template <size_t size> struct TypeFromSize { typedef void type; };
 template <> struct TypeFromSize<1> { typedef uint8 type; };
