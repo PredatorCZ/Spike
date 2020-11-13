@@ -104,7 +104,8 @@ struct reflTypeDefault_ {
 template <typename _Ty> struct _getType : reflTypeDefault_ {
   static constexpr REFType TYPE = RefGetType<_Ty>();
   static constexpr JenHash Hash() {
-    return _EnumWrap<_Ty>::GetHash() + ReflectorType<_Ty>::Hash();
+    return JenHash(_EnumWrap<_Ty>::GetHash().raw() +
+                   ReflectorType<_Ty>::Hash().raw());
   }
   static constexpr uint8 SUBSIZE = sizeof(_Ty);
 };
@@ -133,8 +134,8 @@ template <class C, size_t _Size> struct _getType<C[_Size]> : reflTypeDefault_ {
 
 constexpr JenHash _CompileVectorHash(REFType type, uint8 size,
                                      uint16 numItems) {
-  return {static_cast<uint32>(type) | static_cast<uint32>(size) << 8 |
-          static_cast<uint32>(numItems) << 16};
+  return JenHash(static_cast<uint32>(type) | static_cast<uint32>(size) << 8 |
+                 static_cast<uint32>(numItems) << 16);
 }
 
 union _DecomposedVectorHash {

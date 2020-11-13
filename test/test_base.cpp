@@ -22,7 +22,8 @@ int main() {
   printerror("I am error and I'm red.");
   printwarning("I am warning and I'm yellow.");
   SetConsoleTextColor(127, 127, 255);
-  printline("I'm blue, da ri di danu da.") RestoreConsoleTextColor();
+  printline("I'm blue, da ri di danu da.");
+  RestoreConsoleTextColor();
 
   TEST_CASES(int testResult, TEST_FUNC(test_alloc_hybrid),
              TEST_FUNC(test_fileinfo), TEST_FUNC(test_endian),

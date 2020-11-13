@@ -1,6 +1,3 @@
-inline const reflType *Reflector::GetReflectedType(es::string_view name) const {
-  return GetReflectedType(JenHash(name));
-}
 
 inline const reflType *Reflector::GetReflectedType(size_t ID) const {
   const reflectorStatic *inst = GetReflectedInstance().rfStatic;
@@ -9,11 +6,6 @@ inline const reflType *Reflector::GetReflectedType(size_t ID) const {
     return nullptr;
 
   return inst->types + ID;
-}
-
-inline Reflector::ErrorType
-Reflector::SetReflectedValue(es::string_view name, es::string_view value) {
-  return SetReflectedValue(JenHash(name), value);
 }
 
 inline Reflector::ErrorType
@@ -37,12 +29,6 @@ Reflector::SetReflectedValue(size_t id, es::string_view value) {
 }
 
 inline Reflector::ErrorType
-Reflector::SetReflectedValueInt(es::string_view name, int64 value,
-                                size_t subID) {
-  return SetReflectedValueInt(JenHash(name), value, subID);
-}
-
-inline Reflector::ErrorType
 Reflector::SetReflectedValueInt(JenHash hash, int64 value, size_t subID) {
   const reflType *reflValue = GetReflectedType(hash);
 
@@ -60,12 +46,6 @@ Reflector::SetReflectedValueInt(size_t id, int64 value, size_t subID) {
     return Reflector::ErrorType::InvalidDestination;
 
   return SetReflectedValueInt(*reflValue, value, subID);
-}
-
-inline Reflector::ErrorType
-Reflector::SetReflectedValueUInt(es::string_view name, uint64 value,
-                                 size_t subID) {
-  return SetReflectedValueUInt(JenHash(name), value, subID);
 }
 
 inline Reflector::ErrorType Reflector::SetReflectedValueUInt(JenHash hash,
@@ -90,12 +70,6 @@ Reflector::SetReflectedValueUInt(size_t id, uint64 value, size_t subID) {
 }
 
 inline Reflector::ErrorType
-Reflector::SetReflectedValueFloat(es::string_view name, double value,
-                                  size_t subID) {
-  return SetReflectedValueFloat(JenHash(name), value, subID);
-}
-
-inline Reflector::ErrorType
 Reflector::SetReflectedValueFloat(JenHash hash, double value,
                                   size_t subID) {
   const reflType *reflValue = GetReflectedType(hash);
@@ -116,10 +90,6 @@ Reflector::SetReflectedValueFloat(size_t id, double value, size_t subID) {
   return SetReflectedValueFloat(*reflValue, value, subID);
 }
 
-inline std::string Reflector::GetReflectedValue(es::string_view name) const {
-  return GetReflectedValue(JenHash(name));
-}
-
 inline size_t Reflector::GetNumReflectedValues() const {
   return GetReflectedInstance().rfStatic->nTypes;
 }
@@ -138,11 +108,6 @@ inline std::string Reflector::GetReflectedValue(JenHash hash) const {
 }
 
 inline const Reflector::SubClass
-Reflector::GetReflectedSubClass(es::string_view name, size_t subID) const {
-  return GetReflectedSubClass(JenHash(name), subID);
-}
-
-inline const Reflector::SubClass
 Reflector::GetReflectedSubClass(JenHash hash, size_t subID) const {
   const reflType *found = GetReflectedType(hash);
 
@@ -153,11 +118,6 @@ Reflector::GetReflectedSubClass(JenHash hash, size_t subID) const {
 }
 
 inline const Reflector::SubClass
-Reflector::GetReflectedSubClass(es::string_view name, size_t subID) {
-  return GetReflectedSubClass(JenHash(name), subID);
-}
-
-inline const Reflector::SubClass
 Reflector::GetReflectedSubClass(JenHash hash, size_t subID) {
   const reflType *found = GetReflectedType(hash);
 
@@ -165,12 +125,6 @@ Reflector::GetReflectedSubClass(JenHash hash, size_t subID) {
     return {};
 
   return GetReflectedSubClass(found->ID, subID);
-}
-
-inline Reflector::KVPair
-Reflector::GetReflectedPair(es::string_view name,
-                            const KVPairFormat &settings) const {
-  return GetReflectedPair(JenHash(name), settings);
 }
 
 inline Reflector::KVPair
@@ -218,10 +172,6 @@ inline es::string_view Reflector::GetClassName() const {
   return GetReflectedInstance().rfStatic->className;
 }
 
-inline bool Reflector::IsReflectedSubClass(es::string_view name) const {
-  return IsReflectedSubClass(JenHash(name));
-}
-
 inline bool Reflector::IsReflectedSubClass(JenHash hash) const {
   const reflType *found = GetReflectedType(hash);
 
@@ -239,10 +189,6 @@ inline bool Reflector::IsReflectedSubClass(size_t id) const {
 
   return fl.type == REFType::Class ||
          (IsArray(fl.ID) && fl.subType == REFType::Class);
-}
-
-inline bool Reflector::IsArray(es::string_view name) const {
-  return IsArray(JenHash(name));
 }
 
 inline bool Reflector::IsArray(JenHash hash) const {

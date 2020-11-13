@@ -84,8 +84,7 @@ private:
   virtual reflectorInstance GetReflectedInstance() = 0;
   // clang-format off
 protected:
-  const reflType *GetReflectedType(JenHash hash) const;
-  const reflType *GetReflectedType(es::string_view name) const;
+  const reflType *GetReflectedType(JenHash hashName) const;
   const reflType *GetReflectedType(size_t ID) const;
   ErrorType SetReflectedValue(reflType type, es::string_view value);
   ErrorType SetReflectedValueUInt(reflType type, uint64 value, size_t subID = 0);
@@ -93,20 +92,16 @@ protected:
   ErrorType SetReflectedValueFloat(reflType type, double value, size_t subID = 0);
 
 public:
-  ErrorType SetReflectedValue(es::string_view name, es::string_view value);
-  ErrorType SetReflectedValue(JenHash hash, es::string_view value);
+  ErrorType SetReflectedValue(JenHash hashName, es::string_view value);
   ErrorType SetReflectedValue(size_t id, es::string_view value);
 
-  ErrorType SetReflectedValueInt(es::string_view name, int64 value, size_t subID = 0);
-  ErrorType SetReflectedValueInt(JenHash hash, int64 value, size_t subID = 0);
+  ErrorType SetReflectedValueInt(JenHash hashName, int64 value, size_t subID = 0);
   ErrorType SetReflectedValueInt(size_t id, int64 value, size_t subID = 0);
 
-  ErrorType SetReflectedValueUInt(es::string_view name, uint64 value, size_t subID = 0);
-  ErrorType SetReflectedValueUInt(JenHash hash, uint64 value, size_t subID = 0);
+  ErrorType SetReflectedValueUInt(JenHash hashName, uint64 value, size_t subID = 0);
   ErrorType SetReflectedValueUInt(size_t id, uint64 value, size_t subID = 0);
 
-  ErrorType SetReflectedValueFloat(es::string_view name, double value, size_t subID = 0);
-  ErrorType SetReflectedValueFloat(JenHash hash, double value, size_t subID = 0);
+  ErrorType SetReflectedValueFloat(JenHash hashName, double value, size_t subID = 0);
   ErrorType SetReflectedValueFloat(size_t id, double value, size_t subID = 0);
 
   size_t GetNumReflectedValues() const;
@@ -114,28 +109,22 @@ public:
   bool UseNames() const;
 
   std::string GetReflectedValue(size_t id) const;
-  std::string GetReflectedValue(JenHash hash) const;
-  std::string GetReflectedValue(es::string_view name) const;
+  std::string GetReflectedValue(JenHash hashName) const;
 
-  bool IsReflectedSubClass(es::string_view name) const;
-  bool IsReflectedSubClass(JenHash hash) const;
+  bool IsReflectedSubClass(JenHash hashName) const;
   bool IsReflectedSubClass(size_t id) const;
 
-  bool IsArray(es::string_view name) const;
-  bool IsArray(JenHash hash) const;
+  bool IsArray(JenHash hashName) const;
   bool IsArray(size_t id) const; 
 
-  const SubClass GetReflectedSubClass(es::string_view name, size_t subID = 0) const;
-  const SubClass GetReflectedSubClass(JenHash hash, size_t subID = 0) const;
+  const SubClass GetReflectedSubClass(JenHash hashName, size_t subID = 0) const;
   const SubClass GetReflectedSubClass(size_t id, size_t subID = 0) const;
 
-  const SubClass GetReflectedSubClass(es::string_view name, size_t subID = 0);
-  const SubClass GetReflectedSubClass(JenHash hash, size_t subID = 0);
+  const SubClass GetReflectedSubClass(JenHash hashName, size_t subID = 0);
   const SubClass GetReflectedSubClass(size_t id, size_t subID = 0);
 
   KVPair GetReflectedPair(size_t id, const KVPairFormat &settings = {}) const;
-  KVPair GetReflectedPair(JenHash hash, const KVPairFormat &settings = {}) const;
-  KVPair GetReflectedPair(es::string_view name, const KVPairFormat &settings = {}) const;
+  KVPair GetReflectedPair(JenHash hashName, const KVPairFormat &settings = {}) const;
   // clang-format on
 };
 

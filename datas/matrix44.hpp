@@ -50,12 +50,10 @@ public:
   esMatrix44 &operator*=(const esMatrix44 &right);
   esMatrix44 operator-() const;
 
-#ifdef ES_ENDIAN_DEFINED
   void SwapEndian() {
     FByteswapper(r1);
     FByteswapper(r2);
     FByteswapper(r3);
     FByteswapper(r4);
   }
-#endif
 };

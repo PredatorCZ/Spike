@@ -196,7 +196,7 @@ static Reflector::ErrorType SetEnum(es::string_view input, char *objAddr,
   input = es::SkipEndWhitespace(input);
 
   if (input.empty()) {
-    printerror("[Reflector] Empty input for enum " << hash);
+    printerror("[Reflector] Empty input for enum " << hash.raw());
     return Reflector::ErrorType::EmptyInput;
   }
 
@@ -205,7 +205,7 @@ static Reflector::ErrorType SetEnum(es::string_view input, char *objAddr,
   try {
     eValue = GetEnumValue(input, hash);
   } catch (const std::out_of_range &) {
-    printerror("[Reflector] Unregistered enum hash: " << hash << " for value: "
+    printerror("[Reflector] Unregistered enum hash: " << hash.raw() << " for value: "
                                                       << input);
     return Reflector::ErrorType::InvalidDestination;
   } catch (const std::range_error &e) {
@@ -224,7 +224,7 @@ static Reflector::ErrorType FlagFromEnum(es::string_view input, JenHash hash,
   input = es::TrimWhitespace(input);
 
   if (input.empty()) {
-    printerror("[Reflector] Empty input for enum flag " << hash);
+    printerror("[Reflector] Empty input for enum flag " << hash.raw());
     return Reflector::ErrorType::EmptyInput;
   }
 
@@ -233,7 +233,7 @@ static Reflector::ErrorType FlagFromEnum(es::string_view input, JenHash hash,
   try {
     cValue = GetEnumValue(input, hash, &fallback);
   } catch (const std::out_of_range &) {
-    printerror("[Reflector] Unregistered enum hash: " << hash << " for value: "
+    printerror("[Reflector] Unregistered enum hash: " << hash.raw() << " for value: "
                                                       << input);
     return Reflector::ErrorType::InvalidDestination;
   } catch (const std::range_error &e) {
@@ -595,7 +595,7 @@ static std::string PrintEnumFlags(const char *objAddr, JenHash hash,
       try {
         result.append(PrintEnumValue(hash, t, &rEnumFallback));
       } catch (const std::out_of_range &) {
-        printerror("[Reflector] Unregistered enum hash: " << hash);
+        printerror("[Reflector] Unregistered enum hash: " << hash.raw());
         break;
       } catch (const std::range_error &e) {
         printerror(e.what());
@@ -695,7 +695,7 @@ static std::string GetReflectedPrimitive(const char *objAddr, reflType type) {
     try {
       return PrintEnum(objAddr, type.typeHash, type.subSize);
     } catch (const std::out_of_range &) {
-      printerror("[Reflector] Unregistered enum hash: " << type.typeHash);
+      printerror("[Reflector] Unregistered enum hash: " << type.typeHash.raw());
     } catch (const std::range_error &e) {
       printerror(e.what());
     } catch (...) {

@@ -30,13 +30,16 @@ template <typename T> class _t_Vector4;
 template<typename T> class V4ScalarType;
 
 template<typename T>
+void FByteswapper(T &);
+
+template<typename T>
 class t_Vector2
 {
 public:
 	T X,Y;
 	t_Vector2(void) :X(0), Y(0) {}
 	t_Vector2(const T inx, const T iny) : X(inx), Y(iny) {}
-	
+
 	t_Vector2& operator+=(const t_Vector2& input) { X += input.X; Y += input.Y; return *this; }
 	t_Vector2& operator-=(const t_Vector2& input) { X -= input.X; Y -= input.Y; return *this; }
 	t_Vector2& operator*=(const t_Vector2& input) { X *= input.X; Y *= input.Y; return *this; }
@@ -108,13 +111,12 @@ public:
 		Y /= len;
 		return *this;
 	}
-#ifdef ES_ENDIAN_DEFINED 
+
 	void SwapEndian()
 	{
 		FByteswapper(X);
 		FByteswapper(Y);
 	}
-#endif
 };
 typedef t_Vector2<float> Vector2;
 typedef Vector2 FVector2;
@@ -138,7 +140,7 @@ public:
 	t_Vector operator-(const t_Vector& input) const { return t_Vector(X - input.X, Y - input.Y, Z - input.Z); }
 	t_Vector operator*(const t_Vector& input) const { return t_Vector(X * input.X, Y * input.Y, Z * input.Z); }
 	t_Vector operator/(const t_Vector& input) const { return t_Vector(X / input.X, Y / input.Y, Z / input.Z); }
-	
+
 	t_Vector& operator+=(const t_Vector& input) { X += input.X; Y += input.Y; Z += input.Z; return *this; }
 	t_Vector& operator-=(const t_Vector& input) { X -= input.X; Y -= input.Y; Z -= input.Z; return *this; }
 	t_Vector& operator*=(const t_Vector& input) { X *= input.X; Y *= input.Y; Z *= input.Z; return *this; }
@@ -168,7 +170,7 @@ public:
 	operator t_Vector2<T>() const { return t_Vector2<T>(this->X, this->Y); }
 
 	t_Vector operator-() const { return *this * -1; }
-	
+
 	template<typename _T = T>
 	typename std::enable_if<std::is_integral<_T>::value, bool>::type operator==(const t_Vector &input) const { return (X == input.X && Y == input.Y && Z == input.Z); }
 
@@ -176,10 +178,10 @@ public:
 	typename std::enable_if<std::is_floating_point<_T>::value, bool>::type operator==(const t_Vector &input) const { return FLTCMP(X, input.X) && FLTCMP(Y, input.Y) && FLTCMP(Z, input.Z); }
 
 	bool operator!=(const t_Vector &input) const { return !(*this == input); }
-		
+
 	T& operator[](size_t pos) { return *(reinterpret_cast<T*>(this) + pos); }
 	const T& operator[](size_t pos) const { return *(reinterpret_cast<const T*>(this) + pos); }
-	
+
 	bool IsSymetrical() const { return (X == Y) && (X == Z); }
 
 	template<typename T2>t_Vector<T2> Convert(void) const { return t_Vector<T2>(static_cast<T2>(X), static_cast<T2>(Y), static_cast<T2>(Z)); }
@@ -207,15 +209,13 @@ public:
 		Z /=len;
 		return *this;
 	}
-#ifdef ES_ENDIAN_DEFINED 
+
 	void SwapEndian()
 	{
 		FByteswapper(X);
 		FByteswapper(Y);
 		FByteswapper(Z);
 	}
-
-#endif
 };
 typedef t_Vector<float> Vector;
 typedef Vector FVector;
@@ -412,14 +412,12 @@ public:
     return strm << v.X << " " << v.Y << " " << v.Z << " " << v.W;
   }
 
-#ifdef ES_ENDIAN_DEFINED
   void SwapEndian() {
     FByteswapper(this->X);
     FByteswapper(this->Y);
     FByteswapper(this->Z);
     FByteswapper(this->W);
   }
-#endif
 };
 
 template <typename T> using t_Vector4 = _t_Vector4<V4ScalarType<T>>;

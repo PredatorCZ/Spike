@@ -20,7 +20,7 @@
 #pragma once
 #ifdef _MSC_VER
 #pragma warning(push)
-#pragma warning(disable: 4307)
+#pragma warning(disable : 4307)
 #endif
 #include "internal/sc_type.hpp"
 #include "string_view.hpp"
@@ -48,16 +48,27 @@ template <typename I> struct JenHash_t {
   constexpr JenHash_t() : value_() {}
   constexpr JenHash_t(JenHash_t &&) = default;
   constexpr JenHash_t(const JenHash_t &) = default;
-  constexpr JenHash_t(uint32 in) : value_(in) {}
+  constexpr explicit JenHash_t(uint32 in) : value_(in) {}
   template <size_t n>
-  constexpr explicit JenHash_t(const char (&input)[n])
+  constexpr JenHash_t(const char (&input)[n])
       : value_(JenkinsHash_<I>({input, n - 1})) {}
   constexpr JenHash_t(es::string_view input) : value_(JenkinsHash_<I>(input)) {}
 
-  constexpr JenHash_t &operator=(const JenHash_t&) = default;
-  constexpr JenHash_t &operator=(JenHash_t&&) = default;
+  constexpr JenHash_t &operator=(const JenHash_t &) = default;
+  constexpr JenHash_t &operator=(JenHash_t &&) = default;
 
-  constexpr operator uint32() const { return value_; }
+  constexpr auto raw() const { return value_; }
+
+  constexpr bool operator==(JenHash_t o) const { return o.value_ == value_; }
+  constexpr bool operator==(uint32 o) const { return o == value_; }
+  constexpr friend bool operator==(uint32 o, JenHash_t h) { return h == o; }
+
+  constexpr bool operator!=(JenHash_t o) const { return o.value_ != value_; }
+  constexpr bool operator!=(uint32 o) const { return o != value_; }
+  constexpr friend bool operator!=(uint32 o, JenHash_t h) { return h != o; }
+
+  constexpr bool operator<(JenHash_t o) const { return o.value_ < value_; }
+  constexpr bool operator>(JenHash_t o) const { return o.value_ > value_; }
 
 private:
   uint32 value_;

@@ -32,7 +32,7 @@ pugi::xml_node ReflectorXMLUtil::Save(const Reflector &ri, pugi::xml_node node,
       className = stat->className;
     else {
       className.resize(15);
-      const uint32 cHash = stat->classHash;
+      const auto cHash = stat->classHash.raw();
       snprintf(&className[0], 15, "h:%X", cHash);
     }
 
@@ -54,7 +54,7 @@ pugi::xml_node ReflectorXMLUtil::Save(const Reflector &ri, pugi::xml_node node,
         varName.replace(fndBrace, 1, 1, ':');
     } else {
       varName.resize(15);
-      const uint32 cHash = stat->types[t].valueNameHash;
+      const auto cHash = stat->types[t].valueNameHash.raw();
       snprintf(&varName[0], 15, "h:%X", cHash);
     }
 
@@ -90,7 +90,7 @@ pugi::xml_node ReflectorXMLUtil::Load(Reflector &ri, pugi::xml_node node,
 
   auto MakeHash = [](auto &a) -> JenHash {
     if (*a.name() == 'h' && *(a.name() + 1) == ':') {
-      return strtoul(a.name() + 2, nullptr, 16);
+      return JenHash(strtoul(a.name() + 2, nullptr, 16));
     } else {
       return {a.name()};
     }

@@ -6,8 +6,8 @@
 int main() {
   printer.AddPrinterFunction(UPrintf);
 
-  REFLECTOR_REGISTER(subrefl, reflClass, roomInfo, roomInfo01, EnumWrap00,
-                     EnumWrap01, EnumWrap02, EnumWrap03, EnumWrap04);
+  RegisterReflectedTypes<subrefl, reflClass, roomInfo, roomInfo01, EnumWrap00,
+                         EnumWrap01, EnumWrap02, EnumWrap03, EnumWrap04>();
 
   reflClass rClass = {};
 

@@ -19,10 +19,11 @@
 #pragma once
 #include "reflector_class_reg.hpp"
 #include "reflector_enum_reg.hpp"
+#include <map>
 
-typedef std::unordered_map<uint32, ReflectedEnum> RefEnumMapper;
+typedef std::map<JenHash, ReflectedEnum> RefEnumMapper;
 extern RefEnumMapper REFEnumStorage;
-typedef std::unordered_map<uint32, const reflectorStatic *> RefSubClassMapper;
+typedef std::map<JenHash, const reflectorStatic *> RefSubClassMapper;
 extern RefSubClassMapper REFSubClassStorage;
 
 template <class C> struct RegisterReflectedType {

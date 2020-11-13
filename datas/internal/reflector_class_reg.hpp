@@ -20,7 +20,6 @@
 #include "../jenkinshash.hpp"
 #include "../string_view.hpp"
 #include "../supercore.hpp"
-#include <unordered_map>
 
 struct reflType;
 

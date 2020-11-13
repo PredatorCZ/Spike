@@ -42,6 +42,7 @@ public:
 
 class InvalidHeaderError : public std::runtime_error {
   using parent = std::runtime_error;
+public:
   static std::string DecompileFourCC(size_t magic, size_t size) {
     const char *rMagic = reinterpret_cast<const char *>(&magic);
     const size_t capSize =
@@ -70,7 +71,6 @@ class InvalidHeaderError : public std::runtime_error {
     }
   }
 
-public:
   explicit InvalidHeaderError() : parent("Invalid format.") {}
   InvalidHeaderError(es::string_view magic)
       : parent("Invalid format: " + magic.to_string()) {}
