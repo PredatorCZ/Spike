@@ -44,7 +44,7 @@ struct reflType {
   uint8 subSize;         // size if sub element
   uint8 ID;              // index of main element within master table
   uint16 numItems;       // number of sub elements
-  mutable uint16 offset; // offset of main element
+  uint16 offset;         // offset of main element
   JenHash valueNameHash; // hash of main element's name
   JenHash typeHash;      // lookup hash of main/sub element (enum, sublass)
 };
@@ -146,20 +146,26 @@ union _DecomposedVectorHash {
   };
 };
 
-template <class C>
-const reflType BuildReflType(JenHash classHash, uint8 index,
-                             size_t offset = 0xffff) {
-  typedef typename std::remove_reference<C>::type unref_type;
+template <class type, class C>
+reflType BuildReflType(JenHash classHash, uint8 index, size_t offset) {
+  typedef typename std::remove_reference<type>::type unref_type;
   typedef _getType<unref_type> type_class;
   static_assert(type_class::TYPE != REFType::None,
                 "Undefined type to reflect!");
+
+  // Get relative offset of interface within class
+  // If class uses multiple inheritance or virtual methods, offsets will be
+  // incorrect because interface won't be casted with same address as class
+  auto cls = reinterpret_cast<C *>(0x100);
+  auto intf = static_cast<ReflectorInterface<C> *>(cls);
+  size_t intfOffset = reinterpret_cast<size_t>(intf) - 0x100;
 
   return reflType{type_class::TYPE,
                   type_class::SUBTYPE,
                   type_class::SUBSIZE,
                   index,
                   type_class::NUMITEMS,
-                  static_cast<decltype(reflType::offset)>(offset),
+                  static_cast<decltype(reflType::offset)>(offset - intfOffset),
                   classHash,
                   type_class::Hash()};
 }

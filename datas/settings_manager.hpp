@@ -27,7 +27,7 @@
 #include <locale>
 #include <thread>
 
-template <class Base> struct SettingsManager : private ReflectorBase<Base> {
+template <class Base> struct SettingsManager : public ReflectorBase<Base> {
   static std::ofstream &GetLogger() {
     static std::ofstream logger;
     return logger;

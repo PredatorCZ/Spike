@@ -9,7 +9,7 @@ PreCore is a library with helper classes.\
 Main focus of this library is: Class/Enum RTTI and RTTR, SIMD classes like Vector and Matrix4x4, stream helpers, uni module.\
 It also contains logging services, algorhitms, data types, muti-threading queue classes, extensions for other libraries and many more.
 
-Library is made for C++14 standard and it's compilable under Clang 3.5+, GCC 5+, MSVC 2015+.
+Library is made for C++14 standard and it's compilable under Clang 3.5+, GCC 5+, MSVC 2017+.
 
 ## Main modules
 
@@ -39,6 +39,7 @@ It also allows to fully reflect enumerations.
 * No reflection for heap containers (except std::string)
 * No run-time class creation
 * No RTTI saving for STL containers (possible, but unsafe) [won't be implemented]
+* Method calling (like in RPC)
 
 ### UNI
 

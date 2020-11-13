@@ -185,16 +185,15 @@ public:
   ReflectorSubClass(const SubClass &_data) : data(_data) {}
 };
 
-template <class C> class ReflectorBase : public Reflector {
+template <class C>
+class ReflectorBase : public Reflector, public ReflectorInterface<C> {
+  using parent = ReflectorInterface<C>;
 public:
-  static const reflectorStatic *GetReflector() {
-    return ReflectorInterface<C>::GetReflector();
-  }
   reflectorInstanceConst GetReflectedInstance() const override {
-    return {GetReflector(), this};
+    return parent::GetReflectedInstance();
   }
   reflectorInstance GetReflectedInstance() override {
-    return {GetReflector(), this};
+    return parent::GetReflectedInstance();
   }
 };
 

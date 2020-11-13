@@ -38,11 +38,16 @@ template <size_t n> constexpr size_t _GetReflDescPart(const char (&value)[n]) {
 
 #define _REFLECTOR_EXTRACT_ALIASHASH(flags, ...)                               \
   VA_NARGS_EVAL(_REFLECTOR_EXTRACT_ALIASHASH_##flags(__VA_ARGS__))
-#define _REFLECTOR_EXTRACT_ALIASHASH_A(x, al, ...) JenHash{al}
-#define _REFLECTOR_EXTRACT_ALIASHASH_D(x, ds, ...) {}
-#define _REFLECTOR_EXTRACT_ALIASHASH_AD(x, al, ...) JenHash{al}
-#define _REFLECTOR_EXTRACT_ALIASHASH_(x, ...) {}
-#define _REFLECTOR_EXTRACT_ALIASHASH_N(x, ...) {}
+#define _REFLECTOR_EXTRACT_ALIASHASH_A(x, al, ...)                             \
+  JenHash { al }
+#define _REFLECTOR_EXTRACT_ALIASHASH_D(x, ds, ...)                             \
+  {}
+#define _REFLECTOR_EXTRACT_ALIASHASH_AD(x, al, ...)                            \
+  JenHash { al }
+#define _REFLECTOR_EXTRACT_ALIASHASH_(x, ...)                                  \
+  {}
+#define _REFLECTOR_EXTRACT_ALIASHASH_N(x, ...)                                 \
+  {}
 
 #define _REFLECTOR_EXTRACT_ALIAS(flags, ...)                                   \
   VA_NARGS_EVAL(_REFLECTOR_EXTRACT_ALIAS_##flags(__VA_ARGS__))
@@ -77,11 +82,11 @@ template <size_t n> constexpr size_t _GetReflDescPart(const char (&value)[n]) {
 #define _REFLECTOR_GET_CLASS(...) __VA_ARGS__
 
 #define _REFLECTOR_ADDN(classname, _id, mvalue)                                \
-  BuildReflType<decltype(classname::mvalue)>(JenHash(#mvalue), _id,            \
-                                             offsetof(classname, mvalue)),
+  BuildReflType<decltype(classname::mvalue), classname>(                       \
+      JenHash(#mvalue), _id, offsetof(classname, mvalue)),
 
 #define _EXT_REFLECTOR_ADDN(classname, _id, value)                             \
-  BuildReflType<decltype(classname::_REFLECTOR_EXTRACT_0 value)>(              \
+  BuildReflType<decltype(classname::_REFLECTOR_EXTRACT_0 value), classname>(   \
       JenHash(_REFLECTOR_EXTRACT_0S value), _id,                               \
       offsetof(classname, _REFLECTOR_EXTRACT_0 value)),
 

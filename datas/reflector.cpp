@@ -20,8 +20,8 @@
 #include "master_printer.hpp"
 #include "string_view.hpp"
 #include <algorithm>
-#include <cmath>
 #include <cctype>
+#include <cmath>
 
 static Reflector::ErrorType
 SetReflectedMember(reflType reflValue, es::string_view value, char *objAddr);
@@ -673,10 +673,12 @@ static std::string GetReflectedPrimitive(const char *objAddr, reflType type) {
 
     switch (type.subSize) {
     case 4:
-      sprintf(_tmpBuffer, "%.6g", *reinterpret_cast<const float *>(objAddr));
+      snprintf(_tmpBuffer, sizeof(_tmpBuffer), "%.6g",
+               *reinterpret_cast<const float *>(objAddr));
       break;
     case 8:
-      sprintf(_tmpBuffer, "%.13g", *reinterpret_cast<const double *>(objAddr));
+      snprintf(_tmpBuffer, sizeof(_tmpBuffer), "%.13g",
+               *reinterpret_cast<const double *>(objAddr));
       break;
 
     default:

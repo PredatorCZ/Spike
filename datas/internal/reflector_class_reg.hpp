@@ -56,7 +56,8 @@ struct reflectorStatic_data {
   template <class C>
   reflectorStatic_data(_RTag<C>)
       : classHash(ReflectorType<C>::Hash()),
-        nTypes(ReflectorType<C>::NumTypes()), types(ReflectorType<C>::Types()),
+        nTypes(static_cast<uint32>(ReflectorType<C>::NumTypes())),
+        types(ReflectorType<C>::Types()),
         typeNames(ReflectorType<C>::TypeNames()),
         className(ReflectorType<C>::ClassName()),
         typeAliases(ReflectorType<C>::TypeAliases()),

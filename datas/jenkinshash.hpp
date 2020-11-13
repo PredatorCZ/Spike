@@ -18,6 +18,10 @@
 */
 
 #pragma once
+#ifdef _MSC_VER
+#pragma warning(push)
+#pragma warning(disable: 4307)
+#endif
 #include "internal/sc_type.hpp"
 #include "string_view.hpp"
 
@@ -64,3 +68,7 @@ using JenHashCannon = JenHash_t<uint32>;
 
 static_assert(JenHash("bug") == 0x54908567, "JenkinsHash Failed");
 static_assert(JenHashCannon("bug") == 0xF37C8567, "JOAAT Failed");
+
+#ifdef _MSC_VER
+#pragma warning(pop)
+#endif

@@ -5,7 +5,7 @@ package Header <<Frame>> {
         +{static} GetReflector()
         + GetReflectedInstance()
     }
-    note bottom of ReflectorInterface
+    note right of ReflectorInterface
         A non virtual,
         non abstract,
         zero size interface.
@@ -16,10 +16,11 @@ package Header <<Frame>> {
     RCE : numFlags
     RCE : enumFlags ...
     RCE : class members
-    note bottom of RCE
+    note right of RCE
         A macro for creating
         reflected enumeration
     end note
+    RCE -[hidden]down- ReflectorInterface
 }
 
 
@@ -29,18 +30,20 @@ package "Source Unit" <<Frame>> {
     REFLECTOR_CREATE : numFlags
     REFLECTOR_CREATE : flags ...
     REFLECTOR_CREATE : class members
-    note bottom of REFLECTOR_CREATE
+    note right of REFLECTOR_CREATE
         A macro for creating
         reflection definition
     end note
-    node "Single call function" {
-        object "REFLECTOR_REGISTER(...)" as REFLECTOR_REGISTER
+    node "Single call function" as SCF {
+        object "RegisterReflectedTypes<...>()" as REFLECTOR_REGISTER
         REFLECTOR_REGISTER : classes and enums
     }
     note bottom of REFLECTOR_REGISTER
-        A macro for adding
+        A class factory for adding
         reflected classes and
         enums into global registry
     end note
+
+    REFLECTOR_CREATE -[hidden]down- SCF
 }
 @enduml
