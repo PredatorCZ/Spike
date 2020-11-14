@@ -34,7 +34,7 @@ struct allocator_hybrid_base {
   template <class C>
   static void LinkStorage(C &input, typename C::pointer start,
                           typename C::pointer end) {
-    input = C(start, end, C::allocator_type(start));
+    input = C(start, end, typename C::allocator_type(start));
   }
 
   template <class C>
