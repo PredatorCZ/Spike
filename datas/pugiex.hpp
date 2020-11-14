@@ -196,6 +196,10 @@ inline auto XMLFromFile(const std::string &fileName,
       throw es::FileNotFoundError(fileName);
     }
 
+    if (static_cast<XMLError>(result.status) == status_no_document_element) {
+      throw es::InvalidHeaderError();
+    }
+
     throw std::runtime_error(
         "Couldn't load XML file <" + fileName + ">[" +
         GetReflectedEnum<XMLError>()[result.status].to_string() +

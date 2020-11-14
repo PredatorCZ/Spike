@@ -23,24 +23,17 @@ static INT_PTR CALLBACK AboutCallbacks(HWND hWnd, UINT message, WPARAM wParam, L
 	case WM_INITDIALOG:
 	{
 		CenterWindow(hWnd, GetParent(hWnd));
-		const int licBuffSize00 = sizeof(_name) + sizeof(_info);
-		TCHAR * licBuff = static_cast<TCHAR*>(GlobalAlloc(GPTR, licBuffSize00));
-		_tcscat_s(licBuff, licBuffSize00, _name);
-		_tcscat_s(licBuff, licBuffSize00, _info);
-		SetDlgItemText(hWnd, IDC_LB_INFO, licBuff);
-		GlobalFree(licBuff);
+		TSTRING headerText = _name;
+		headerText += _info;
+		SetDlgItemText(hWnd, IDC_LB_INFO, headerText.data());
 
-		const int licBuffSize = sizeof(_license) + sizeof(_license00) + sizeof(_license01) + sizeof(_license02) + (sizeof(_name) * 2);
-		licBuff = static_cast<TCHAR*>(GlobalAlloc(GPTR, licBuffSize));
-
-		_tcscat_s(licBuff, licBuffSize, _name);
-		_tcscat_s(licBuff, licBuffSize, _license00);
-		_tcscat_s(licBuff, licBuffSize, _name);
-		_tcscat_s(licBuff, licBuffSize, _license01);
-		_tcscat_s(licBuff, licBuffSize, _license02);
-		_tcscat_s(licBuff, licBuffSize, _license);
-		SetDlgItemText(hWnd, IDC_RICHEDIT21, licBuff);
-		GlobalFree(licBuff);
+		TSTRING license = _name;
+		license += _license00;
+		license += _name;
+		license += _license01;
+		license += _license02;
+		license += _license;
+		SetDlgItemText(hWnd, IDC_RICHEDIT21, license.data());
 
 		SendDlgItemMessage(hWnd, IDC_RICHEDIT21, EM_SETBKGNDCOLOR, 0, 0x444444);
 
