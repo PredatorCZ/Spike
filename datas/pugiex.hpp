@@ -24,6 +24,7 @@
 #include "pugixml.hpp"
 #include "reflector.hpp"
 #include "string_view.hpp"
+#include "unicode.hpp"
 
 REFLECTOR_CREATE(
     XMLError, ENUM, 0,
@@ -138,6 +139,36 @@ enum class XMLEncoding : uint32 {
   Latin1,
 };
 
+enum class XMLFormatFlag : uint32 {
+  // Indent the nodes that are written to output stream with as many indentation
+  // strings as deep the node is in DOM tree. [On]
+  Indent,
+  // Write encoding-specific BOM to the output stream. [Off]
+  WriteBOM,
+  // Use raw output mode (no indentation and no line breaks are written). [Off]
+  Raw,
+  // Omit default XML declaration even if there is no declaration in the
+  // document. [Off]
+  NoDeclaration,
+  // Don't escape attribute values and PCDATA contents. [Off]
+  NoEscapes,
+  // Open file using text mode in xml_document::save_file. This enables special
+  // character (i.e. new-line) conversions on some systems. [Off]
+  SaveFileText,
+  // Write every attribute on a new line with appropriate indentation. [Off]
+  IndentAttributes,
+  // Don't output empty element tags, instead writing an explicit start and end
+  // tag even if there are no children. [Off]
+  NoEmptyElementTaggs,
+  // Skip characters belonging to range [0; 32) instead of "&#xNN;" encoding.
+  // [Off]
+  SkipControlChars,
+};
+
+using XMLFormatFlags = es::Flags<XMLFormatFlag>;
+
+constexpr XMLFormatFlags XMLDefaultFormatFlags(XMLFormatFlag::Indent);
+
 class XMLBaseException : public std::runtime_error {
   using parent = std::runtime_error;
   static std::string Generate_(pugi::xml_node node) {
@@ -188,7 +219,12 @@ inline auto XMLFromFile(const std::string &fileName,
                         XMLParseFlags pflags = XMLDefaultParseFlags,
                         XMLEncoding encoding = XMLEncoding::Auto) {
   pugi::xml_document doc;
-  auto result = doc.load_file(fileName.data(), static_cast<uint32>(pflags),
+#if defined(UNICODE) && defined(_MSC_VER)
+  auto &&fileName_ = es::ToUTF1632(fileName);
+#else
+  auto &&fileName_ = fileName;
+#endif
+  auto result = doc.load_file(fileName_.data(), static_cast<uint32>(pflags),
                               static_cast<pugi::xml_encoding>(encoding));
 
   if (!result) {
@@ -207,4 +243,20 @@ inline auto XMLFromFile(const std::string &fileName,
   }
 
   return doc;
+}
+
+inline auto XMLToFile(const std::string &fileName,
+                      const pugi::xml_document &doc,
+                      XMLFormatFlags format = XMLDefaultFormatFlags,
+                      const pugi::char_t *indent = PUGIXML_TEXT("\t"),
+                      XMLEncoding encoding = XMLEncoding::Auto) {
+#if defined(UNICODE) && defined(_MSC_VER)
+  auto &&fileName_ = es::ToUTF1632(fileName);
+#else
+  auto &&fileName_ = fileName;
+#endif
+  if (!doc.save_file(fileName_.data(), indent, static_cast<uint32>(format),
+                     static_cast<pugi::xml_encoding>(encoding))) {
+    throw es::FileInvalidAccessError(fileName);
+  }
 }
