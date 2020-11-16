@@ -205,8 +205,8 @@ static Reflector::ErrorType SetEnum(es::string_view input, char *objAddr,
   try {
     eValue = GetEnumValue(input, hash);
   } catch (const std::out_of_range &) {
-    printerror("[Reflector] Unregistered enum hash: " << hash.raw() << " for value: "
-                                                      << input);
+    printerror("[Reflector] Unregistered enum hash: "
+               << hash.raw() << " for value: " << input);
     return Reflector::ErrorType::InvalidDestination;
   } catch (const std::range_error &e) {
     printerror(e.what());
@@ -233,12 +233,15 @@ static Reflector::ErrorType FlagFromEnum(es::string_view input, JenHash hash,
   try {
     cValue = GetEnumValue(input, hash, &fallback);
   } catch (const std::out_of_range &) {
-    printerror("[Reflector] Unregistered enum hash: " << hash.raw() << " for value: "
-                                                      << input);
+    printerror("[Reflector] Unregistered enum hash: "
+               << hash.raw() << " for value: " << input);
     return Reflector::ErrorType::InvalidDestination;
   } catch (const std::range_error &e) {
-    printerror(e.what());
-    return Reflector::ErrorType::InvalidFormat;
+    if (input != "NULL") {
+      printerror(e.what());
+      return Reflector::ErrorType::InvalidFormat;
+    }
+    return Reflector::ErrorType::None;
   }
 
   fallbackValue |= 1ULL << cValue;
