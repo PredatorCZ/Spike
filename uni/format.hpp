@@ -21,10 +21,18 @@
 #include <vector>
 
 namespace uni {
-enum class FormatType : uint16 { INT, UINT, NORM, UNORM, FLOAT, UFLOAT };
+enum class FormatType : uint16 {
+  INVALID,
+  INT,
+  UINT,
+  NORM,
+  UNORM,
+  FLOAT,
+  UFLOAT
+};
 
 enum class DataType : uint16 {
-  UNKNOWN,
+  CUSTOM,
   R32G32B32A32, // 128
   R32G32B32,    // 96
   R16G16B16A16, // 64
@@ -71,11 +79,15 @@ struct FormatDescr {
     return reinterpret_cast<const uint32 &>(input) ==
            reinterpret_cast<const uint32 &>(*this);
   }
+
+  bool operator<(const FormatDescr &input) const {
+    return reinterpret_cast<const uint32 &>(input) >
+           reinterpret_cast<const uint32 &>(*this);
+  }
 };
 
 class FormatCodec {
 public:
-  typedef std::unique_ptr<FormatCodec> ptr;
   typedef std::vector<IVector4A16> ivec;
   typedef std::vector<Vector4A16> fvec;
 
@@ -107,11 +119,7 @@ public:
   virtual void Sample(fvec &out, const char *input, size_t count,
                       size_t stride = 0) const;
 
-  static ptr Create(const FormatDescr &input);
+  static FormatCodec &Get(const FormatDescr &input);
 };
 
-template <FormatType, DataType> class FormatCodec_t {};
-
 } // namespace uni
-
-#include "internal/format.inl"

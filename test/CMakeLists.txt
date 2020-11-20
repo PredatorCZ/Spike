@@ -5,7 +5,7 @@ set(CMAKE_CXX_STANDARD 14)
 
 test_odr(
   PATHS
-  ${CMAKE_SOURCE_DIR}/datas
+  ${PROJECT_SOURCE_DIR}/datas
   EXCLUDE
   pugiex.hpp
   reflector_xml.hpp
@@ -67,7 +67,7 @@ set_precore_sources(test_app master_printer directory_scanner reflector)
 add_test(
   NAME test_app
   COMMAND test_app
-  WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+  WORKING_DIRECTORY ${PROJECT_SOURCE_DIR})
 
 if(${RELEASEVER})
   find_package(Python2 COMPONENTS Development Interpreter)
@@ -87,7 +87,7 @@ if(${RELEASEVER})
     add_test(
       NAME test_unipy
       COMMAND ${Python2_EXECUTABLE} test_uni.py
-      WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/test)
+      WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/test)
   endif()
 endif()
 

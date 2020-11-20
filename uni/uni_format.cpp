@@ -16,32 +16,42 @@
 */
 
 #include "datas/macroLoop.hpp"
-#include "format.hpp"
+#include "internal/format_full.hpp"
 #include <unordered_map>
 
 using namespace uni;
 
-template <FormatType ftype, DataType dtype> FormatCodec *_makeCodec() {
-  return new _FormatCodecImpl_t<ftype, dtype>();
+// This class holds vtable for each _FormatCodecImpl_t.
+// Huge gamble, but there is no better way. (for C++14)
+// TODO: maybe use std::any for C++17
+class variant {
+  mutable uint64 vtdata;
+
+public:
+  template <FormatType ftype, DataType dtype>
+  variant(_FormatCodecImpl_t<ftype, dtype> cted) {
+    static_assert(sizeof(decltype(cted)) <= sizeof(vtdata), "Invalid class!");
+    vtdata = reinterpret_cast<uint64 &>(cted);
+  }
+
+  variant(const variant &) = default;
+  variant(variant &&) = default;
+
+  operator FormatCodec &() const {
+    return reinterpret_cast<FormatCodec &>(vtdata);
+  }
+};
+
+template <FormatType ftype, DataType dtype> auto MakePair() {
+  return std::make_pair(FormatDescr{ftype, dtype},
+                        variant(_FormatCodecImpl_t<ftype, dtype>{}));
 }
 
 #define _MAKE_CODEC_BASE(cname)                                                \
-  {{FormatType::INT, DataType::cname},                                         \
-   _makeCodec<FormatType::INT, DataType::cname>},                              \
-      {{FormatType::UINT, DataType::cname},                                    \
-       _makeCodec<FormatType::UINT, DataType::cname>},                         \
-      {{FormatType::UNORM, DataType::cname},                                   \
-       _makeCodec<FormatType::UNORM, DataType::cname>},                        \
-      {{FormatType::NORM, DataType::cname},                                    \
-       _makeCodec<FormatType::NORM, DataType::cname>},
-
-#define _MAKE_CODEC_FLOAT(cname)                                               \
-  {{FormatType::FLOAT, DataType::cname},                                       \
-   _makeCodec<FormatType::FLOAT, DataType::cname>},
-
-#define _MAKE_CODEC_UFLOAT(cname)                                              \
-  {{FormatType::UFLOAT, DataType::cname},                                      \
-   _makeCodec<FormatType::UFLOAT, DataType::cname>},
+  MakePair<FormatType::INT, DataType::cname>(),                                \
+      MakePair<FormatType::UINT, DataType::cname>(),                           \
+      MakePair<FormatType::UNORM, DataType::cname>(),                          \
+      MakePair<FormatType::NORM, DataType::cname>(),
 
 namespace std {
 template <> struct hash<FormatDescr> {
@@ -52,13 +62,22 @@ template <> struct hash<FormatDescr> {
 };
 } // namespace std
 
-static const std::unordered_map<FormatDescr, FormatCodec *(*)()> registry = {
+static const std::unordered_map<FormatDescr, variant> registry = {
     StaticFor(_MAKE_CODEC_BASE, R32G32B32A32, R32G32B32, R16G16B16A16, R32G32,
               R16G16B16, R32, R16G16, R10G10B10A2, R11G11B10, R8G8B8A8, R24G8,
               R8G8B8, R8G8, R16, R5G6B5, R5G5B5A1, R8)
-        StaticFor(_MAKE_CODEC_FLOAT, R32G32B32A32, R32G32B32, R16G16B16A16,
-                  R32G32, R16G16B16, R32, R16G16, R11G11B10, R16)
-            StaticFor(_MAKE_CODEC_UFLOAT, R11G11B10)};
+
+        MakePair<FormatType::FLOAT, DataType::R32G32B32A32>(),
+    MakePair<FormatType::FLOAT, DataType::R32G32B32>(),
+    MakePair<FormatType::FLOAT, DataType::R32G32>(),
+    MakePair<FormatType::FLOAT, DataType::R32>(),
+    MakePair<FormatType::FLOAT, DataType::R16G16B16A16>(),
+    MakePair<FormatType::FLOAT, DataType::R16G16B16>(),
+    MakePair<FormatType::FLOAT, DataType::R16G16>(),
+    MakePair<FormatType::FLOAT, DataType::R16>(),
+    MakePair<FormatType::FLOAT, DataType::R11G11B10>(),
+    MakePair<FormatType::UFLOAT, DataType::R11G11B10>(),
+};
 
 void FormatCodec::GetValue(IVector4A16 &, const char *) const {
   throw std::runtime_error("Invalid call for uni::format codec!");
@@ -76,12 +95,6 @@ void FormatCodec::Sample(fvec &, const char *, size_t, size_t) const {
   throw std::runtime_error("Invalid call for uni::format codec!");
 }
 
-FormatCodec::ptr FormatCodec::Create(const FormatDescr &input) {
-  auto ctor = registry.find(input);
-
-  if (es::IsEnd(registry, ctor)) {
-    return nullptr;
-  }
-
-  return FormatCodec::ptr(ctor->second());
+FormatCodec &FormatCodec::Get(const FormatDescr &input) {
+  return registry.at(input);
 }

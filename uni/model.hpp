@@ -16,7 +16,7 @@
 */
 
 #pragma once
-#include "datas/VectorsSimd.hpp"
+#include "datas/vectors_simd.hpp"
 #include "format.hpp"
 #include "list.hpp"
 #include <vector>
@@ -30,16 +30,35 @@ struct BBOX {
 class PrimitiveDescriptor {
 public:
   enum class UnpackDataType_e {
+    None,
     Add,  // x + min
     Mul,  // x * min
     Madd, // max + x * min
     Lerp  // min + (max - min) * x, x = [0, 1]
   };
 
+  enum class Usage_e : uint8 {
+    Undefined,
+    Position,
+    Normal,
+    Tangent,
+    BiTangent,
+    TextureCoordiante,
+    BoneIndices,
+    BoneWeights,
+    VertexColor,
+    VertexIndex,
+    PositionDelta,
+  };
+
+  // Get already indexed & offseted vertex buffer
   virtual const char *RawBuffer() const = 0;
   virtual size_t Stride() const = 0;
   virtual size_t Offset() const = 0;
+  virtual size_t Index() const = 0;
+  virtual Usage_e Usage() const = 0;
   virtual FormatDescr Type() const = 0;
+  virtual FormatCodec &Codec() const { return FormatCodec::Get(Type()); }
   virtual BBOX UnpackData() const = 0;
   virtual UnpackDataType_e UnpackDataType() const = 0;
   virtual ~PrimitiveDescriptor() {}
@@ -60,6 +79,10 @@ public:
   virtual size_t NumVertices() const = 0;
   virtual size_t NumVertexBuffers() const = 0;
   virtual size_t NumIndices() const = 0;
+  virtual const std::string &Name() const = 0;
   virtual ~Primitive() {}
 };
+
+typedef Element<const List<Primitive>> PrimitivesConst;
+typedef Element<List<Primitive>> Primitives;
 } // namespace uni

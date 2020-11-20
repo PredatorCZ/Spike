@@ -16,8 +16,7 @@
 */
 
 #pragma once
-#include "binreader_stream.hpp"
-#include "binwritter_stream.hpp"
+#include "bincore_fwd.hpp"
 #include "reflector.hpp"
 
 class ReflectorIO {

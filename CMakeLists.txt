@@ -62,5 +62,5 @@ endfunction()
 
 if(${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_CURRENT_SOURCE_DIR})
   enable_testing()
-  add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/test)
+  add_subdirectory(test)
 endif()

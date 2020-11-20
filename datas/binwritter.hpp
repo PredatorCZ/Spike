@@ -17,22 +17,30 @@
 
 #pragma once
 #include "binwritter_stream.hpp"
+#include "except.hpp"
 #include "internal/bincore_file.hpp"
 
 class BinWritter : public BinWritterRef,
                    public BinStreamFile<std::ios::binary | std::ios::out> {
+  template <class C> void OpenFile(const C filePath) {
+    if (!this->Open_(filePath)) {
+      throw es::FileInvalidAccessError(filePath);
+    }
+
+    this->baseStream = &this->FileStream;
+  }
+
 public:
   BinWritter() = default;
   BinWritter(const std::string &filePath) {
-    this->Open(filePath);
-    this->baseStream = &this->FileStream;
+    OpenFile<decltype(filePath)>(filePath);
   }
-  BinWritter(const char *filePath) {
-    this->Open(filePath);
-    this->baseStream = &this->FileStream;
-  }
+  BinWritter(const char *filePath) { OpenFile(filePath); }
 
   BinWritter(const BinWritter &rd) = delete;
   BinWritter(BinWritter &&) = default;
   BinWritter &operator=(const BinWritter &other) = delete;
+
+  void Open(const std::string &filePath) { OpenFile(filePath); }
+  void Open(const char *filePath) { OpenFile(filePath); }
 };

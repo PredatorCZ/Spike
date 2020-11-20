@@ -17,21 +17,29 @@
 
 #pragma once
 #include "binreader_stream.hpp"
+#include "except.hpp"
 #include "internal/bincore_file.hpp"
 
 class BinReader : public BinReaderRef,
                   public BinStreamFile<std::ios::binary | std::ios::in> {
+  template <class C> void OpenFile(const C fileName) {
+    if (!this->Open_(fileName)) {
+      throw es::FileNotFoundError(fileName);
+    }
+
+    this->baseStream = &this->FileStream;
+  }
+
 public:
   BinReader() = default;
   BinReader(const std::string &filePath) {
-    this->Open(filePath);
-    this->baseStream = &this->FileStream;
+    OpenFile<decltype(filePath)>(filePath);
   }
-  BinReader(const char *filePath) {
-    this->Open(filePath);
-    this->baseStream = &this->FileStream;
-  }
+  BinReader(const char *filePath) { OpenFile(filePath); }
   BinReader(const BinReader &) = delete;
   BinReader(BinReader &&) = default;
   BinReader &operator=(const BinReader &other) = delete;
+
+  void Open(const std::string &filePath) { OpenFile(filePath); }
+  void Open(const char *filePath) { OpenFile(filePath); }
 };

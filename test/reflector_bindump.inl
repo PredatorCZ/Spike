@@ -1,6 +1,7 @@
 #include "../datas/binwritter.hpp"
 #include "../datas/binreader.hpp"
 #include "reflector_io.inl"
+#include "../datas/except.hpp"
 
 int test_binwritter(const reflClass &data) {
   BinWritter mwr("testFile.le");
@@ -23,11 +24,11 @@ int test_binwritter(const reflClass &data) {
 }
 
 int test_binreader(const reflClass &data) {
-  BinReader mrd("nonexistantFile");
+  TEST_THROW(es::FileNotFoundError, BinReader mrd("nonexistantFile"););
 
-  TEST_CHECK(!mrd.IsValid());
+  BinReader mrd;
 
-  mrd.Open("nonexistantFile2");
+  TEST_THROW(es::FileNotFoundError, mrd.Open("nonexistantFile2"););
 
   TEST_CHECK(!mrd.IsValid());
 

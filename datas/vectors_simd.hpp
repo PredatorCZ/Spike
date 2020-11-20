@@ -111,18 +111,10 @@ public:
     return _mm_div_ps(_data, input._data);
   }
 
-  V4SimdFltType &operator+=(eltype input) {
-    return *this = *this + input;
-  }
-  V4SimdFltType &operator-=(eltype input) {
-    return *this = *this - input;
-  }
-  V4SimdFltType &operator*=(eltype input) {
-    return *this = *this * input;
-  }
-  V4SimdFltType &operator/=(eltype input) {
-    return *this = *this / input;
-  }
+  V4SimdFltType &operator+=(eltype input) { return *this = *this + input; }
+  V4SimdFltType &operator-=(eltype input) { return *this = *this - input; }
+  V4SimdFltType &operator*=(eltype input) { return *this = *this * input; }
+  V4SimdFltType &operator/=(eltype input) { return *this = *this / input; }
 
   V4SimdFltType operator*(eltype input) const {
     return *this * V4SimdFltType(input);
@@ -167,15 +159,9 @@ public:
     return *this = *this ^ input;
   }
 
-  V4SimdFltType &operator&=(eltype input) {
-    return *this = *this & input;
-  }
-  V4SimdFltType &operator|=(eltype input) {
-    return *this = *this | input;
-  }
-  V4SimdFltType &operator^=(eltype input) {
-    return *this = *this ^ input;
-  }
+  V4SimdFltType &operator&=(eltype input) { return *this = *this & input; }
+  V4SimdFltType &operator|=(eltype input) { return *this = *this | input; }
+  V4SimdFltType &operator^=(eltype input) { return *this = *this ^ input; }
 
   V4SimdFltType operator-() const { return *this * -1.f; }
 
@@ -215,6 +201,18 @@ public:
 
   V4SimdFltType DotV(const V4SimdFltType &input) const {
     return _mm_dp_ps(_data, input._data, 0xff);
+  }
+
+  V4SimdFltType Cross(const V4SimdFltType &input) const {
+    const auto temp0 =
+        V4SimdFltType(_mm_shuffle_ps(_data, _data, _MM_SHUFFLE(3, 0, 2, 1)));
+    const auto temp1 = V4SimdFltType(
+        _mm_shuffle_ps(input._data, input._data, _MM_SHUFFLE(3, 1, 0, 2)));
+    const auto temp2 =
+        V4SimdFltType(_mm_shuffle_ps(_data, _data, _MM_SHUFFLE(3, 1, 0, 2)));
+    const auto temp3 = V4SimdFltType(
+        _mm_shuffle_ps(input._data, input._data, _MM_SHUFFLE(3, 0, 2, 1)));
+    return (temp0 * temp1) - (temp2 * temp3);
   }
 
   V4SimdFltType &Normalize() {
@@ -298,12 +296,8 @@ public:
     return _mm_mullo_epi32(_data, input._data);
   }
 
-  V4SimdIntType_t &operator+=(eltype input) {
-    return *this = *this + input;
-  }
-  V4SimdIntType_t &operator-=(eltype input) {
-    return *this = *this - input;
-  }
+  V4SimdIntType_t &operator+=(eltype input) { return *this = *this + input; }
+  V4SimdIntType_t &operator-=(eltype input) { return *this = *this - input; }
 
   V4SimdIntType_t operator+(eltype input) const {
     return *this + V4SimdIntType_t(input);
@@ -335,8 +329,7 @@ public:
 
   // Logical shift
   template <class C = V4SimdIntType_t>
-  typename std::enable_if<IS_UNSIGNED, C>::type
-  operator>>(eltype input) const {
+  typename std::enable_if<IS_UNSIGNED, C>::type operator>>(eltype input) const {
     return _mm_srli_epi32(_data, input);
   }
 
@@ -361,21 +354,11 @@ public:
     return *this = *this ^ input;
   }
 
-  V4SimdIntType_t &operator&=(eltype input) {
-    return *this = *this & input;
-  }
-  V4SimdIntType_t &operator|=(eltype input) {
-    return *this = *this | input;
-  }
-  V4SimdIntType_t &operator^=(eltype input) {
-    return *this = *this ^ input;
-  }
-  V4SimdIntType_t &operator<<=(eltype input) {
-    return *this = *this << input;
-  }
-  V4SimdIntType_t &operator>>=(eltype input) {
-    return *this = *this >> input;
-  }
+  V4SimdIntType_t &operator&=(eltype input) { return *this = *this & input; }
+  V4SimdIntType_t &operator|=(eltype input) { return *this = *this | input; }
+  V4SimdIntType_t &operator^=(eltype input) { return *this = *this ^ input; }
+  V4SimdIntType_t &operator<<=(eltype input) { return *this = *this << input; }
+  V4SimdIntType_t &operator>>=(eltype input) { return *this = *this >> input; }
 
   template <typename T> V4ScalarType<T> Convert() const {
     return V4ScalarType<T>(static_cast<T>(X), static_cast<T>(Y),
@@ -443,15 +426,9 @@ public:
                          _mm_mullo_pi16(_data, input._data));
   }
 
-  V4MMXShrtType &operator+=(eltype input) {
-    return *this = *this + input;
-  }
-  V4MMXShrtType &operator-=(eltype input) {
-    return *this = *this - input;
-  }
-  V4MMXShrtType &operator*=(eltype input) {
-    return *this = *this * input;
-  }
+  V4MMXShrtType &operator+=(eltype input) { return *this = *this + input; }
+  V4MMXShrtType &operator-=(eltype input) { return *this = *this - input; }
+  V4MMXShrtType &operator*=(eltype input) { return *this = *this * input; }
 
   V4MMXShrtType operator*(eltype input) const {
     return *this * V4MMXShrtType(input);
@@ -509,21 +486,11 @@ public:
     return *this = *this ^ input;
   }
 
-  V4MMXShrtType &operator&=(eltype input) {
-    return *this = *this & input;
-  }
-  V4MMXShrtType &operator|=(eltype input) {
-    return *this = *this | input;
-  }
-  V4MMXShrtType &operator<<=(eltype input) {
-    return *this = *this << input;
-  }
-  V4MMXShrtType &operator>>=(eltype input) {
-    return *this = *this >> input;
-  }
-  V4MMXShrtType &operator^=(eltype input) {
-    return *this = *this ^ input;
-  }
+  V4MMXShrtType &operator&=(eltype input) { return *this = *this & input; }
+  V4MMXShrtType &operator|=(eltype input) { return *this = *this | input; }
+  V4MMXShrtType &operator<<=(eltype input) { return *this = *this << input; }
+  V4MMXShrtType &operator>>=(eltype input) { return *this = *this >> input; }
+  V4MMXShrtType &operator^=(eltype input) { return *this = *this ^ input; }
 
   V4MMXShrtType operator-() const { return *this * -1.f; }
 

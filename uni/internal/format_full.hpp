@@ -16,6 +16,7 @@
 */
 
 #include "datas/float.hpp"
+#include "uni/format.hpp"
 
 namespace _uni_ {
 static constexpr size_t fmtStrides[]{0,  128, 96, 64, 64, 48, 32, 32, 32,
@@ -76,6 +77,7 @@ static void _fmtSampler(C &out, const char *input, size_t count,
 } // namespace _uni_
 
 namespace uni {
+template <FormatType, DataType> class FormatCodec_t {};
 
 /***************************************/
 /* UINT ********************************/
@@ -690,7 +692,7 @@ public:
 template <> class FormatCodec_t<FormatType::FLOAT, DataType::R32G32B32> {
 public:
   static Vector4A16 GetValue(const char *input) {
-    const auto inputRC = *reinterpret_cast<const Vector *>(input);
+    const auto inputRC = *reinterpret_cast<const ::Vector *>(input);
     return Vector4A16(inputRC.X, inputRC.Y, inputRC.Z, 0);
   }
 };
