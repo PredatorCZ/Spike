@@ -50,12 +50,17 @@ public:
   }
 
   bool Fixup(char *root, bool noCheck = false) {
-    if (!pointer || (!noCheck && Fixed())) {
+    if (!noCheck && Fixed()) {
+      return false;
+    }
+
+    usedPts.push_back(&varPtr);
+
+    if (!pointer) {
       return false;
     }
 
     rawPtr = root + varPtr;
-    usedPts.push_back(&varPtr);
     return true;
   }
 };
@@ -64,7 +69,7 @@ template <class C> struct PointerX86 {
   typedef C value_type;
 
 private:
-  uint32 varPtr;
+  int32 varPtr;
 
 public:
   operator C *() {
@@ -90,12 +95,19 @@ public:
   }
 
   bool Fixup(char *root, bool noCheck = false) {
-    if (!varPtr || (!noCheck && Fixed()))
+    if (!noCheck && Fixed()) {
       return false;
+    }
+
+    usedPts.push_back(&varPtr);
+
+    if (!varPtr) {
+      return false;
+    }
 
     char *rawAddr = root + varPtr;
     *this = reinterpret_cast<C *>(rawAddr);
-    usedPts.push_back(&varPtr);
+
     return true;
   }
 
