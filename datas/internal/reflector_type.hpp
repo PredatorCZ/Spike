@@ -18,25 +18,9 @@
 
 #pragma once
 #include "../jenkinshash.hpp"
+#include "../reflector_fwd.hpp"
 #include "../supercore.hpp"
 #include "reflector_class_reg.hpp"
-#include "reflector_enum.hpp"
-
-enum class REFType : uint8 {
-  None,
-  Integer,
-  UnsignedInteger,
-  FloatingPoint,
-  Class,
-  Enum,
-  Bool,
-  CString,
-  String,
-  Array,      // {} braces
-  Vector,     // [] braces
-  ArrayClass, // () braces
-  EnumFlags
-};
 
 struct reflType {
   REFType type;          // type of main element
@@ -94,13 +78,6 @@ ES_STATIC_ASSERT(RefGetType<uint8>() == REFType::UnsignedInteger);
 ES_STATIC_ASSERT(RefGetType<int16>() == REFType::Integer);
 ES_STATIC_ASSERT(RefGetType<uint16>() == REFType::UnsignedInteger);
 
-struct reflTypeDefault_ {
-  static constexpr JenHash Hash() { return {}; }
-  static constexpr JenHash SubHash() { return {}; }
-  static constexpr REFType SUBTYPE = REFType::None;
-  static constexpr uint16 NUMITEMS = 0;
-};
-
 template <typename _Ty> struct _getType : reflTypeDefault_ {
   static constexpr REFType TYPE = RefGetType<_Ty>();
   static constexpr JenHash Hash() {
@@ -131,12 +108,6 @@ template <class C, size_t _Size> struct _getType<C[_Size]> : reflTypeDefault_ {
   static constexpr REFType SUBTYPE = _getType<C>::TYPE;
   static constexpr uint16 NUMITEMS = _Size;
 };
-
-constexpr JenHash _CompileVectorHash(REFType type, uint8 size,
-                                     uint16 numItems) {
-  return JenHash(static_cast<uint32>(type) | static_cast<uint32>(size) << 8 |
-                 static_cast<uint32>(numItems) << 16);
-}
 
 union _DecomposedVectorHash {
   JenHash hash;

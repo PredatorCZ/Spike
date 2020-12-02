@@ -17,9 +17,9 @@
 */
 
 #pragma once
+#include "../reflector_fwd.hpp"
 #include "../string_view.hpp"
 #include "../supercore.hpp"
-#include "reflector_enum.hpp"
 #include <cstring>
 #include <vector>
 

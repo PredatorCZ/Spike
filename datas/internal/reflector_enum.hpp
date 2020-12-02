@@ -17,8 +17,7 @@
 */
 
 #pragma once
-#include "../jenkinshash.hpp"
-#include <cstdlib>
+#include <cstddef>
 
 template <size_t n>
 constexpr size_t _GetReflEnumItemSize(const char (&value)[n]) {
@@ -98,7 +97,3 @@ constexpr size_t _GetReflEnumItemSize(const char (&value)[n]) {
 
 #define _REFLECTOR_START_VERENUM(classname, numFlags, ...)                     \
   VA_NARGS_EVAL(_REFLECTOR_ENUM_VER##numFlags(classname, __VA_ARGS__))
-
-template <class E> struct _EnumWrap {
-  static constexpr JenHash GetHash() { return {}; }
-};

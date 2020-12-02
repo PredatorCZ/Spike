@@ -16,8 +16,7 @@
     limitations under the License.
 */
 
-#ifndef ES_REFLECTOR_DEFINED
-#define ES_REFLECTOR_DEFINED
+#pragma once
 #include "macroLoop.hpp"
 #include "supercore.hpp"
 #include "tchar.hpp"
@@ -187,4 +186,3 @@ public:
 };
 
 #include "internal/reflector.inl"
-#endif

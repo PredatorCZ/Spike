@@ -1,24 +1,23 @@
-/*      Vector, Vector2, Vector4 classes
-        more info in README for PreCore Project
+/*  Vector, Vector2, Vector4 classes
+    more info in README for PreCore Project
 
-        Copyright 2018-2019 Lukas Cone
+    Copyright 2018-2019 Lukas Cone
 
-        Licensed under the Apache License, Version 2.0 (the "License");
-        you may not use this file except in compliance with the License.
-        You may obtain a copy of the License at
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
 
-                http://www.apache.org/licenses/LICENSE-2.0
+      http://www.apache.org/licenses/LICENSE-2.0
 
-        Unless required by applicable law or agreed to in writing, software
-        distributed under the License is distributed on an "AS IS" BASIS,
-        WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-        See the License for the specific language governing permissions and
-        limitations under the License.
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
 */
 
-#ifndef ES_VECTORS_DEFINED
-#define ES_VECTORS_DEFINED
-#include "supercore.hpp"
+#pragma once
+#include "reflector_fwd.hpp"
 #include <ostream>
 #include <float.h>
 #include <cmath>
@@ -437,34 +436,30 @@ typedef t_Vector4<uint32> UIVector4;
 typedef t_Vector4<uint16> USVector4;
 typedef t_Vector4<uint8> UCVector4;
 
+constexpr JenHash CompileVectorHash_(REFType type, uint8 size,
+                                     uint16 numItems) {
+  return JenHash(static_cast<uint32>(type) | static_cast<uint32>(size) << 8 |
+                 static_cast<uint32>(numItems) << 16);
+}
 
-#endif // ES_VECTORS_DEFINED
-
-#ifdef ES_REFLECTOR_DEFINED
-#ifndef ES_VECTORS_TEMPLATES_DEFINED
-#define ES_VECTORS_TEMPLATES_DEFINED
 template <class C> struct _getType<t_Vector2<C>> {
   static constexpr REFType TYPE = REFType::Vector;
   static constexpr REFType SUBTYPE = _getType<C>::TYPE;
   static constexpr uint8 SUBSIZE = sizeof(C);
   static constexpr uint16 NUMITEMS = 2;
-  static constexpr JenHash Hash() { return  _CompileVectorHash(SUBTYPE, SUBSIZE, NUMITEMS); }
+  static constexpr JenHash Hash() { return  CompileVectorHash_(SUBTYPE, SUBSIZE, NUMITEMS); }
 };
 template <class C> struct _getType<t_Vector<C>> {
   static constexpr REFType TYPE = REFType::Vector;
   static constexpr REFType SUBTYPE = _getType<C>::TYPE;
   static constexpr uint8 SUBSIZE = sizeof(C);
   static constexpr uint16 NUMITEMS = 3;
-  static constexpr JenHash Hash() { return  _CompileVectorHash(SUBTYPE, SUBSIZE, NUMITEMS); }
+  static constexpr JenHash Hash() { return  CompileVectorHash_(SUBTYPE, SUBSIZE, NUMITEMS); }
 };
 template <class C> struct _getType<_t_Vector4<C>> {
   static constexpr REFType TYPE = REFType::Vector;
   static constexpr REFType SUBTYPE = _getType<typename C::eltype>::TYPE;
   static constexpr uint8 SUBSIZE = sizeof(typename C::eltype);
   static constexpr uint16 NUMITEMS = 4;
-  static constexpr JenHash Hash() { return  _CompileVectorHash(SUBTYPE, SUBSIZE, NUMITEMS); }
+  static constexpr JenHash Hash() { return  CompileVectorHash_(SUBTYPE, SUBSIZE, NUMITEMS); }
 };
-#endif
-#endif // ES_REFLECTOR_DEFINED
-
-

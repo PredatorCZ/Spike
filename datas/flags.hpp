@@ -15,9 +15,9 @@
     limitations under the License.
 */
 
-#ifndef ES_FLAGS_DEFINED
-#define ES_FLAGS_DEFINED
+#pragma once
 #include "supercore.hpp"
+#include "reflector_fwd.hpp"
 
 namespace es {
 template <class enum_type, class store_override_type =
@@ -90,11 +90,7 @@ private:
   ValueType value;
 };
 }
-#endif // ES_FLAGS_DEFINED
 
-#ifdef ES_REFLECTOR_DEFINED
-#ifndef ES_FLAGS_TEMPLATES_DEFINED
-#define ES_FLAGS_TEMPLATES_DEFINED
 template <class C, class E>
 struct _getType<es::Flags<E, C>> : reflTypeDefault_ {
   static constexpr REFType TYPE = REFType::EnumFlags;
@@ -102,5 +98,3 @@ struct _getType<es::Flags<E, C>> : reflTypeDefault_ {
   static constexpr uint8 SUBSIZE = sizeof(C);
   static constexpr uint16 NUMITEMS = 1;
 };
-#endif
-#endif // ES_REFLECTOR_DEFINED
