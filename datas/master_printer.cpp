@@ -21,10 +21,6 @@
 #include <thread>
 #include <vector>
 
-#ifdef _MSC_VER
-#include <Windows.h>
-#endif
-
 enum MSVC_Console_Flags {
   MSC_Text_Blue,
   MSC_Text_Green,
@@ -49,42 +45,12 @@ static struct MasterPrinter {
   consoleColorAttrFlags consoleColorAttr;
 } __MasterPrinter;
 
-template <class _Func>
-void SetConsoleTextColor(_Func fc, int red, int green, int blue) {
 #ifdef _MSC_VER
-  consoleColorAttrFlags newFlags = __MasterPrinter.consoleColorAttr;
-  const bool intesify = (red | green | blue) > 128;
-
-  if (intesify) {
-    red -= 127;
-    green -= 127;
-    blue -= 127;
-  }
-
-  newFlags.Set(MSC_Text_Intensify, intesify);
-  newFlags.Set(MSC_Text_Red, red > 0);
-  newFlags.Set(MSC_Text_Green, green > 0);
-  newFlags.Set(MSC_Text_Blue, blue > 0);
-
-  SetConsoleTextAttribute(
-      GetStdHandle(STD_OUTPUT_HANDLE),
-      reinterpret_cast<consoleColorAttrFlags::ValueType &>(newFlags));
+#include "internal/master_printer_win.inl"
 #else
-  char buffer[32] = {};
-  sprintf(buffer, "\033[38;2;%i;%i;%im", red, green, blue);
-  fc(buffer);
+#include "internal/master_printer_ix.inl"
 #endif
-}
 
-template <class _Func> void RestoreConsoleTextColor(_Func fc) {
-#ifdef _MSC_VER
-  SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE),
-                          reinterpret_cast<consoleColorAttrFlags::ValueType &>(
-                              __MasterPrinter.consoleColorAttr));
-#else
-  fc("\033[0m");
-#endif
-}
 void MasterPrinterThread::AddPrinterFunction(print_func func, bool useColor) {
   for (auto &c : __MasterPrinter.functions)
     if (c.func == func)
@@ -153,41 +119,4 @@ void MasterPrinterThread::operator>>(int endWay) {
 
 void MasterPrinterThread::PrintThreadID(bool yn) {
   __MasterPrinter.printThreadID = yn;
-}
-
-MasterPrinterThread::MasterPrinterThread() {
-#ifdef _MSC_VER
-  CONSOLE_SCREEN_BUFFER_INFO conInfo;
-  GetConsoleScreenBufferInfo(GetStdHandle(STD_OUTPUT_HANDLE), &conInfo);
-  __MasterPrinter.consoleColorAttr =
-      conInfo.wAttributes & (FOREGROUND_RED | FOREGROUND_GREEN |
-                             FOREGROUND_BLUE | FOREGROUND_INTENSITY);
-#endif
-}
-MasterPrinterThread::~MasterPrinterThread() {}
-
-void SetConsoleTextColor(int red, int green, int blue) {
-#ifdef _MSC_VER
-  SetConsoleTextColor(nullptr, red, green, blue);
-#else
-  for (auto &f : __MasterPrinter.functions) {
-    if (!f.useColor)
-      continue;
-
-    SetConsoleTextColor(f.func, red, green, blue);
-  }
-#endif
-}
-
-void RestoreConsoleTextColor() {
-#ifdef _MSC_VER
-  SetConsoleTextColor(nullptr, 0x1f, 0x1f, 0x1f);
-#else
-  for (auto &f : __MasterPrinter.functions) {
-    if (!f.useColor)
-      continue;
-
-    RestoreConsoleTextColor(f.func);
-  }
-#endif
 }

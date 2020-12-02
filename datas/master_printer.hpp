@@ -47,7 +47,7 @@ public:
   }
   void Locale(const std::locale &loc) { _masterstream.imbue(loc); }
   MasterPrinterThread();
-  ~MasterPrinterThread();
+  ~MasterPrinterThread() = default;
 } printer;
 
 template <>
