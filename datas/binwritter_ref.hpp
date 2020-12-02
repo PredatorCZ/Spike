@@ -16,10 +16,10 @@
 */
 
 #pragma once
+#include "endian.hpp"
 #include "internal/bincore.hpp"
 #include "internal/sc_type.hpp"
-#include <cstring>
-#include <cwchar>
+#include "string_view.hpp"
 
 template <class _Traits> class BinWritterRef_t : public BinStreamNavi<_Traits> {
 public:
@@ -71,29 +71,23 @@ public:
   }
 
   // Write C string
-  // cut : will remove \0
-  void WriteT(const char *input, bool cut = false) const {
-    WriteBuffer(input, strlen(input) + (cut ? 0 : 1));
+  void WriteT(es::string_view input) const {
+    using charType = es::string_view::value_type;
+    WriteBuffer(input.data(), input.size());
+    Write<charType>(0);
   }
 
   // Write C wstring (utf16, utf32, other)
-  // cut : will remove \0
-  void WriteT(const wchar_t *input, bool cut = false) const {
-    size_t size = wcslen(input);
-    if (!cut)
-      size++;
-    size_t capacity = size * sizeof(wchar_t);
-#ifdef ES_ENDIAN_DEFINED
+  void WriteT(es::wstring_view input) const {
+    using charType = es::wstring_view::value_type;
     if (this->swapEndian) {
-      std::wstring outBuffer = input;
+      WriteContainer(input);
+    } else {
+      const size_t capacity = input.size() * sizeof(charType);
+      WriteBuffer(reinterpret_cast<const char *>(input.data()), capacity);
+    }
 
-      if (cut)
-        outBuffer.resize(size);
-
-      WriteContainer(outBuffer);
-    } else
-#endif
-      WriteBuffer(reinterpret_cast<const char *>(input), capacity);
+    Write<charType>(0);
   }
 
   // SFINAE
@@ -112,32 +106,32 @@ private:
 
   template <class C, class T> void _WriteSingle(const T &value, ...) const {
     const size_t capacity = sizeof(T);
-#ifdef ES_ENDIAN_DEFINED
     if (this->swapEndian && capacity > 1) {
-      T outCopy = value;
-      FByteswapper(outCopy);
+      auto outCopy = value;
+      FByteswapper(outCopy, true);
       WriteBuffer(reinterpret_cast<const char *>(&outCopy), capacity);
-    } else
-#endif
+    } else {
       WriteBuffer(reinterpret_cast<const char *>(&value), capacity);
+    }
   }
 
   template <class C, class D>
   auto _WriteElements(const D *input, size_t numElements, int) const
       -> decltype(std::declval<C>().Write(*this), void()) {
-    for (size_t e = 0; e < numElements; e++)
+    for (size_t e = 0; e < numElements; e++) {
       (input + e)->Write(*this);
+    }
   };
 
   template <class C, class T>
   void _WriteElements(const T *value, size_t numElements, ...) const {
     const size_t size = sizeof(T);
-#ifdef ES_ENDIAN_DEFINED
     if (this->swapEndian && size > 1) {
-      for (size_t e = 0; e < numElements; e++)
+      for (size_t e = 0; e < numElements; e++) {
         Write(*(value + e));
-    } else
-#endif
+      }
+    } else {
       WriteBuffer(reinterpret_cast<const char *>(value), size * numElements);
+    }
   }
 };

@@ -17,6 +17,7 @@
 */
 
 #pragma once
+#include "endian_fwd.hpp"
 #include "reflector_fwd.hpp"
 #include <ostream>
 #include <float.h>
@@ -27,9 +28,6 @@
 template <typename T> class t_Vector;
 template <typename T> class _t_Vector4;
 template<typename T> class V4ScalarType;
-
-template<typename T>
-void FByteswapper(T &);
 
 template<typename T>
 class t_Vector2

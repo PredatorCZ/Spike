@@ -16,6 +16,7 @@
 */
 
 #include "datas/float.hpp"
+#include "datas/supercore.hpp"
 #include "uni/format.hpp"
 
 namespace _uni_ {

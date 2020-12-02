@@ -17,8 +17,8 @@
     limitations under the License.
 */
 
-#ifndef ES_ENDIAN_DEFINED
-#define ES_ENDIAN_DEFINED
+#pragma once
+#include "endian_fwd.hpp"
 #include "supercore.hpp"
 
 namespace {
@@ -50,22 +50,32 @@ ES_STATIC_ASSERT(_fbswap<uint32>(0x89abcdef) == 0xefcdab89);
 ES_STATIC_ASSERT(_fbswap<uint64>(0x0123456789abcdef) == 0xefcdab8967452301);
 
 template <class C, class D>
-auto fbswap(D &input, int) -> decltype(std::declval<C>().SwapEndian(), void()) {
+auto fbswap(D &input, bool, int)
+    -> decltype(std::declval<C>().SwapEndian(), void()) {
   input.SwapEndian();
 };
 
-template <class C, class D> void fbswap(D &input, ...) {
+template <class C, class D>
+auto fbswap(D &input, bool outway, int)
+    -> decltype(std::declval<C>().SwapEndian(false), void()) {
+  input.SwapEndian(outway);
+};
+
+template <class C, class D> void fbswap(D &input, bool, ...) {
   auto rType = _fbswap(
       reinterpret_cast<typename es::TypeFromSize<sizeof(C)>::type &>(input));
   input = reinterpret_cast<C &>(rType);
 }
 } // namespace
 
-template <class C> void FByteswapper(C &input) { fbswap<C>(input, 0); }
+template <class C> void FByteswapper(C &input, bool outWay) {
+  fbswap<C>(input, outWay, 0);
+}
 
-template <class C, size_t _size> void FByteswapper(C (&input)[_size]) {
+template <class C, size_t _size>
+void FByteswapper(C (&input)[_size], bool outWay) {
   for (auto &a : input)
-    fbswap<C>(a, 0);
+    fbswap<C>(a, outWay, 0);
 }
 
 template <class E, class C> void FArraySwapper(C &input) {
@@ -75,4 +85,7 @@ template <class E, class C> void FArraySwapper(C &input) {
   for (size_t t = 0; t < numItems; t++)
     FByteswapper(*(inputPtr + t));
 }
-#endif
+
+struct Endian_ {
+  bool Defined();
+};

@@ -16,6 +16,7 @@
 */
 
 #pragma once
+#include "endian.hpp"
 #include "internal/bincore.hpp"
 #include "internal/sc_type.hpp"
 
@@ -105,10 +106,9 @@ public:
 
     ReadBuffer(reinterpret_cast<char *>(value), arraySize);
 
-#ifdef ES_ENDIAN_DEFINED
-    if (this->swapEndian && size > 1)
+    if (this->swapEndian && size > 1) {
       FByteswapper(value);
-#endif
+    }
   }
 
   // SFINAE
@@ -126,10 +126,9 @@ private:
     const size_t size = sizeof(T);
     ReadBuffer(reinterpret_cast<char *>(&value), size);
 
-#ifdef ES_ENDIAN_DEFINED
-    if (this->swapEndian && size > 1)
+    if (this->swapEndian && size > 1) {
       FByteswapper(value);
-#endif
+    }
   }
 
   template <class C, class D>
@@ -144,10 +143,10 @@ private:
     const size_t size = sizeof(T);
     ReadBuffer(reinterpret_cast<char *>(value), size * numElements);
 
-#ifdef ES_ENDIAN_DEFINED
-    if (this->swapEndian && size > 1)
-      for (size_t e = 0; e < numElements; e++)
+    if (this->swapEndian && size > 1) {
+      for (size_t e = 0; e < numElements; e++) {
         FByteswapper(*(value + e));
-#endif
+      }
+    }
   }
 };

@@ -1,6 +1,7 @@
-/*  Endianess class for Binary writter/reader
+/*  Forward declaration for endian
+    more info in README for PreCore Project
 
-    Copyright 2018-2020 Lukas Cone
+    Copyright 2020 Lukas Cone
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -16,14 +17,17 @@
 */
 
 #pragma once
+#include <cstddef>
+#include <type_traits>
 
-class BinSteamEndian {
-protected:
-  bool swapEndian;
+template <typename T> void FByteswapper(T &, bool = false);
+template <class C, size_t _size> void FByteswapper(C (&)[_size], bool = false);
 
-  BinSteamEndian() noexcept : swapEndian(false) {}
+struct Endian_;
 
-public:
-  void SwapEndian(bool swap) { swapEndian = swap; }
-  bool SwappedEndian() { return swapEndian; }
-};
+template <class C>
+constexpr auto UseEndian_(int) -> decltype(std::declval<C>().Defined(), true) {
+  return true;
+}
+
+template <class C> constexpr bool UseEndian_(...) { return false; }

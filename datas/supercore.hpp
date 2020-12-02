@@ -58,7 +58,7 @@ ES_STATIC_ASSERT(GetPadding(7, 8) == 1);
 ES_STATIC_ASSERT(GetPadding(7, 16) == 9);
 
 // Build a compile time fraction for number quantization
-template <size_t numBits> class GetFraction_t {
+template <size_t numBits> class [[deprecated]] GetFraction_t {
   static_assert(numBits < 127, "Fraction overflow!");
   static constexpr size_t EXPONENT = (0x7f ^ numBits) << 23;
   constexpr static size_t _CMan(size_t shiftVal) {
@@ -116,7 +116,7 @@ template <class sview> sview TrimWhitespace(sview input) noexcept {
 
 template <class C> void Dispose(C &item) { auto removed = std::move(item); }
 
-template <size_t size> struct TypeFromSize { typedef void type; };
+template <size_t size> struct TypeFromSize { typedef std::false_type type; };
 template <> struct TypeFromSize<1> { typedef uint8 type; };
 template <> struct TypeFromSize<2> { typedef uint16 type; };
 template <> struct TypeFromSize<4> { typedef uint32 type; };
