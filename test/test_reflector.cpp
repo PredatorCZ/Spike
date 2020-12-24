@@ -7,7 +7,8 @@ int main() {
   printer.AddPrinterFunction(UPrintf);
 
   RegisterReflectedTypes<subrefl, reflClass, roomInfo, roomInfo01, EnumWrap00,
-                         EnumWrap01, EnumWrap02, EnumWrap03, EnumWrap04>();
+                         EnumWrap01, EnumWrap02, EnumWrap03, EnumWrap04,
+                         BitTypeRefl>();
 
   reflClass rClass = {};
 
@@ -18,8 +19,10 @@ int main() {
       TEST_FUNC(test_reflector_decl00), TEST_FUNC(test_reflector_decl01),
       TEST_FUNC(test_reflector_decl02), TEST_FUNC(test_reflector_decl03),
       TEST_FUNC(test_reflector_decl04), TEST_FUNC(test_reflector_decl05),
-      TEST_FUNC(test_reflector_decl06), TEST_FUNC(test_reflector_decl_io),
-      TEST_FUNC(test_reflector, rClass), TEST_FUNC(test_reflector_bool, rClass),
+      TEST_FUNC(test_reflector_decl06), TEST_FUNC(test_reflector_decl07),
+      TEST_FUNC(test_reflector_decl08), TEST_FUNC(test_reflector_decl09),
+      TEST_FUNC(test_reflector_decl_io), TEST_FUNC(test_reflector, rClass),
+      TEST_FUNC(test_reflector_bool, rClass),
       TEST_FUNC(test_reflector_int8, rClass),
       TEST_FUNC(test_reflector_uint8, rClass),
       TEST_FUNC(test_reflector_int16, rClass),
@@ -43,6 +46,7 @@ int main() {
       TEST_FUNC(test_reflector_enumflags01, rClass),
       TEST_FUNC(test_reflector_subclass, rClass),
       TEST_FUNC(test_reflector_array_subclass, rClass),
+      TEST_FUNC(test_reflector_bitfield, rClass),
       TEST_FUNC(test_reflector_string, rClass), TEST_FUNC(test_reflector_alias),
       TEST_FUNC(test_reflector_desc), TEST_FUNC(test_reflector_io, rClass),
       TEST_FUNC(test_binwritter, rClass), TEST_FUNC(test_binreader, rClass));

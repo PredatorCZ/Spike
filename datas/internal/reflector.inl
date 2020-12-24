@@ -48,9 +48,8 @@ Reflector::SetReflectedValueInt(size_t id, int64 value, size_t subID) {
   return SetReflectedValueInt(*reflValue, value, subID);
 }
 
-inline Reflector::ErrorType Reflector::SetReflectedValueUInt(JenHash hash,
-                                                             uint64 value,
-                                                             size_t subID) {
+inline Reflector::ErrorType
+Reflector::SetReflectedValueUInt(JenHash hash, uint64 value, size_t subID) {
   const reflType *reflValue = GetReflectedType(hash);
 
   if (!reflValue)
@@ -70,8 +69,7 @@ Reflector::SetReflectedValueUInt(size_t id, uint64 value, size_t subID) {
 }
 
 inline Reflector::ErrorType
-Reflector::SetReflectedValueFloat(JenHash hash, double value,
-                                  size_t subID) {
+Reflector::SetReflectedValueFloat(JenHash hash, double value, size_t subID) {
   const reflType *reflValue = GetReflectedType(hash);
 
   if (!reflValue)
@@ -117,8 +115,8 @@ Reflector::GetReflectedSubClass(JenHash hash, size_t subID) const {
   return GetReflectedSubClass(found->ID, subID);
 }
 
-inline const Reflector::SubClass
-Reflector::GetReflectedSubClass(JenHash hash, size_t subID) {
+inline const Reflector::SubClass Reflector::GetReflectedSubClass(JenHash hash,
+                                                                 size_t subID) {
   const reflType *found = GetReflectedType(hash);
 
   if (!found)
@@ -158,8 +156,7 @@ Reflector::GetReflectedPair(size_t id, const KVPairFormat &settings) const {
 }
 
 inline Reflector::KVPair
-Reflector::GetReflectedPair(JenHash hash,
-                            const KVPairFormat &settings) const {
+Reflector::GetReflectedPair(JenHash hash, const KVPairFormat &settings) const {
   const reflType *found = GetReflectedType(hash);
 
   if (!found)
@@ -187,8 +184,9 @@ inline bool Reflector::IsReflectedSubClass(size_t id) const {
 
   const reflType fl = GetReflectedInstance().rfStatic->types[id];
 
-  return fl.type == REFType::Class ||
-         (IsArray(fl.ID) && fl.subType == REFType::Class);
+  return fl.type == REFType::Class || fl.type == REFType::BitFieldClass ||
+         (IsArray(fl.ID) &&
+          (fl.subType == REFType::Class || fl.type == REFType::BitFieldClass));
 }
 
 inline bool Reflector::IsArray(JenHash hash) const {

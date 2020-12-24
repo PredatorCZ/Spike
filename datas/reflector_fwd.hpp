@@ -36,7 +36,9 @@ enum class REFType : uint8 {
   Array,      // {} braces
   Vector,     // [] braces
   ArrayClass, // () braces
-  EnumFlags
+  EnumFlags,
+  BitFieldMember,
+  BitFieldClass,
 };
 
 struct reflTypeDefault_ {
@@ -47,3 +49,4 @@ struct reflTypeDefault_ {
 };
 
 template <typename _Ty> struct _getType;
+template <class C> struct ReflectorType;

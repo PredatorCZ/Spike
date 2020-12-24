@@ -94,6 +94,9 @@ int compare_classes(const reflClass &rClass, const reflClass &rClass2) {
   TEST_EQUAL(rClass.test61[1].data0, rClass2.test61[1].data0);
   TEST_EQUAL(rClass.test61[1].data1, rClass2.test61[1].data1);
   TEST_EQUAL(rClass.test80, rClass2.test80);
+  TEST_EQUAL(rClass.test23.value, rClass2.test23.value);
+  TEST_EQUAL(rClass.test62[0].value, rClass2.test62[0].value);
+  TEST_EQUAL(rClass.test62[1].value, rClass2.test62[1].value);
 
   return 0;
 }

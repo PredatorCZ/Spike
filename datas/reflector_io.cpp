@@ -428,6 +428,7 @@ static int WriteDataItem(const Reflector &ri, BinWritterRef wr,
 
   case REFType::UnsignedInteger:
   case REFType::EnumFlags:
+  case REFType::BitFieldClass:
     if (type.subSize > 1) {
       buint128 tvar;
       memcpy(&tvar, objAddr, type.subSize);
@@ -536,6 +537,7 @@ static int LoadDataItem(Reflector &ri, BinReaderRef rd, char *objAddr,
 
   case REFType::UnsignedInteger:
   case REFType::EnumFlags:
+  case REFType::BitFieldClass:
     if (type.subSize > 1) {
       buint128 tvar;
       rd.Read(tvar);

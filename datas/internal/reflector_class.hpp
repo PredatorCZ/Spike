@@ -19,11 +19,15 @@
 #include "../jenkinshash.hpp"
 #include <cstddef>
 
-template <size_t n> constexpr size_t _GetReflDescPart(const char (&value)[n]) {
+template <size_t n>
+constexpr size_t _GetReflDescPart(const char (&value)[n], bool part2 = false) {
   size_t cutter = 0;
 
   for (auto c : value) {
     if (!c || c == '%') {
+      if (c && part2) {
+        cutter++;
+      }
       break;
     }
 
@@ -58,7 +62,7 @@ template <size_t n> constexpr size_t _GetReflDescPart(const char (&value)[n]) {
 #define _REFLECTOR_EXTRACT_ALIAS_N(x, ...) nullptr
 
 #define _REFLECTOR_DESCBUILDER(item)                                           \
-  { {item, _GetReflDescPart(item)}, &item[_GetReflDescPart(item) + 1] }
+  { {item, _GetReflDescPart(item)}, &item[_GetReflDescPart(item, true)] }
 
 #define _REFLECTOR_EXTRACT_DESC(flags, ...)                                    \
   VA_NARGS_EVAL(_REFLECTOR_EXTRACT_DESC_##flags(__VA_ARGS__))
@@ -159,31 +163,31 @@ template <size_t n> constexpr size_t _GetReflDescPart(const char (&value)[n]) {
     return &rclass;                                                            \
   }
 
-#define _REFLECTOR_START_VER0(classname, ...)                                  \
+#define _REFLECTOR_START_VER0_(adtype, classname, ...)                         \
   template <> struct ReflectorType<classname> : ReflectorTypeBase {            \
     using value_type = classname;                                              \
-    _REFLECTOR_MAIN_BODY(_REFLECTOR_ADDN, __VA_ARGS__);                        \
+    _REFLECTOR_MAIN_BODY(adtype, __VA_ARGS__);                                 \
   };                                                                           \
   _REFLECTOR_INTERFACE(_REFLECTOR_CLASS, classname)
 
 // clang-format off
 
-#define _REFLECTOR_START_VER1(classname, var01, ...)                                                          \
+#define _REFLECTOR_START_VER1_(adtype, classname, var01, ...)                                                 \
   template <> struct ReflectorType<_LOOPER_CAT2(_REFLECTOR_TEMPLATE_##var01, _REFLECTOR_CLASS)(classname)>    \
   : ReflectorTypeBase {                                                                                       \
     using value_type = _LOOPER_CAT2(_REFLECTOR_TEMPLATE_##var01, _REFLECTOR_CLASS)(classname);                \
-    _REFLECTOR_MAIN_BODY(_LOOPER_CAT2(_REFLECTOR_EXTENDED_##var01, _REFLECTOR_ADDN), __VA_ARGS__)             \
+    _REFLECTOR_MAIN_BODY(_LOOPER_CAT2(_REFLECTOR_EXTENDED_##var01, adtype), __VA_ARGS__)                      \
     _REFLECTOR_NAMES_##var01(__VA_ARGS__);                                                                    \
     _REFLECTOR_CNAME_##var01(_LOOPER_CAT2(_REFLECTOR_TEMPLATE_##var01, _REFLECTOR_CNAME), classname)          \
     _REFLECTOR_MAIN_CLASSHASH(_LOOPER_CAT2(_REFLECTOR_TEMPLATE_##var01, _REFLECTOR_CNAME), classname)         \
   };                                                                                                          \
   _REFLECTOR_INTERFACE(_LOOPER_CAT2(_REFLECTOR_TEMPLATE_##var01, _REFLECTOR_CLASS), classname)                \
 
-#define _REFLECTOR_START_VER2(classname, var01, var02, ...)                                                                            \
+#define _REFLECTOR_START_VER2_(adtype, classname, var01, var02, ...)                                                                   \
   template <> struct ReflectorType<_LOOPER_CAT2(_REFLECTOR_TEMPLATE_##var01 _REFLECTOR_TEMPLATE_##var02, _REFLECTOR_CLASS)(classname)> \
   : ReflectorTypeBase {                                                                                                                \
     using value_type = _LOOPER_CAT2(_REFLECTOR_TEMPLATE_##var01 _REFLECTOR_TEMPLATE_##var02, _REFLECTOR_CLASS)(classname);             \
-    _REFLECTOR_MAIN_BODY(_LOOPER_CAT2(_REFLECTOR_EXTENDED_##var01 _REFLECTOR_EXTENDED_##var02, _REFLECTOR_ADDN), __VA_ARGS__)          \
+    _REFLECTOR_MAIN_BODY(_LOOPER_CAT2(_REFLECTOR_EXTENDED_##var01 _REFLECTOR_EXTENDED_##var02, adtype), __VA_ARGS__)                   \
     _REFLECTOR_NAMES_##var01(__VA_ARGS__);                                                                                             \
     _REFLECTOR_NAMES_##var02(__VA_ARGS__);                                                                                             \
     _REFLECTOR_CNAME_##var01(_LOOPER_CAT2(_REFLECTOR_TEMPLATE_##var01 _REFLECTOR_TEMPLATE_##var02, _REFLECTOR_CNAME), classname)       \
@@ -192,11 +196,11 @@ template <size_t n> constexpr size_t _GetReflDescPart(const char (&value)[n]) {
   };                                                                                                                                   \
   _REFLECTOR_INTERFACE(_LOOPER_CAT2(_REFLECTOR_TEMPLATE_##var01 _REFLECTOR_TEMPLATE_##var02, _REFLECTOR_CLASS), classname)
 
-#define _REFLECTOR_START_VER3(classname, var01, var02, var03, ...)                                                                                                 \
+#define _REFLECTOR_START_VER3_(adtype, classname, var01, var02, var03, ...)                                                                                        \
   template <> struct ReflectorType<_LOOPER_CAT2(_REFLECTOR_TEMPLATE_##var01 _REFLECTOR_TEMPLATE_##var02 _REFLECTOR_TEMPLATE_##var03, _REFLECTOR_CLASS)(classname)> \
   : ReflectorTypeBase {                                                                                                                                            \
     using value_type = _LOOPER_CAT2(_REFLECTOR_TEMPLATE_##var01 _REFLECTOR_TEMPLATE_##var02 _REFLECTOR_TEMPLATE_##var03, _REFLECTOR_CLASS)(classname);             \
-    _REFLECTOR_MAIN_BODY(_LOOPER_CAT2(_REFLECTOR_EXTENDED_##var01 _REFLECTOR_EXTENDED_##var02 _REFLECTOR_EXTENDED_##var03, _REFLECTOR_ADDN), __VA_ARGS__)          \
+    _REFLECTOR_MAIN_BODY(_LOOPER_CAT2(_REFLECTOR_EXTENDED_##var01 _REFLECTOR_EXTENDED_##var02 _REFLECTOR_EXTENDED_##var03, adtype), __VA_ARGS__)                   \
     _REFLECTOR_NAMES_##var01(__VA_ARGS__);                                                                                                                         \
     _REFLECTOR_NAMES_##var02(__VA_ARGS__);                                                                                                                         \
     _REFLECTOR_NAMES_##var03(__VA_ARGS__);                                                                                                                         \
@@ -208,3 +212,23 @@ template <size_t n> constexpr size_t _GetReflDescPart(const char (&value)[n]) {
   _REFLECTOR_INTERFACE(_LOOPER_CAT2(_REFLECTOR_TEMPLATE_##var01 _REFLECTOR_TEMPLATE_##var02 _REFLECTOR_TEMPLATE_##var03, _REFLECTOR_CLASS), classname)
 
 // clang-format on
+
+#define _REFLECTOR_START_VER0(...)                                             \
+  VA_NARGS_EVAL(_REFLECTOR_START_VER0_(_REFLECTOR_ADDN, __VA_ARGS__))
+#define _REFLECTOR_START_VER1(...)                                             \
+  VA_NARGS_EVAL(_REFLECTOR_START_VER1_(_REFLECTOR_ADDN, __VA_ARGS__))
+#define _REFLECTOR_START_VER2(...)                                             \
+  VA_NARGS_EVAL(_REFLECTOR_START_VER2_(_REFLECTOR_ADDN, __VA_ARGS__))
+#define _REFLECTOR_START_VER3(...)                                             \
+  VA_NARGS_EVAL(_REFLECTOR_START_VER3_(_REFLECTOR_ADDN, __VA_ARGS__))
+
+#define _REFLECTOR_ADDB(classname, _id, mvalue)                                \
+  BuildBFReflType<classname, mvalue>(JenHash(#mvalue)),
+
+#define _EXT_REFLECTOR_ADDB(classname, _id, value)                             \
+  BuildBFReflType<classname, _REFLECTOR_EXTRACT_0 value>(                      \
+      JenHash(_REFLECTOR_EXTRACT_0S value)),
+
+#define _REFLECTOR_START_VERBITFIELD(classname, numFlags, ...)                 \
+  VA_NARGS_EVAL(_REFLECTOR_START_VER##numFlags##_(_REFLECTOR_ADDB, classname,  \
+                                                  __VA_ARGS__))

@@ -141,3 +141,17 @@ reflType BuildReflType(JenHash classHash, uint8 index, size_t offset) {
                   classHash,
                   type_class::Hash()};
 }
+
+template <class main_class, class declmem>
+reflType BuildBFReflType(JenHash hash) {
+  constexpr auto item = main_class::parent::Get(declmem::index);
+
+  return reflType{REFType::BitFieldMember,
+                  RefGetType<typename main_class::value_type>(),
+                  static_cast<decltype(reflType::subSize)>(item.size),
+                  declmem::index,
+                  0,
+                  static_cast<decltype(reflType::offset)>(item.position),
+                  hash,
+                  {}};
+}

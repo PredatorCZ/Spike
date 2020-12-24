@@ -17,6 +17,7 @@
 */
 
 #include "reflector.hpp"
+#include "bitfield.hpp"
 #include "master_printer.hpp"
 #include "string_view.hpp"
 #include <algorithm>
@@ -84,18 +85,42 @@ static Reflector::ErrorType SetNumber(const std::string &input, T &output,
   return Reflector::ErrorType::None;
 }
 
+template <class T> struct LimitProxy {
+  static const size_t numBits = sizeof(T) * 8;
+  static const uint64 uMax = std::numeric_limits<T>::max();
+  static const int64 iMin = std::numeric_limits<T>::min();
+  static const int64 iMax = static_cast<int64>(uMax);
+};
+
+template <class type> struct BFTag {
+  type value;
+  BFTag(const type &value_) : value(value_) {}
+  operator type() const { return value; }
+};
+
+template <class type> struct LimitProxy<BFTag<type>> {
+  size_t numBits;
+  const uint64 uMax;
+  const int64 iMax;
+  const int64 iMin;
+
+  LimitProxy(size_t numBits_)
+      : numBits(numBits_), uMax((1 << numBits) - 1), iMax(uMax >> 1),
+        iMin(~iMax) {}
+};
+
 template <typename T>
 static Reflector::ErrorType SetNumber(const std::string &input, T &output,
-                                      std::true_type) {
-  constexpr int numBits = sizeof(T) * 8;
+                                      std::true_type,
+                                      LimitProxy<T> proxy = {}) {
   Reflector::ErrorType errType = Reflector::ErrorType::None;
   const int base =
       !input.compare(0, 2, "0x") || !input.compare(0, 3, "-0x") ? 16 : 10;
 
   if (std::is_signed<T>::value) {
     int64 value = 0;
-    constexpr int64 iMin = std::numeric_limits<T>::min();
-    constexpr int64 iMax = std::numeric_limits<T>::max();
+    const int64 iMin = proxy.iMin;
+    const int64 iMax = proxy.iMax;
     bool OOR = false;
 
     try {
@@ -109,7 +134,8 @@ static Reflector::ErrorType SetNumber(const std::string &input, T &output,
 
     if (OOR || value > iMax || value < iMin) {
       printwarning("[Reflector] Integer out of range, got: "
-                   << value << " for a signed " << numBits << "bit number!");
+                   << value << " for a signed " << proxy.numBits
+                   << "bit number!");
       output = static_cast<T>(input[0] == '-' ? iMin : iMax);
       return Reflector::ErrorType::OutOfRange;
     }
@@ -117,7 +143,7 @@ static Reflector::ErrorType SetNumber(const std::string &input, T &output,
     output = static_cast<T>(value);
   } else {
     uint64 value = 0;
-    constexpr uint64 iMax = std::numeric_limits<T>::max();
+    const uint64 iMax = proxy.uMax;
     bool OOR = false;
 
     try {
@@ -139,7 +165,8 @@ static Reflector::ErrorType SetNumber(const std::string &input, T &output,
 
     if (OOR || value > iMax) {
       printwarning("[Reflector] Integer out of range, got: "
-                   << value << " for an unsigned " << numBits << "bit number!");
+                   << value << " for an unsigned " << proxy.numBits
+                   << "bit number!");
       output = static_cast<T>(iMax);
       return Reflector::ErrorType::OutOfRange;
     }
@@ -426,6 +453,27 @@ SetReflectedMember(reflType reflValue, es::string_view value, char *objAddr) {
       return Reflector::ErrorType::InvalidDestination;
     }
   }
+  case REFType::BitFieldMember: {
+    uint64 &output = *reinterpret_cast<uint64 *>(objAddr);
+    auto doStuff = [&](auto &&insertVal) {
+      LimitProxy<typename std::remove_reference<decltype(insertVal)>::type>
+          proxy{reflValue.subSize};
+      auto err = SetNumber(value, insertVal, std::true_type{}, proxy);
+      BitMember bfMember;
+      bfMember.size = reflValue.subSize;
+      bfMember.position = reflValue.offset;
+      auto mask = bfMember.GetMask<uint64>();
+      output &= ~mask;
+      output |= insertVal.value << reflValue.offset;
+      return err;
+    };
+
+    if (reflValue.subType == REFType::UnsignedInteger) {
+      return doStuff(BFTag<uint64>{0});
+    } else {
+      return doStuff(BFTag<int64>{0});
+    }
+  }
   case REFType::Enum:
     return SetEnum(value, objAddr, reflValue.typeHash, reflValue.subSize);
   case REFType::EnumFlags:
@@ -448,7 +496,8 @@ Reflector::ErrorType Reflector::SetReflectedValue(reflType type,
                                                   es::string_view value) {
   const reflectorInstance inst = GetReflectedInstance();
   char *thisAddr = static_cast<char *>(inst.rfInstance);
-  thisAddr = thisAddr + type.offset;
+  thisAddr =
+      thisAddr + (type.type == REFType::BitFieldMember ? 0 : type.offset);
 
   return SetReflectedMember(type, value, thisAddr);
 }
@@ -690,6 +739,27 @@ static std::string GetReflectedPrimitive(const char *objAddr, reflType type) {
 
     return _tmpBuffer;
   }
+  case REFType::BitFieldMember: {
+    uint64 output = *reinterpret_cast<const uint64 *>(objAddr);
+    BitMember bfMember;
+    bfMember.size = type.subSize;
+    bfMember.position = type.offset;
+    auto mask = bfMember.GetMask<uint64>();
+    output = (output & mask) >> bfMember.position;
+
+    if (type.subType == REFType::UnsignedInteger) {
+      return std::to_string(output);
+    }
+
+    int64 signedOutput = output;
+    LimitProxy<BFTag<int64>> limit{type.subSize};
+
+    if (signedOutput & limit.iMin) {
+      signedOutput |= ~limit.uMax;
+    }
+
+    return std::to_string(signedOutput);
+  }
 
   case REFType::EnumFlags:
     return PrintEnumFlags(objAddr, type.typeHash, type.subSize);
@@ -715,6 +785,7 @@ static std::string GetReflectedPrimitive(const char *objAddr, reflType type) {
     return *reinterpret_cast<const std::string *>(objAddr);
 
   case REFType::Class:
+  case REFType::BitFieldClass:
     return "SUBCLASS_TYPE";
   default:
     break;
@@ -756,7 +827,8 @@ std::string Reflector::GetReflectedValue(size_t id) const {
   const reflectorInstanceConst inst = GetReflectedInstance();
   const char *thisAddr = static_cast<const char *>(inst.rfInstance);
   const reflType &reflValue = inst.rfStatic->types[id];
-  const int valueOffset = reflValue.offset;
+  const int valueOffset =
+      reflValue.type == REFType::BitFieldMember ? 0 : reflValue.offset;
 
   return GetReflectedPrimitive(thisAddr + valueOffset, reflValue);
 }
@@ -785,7 +857,8 @@ const Reflector::SubClass Reflector::GetReflectedSubClass(size_t id,
     break;
   }
 
-  if (cType != REFType::Class || !REFSubClassStorage.count(reflValue.typeHash))
+  if ((cType != REFType::Class && cType != REFType::BitFieldClass) ||
+      !REFSubClassStorage.count(reflValue.typeHash))
     return {};
 
   return {{}, {REFSubClassStorage.at(reflValue.typeHash), thisAddr}};
@@ -814,7 +887,8 @@ const Reflector::SubClass Reflector::GetReflectedSubClass(size_t id,
     break;
   }
 
-  if (cType != REFType::Class || !REFSubClassStorage.count(reflValue.typeHash))
+  if ((cType != REFType::Class && cType != REFType::BitFieldClass) ||
+      !REFSubClassStorage.count(reflValue.typeHash))
     return {};
 
   return {{REFSubClassStorage.at(reflValue.typeHash), thisAddr},

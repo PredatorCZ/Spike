@@ -26,7 +26,7 @@
 #include "internal/reflector_reg.hpp"
 #include "internal/reflector_type.hpp"
 
-// @numFlags: [0,n] or ENUM + numEnumFlags
+// @numFlags: [0,n] or ENUM + numEnumFlags or BITFIELD + numBitFieldFlags
 // Usable flags: VARNAMES or EXTENDED, TEMPLATE
 // VARNAMES: Saves variable names (do not use with EXTENDED)
 // EXTENDED: Each variable must have (<type>, varname, ...) format
@@ -43,6 +43,8 @@
 // Usable enum flags: CLASS, enum size (64 or 32 or 16 or 8)
 // ENUM examples:
 //   REFLECTOR_CREATE(myEnum, ENUM, 1 CLASS, var1, var2, <other vars>...)
+// Usable BITFIELD flags: same as for class
+
 #define REFLECTOR_CREATE(classname, numFlags, ...)                             \
   VA_NARGS_EVAL(_REFLECTOR_START_VER##numFlags(classname, __VA_ARGS__))
 

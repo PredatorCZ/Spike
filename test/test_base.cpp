@@ -8,6 +8,7 @@
 #include "multi_thread.inl"
 #include "supercore.inl"
 #include "vector_simd.inl"
+#include "bitfield.inl"
 
 #include "base128.inl"
 #include "bincore.inl"
@@ -25,7 +26,7 @@ int main() {
   printline("I'm blue, da ri di danu da.");
   RestoreConsoleTextColor();
 
-  TEST_CASES(int testResult, TEST_FUNC(test_alloc_hybrid),
+  TEST_CASES(int testResult, TEST_FUNC(test_bf_00), TEST_FUNC(test_alloc_hybrid),
              TEST_FUNC(test_fileinfo), TEST_FUNC(test_endian),
              TEST_FUNC(test_flags_00), TEST_FUNC(test_flags_01),
              TEST_FUNC(test_flags_02), TEST_FUNC(test_bincore_00),

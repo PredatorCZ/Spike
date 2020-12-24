@@ -1,9 +1,9 @@
 #pragma once
+#include "../datas/bitfield.hpp"
 #include "../datas/endian.hpp"
+#include "../datas/flags.hpp"
 #include "../datas/reflector_io.hpp"
 #include "../datas/unit_testing.hpp"
-
-#include "../datas/flags.hpp"
 #include "../datas/vectors_simd.hpp"
 
 REFLECTOR_CREATE(EnumWrap00, ENUM, 1, CLASS, E1, E2,
@@ -124,6 +124,17 @@ struct subrefl : ReflectorInterface<subrefl> {
 
 REFLECTOR_CREATE(subrefl, 1, VARNAMES, data0, data1);
 
+using member0 = BitMemberDecl<0, 2>;
+using member1 = BitMemberDecl<1, 5>;
+using member2 = BitMemberDecl<2, 3>;
+using member3 = BitMemberDecl<3, 1>;
+using member42 = BitMemberDecl<4, 5>;
+using BitTypeRefl =
+    BitFieldType<uint16, member0, member1, member2, member3, member42>;
+
+REFLECTOR_CREATE(BitTypeRefl, BITFIELD, 1, VARNAMES, member0, member1, member2,
+                 member3, member42);
+
 struct _ReflClassData {
   bool test1;
   int8 test2;
@@ -151,6 +162,7 @@ struct _ReflClassData {
   Vector4A16 test21;
 
   subrefl test22;
+  BitTypeRefl test23;
 
   bool test40[4];
   int8 test41[2];
@@ -178,6 +190,11 @@ struct _ReflClassData {
   Vector4A16 test60[4];
 
   subrefl test61[2];
+  BitTypeRefl test62[2];
+
+  // Need to enclose padding because of RPO,
+  // otherwise cast write will corrupt test80
+  Vector4A16 padClose;
 
   _ReflClassData() = default;
 };
@@ -193,7 +210,8 @@ REFLECTOR_CREATE(reflClass, 1, VARNAMES, test1, test2, test3, test4, test5,
                  test14, test15, test16, test17, test18, test19, test20, test21,
                  test22, test40, test41, test42, test43, test44, test45, test46,
                  test47, test48, test49, test50, test51, test52, test53, test54,
-                 test55, test56, test57, test58, test59, test60, test61, test80)
+                 test55, test56, test57, test58, test59, test60, test61, test80,
+                 test23, test62)
 
 int test_reflector_bool(reflClass &input) {
   TEST_EQUAL(input.test1, false);
@@ -1781,6 +1799,46 @@ int test_reflector_string(reflClass &input) {
   Reflector::KVPair cPair = input.GetReflectedPair(44);
   TEST_EQUAL(cPair.name, "test80");
   TEST_EQUAL(cPair.value, "This is a test string");
+
+  return 0;
+}
+
+int test_reflector_bitfield(reflClass &input) {
+  Reflector::KVPair cPair = input.GetReflectedPair(45);
+  TEST_EQUAL(cPair.name, "test23");
+  TEST_EQUAL(cPair.value, "SUBCLASS_TYPE");
+  TEST_CHECK(input.IsReflectedSubClass(45));
+
+  auto rClass = input.GetReflectedSubClass("test23");
+  ReflectorSubClass sClass(rClass);
+  auto &lClass = input.test23;
+
+  TEST_EQUAL(lClass.Get<member0>(), 0);
+  TEST_EQUAL(sClass.SetReflectedValue("member0", "2"),
+             Reflector::ErrorType::None);
+  TEST_EQUAL(lClass.Get<member0>(), 2);
+  cPair = sClass.GetReflectedPair(0);
+  TEST_EQUAL(cPair.name, "member0");
+  TEST_EQUAL(cPair.value, "2");
+
+  TEST_EQUAL(sClass.SetReflectedValue("member0", "4"),
+             Reflector::ErrorType::OutOfRange);
+  TEST_EQUAL(lClass.Get<member0>(), 3);
+  cPair = sClass.GetReflectedPair(0);
+  TEST_EQUAL(cPair.name, "member0");
+  TEST_EQUAL(cPair.value, "3");
+
+  TEST_EQUAL(sClass.SetReflectedValue("member0", "1"),
+             Reflector::ErrorType::None);
+  TEST_EQUAL(lClass.Get<member0>(), 1);
+
+  TEST_EQUAL(lClass.Get<member1>(), 0);
+  TEST_EQUAL(sClass.SetReflectedValue("member1", "25"),
+             Reflector::ErrorType::None);
+  TEST_EQUAL(lClass.Get<member1>(), 25);
+  cPair = sClass.GetReflectedPair(1);
+  TEST_EQUAL(cPair.name, "member1");
+  TEST_EQUAL(cPair.value, "25");
 
   return 0;
 }

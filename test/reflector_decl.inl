@@ -1,4 +1,5 @@
 #pragma once
+#include "../datas/bitfield.hpp"
 #include "../datas/reflector_io.hpp"
 #include "../datas/unit_testing.hpp"
 
@@ -230,7 +231,8 @@ REFLECTOR_CREATE((templatedClass<int, float>), 2, TEMPLATE, VARNAMES, item0,
 int test_reflector_decl06(const reflectorStatic *mainRefl =
                               templatedClass<int, float>::GetReflector()) {
   TEST_NOT_EQUAL(mainRefl->className, nullptr);
-  TEST_EQUAL(es::string_view("templatedClass<int, float>"), mainRefl->className);
+  TEST_EQUAL(es::string_view("templatedClass<int, float>"),
+             mainRefl->className);
   TEST_EQUAL(mainRefl->nTypes, 2);
   TEST_EQUAL(mainRefl->typeAliases, nullptr);
   TEST_EQUAL(mainRefl->typeDescs, nullptr);
@@ -239,6 +241,109 @@ int test_reflector_decl06(const reflectorStatic *mainRefl =
 
   TEST_EQUAL(es::string_view("item0"), mainRefl->typeNames[0]);
   TEST_EQUAL(es::string_view("item1"), mainRefl->typeNames[1]);
+
+  return 0;
+}
+
+using member0 = BitMemberDecl<0, 2>;
+using member1 = BitMemberDecl<1, 5>;
+using member2 = BitMemberDecl<2, 3>;
+using member3 = BitMemberDecl<3, 1>;
+using member4 = BitMemberDecl<4, 2>;
+using member5 = BitMemberDecl<5, 3>;
+using BitType0 =
+    BitFieldType<uint16, member0, member1, member2, member3, member4, member5>;
+
+REFLECTOR_CREATE(BitType0, BITFIELD, 0, member0, member1, member2, member3,
+                 member4, member5);
+
+int test_reflector_decl07(const reflectorStatic *mainRefl =
+                              ReflectorInterface<BitType0>::GetReflector()) {
+  TEST_EQUAL(mainRefl->className, nullptr);
+  TEST_EQUAL(mainRefl->nTypes, 6);
+  TEST_EQUAL(mainRefl->typeAliases, nullptr);
+  TEST_EQUAL(mainRefl->typeDescs, nullptr);
+  TEST_EQUAL(mainRefl->typeNames, nullptr);
+  TEST_EQUAL(mainRefl->typeAliasHashes, nullptr);
+
+  return 0;
+}
+
+using BitType1 =
+    BitFieldType<uint16, member0, member1, member2, member3, member4>;
+
+REFLECTOR_CREATE(BitType1, BITFIELD, 1, VARNAMES, member0, member1, member2,
+                 member3, member4);
+
+int test_reflector_decl08(const reflectorStatic *mainRefl =
+                              ReflectorInterface<BitType1>::GetReflector()) {
+  TEST_NOT_EQUAL(mainRefl->className, nullptr);
+  TEST_EQUAL(es::string_view("BitType1"), mainRefl->className);
+  TEST_EQUAL(mainRefl->nTypes, 5);
+  TEST_EQUAL(mainRefl->typeAliases, nullptr);
+  TEST_EQUAL(mainRefl->typeDescs, nullptr);
+  TEST_NOT_EQUAL(mainRefl->typeNames, nullptr);
+  TEST_EQUAL(mainRefl->typeAliasHashes, nullptr);
+
+  TEST_EQUAL(es::string_view("member0"), mainRefl->typeNames[0]);
+  TEST_EQUAL(es::string_view("member1"), mainRefl->typeNames[1]);
+  TEST_EQUAL(es::string_view("member2"), mainRefl->typeNames[2]);
+  TEST_EQUAL(es::string_view("member3"), mainRefl->typeNames[3]);
+  TEST_EQUAL(es::string_view("member4"), mainRefl->typeNames[4]);
+
+  return 0;
+}
+
+using member41 = BitMemberDecl<4, 3>;
+using member51 = BitMemberDecl<5, 2>;
+
+using BitType2 =
+    BitFieldType<uint16, member0, member1, member2, member3, member41, member51>;
+
+REFLECTOR_CREATE(BitType2, BITFIELD, 1, EXTENDED, (,member0), (A,member1, "memAlias1"), (D, member2, "memDescr2"),
+                 (AD, member3, "memAlias3", "memDescr3"), (, member41), (, member51));
+
+int test_reflector_decl09(const reflectorStatic *mainRefl =
+                              ReflectorInterface<BitType2>::GetReflector()) {
+  TEST_NOT_EQUAL(mainRefl->className, nullptr);
+  TEST_EQUAL(es::string_view("BitType2"), mainRefl->className);
+  TEST_EQUAL(mainRefl->nTypes, 6);
+  TEST_NOT_EQUAL(mainRefl->typeAliases, nullptr);
+  TEST_NOT_EQUAL(mainRefl->typeDescs, nullptr);
+  TEST_NOT_EQUAL(mainRefl->typeNames, nullptr);
+  TEST_NOT_EQUAL(mainRefl->typeAliasHashes, nullptr);
+
+  TEST_EQUAL(es::string_view("member0"), mainRefl->typeNames[0]);
+  TEST_EQUAL(es::string_view("member1"), mainRefl->typeNames[1]);
+  TEST_EQUAL(es::string_view("member2"), mainRefl->typeNames[2]);
+  TEST_EQUAL(es::string_view("member3"), mainRefl->typeNames[3]);
+  TEST_EQUAL(es::string_view("member41"), mainRefl->typeNames[4]);
+  TEST_EQUAL(es::string_view("member51"), mainRefl->typeNames[5]);
+
+  TEST_EQUAL(0, mainRefl->typeAliasHashes[0]);
+  TEST_EQUAL(JenHash("memAlias1"), mainRefl->typeAliasHashes[1]);
+  TEST_EQUAL(0, mainRefl->typeAliasHashes[2]);
+  TEST_EQUAL(JenHash("memAlias3"), mainRefl->typeAliasHashes[3]);
+  TEST_EQUAL(0, mainRefl->typeAliasHashes[4]);
+  TEST_EQUAL(0, mainRefl->typeAliasHashes[5]);
+
+  TEST_CHECK(mainRefl->typeDescs[0].part1.empty());
+  TEST_CHECK(mainRefl->typeDescs[1].part1.empty());
+  TEST_EQUAL(mainRefl->typeDescs[2].part1, "memDescr2");
+  TEST_EQUAL(mainRefl->typeDescs[3].part1, "memDescr3");
+  TEST_CHECK(mainRefl->typeDescs[4].part1.empty());
+  TEST_CHECK(mainRefl->typeDescs[5].part1.empty());
+
+  TEST_EQUAL(mainRefl->typeAliases[0], nullptr);
+  TEST_EQUAL(es::string_view("memAlias1"), mainRefl->typeAliases[1]);
+  TEST_EQUAL(mainRefl->typeAliases[2], nullptr);
+  TEST_EQUAL(es::string_view("memAlias3"), mainRefl->typeAliases[3]);
+  TEST_EQUAL(mainRefl->typeAliases[4], nullptr);
+  TEST_EQUAL(mainRefl->typeAliases[5], nullptr);
+
+  for (uint32 i = 0; i < mainRefl->nTypes; i++) {
+    TEST_CHECK(mainRefl->typeDescs[i].part2.empty());
+  }
 
   return 0;
 }
