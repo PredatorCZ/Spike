@@ -15,6 +15,8 @@
     limitations under the License.
 */
 
+#include "../endian.hpp"
+
 static_assert(BitMember{0, 16}.GetMask<uint32>() == 0xffff, "Invalid mask!");
 static_assert(BitMember{16, 16}.GetMask<uint32>() == 0xffff0000,
               "Invalid mask!");
@@ -32,6 +34,9 @@ void SwapBitField(size_t numItems, bool outWay, type &input, fn GetMember) {
   type newVal = 0;
 
   if (!outWay) {
+    if (sizeof(type) > 1) {
+      FByteswapper(input);
+    }
     for (size_t i = 0; i < numItems; i++) {
       BitMember item = GetMember(i);
       type mask = item.GetMirrorMask<type>();
@@ -53,6 +58,10 @@ void SwapBitField(size_t numItems, bool outWay, type &input, fn GetMember) {
     }
 
     input = newVal;
+
+    if (sizeof(type) > 1) {
+      FByteswapper(input);
+    }
   }
 }
 
