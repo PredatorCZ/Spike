@@ -1,7 +1,7 @@
 /*  Block Compression SIMD Decoder
     more info in README for PreCore Project
 
-    Copyright 2020 Lukas Cone
+    Copyright 2020-2021 Lukas Cone
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -16,7 +16,8 @@
     limitations under the License.
 */
 
-#include "datas/VectorsSimd.hpp"
+#include "datas/vectors_simd.hpp"
+#include <cstring>
 
 static inline void DecodeRGB565Blocks(const char *data, IVector4A16 &color0,
                                       IVector4A16 &color1) {

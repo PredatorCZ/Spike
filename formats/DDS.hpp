@@ -1,6 +1,6 @@
 /*  DDS format header
 
-    Copyright 2019-2020 Lukas Cone
+    Copyright 2019-2021 Lukas Cone
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -20,7 +20,7 @@
 
 // Refers to:
 // https://docs.microsoft.com/en-us/windows/desktop/api/dxgiformat/ne-dxgiformat-dxgi_format
-enum DXGI_FORMAT {
+enum DXGI_FORMAT : uint32 {
   DXGI_FORMAT_UNKNOWN,
   DXGI_FORMAT_R32G32B32A32_TYPELESS,
   DXGI_FORMAT_R32G32B32A32_FLOAT,
@@ -143,7 +143,7 @@ enum DXGI_FORMAT {
   DXGI_FORMAT_FORCE_UINT
 };
 
-static constexpr int _bpps[] = {
+static constexpr uint32 _bpps[] = {
     0,  128, 128, 128, 128, 96, 96, 96, 96, 64, 64, 64, 64, 64, 64, 64, 64, 64,
     64, 64,  64,  64,  64,  32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32,
     32, 32,  32,  32,  32,  32, 32, 32, 32, 32, 32, 32, 16, 16, 16, 16, 16, 16,
@@ -180,10 +180,10 @@ ES_STATIC_ASSERT(_bpps[DXGI_FORMAT_Y216] == 64);
 ES_STATIC_ASSERT(_bpps[DXGI_FORMAT_B4G4R4A4_UNORM] == 16);
 
 struct DDS_Header {
-  static const uint32 ID = CompileFourCC("DDS ");
-  static const uint32 HEADER_SIZE = 124;
+  static constexpr uint32 ID = CompileFourCC("DDS ");
+  static constexpr uint32 HEADER_SIZE = 124;
 
-  enum Flags {
+  enum Flags : uint32 {
     Flags_Caps,
     Flags_Height,
     Flags_Width,
@@ -194,24 +194,25 @@ struct DDS_Header {
     Flags_Depth = 23,
   };
 
-  int32 magic, size;
-  esFlags<uint32, Flags> flags;
-  uint32 height, width, pitchOrLinearSize, depth, mipMapCount, reserved00[11];
-
-  DDS_Header()
-      : magic(ID), size(HEADER_SIZE),
-        flags(Flags_Caps, Flags_Height, Flags_Width, Flags_PixelFormat),
-        pitchOrLinearSize(0), depth(1), mipMapCount(0), reserved00() {}
+  uint32 magic = ID;
+  uint32 size = HEADER_SIZE;
+  es::Flags<Flags> flags{Flags_Caps, Flags_Height, Flags_Width,
+                         Flags_PixelFormat};
+  uint32 height, width;
+  uint32 pitchOrLinearSize = 0;
+  uint32 depth = 1;
+  uint32 mipMapCount = 0;
+  uint32 reserved00[11]{};
 };
 
 struct DDS_HeaderEnd {
-  enum Caps00Flags {
+  enum Caps00Flags : uint32 {
     Caps00Flags_Complex = 3, // mipmaps, cubemaps
     Caps00Flags_MipMaps = 22,
     Caps00Flags_Texture = 12
   };
 
-  enum Caps01Flags {
+  enum Caps01Flags : uint32 {
     Caps01Flags_CubeMap = 9,
     Caps01Flags_CubeMap_PositiveX,
     Caps01Flags_CubeMap_NegativeX,
@@ -222,18 +223,17 @@ struct DDS_HeaderEnd {
     Caps01Flags_Volume = 21,
   };
 
-  esFlags<uint32, Caps00Flags> caps00;
-  esFlags<uint32, Caps01Flags> caps01;
-  uint32 caps02, caps03, reserved01;
-
-  DDS_HeaderEnd()
-      : caps00(Caps00Flags_Texture), caps02(0), caps03(0), reserved01(0) {}
+  es::Flags<Caps00Flags> caps00{Caps00Flags_Texture};
+  es::Flags<Caps01Flags> caps01;
+  uint32 caps02 = 0;
+  uint32 caps03 = 0;
+  uint32 reserved01 = 0;
 };
 
 struct DDS_PixelFormat {
-  static const int PIXELFORMAT_SIZE = 32;
+  static constexpr uint32 PIXELFORMAT_SIZE = 32;
 
-  enum PFFlags {
+  enum PFFlags : uint32 {
     PFFlags_AlphaPixels,
     PFFlags_Alpha, // Alpha Channel Only
     PFFlags_FourCC,
@@ -244,24 +244,26 @@ struct DDS_PixelFormat {
         17, // Luminance channel, can be used with PFFlags_AlphaPixels
   };
 
-  typedef esFlags<uint32, PFFlags> FlagsType;
+  typedef es::Flags<PFFlags> FlagsType;
 
-  uint32 pfSize;
+  uint32 pfSize = PIXELFORMAT_SIZE;
   FlagsType pfFlags;
-  uint32 fourCC, bpp, RBitMask, GBitMask, BBitMask, ABitMask;
+  uint32 fourCC = 0;
+  uint32 bpp = 0;
+  uint32 RBitMask = 0;
+  uint32 GBitMask = 0;
+  uint32 BBitMask = 0;
+  uint32 ABitMask = 0;
 
-  DDS_PixelFormat()
-      : pfSize(PIXELFORMAT_SIZE), fourCC(0), bpp(0), RBitMask(0), GBitMask(0),
-        BBitMask(0), ABitMask(0) {}
-  DDS_PixelFormat(const int _fourCC, uint32 _bpp)
-      : pfSize(PIXELFORMAT_SIZE), pfFlags(PFFlags_FourCC), fourCC(_fourCC),
-        bpp(_bpp), RBitMask(0), GBitMask(0), BBitMask(0), ABitMask(0) {}
-  DDS_PixelFormat(FlagsType _flags, uint32 _bpp, uint32 rMask, uint32 gMask,
-                  uint32 bMask, uint32 aMask)
-      : pfSize(PIXELFORMAT_SIZE), pfFlags(_flags), fourCC(0), bpp(_bpp),
-        RBitMask(rMask), GBitMask(gMask), BBitMask(bMask), ABitMask(aMask) {}
+  constexpr DDS_PixelFormat() = default;
+  constexpr DDS_PixelFormat(const int _fourCC, uint32 _bpp)
+      : pfFlags(PFFlags_FourCC), fourCC(_fourCC), bpp(_bpp) {}
+  constexpr DDS_PixelFormat(FlagsType _flags, uint32 _bpp, uint32 rMask,
+                            uint32 gMask, uint32 bMask, uint32 aMask)
+      : pfFlags(_flags), bpp(_bpp), RBitMask(rMask), GBitMask(gMask),
+        BBitMask(bMask), ABitMask(aMask) {}
 
-  const bool operator==(const DDS_PixelFormat &input) const {
+  constexpr bool operator==(const DDS_PixelFormat &input) const {
     return pfFlags == input.pfFlags && fourCC == input.fourCC &&
            bpp == input.bpp && RBitMask == input.RBitMask &&
            GBitMask == input.GBitMask && BBitMask == input.BBitMask &&
@@ -269,81 +271,77 @@ struct DDS_PixelFormat {
   }
 };
 
-const DDS_PixelFormat DDSFormat_DXT1(CompileFourCC("DXT1"), 4);
-const DDS_PixelFormat DDSFormat_DXT2(CompileFourCC("DXT2"), 8);
-const DDS_PixelFormat DDSFormat_DXT3(CompileFourCC("DXT3"), 8);
-const DDS_PixelFormat DDSFormat_DXT4(CompileFourCC("DXT4"), 8);
-const DDS_PixelFormat DDSFormat_DXT5(CompileFourCC("DXT5"), 8);
+static constexpr DDS_PixelFormat DDSFormat_DXT1(CompileFourCC("DXT1"), 4);
+static constexpr DDS_PixelFormat DDSFormat_DXT2(CompileFourCC("DXT2"), 8);
+static constexpr DDS_PixelFormat DDSFormat_DXT3(CompileFourCC("DXT3"), 8);
+static constexpr DDS_PixelFormat DDSFormat_DXT4(CompileFourCC("DXT4"), 8);
+static constexpr DDS_PixelFormat DDSFormat_DXT5(CompileFourCC("DXT5"), 8);
 
-const DDS_PixelFormat DDSFormat_BC4U(CompileFourCC("BC4U"), 4);
-const DDS_PixelFormat DDSFormat_BC4S(CompileFourCC("BC4S"), 4);
-const DDS_PixelFormat DDSFormat_BC5U(CompileFourCC("BC5U"), 8);
-const DDS_PixelFormat DDSFormat_BC5S(CompileFourCC("BC5S"), 8);
+static constexpr DDS_PixelFormat DDSFormat_BC4U(CompileFourCC("BC4U"), 4);
+static constexpr DDS_PixelFormat DDSFormat_BC4S(CompileFourCC("BC4S"), 4);
+static constexpr DDS_PixelFormat DDSFormat_BC5U(CompileFourCC("BC5U"), 8);
+static constexpr DDS_PixelFormat DDSFormat_BC5S(CompileFourCC("BC5S"), 8);
 
-const DDS_PixelFormat DDSFormat_R8G8_B8G8(CompileFourCC("RBGB"), 32);
-const DDS_PixelFormat DDSFormat_G8R8_G8B8(CompileFourCC("GRGB"), 32);
-const DDS_PixelFormat DDSFormat_UYVY(CompileFourCC("UYVY"), 32);
-const DDS_PixelFormat DDSFormat_YUY2(CompileFourCC("YUY2"), 32);
+static constexpr DDS_PixelFormat DDSFormat_R8G8_B8G8(CompileFourCC("RBGB"), 32);
+static constexpr DDS_PixelFormat DDSFormat_G8R8_G8B8(CompileFourCC("GRGB"), 32);
+static constexpr DDS_PixelFormat DDSFormat_UYVY(CompileFourCC("UYVY"), 32);
+static constexpr DDS_PixelFormat DDSFormat_YUY2(CompileFourCC("YUY2"), 32);
 
-const DDS_PixelFormat DDSFormat_ATI1(CompileFourCC("ATI1"), 4);
-const DDS_PixelFormat DDSFormat_ATI2(CompileFourCC("ATI2"), 8);
+static constexpr DDS_PixelFormat DDSFormat_ATI1(CompileFourCC("ATI1"), 4);
+static constexpr DDS_PixelFormat DDSFormat_ATI2(CompileFourCC("ATI2"), 8);
 
-const DDS_PixelFormat DDSFormat_DX10(CompileFourCC("DX10"), 0);
+static constexpr DDS_PixelFormat DDSFormat_DX10(CompileFourCC("DX10"), 0);
 
-const DDS_PixelFormat DDSFormat_A2B10G10R10(
+static constexpr DDS_PixelFormat DDSFormat_A2B10G10R10(
     {DDS_PixelFormat::PFFlags_RGB, DDS_PixelFormat::PFFlags_AlphaPixels}, 32,
     0x000003ff, 0x000ffc00, 0x3ff00000, 0x00000000);
-const DDS_PixelFormat DDSFormat_A8R8G8B8({DDS_PixelFormat::PFFlags_RGB,
-                                          DDS_PixelFormat::PFFlags_AlphaPixels},
-                                         32, 0x00ff0000, 0x0000ff00, 0x000000ff,
-                                         0xff000000);
-const DDS_PixelFormat DDSFormat_A1R5G5B5({DDS_PixelFormat::PFFlags_RGB,
-                                          DDS_PixelFormat::PFFlags_AlphaPixels},
-                                         16, 0x00007c00, 0x000003e0, 0x0000001f,
-                                         0x00008000);
-const DDS_PixelFormat DDSFormat_A4R4G4B4({DDS_PixelFormat::PFFlags_RGB,
-                                          DDS_PixelFormat::PFFlags_AlphaPixels},
-                                         16, 0x00000f00, 0x000000f0, 0x0000000f,
-                                         0x0000f000);
-const DDS_PixelFormat DDSFormat_A8L8({DDS_PixelFormat::PFFlags_Luminance,
-                                      DDS_PixelFormat::PFFlags_AlphaPixels},
-                                     16, 0x000000ff, 0x00000000, 0x00000000,
-                                     0x0000ff00);
+static constexpr DDS_PixelFormat DDSFormat_A8R8G8B8(
+    {DDS_PixelFormat::PFFlags_RGB, DDS_PixelFormat::PFFlags_AlphaPixels}, 32,
+    0x00ff0000, 0x0000ff00, 0x000000ff, 0xff000000);
+static constexpr DDS_PixelFormat DDSFormat_A1R5G5B5(
+    {DDS_PixelFormat::PFFlags_RGB, DDS_PixelFormat::PFFlags_AlphaPixels}, 16,
+    0x00007c00, 0x000003e0, 0x0000001f, 0x00008000);
+static constexpr DDS_PixelFormat DDSFormat_A4R4G4B4(
+    {DDS_PixelFormat::PFFlags_RGB, DDS_PixelFormat::PFFlags_AlphaPixels}, 16,
+    0x00000f00, 0x000000f0, 0x0000000f, 0x0000f000);
+static constexpr DDS_PixelFormat DDSFormat_A8L8(
+    {DDS_PixelFormat::PFFlags_Luminance, DDS_PixelFormat::PFFlags_AlphaPixels},
+    16, 0x000000ff, 0x00000000, 0x00000000, 0x0000ff00);
 
-const DDS_PixelFormat DDSFormat_X8R8G8B8(DDS_PixelFormat::PFFlags_RGB, 32,
-                                         0x00ff0000, 0x0000ff00, 0x000000ff,
-                                         0x00000000);
-const DDS_PixelFormat DDSFormat_G16R16(DDS_PixelFormat::PFFlags_RGB, 32,
-                                       0x0000ffff, 0xffff0000, 0x00000000,
-                                       0x00000000);
-const DDS_PixelFormat DDSFormat_R8G8B8(DDS_PixelFormat::PFFlags_RGB, 24,
-                                       0x00ff0000, 0x0000ff00, 0x000000ff,
-                                       0x00000000);
-const DDS_PixelFormat DDSFormat_R5G6B5(DDS_PixelFormat::PFFlags_RGB, 16,
-                                       0x0000f800, 0x000007e0, 0x0000001f,
-                                       0x00000000);
-const DDS_PixelFormat DDSFormat_L16(DDS_PixelFormat::PFFlags_Luminance, 16,
-                                    0x0000ffff, 0x00000000, 0x00000000,
-                                    0x00000000);
-const DDS_PixelFormat DDSFormat_L8(DDS_PixelFormat::PFFlags_Luminance, 8,
-                                   0x000000ff, 0x00000000, 0x00000000,
-                                   0x00000000);
-const DDS_PixelFormat DDSFormat_A8(DDS_PixelFormat::PFFlags_Alpha, 8,
-                                   0x00000000, 0x00000000, 0x00000000,
-                                   0x000000ff);
+static constexpr DDS_PixelFormat DDSFormat_X8R8G8B8( //
+    DDS_PixelFormat::PFFlags_RGB, 32, 0x00ff0000, 0x0000ff00, 0x000000ff,
+    0x00000000);
+static constexpr DDS_PixelFormat DDSFormat_G16R16( //
+    DDS_PixelFormat::PFFlags_RGB, 32, 0x0000ffff, 0xffff0000, 0x00000000,
+    0x00000000);
+static constexpr DDS_PixelFormat DDSFormat_R8G8B8( //
+    DDS_PixelFormat::PFFlags_RGB, 24, 0x00ff0000, 0x0000ff00, 0x000000ff,
+    0x00000000);
+static constexpr DDS_PixelFormat DDSFormat_R5G6B5( //
+    DDS_PixelFormat::PFFlags_RGB, 16, 0x0000f800, 0x000007e0, 0x0000001f,
+    0x00000000);
+static constexpr DDS_PixelFormat DDSFormat_L16( //
+    DDS_PixelFormat::PFFlags_Luminance, 16, 0x0000ffff, 0x00000000, 0x00000000,
+    0x00000000);
+static constexpr DDS_PixelFormat DDSFormat_L8( //
+    DDS_PixelFormat::PFFlags_Luminance, 8, 0x000000ff, 0x00000000, 0x00000000,
+    0x00000000);
+static constexpr DDS_PixelFormat DDSFormat_A8( //
+    DDS_PixelFormat::PFFlags_Alpha, 8, 0x00000000, 0x00000000, 0x00000000,
+    0x000000ff);
 
 struct DDS_HeaderDX10 {
-  static const uint32 HEADER_SIZE_DX10 = 20;
+  static constexpr uint32 HEADER_SIZE_DX10 = 20;
 
-  enum Dimension {
+  enum Dimension : uint32 {
     Dimension_1D = 2,
     Dimension_2D,
     Dimension_3D,
   };
 
-  enum MiscFlag { MiscFlag_CubeTexture = 2 };
+  enum MiscFlag : uint32 { MiscFlag_CubeTexture = 2 };
 
-  enum AlphaMode {
+  enum AlphaMode : uint32 {
     AlphaMode_Unknown,
     AlphaMode_Straight,
     AlphaMode_Premultiplied,
@@ -351,23 +349,20 @@ struct DDS_HeaderDX10 {
     AlphaMode_Custom
   };
 
-  DXGI_FORMAT dxgiFormat;
-  Dimension dimension;
-  esFlags<uint32, MiscFlag> miscFlag;
-  uint32 arraySize;
-  AlphaMode alphaMode;
+  DXGI_FORMAT dxgiFormat = DXGI_FORMAT_UNKNOWN;
+  Dimension dimension = Dimension_2D;
+  es::Flags<MiscFlag> miscFlag;
+  uint32 arraySize = 1;
+  AlphaMode alphaMode = AlphaMode_Unknown;
 
-  DDS_HeaderDX10()
-      : dxgiFormat(DXGI_FORMAT_UNKNOWN), dimension(Dimension_2D), arraySize(1),
-        alphaMode(AlphaMode_Unknown) {}
+  DDS_HeaderDX10() = default;
+  DDS_HeaderDX10(DXGI_FORMAT fmt) : dxgiFormat(fmt) {}
 };
 
 struct DDS : DDS_Header, DDS_PixelFormat, DDS_HeaderEnd, DDS_HeaderDX10 {
   static const int LEGACY_SIZE =
       sizeof(DDS_Header) + sizeof(DDS_PixelFormat) + sizeof(DDS_HeaderEnd);
   static const int DDS_SIZE = LEGACY_SIZE + sizeof(DDS_HeaderDX10);
-  uint32 bufferSize;
-  char *buffer;
 
   template <class _Base> void operator=(const _Base &input) {
     static_cast<_Base &>(*this) = input;
@@ -772,12 +767,6 @@ struct DDS : DDS_Header, DDS_PixelFormat, DDS_HeaderEnd, DDS_HeaderDX10 {
     }
 
     return result;
-  }
-
-  DDS() : bufferSize(0), buffer(nullptr) {}
-  ~DDS() {
-    if (buffer)
-      free(buffer);
   }
 };
 
