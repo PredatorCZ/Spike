@@ -1,7 +1,7 @@
 /*  Interfaces for reflected types
     internal file
 
-    Copyright 2018-2020 Lukas Cone
+    Copyright 2018-2021 Lukas Cone
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -40,7 +40,8 @@ ES_STATIC_ASSERT(__sizeof_RelfType == 16);
 struct reflectorInstance;
 
 template <class C>
-constexpr auto refl_is_reflected_(int) -> decltype(C::GetReflector(), bool()) {
+constexpr auto refl_is_reflected_(int)
+    -> decltype(std::declval<C>().ReflectorTag(), bool()) {
   return true;
 }
 
@@ -123,21 +124,15 @@ reflType BuildReflType(JenHash classHash, uint8 index, size_t offset) {
   typedef typename std::remove_reference<type>::type unref_type;
   typedef _getType<unref_type> type_class;
   static_assert(type_class::TYPE != REFType::None,
-                "Undefined type to reflect!");
-
-  // Get relative offset of interface within class
-  // If class uses multiple inheritance or virtual methods, offsets will be
-  // incorrect because interface won't be casted with same address as class
-  auto cls = reinterpret_cast<C *>(0x100);
-  auto intf = static_cast<ReflectorInterface<C> *>(cls);
-  size_t intfOffset = reinterpret_cast<size_t>(intf) - 0x100;
+                "Undefined type to reflect. Did you forget void "
+                "ReflectorTag(); tag method for subclass member?");
 
   return reflType{type_class::TYPE,
                   type_class::SUBTYPE,
                   type_class::SUBSIZE,
                   index,
                   type_class::NUMITEMS,
-                  static_cast<decltype(reflType::offset)>(offset - intfOffset),
+                  static_cast<decltype(reflType::offset)>(offset),
                   classHash,
                   type_class::Hash()};
 }

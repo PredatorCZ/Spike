@@ -6,7 +6,7 @@
 #include "../datas/binwritter.hpp"
 
 template <class C> int test_class(const reflectorStatic *input) {
-  auto orig = C::GetReflector();
+  auto orig = GetReflectedClass<C>();
 
   TEST_EQUAL(input->classHash, orig->classHash);
 

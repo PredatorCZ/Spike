@@ -112,7 +112,7 @@ int test_reflector_enum04() {
   return 0;
 }
 
-struct subrefl : ReflectorInterface<subrefl> {
+struct subrefl {
   int data0;
   float data1;
 
@@ -120,6 +120,7 @@ struct subrefl : ReflectorInterface<subrefl> {
     FByteswapper(data0);
     FByteswapper(data1);
   }
+  void ReflectorTag();
 };
 
 REFLECTOR_CREATE(subrefl, 1, VARNAMES, data0, data1);
@@ -1228,7 +1229,7 @@ int test_reflector_subclass(reflClass &input) {
   TEST_CHECK(input.IsReflectedSubClass(21));
 
   auto rClass = input.GetReflectedSubClass("test22");
-  ReflectorSubClass sClass(rClass);
+  ReflectorPureWrap sClass(rClass);
   subrefl &lClass = input.test22;
 
   TEST_EQUAL(lClass.data0, 0);
@@ -1749,7 +1750,7 @@ int test_reflector_array_subclass(reflClass &input) {
   TEST_CHECK(input.IsArray("test61"));
 
   auto rClass = input.GetReflectedSubClass("test61");
-  ReflectorSubClass sClass(rClass);
+  ReflectorPureWrap sClass(rClass);
   subrefl &lClass = input.test61[0];
 
   TEST_EQUAL(lClass.data0, 0);
@@ -1769,7 +1770,7 @@ int test_reflector_array_subclass(reflClass &input) {
   TEST_EQUAL(cPair.value, "81.65");
 
   auto rClass2 = input.GetReflectedSubClass("test61", 1);
-  ReflectorSubClass sClass2(rClass2);
+  ReflectorPureWrap sClass2(rClass2);
   subrefl &lClass2 = input.test61[1];
 
   TEST_EQUAL(lClass2.data0, 0);
@@ -1810,7 +1811,7 @@ int test_reflector_bitfield(reflClass &input) {
   TEST_CHECK(input.IsReflectedSubClass(45));
 
   auto rClass = input.GetReflectedSubClass("test23");
-  ReflectorSubClass sClass(rClass);
+  ReflectorPureWrap sClass(rClass);
   auto &lClass = input.test23;
 
   TEST_EQUAL(lClass.Get<member0>(), 0);
@@ -1855,12 +1856,12 @@ int test_reflector(reflClass &input) {
              Reflector::ErrorType::InvalidDestination);
   TEST_EQUAL(input.SetReflectedValueUInt("non existant", 0),
              Reflector::ErrorType::InvalidDestination);
-  auto noClass = input.GetReflectedSubClass(0);
+  /*auto noClass = input.GetReflectedSubClass(0);
 
   TEST_NOT_CHECK(noClass.instc.rfInstance);
   TEST_NOT_CHECK(noClass.instc.rfStatic);
   TEST_NOT_CHECK(noClass.inst.rfInstance);
-  TEST_NOT_CHECK(noClass.inst.rfStatic);
+  TEST_NOT_CHECK(noClass.inst.rfStatic);*/
 
   auto noPair = input.GetReflectedPair(200);
 

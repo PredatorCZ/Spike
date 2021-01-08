@@ -1,7 +1,7 @@
 /*  A source for Reflector class
     more info in README for PreCore Project
 
-    Copyright 2018-2020 Lukas Cone
+    Copyright 2018-2021 Lukas Cone
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -494,8 +494,8 @@ SetReflectedMember(reflType reflValue, es::string_view value, char *objAddr) {
 
 Reflector::ErrorType Reflector::SetReflectedValue(reflType type,
                                                   es::string_view value) {
-  const reflectorInstance inst = GetReflectedInstance();
-  char *thisAddr = static_cast<char *>(inst.rfInstance);
+  auto inst = GetReflectedInstance();
+  char *thisAddr = static_cast<char *>(inst.instance);
   thisAddr =
       thisAddr + (type.type == REFType::BitFieldMember ? 0 : type.offset);
 
@@ -504,8 +504,8 @@ Reflector::ErrorType Reflector::SetReflectedValue(reflType type,
 
 Reflector::ErrorType
 Reflector::SetReflectedValueInt(reflType reflValue, int64 value, size_t subID) {
-  const reflectorInstance inst = GetReflectedInstance();
-  char *thisAddr = static_cast<char *>(inst.rfInstance);
+  auto inst = GetReflectedInstance();
+  char *thisAddr = static_cast<char *>(inst.instance);
   thisAddr = thisAddr + reflValue.offset;
 
   if (subID) {
@@ -535,8 +535,8 @@ Reflector::SetReflectedValueInt(reflType reflValue, int64 value, size_t subID) {
 Reflector::ErrorType Reflector::SetReflectedValueUInt(reflType reflValue,
                                                       uint64 value,
                                                       size_t subID) {
-  const reflectorInstance inst = GetReflectedInstance();
-  char *thisAddr = static_cast<char *>(inst.rfInstance);
+  auto inst = GetReflectedInstance();
+  char *thisAddr = static_cast<char *>(inst.instance);
   thisAddr = thisAddr + reflValue.offset;
 
   if (subID) {
@@ -566,8 +566,8 @@ Reflector::ErrorType Reflector::SetReflectedValueUInt(reflType reflValue,
 Reflector::ErrorType Reflector::SetReflectedValueFloat(reflType reflValue,
                                                        double value,
                                                        size_t subID) {
-  const reflectorInstance inst = GetReflectedInstance();
-  char *thisAddr = static_cast<char *>(inst.rfInstance);
+  auto inst = GetReflectedInstance();
+  char *thisAddr = static_cast<char *>(inst.instance);
   thisAddr = thisAddr + reflValue.offset;
 
   if (subID) {
@@ -824,8 +824,8 @@ std::string Reflector::GetReflectedValue(size_t id) const {
   if (id >= GetNumReflectedValues())
     return "";
 
-  const reflectorInstanceConst inst = GetReflectedInstance();
-  const char *thisAddr = static_cast<const char *>(inst.rfInstance);
+  auto inst = GetReflectedInstance();
+  const char *thisAddr = static_cast<const char *>(inst.constInstance);
   const reflType &reflValue = inst.rfStatic->types[id];
   const int valueOffset =
       reflValue.type == REFType::BitFieldMember ? 0 : reflValue.offset;
@@ -833,15 +833,15 @@ std::string Reflector::GetReflectedValue(size_t id) const {
   return GetReflectedPrimitive(thisAddr + valueOffset, reflValue);
 }
 
-const Reflector::SubClass Reflector::GetReflectedSubClass(size_t id,
-                                                          size_t subID) const {
+ReflectedInstance Reflector::GetReflectedSubClass(size_t id,
+                                                  size_t subID) const {
   if (id >= GetNumReflectedValues())
     return {};
 
-  const reflectorInstanceConst inst = GetReflectedInstance();
+  auto inst = GetReflectedInstance();
   const reflType &reflValue = inst.rfStatic->types[id];
   const char *thisAddr =
-      static_cast<const char *>(inst.rfInstance) + reflValue.offset;
+      static_cast<const char *>(inst.constInstance) + reflValue.offset;
   REFType cType = reflValue.type;
 
   if (subID && subID >= reflValue.numItems)
@@ -861,17 +861,16 @@ const Reflector::SubClass Reflector::GetReflectedSubClass(size_t id,
       !REFSubClassStorage.count(reflValue.typeHash))
     return {};
 
-  return {{}, {REFSubClassStorage.at(reflValue.typeHash), thisAddr}};
+  return {REFSubClassStorage.at(reflValue.typeHash), thisAddr};
 }
 
-const Reflector::SubClass Reflector::GetReflectedSubClass(size_t id,
-                                                          size_t subID) {
+ReflectedInstance Reflector::GetReflectedSubClass(size_t id, size_t subID) {
   if (id >= GetNumReflectedValues())
     return {};
 
-  const reflectorInstance inst = GetReflectedInstance();
+  auto inst = GetReflectedInstance();
   const reflType &reflValue = inst.rfStatic->types[id];
-  char *thisAddr = static_cast<char *>(inst.rfInstance) + reflValue.offset;
+  char *thisAddr = static_cast<char *>(inst.instance) + reflValue.offset;
   REFType cType = reflValue.type;
 
   if (subID && subID >= reflValue.numItems)
@@ -891,8 +890,7 @@ const Reflector::SubClass Reflector::GetReflectedSubClass(size_t id,
       !REFSubClassStorage.count(reflValue.typeHash))
     return {};
 
-  return {{REFSubClassStorage.at(reflValue.typeHash), thisAddr},
-          {REFSubClassStorage.at(reflValue.typeHash), thisAddr}};
+  return {REFSubClassStorage.at(reflValue.typeHash), thisAddr};
 }
 
 RefEnumMapper REFEnumStorage;

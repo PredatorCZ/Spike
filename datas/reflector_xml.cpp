@@ -1,7 +1,7 @@
 /*  a XML I/O source for Reflector class
     more info in README for PreCore Project
 
-    Copyright 2019-2020 Lukas Cone
+    Copyright 2019-2021 Lukas Cone
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -20,9 +20,16 @@
 #include "master_printer.hpp"
 #include "pugiex.hpp"
 
+struct ReflectedInstanceFriend : ReflectedInstance {
+  void *Instance() { return instance; }
+  const void *Instance() const { return constInstance; }
+  const reflectorStatic *Refl() const { return rfStatic; }
+};
+
 pugi::xml_node ReflectorXMLUtil::Save(const Reflector &ri, pugi::xml_node node,
                                       bool asNewNode) {
-  const reflectorStatic *stat = ri.GetReflectedInstance().rfStatic;
+  const reflectorStatic *stat =
+      static_cast<ReflectedInstanceFriend &&>(ri.GetReflectedInstance()).Refl();
   pugi::xml_node thisNode = node;
 
   if (asNewNode) {
@@ -65,14 +72,16 @@ pugi::xml_node ReflectorXMLUtil::Save(const Reflector &ri, pugi::xml_node node,
         const int numItems = stat->types[t].numItems;
 
         for (int s = 0; s < numItems; s++) {
-          ReflectorSubClass subCl(ri.GetReflectedSubClass(t, s));
+          auto subRef = ri.GetReflectedSubClass(t, s);
+          ReflectorPureWrap subCl(subRef);
           ReflectorXMLUtil::Save(
               subCl, cNode.append_child(("i:" + std::to_string(s)).c_str()),
               false);
         }
 
       } else {
-        ReflectorSubClass subCl(ri.GetReflectedSubClass(t));
+        auto subRef = ri.GetReflectedSubClass(t);
+        ReflectorPureWrap subCl(subRef);
         ReflectorXMLUtil::Save(subCl, cNode, false);
       }
     } else {
@@ -85,7 +94,8 @@ pugi::xml_node ReflectorXMLUtil::Save(const Reflector &ri, pugi::xml_node node,
 
 pugi::xml_node ReflectorXMLUtil::Load(Reflector &ri, pugi::xml_node node,
                                       bool lookupClassNode) {
-  const reflectorStatic *stat = ri.GetReflectedInstance().rfStatic;
+  const reflectorStatic *stat =
+      static_cast<ReflectedInstanceFriend &&>(ri.GetReflectedInstance()).Refl();
   pugi::xml_node thisNode;
 
   auto MakeHash = [](auto &a) -> JenHash {

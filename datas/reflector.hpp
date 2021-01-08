@@ -1,7 +1,7 @@
 /*  Contains macros/classes for reflection of classes/enums
     more info in README for PreCore Project
 
-    Copyright 2018-2020 Lukas Cone
+    Copyright 2018-2021 Lukas Cone
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -65,11 +65,6 @@ public:
     std::string value;
   };
 
-  struct SubClass {
-    reflectorInstance inst;
-    reflectorInstanceConst instc;
-  };
-
   enum class ErrorType {
     None,
     SignMismatch,       // A singed number is assigned to an unsigned.
@@ -81,8 +76,8 @@ public:
   };
 
 private:
-  virtual reflectorInstanceConst GetReflectedInstance() const = 0;
-  virtual reflectorInstance GetReflectedInstance() = 0;
+  virtual ReflectedInstance GetReflectedInstance() const = 0;
+  ReflectedInstance GetReflectedInstance();
   // clang-format off
 protected:
   const reflType *GetReflectedType(JenHash hashName) const;
@@ -118,72 +113,44 @@ public:
   bool IsArray(JenHash hashName) const;
   bool IsArray(size_t id) const; 
 
-  const SubClass GetReflectedSubClass(JenHash hashName, size_t subID = 0) const;
-  const SubClass GetReflectedSubClass(size_t id, size_t subID = 0) const;
+  ReflectedInstance GetReflectedSubClass(JenHash hashName, size_t subID = 0) const;
+  ReflectedInstance GetReflectedSubClass(size_t id, size_t subID = 0) const;
 
-  const SubClass GetReflectedSubClass(JenHash hashName, size_t subID = 0);
-  const SubClass GetReflectedSubClass(size_t id, size_t subID = 0);
+  ReflectedInstance GetReflectedSubClass(JenHash hashName, size_t subID = 0);
+  ReflectedInstance GetReflectedSubClass(size_t id, size_t subID = 0);
 
   KVPair GetReflectedPair(size_t id, const KVPairFormat &settings = {}) const;
   KVPair GetReflectedPair(JenHash hashName, const KVPairFormat &settings = {}) const;
   // clang-format on
 };
 
-template <class C> struct ReflectorInterface;
-
 template <class C> class ReflectorWrap : public Reflector {
-  reflectorInstanceConst GetReflectedInstance() const override {
-    return static_cast<const ReflectorInterface<C> *>(data)
-        ->GetReflectedInstance();
-  }
-  reflectorInstance GetReflectedInstance() override {
-    return data->GetReflectedInstance();
+  using pure_type = typename std::remove_const<C>::type;
+  ReflectedInstance GetReflectedInstance() const override {
+    return {GetReflectedClass<pure_type>(), &data};
   }
 
 public:
-  ReflectorInterface<C> *data;
-  ReflectorWrap(ReflectorInterface<C> *_data) : data(_data) {}
-  ReflectorWrap(ReflectorInterface<C> &_data) : data(&_data) {}
+  C &data;
+  ReflectorWrap(C *_data) : data(*_data) {}
+  ReflectorWrap(C &_data) : data(_data) {}
   ReflectorWrap() = delete;
 };
 
-template <class C> class ReflectorWrapConst : public Reflector {
-  reflectorInstanceConst GetReflectedInstance() const override {
-    return data->GetReflectedInstance();
-  }
-
-  reflectorInstance GetReflectedInstance() override {
-    static const reflectorStatic nullRefType = {_RTag<void>{}};
-    return {&nullRefType, nullptr};
-  }
+class ReflectorPureWrap : public Reflector {
+  ReflectedInstance GetReflectedInstance() const override { return data; }
 
 public:
-  const ReflectorInterface<C> *data;
-  ReflectorWrapConst(const ReflectorInterface<C> *_data) : data(_data) {}
-  ReflectorWrapConst(const ReflectorInterface<C> &_data) : data(&_data) {}
-  ReflectorWrapConst() = delete;
+  ReflectedInstance &data;
+  ReflectorPureWrap(ReflectedInstance *_data) : data(*_data) {}
+  ReflectorPureWrap(ReflectedInstance &_data) : data(_data) {}
+  ReflectorPureWrap() = delete;
 };
 
-class ReflectorSubClass : public Reflector {
-  reflectorInstanceConst GetReflectedInstance() const override {
-    return data.instc;
-  }
-  reflectorInstance GetReflectedInstance() override { return data.inst; }
-
+template <class C> class ReflectorBase : public Reflector {
 public:
-  SubClass data;
-  ReflectorSubClass(const SubClass &_data) : data(_data) {}
-};
-
-template <class C>
-class ReflectorBase : public Reflector, public ReflectorInterface<C> {
-  using parent = ReflectorInterface<C>;
-public:
-  reflectorInstanceConst GetReflectedInstance() const override {
-    return parent::GetReflectedInstance();
-  }
-  reflectorInstance GetReflectedInstance() override {
-    return parent::GetReflectedInstance();
+  ReflectedInstance GetReflectedInstance() const override {
+    return {GetReflectedClass<C>(), {static_cast<const C *>(this)}};
   }
 };
 

@@ -1,7 +1,7 @@
 /*  Registering class reflectors
     more info in README for PreCore Project
 
-    Copyright 2018-2020 Lukas Cone
+    Copyright 2018-2021 Lukas Cone
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -78,21 +78,27 @@ const int __sizeof_reflectorStatic = sizeof(reflectorStatic);
 
 ES_STATIC_ASSERT(__sizeof_reflectorStatic == 56);
 
-struct reflectorInstance {
-  const reflectorStatic *rfStatic;
-  void *rfInstance;
-};
+struct ReflectedInstance {
+private:
+  friend class Reflector;
+  friend struct ReflectedInstanceFriend;
 
-struct reflectorInstanceConst {
-  const reflectorStatic *rfStatic;
-  const void *rfInstance;
+  const reflectorStatic *rfStatic = nullptr;
+  union {
+    const void *constInstance = nullptr;
+    void *instance;
+  };
+
+public:
+  ReflectedInstance() = default;
+  ReflectedInstance(const reflectorStatic *rfStat, const void *inst)
+      : rfStatic(rfStat), constInstance(inst) {}
 };
 
 template <class C> struct ReflectorInterface {
   static const reflectorStatic *GetReflector();
-  reflectorInstanceConst GetReflectedInstance() const {
-    return {GetReflector(), this};
-  }
-
-  reflectorInstance GetReflectedInstance() { return {GetReflector(), this}; }
 };
+
+template <class C> const reflectorStatic *GetReflectedClass() {
+  return ReflectorInterface<C>::GetReflector();
+}

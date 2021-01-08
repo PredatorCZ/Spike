@@ -1,6 +1,6 @@
 /*  a source for reflector_io
 
-    Copyright 2020 Lukas Cone
+    Copyright 2020-2021 Lukas Cone
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -408,7 +408,13 @@ int ReflectorIO::Save(BinWritterRef wr) {
   return 0;
 }
 
-static int SaveClass(const Reflector &ri, const reflectorInstanceConst &inst,
+struct ReflectedInstanceFriend : ReflectedInstance {
+  void *Instance() { return instance; }
+  const void *Instance() const { return constInstance; }
+  const reflectorStatic *Refl() const { return rfStatic; }
+};
+
+static int SaveClass(const Reflector &ri, ReflectedInstanceFriend inst,
                      BinWritterRef wr);
 
 static int WriteDataItem(const Reflector &ri, BinWritterRef wr,
@@ -472,19 +478,20 @@ static int WriteDataItem(const Reflector &ri, BinWritterRef wr,
   }
 
   case REFType::Class: {
-    ReflectorSubClass sri(ri.GetReflectedSubClass(type.ID, type.numItems));
-    return SaveClass(sri, sri.data.instc, wr);
+    auto sri = static_cast<ReflectedInstanceFriend &&>(
+        ri.GetReflectedSubClass(type.ID, type.numItems));
+    return SaveClass(ri, sri, wr);
   }
   default:
     return 1;
   }
 }
 
-static int SaveClass(const Reflector &ri, const reflectorInstanceConst &inst,
+static int SaveClass(const Reflector &ri, ReflectedInstanceFriend inst,
                      BinWritterRef wr) {
-  auto refData = inst.rfStatic;
+  auto refData = inst.Refl();
   const buint128 numItems = refData->nTypes;
-  const char *thisAddr = static_cast<const char *>(inst.rfInstance);
+  const char *thisAddr = static_cast<const char *>(inst.Instance());
   std::stringstream tmpClassBuffer;
 
   BinWritterRef wrTmpClass(tmpClassBuffer);
@@ -513,15 +520,16 @@ static int SaveClass(const Reflector &ri, const reflectorInstanceConst &inst,
 }
 
 int ReflectorBinUtil::Save(const Reflector &ri, BinWritterRef wr) {
-  auto inst = ri.GetReflectedInstance();
-  auto refData = inst.rfStatic;
+  auto inst =
+      static_cast<ReflectedInstanceFriend &&>(ri.GetReflectedInstance());
+  auto refData = inst.Refl();
 
   wr.Write(refData->classHash);
 
   return SaveClass(ri, inst, wr);
 }
 
-static int LoadClass(Reflector &ri, reflectorInstance &inst, BinReaderRef rd);
+static int LoadClass(ReflectedInstanceFriend inst, BinReaderRef rd);
 
 static int LoadDataItem(Reflector &ri, BinReaderRef rd, char *objAddr,
                         reflType type) {
@@ -581,8 +589,9 @@ static int LoadDataItem(Reflector &ri, BinReaderRef rd, char *objAddr,
   }
 
   case REFType::Class: {
-    ReflectorSubClass sri(ri.GetReflectedSubClass(type.ID, type.numItems));
-    return LoadClass(sri, sri.data.inst, rd);
+    auto sri = static_cast<ReflectedInstanceFriend &&>(
+        ri.GetReflectedSubClass(type.ID, type.numItems));
+    return LoadClass(sri, rd);
   }
   default:
     return 1;
@@ -598,10 +607,10 @@ const reflType *ReflectorBinUtil::Find(Reflector &ri, JenHash hash) {
   return ri.GetReflectedType(hash);
 }
 
-static int LoadClass(Reflector &ri, reflectorInstance &inst, BinReaderRef rd) {
-  auto refData = inst.rfStatic;
+static int LoadClass(ReflectedInstanceFriend inst, BinReaderRef rd) {
+  auto refData = inst.Refl();
   const uint32 numItems = refData->nTypes;
-  char *thisAddr = static_cast<char *>(inst.rfInstance);
+  char *thisAddr = static_cast<char *>(inst.Instance());
   buint128 chunkSize;
   rd.Read(chunkSize);
   rd.Push();
@@ -625,6 +634,7 @@ static int LoadClass(Reflector &ri, reflectorInstance &inst, BinReaderRef rd) {
     rd.Read(valueChunkSize);
     rd.Push();
 
+    ReflectorPureWrap ri(inst);
     const reflType *cType = ReflectorBinUtilFriend::Find(ri, valueNameHash);
 
     if (!cType) {
@@ -645,8 +655,9 @@ static int LoadClass(Reflector &ri, reflectorInstance &inst, BinReaderRef rd) {
 }
 
 int ReflectorBinUtil::Load(Reflector &ri, BinReaderRef rd) {
-  auto inst = ri.GetReflectedInstance();
-  auto refData = inst.rfStatic;
+  auto inst =
+      static_cast<ReflectedInstanceFriend &&>(ri.GetReflectedInstance());
+  auto refData = inst.Refl();
   JenHash clsHash;
 
   rd.Push();
@@ -657,5 +668,5 @@ int ReflectorBinUtil::Load(Reflector &ri, BinReaderRef rd) {
     return 1;
   }
 
-  return LoadClass(ri, inst, rd);
+  return LoadClass(inst, rd);
 }

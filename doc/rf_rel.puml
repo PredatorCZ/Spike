@@ -4,9 +4,8 @@ class MyClass {
     A normal class
     declaration
 }
-class "ReflectorInterface<MyClass><template>" as ReflectorInterface
+object "GetReflectedClass<MyClass>()" as GetReflectedClass
 abstract class Reflector
-class ReflectorStatic<<RTTI>>
 object classRegistry
 class ReflectorIO
 package Serializers {
@@ -20,12 +19,11 @@ object enumRegistry
 
 classRegistry : (optional)
 
-MyClass *-- ReflectorInterface
-ReflectorInterface o-- ReflectorStatic
-Reflector o-- ReflectorStatic
-Reflector o-- ReflectorInterface
-ReflectorStatic *-- classRegistry
-ReflectorStatic o-- ReflectorIO
+MyClass o-- GetReflectedClass
+MyClass *-- Reflector
+Reflector o-- GetReflectedClass
+GetReflectedClass o-- classRegistry
+GetReflectedClass o-- ReflectorIO
 Reflector o- classRegistry
 Reflector o-- Serializers
 refEnum o-- GRE

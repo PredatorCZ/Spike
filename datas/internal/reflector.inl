@@ -1,4 +1,8 @@
 
+inline ReflectedInstance Reflector::GetReflectedInstance() {
+  return const_cast<const Reflector *>(this)->GetReflectedInstance();
+}
+
 inline const reflType *Reflector::GetReflectedType(size_t ID) const {
   const reflectorStatic *inst = GetReflectedInstance().rfStatic;
 
@@ -105,8 +109,8 @@ inline std::string Reflector::GetReflectedValue(JenHash hash) const {
   return GetReflectedValue(found->ID);
 }
 
-inline const Reflector::SubClass
-Reflector::GetReflectedSubClass(JenHash hash, size_t subID) const {
+inline ReflectedInstance Reflector::GetReflectedSubClass(JenHash hash,
+                                                         size_t subID) const {
   const reflType *found = GetReflectedType(hash);
 
   if (!found)
@@ -115,14 +119,9 @@ Reflector::GetReflectedSubClass(JenHash hash, size_t subID) const {
   return GetReflectedSubClass(found->ID, subID);
 }
 
-inline const Reflector::SubClass Reflector::GetReflectedSubClass(JenHash hash,
-                                                                 size_t subID) {
-  const reflType *found = GetReflectedType(hash);
-
-  if (!found)
-    return {};
-
-  return GetReflectedSubClass(found->ID, subID);
+inline ReflectedInstance Reflector::GetReflectedSubClass(JenHash hash,
+                                                         size_t subID) {
+  return const_cast<const Reflector *>(this)->GetReflectedSubClass(hash, subID);
 }
 
 inline Reflector::KVPair

@@ -1,6 +1,6 @@
 /*  De/Serializing Reflector data from stream
 
-    Copyright 2020 Lukas Cone
+    Copyright 2020-2021 Lukas Cone
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -32,7 +32,7 @@ public:
 
   void AddClass(const reflectorStatic *ref) { classes.push_back(ref); }
   template <class C> void AddClass() {
-    classes.push_back(ReflectorInterface<C>::GetReflector());
+    classes.push_back(GetReflectedClass<C>());
   }
   void AddEnum(const ReflectedEnum &enumRef) { enums.push_back(enumRef); }
   template <class C> void AddEnum() { enums.push_back(GetReflectedEnum<C>()); }

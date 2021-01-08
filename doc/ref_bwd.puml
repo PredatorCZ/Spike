@@ -1,15 +1,6 @@
 @startuml ref_bwd
 title Basic workflow diagram
 package Header <<Frame>> {
-    class "ReflectorInterface<classType><template>" as ReflectorInterface {
-        +{static} GetReflector()
-        + GetReflectedInstance()
-    }
-    note right of ReflectorInterface
-        A non virtual,
-        non abstract,
-        zero size interface.
-    end note
     object "REFLECTOR_CREATE(...)" as RCE
     RCE : classType
     RCE : ENUM
@@ -20,7 +11,6 @@ package Header <<Frame>> {
         A macro for creating
         reflected enumeration
     end note
-    RCE -[hidden]down- ReflectorInterface
 }
 
 
