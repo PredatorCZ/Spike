@@ -1,6 +1,6 @@
 /*  uni exception internal module
     part of uni module
-    Copyright 2020 Lukas Cone
+    Copyright 2020-2021 Lukas Cone
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -63,7 +63,7 @@ public:
 
       for (size_t c = 0; c < capSize; c++) {
         char buffer[8]{};
-        snprintf(buffer, sizeof(buffer), "0x%X ", rMagic[c]);
+        snprintf(buffer, sizeof(buffer), "0x%X ", (unsigned char)rMagic[c]);
         retval.append(buffer);
       }
 

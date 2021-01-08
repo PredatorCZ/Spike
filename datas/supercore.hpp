@@ -1,7 +1,7 @@
 /*  Supercore, mostly detectors/macros
     more info in README for PreCore Project
 
-    Copyright 2018-2020 Lukas Cone
+    Copyright 2018-2021 Lukas Cone
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -79,6 +79,10 @@ public:
 
 constexpr float GetFraction(size_t numBits) {
   return 1.f / static_cast<float>((1ULL << numBits) - 1);
+}
+
+template <typename type> constexpr bool IsPow2(type input) {
+  return !(input & (input - 1));
 }
 
 namespace es {
