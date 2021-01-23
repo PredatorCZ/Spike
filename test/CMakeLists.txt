@@ -91,6 +91,25 @@ if(${RELEASEVER})
   endif()
 endif()
 
+find_package(pugixml)
+
+if(${pugixml_FOUND})
+  build_target(
+    NAME
+    test_xml
+    TYPE
+    APP
+    SOURCES
+    test_xml.cpp
+    LINKS
+    pugixml
+    NO_PROJECT_H
+    NO_VERINFO)
+
+  set_precore_sources(test_xml master_printer reflector reflector_xml reflector_io)
+  add_test(test_xml test_xml)
+endif()
+
 if(CMAKE_CXX_COMPILER_ID MATCHES Clang)
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra")
   message("Compiler is Clang")
