@@ -8,6 +8,7 @@ matrix:
       name: "GCC 5 + GCOV"
       before_install:
         - pip install --user cpp-coveralls
+        - sudo .ci/install_pugi.sh ${TRAVIS_CPU_ARCH}
       script:
         - mkdir build && cd build && cmake .. -DUSE_GCOV=TRUE
         - cmake --build . -j 6
@@ -17,6 +18,8 @@ matrix:
 
     - os: linux
       name: "GCC 9"
+      before_install:
+        - sudo .ci/install_pugi.sh ${TRAVIS_CPU_ARCH}
       addons:
         apt:
           sources:
@@ -28,6 +31,8 @@ matrix:
 
     - os: linux
       name: "Clang 3.5"
+      before_install:
+        - sudo .ci/install_pugi.sh ${TRAVIS_CPU_ARCH}
       addons:
         apt:
           packages:
@@ -37,6 +42,8 @@ matrix:
 
     - os: linux
       name: "Clang 8"
+      before_install:
+        - sudo .ci/install_pugi.sh ${TRAVIS_CPU_ARCH}
       addons:
         apt:
           sources:
