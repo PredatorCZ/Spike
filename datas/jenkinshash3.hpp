@@ -1,6 +1,6 @@
 /*  constexpr Jenkins lookup3 class
 
-    Copyright 2020 Lukas Cone
+    Copyright 2020-2021 Lukas Cone
     Algorithm by Bob Jenkins, May 2006
 
     Licensed under the Apache License, Version 2.0 (the "License");

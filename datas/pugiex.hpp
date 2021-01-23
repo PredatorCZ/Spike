@@ -1,6 +1,6 @@
 /*  Extended pugixml API
 
-    Copyright 2019 Lukas Cone
+    Copyright 2019-2021 Lukas Cone
 
     Uses some drived work from puxixml (flags, enums, etc.)
     Copyright (C) 2006-2019, by Arseny Kapoulkine (arseny.kapoulkine@gmail.com)

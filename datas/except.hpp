@@ -1,5 +1,6 @@
 /*  uni exception internal module
     part of uni module
+
     Copyright 2020-2021 Lukas Cone
 
     Licensed under the Apache License, Version 2.0 (the "License");

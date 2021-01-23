@@ -1,7 +1,7 @@
 /*  DirectoryScanner class is a simple class
     for scanning files inside a folder hierarchy
 
-    Copyright 2019-2020 Lukas Cone
+    Copyright 2019-2021 Lukas Cone
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.

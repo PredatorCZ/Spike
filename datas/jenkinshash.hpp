@@ -1,7 +1,7 @@
 /*  constexpr Jenkins one at time class
     more info in README for PreCore Project
 
-    Copyright 2018-2020 Lukas Cone
+    Copyright 2018-2021 Lukas Cone
     Algorithm by Bob Jenkins
 
     Licensed under the Apache License, Version 2.0 (the "License");
