@@ -2,6 +2,7 @@
 #include "reflector_bindump.inl"
 #include "reflector_extended.inl"
 #include "reflector_io.inl"
+#include "reflector.inl"
 
 int main() {
   printer.AddPrinterFunction(UPrintf);

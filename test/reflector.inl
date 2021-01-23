@@ -1,21 +1,6 @@
 #pragma once
-#include "../datas/bitfield.hpp"
-#include "../datas/endian.hpp"
-#include "../datas/flags.hpp"
-#include "../datas/reflector_io.hpp"
 #include "../datas/unit_testing.hpp"
-#include "../datas/vectors_simd.hpp"
-
-REFLECTOR_CREATE(EnumWrap00, ENUM, 1, CLASS, E1, E2,
-                 E3 = 0x7); // as enum class EnumWrap00 {};
-REFLECTOR_CREATE(EnumWrap01, ENUM, 0, EnumWrap01_E1, EnumWrap01_E2,
-                 EnumWrap01_E3); // as enum EnumWrap01 {};
-REFLECTOR_CREATE(EnumWrap02, ENUM, 2, CLASS, 8, E4, E5,
-                 E6); // as enum class EnumWrap02 : uchar {};
-REFLECTOR_CREATE(EnumWrap03, ENUM, 2, CLASS, 16, E7 = 7, E8 = 16586,
-                 E9 = 0x8bcd); // as enum class EnumWrap03 : ushort {};
-REFLECTOR_CREATE(EnumWrap04, ENUM, 2, CLASS, 32, E10, E11,
-                 E12); // as enum class EnumWrap04 : uint {};
+#include "reflector_def.inl"
 
 ES_STATIC_ASSERT(sizeof(EnumWrap02) == 1);
 ES_STATIC_ASSERT(sizeof(EnumWrap03) == 2);
@@ -111,108 +96,6 @@ int test_reflector_enum04() {
 
   return 0;
 }
-
-struct subrefl {
-  int data0;
-  float data1;
-
-  void SwapEndian() {
-    FByteswapper(data0);
-    FByteswapper(data1);
-  }
-  void ReflectorTag();
-};
-
-REFLECTOR_CREATE(subrefl, 1, VARNAMES, data0, data1);
-
-using member0 = BitMemberDecl<0, 2>;
-using member1 = BitMemberDecl<1, 5>;
-using member2 = BitMemberDecl<2, 3>;
-using member3 = BitMemberDecl<3, 1>;
-using member42 = BitMemberDecl<4, 5>;
-using BitTypeRefl =
-    BitFieldType<uint16, member0, member1, member2, member3, member42>;
-
-REFLECTOR_CREATE(BitTypeRefl, BITFIELD, 1, VARNAMES, member0, member1, member2,
-                 member3, member42);
-
-struct _ReflClassData {
-  bool test1;
-  int8 test2;
-  uint8 test3;
-  int16 test4;
-  uint16 test5;
-  int32 test6;
-  uint32 test7;
-  int64 test8;
-  uint64 test9;
-  float test10;
-  double test11;
-
-  es::Flags<EnumWrap00, uint8> test12;
-  es::Flags<EnumWrap01, uint16> test13;
-
-  EnumWrap00 test14;
-  EnumWrap02 test15;
-  EnumWrap03 test16;
-  EnumWrap04 test17;
-
-  Vector test18;
-  Vector2 test19;
-  Vector4 test20;
-  Vector4A16 test21;
-
-  subrefl test22;
-  BitTypeRefl test23;
-
-  bool test40[4];
-  int8 test41[2];
-  uint8 test42[4];
-  int16 test43[2];
-  uint16 test44[4];
-  int32 test45[2];
-  uint32 test46[4];
-  int64 test47[2];
-  uint64 test48[4];
-  float test49[2];
-  double test50[4];
-
-  es::Flags<EnumWrap00, uint8> test51[2];
-  es::Flags<EnumWrap01, uint16> test52[4];
-
-  EnumWrap00 test53[2];
-  EnumWrap02 test54[4];
-  EnumWrap03 test55[2];
-  EnumWrap04 test56[4];
-
-  Vector test57[2];
-  Vector2 test58[4];
-  Vector4 test59[2];
-  Vector4A16 test60[4];
-
-  subrefl test61[2];
-  BitTypeRefl test62[2];
-
-  // Need to enclose padding because of RPO,
-  // otherwise cast write will corrupt test80
-  Vector4A16 padClose;
-
-  _ReflClassData() = default;
-};
-
-struct reflClass : ReflectorBase<reflClass>, _ReflClassData {
-  std::string test80;
-
-  reflClass() = default;
-};
-
-REFLECTOR_CREATE(reflClass, 1, VARNAMES, test1, test2, test3, test4, test5,
-                 test6, test7, test8, test9, test10, test11, test12, test13,
-                 test14, test15, test16, test17, test18, test19, test20, test21,
-                 test22, test40, test41, test42, test43, test44, test45, test46,
-                 test47, test48, test49, test50, test51, test52, test53, test54,
-                 test55, test56, test57, test58, test59, test60, test61, test80,
-                 test23, test62)
 
 int test_reflector_bool(reflClass &input) {
   TEST_EQUAL(input.test1, false);
@@ -1078,6 +961,10 @@ int test_reflector_enumflags00(reflClass &input) {
   TEST_EQUAL(cPair.name, "test12");
   TEST_EQUAL(cPair.value, "E1 | E2 | E3");
 
+  TEST_EQUAL(input.GetReflectedValue(11, (size_t)EnumWrap00::E1), "true");
+  TEST_EQUAL(input.GetReflectedValue(11, (size_t)EnumWrap00::E2), "true");
+  TEST_EQUAL(input.GetReflectedValue(11, (size_t)EnumWrap00::E3), "true");
+
   TEST_EQUAL(input.SetReflectedValue("test12", "\tE1   |   E2 \t|  E3\t   "),
              Reflector::ErrorType::None);
   TEST_CHECK(input.test12[EnumWrap00::E1]);
@@ -1087,6 +974,10 @@ int test_reflector_enumflags00(reflClass &input) {
   TEST_EQUAL(cPair.name, "test12");
   TEST_EQUAL(cPair.value, "E1 | E2 | E3");
 
+  TEST_EQUAL(input.GetReflectedValue(11, (size_t)EnumWrap00::E1), "true");
+  TEST_EQUAL(input.GetReflectedValue(11, (size_t)EnumWrap00::E2), "true");
+  TEST_EQUAL(input.GetReflectedValue(11, (size_t)EnumWrap00::E3), "true");
+
   TEST_EQUAL(input.SetReflectedValue("test12", "E1|E2|E3"),
              Reflector::ErrorType::None);
   TEST_CHECK(input.test12[EnumWrap00::E1]);
@@ -1095,6 +986,9 @@ int test_reflector_enumflags00(reflClass &input) {
   cPair = input.GetReflectedPair(11);
   TEST_EQUAL(cPair.name, "test12");
   TEST_EQUAL(cPair.value, "E1 | E2 | E3");
+  TEST_EQUAL(input.GetReflectedValue(11, (size_t)EnumWrap00::E1), "true");
+  TEST_EQUAL(input.GetReflectedValue(11, (size_t)EnumWrap00::E2), "true");
+  TEST_EQUAL(input.GetReflectedValue(11, (size_t)EnumWrap00::E3), "true");
 
   TEST_EQUAL(input.SetReflectedValue("test12", "E1 | E2 | "),
              Reflector::ErrorType::EmptyInput);
@@ -1104,6 +998,9 @@ int test_reflector_enumflags00(reflClass &input) {
   cPair = input.GetReflectedPair(11);
   TEST_EQUAL(cPair.name, "test12");
   TEST_EQUAL(cPair.value, "E1 | E2");
+  TEST_EQUAL(input.GetReflectedValue(11, (size_t)EnumWrap00::E1), "true");
+  TEST_EQUAL(input.GetReflectedValue(11, (size_t)EnumWrap00::E2), "true");
+  TEST_EQUAL(input.GetReflectedValue(11, (size_t)EnumWrap00::E3), "false");
 
   TEST_EQUAL(input.SetReflectedValue("test12", "E1 |  | E3"),
              Reflector::ErrorType::EmptyInput);
@@ -1113,6 +1010,9 @@ int test_reflector_enumflags00(reflClass &input) {
   cPair = input.GetReflectedPair(11);
   TEST_EQUAL(cPair.name, "test12");
   TEST_EQUAL(cPair.value, "E1 | E3");
+  TEST_EQUAL(input.GetReflectedValue(11, (size_t)EnumWrap00::E1), "true");
+  TEST_EQUAL(input.GetReflectedValue(11, (size_t)EnumWrap00::E2), "false");
+  TEST_EQUAL(input.GetReflectedValue(11, (size_t)EnumWrap00::E3), "true");
 
   TEST_EQUAL(input.SetReflectedValue("test12", " |  | E3"),
              Reflector::ErrorType::EmptyInput);
@@ -1122,6 +1022,9 @@ int test_reflector_enumflags00(reflClass &input) {
   cPair = input.GetReflectedPair(11);
   TEST_EQUAL(cPair.name, "test12");
   TEST_EQUAL(cPair.value, "E3");
+  TEST_EQUAL(input.GetReflectedValue(11, (size_t)EnumWrap00::E1), "false");
+  TEST_EQUAL(input.GetReflectedValue(11, (size_t)EnumWrap00::E2), "false");
+  TEST_EQUAL(input.GetReflectedValue(11, (size_t)EnumWrap00::E3), "true");
 
   TEST_EQUAL(input.SetReflectedValue("test12", "E1 | sirius | E3"),
              Reflector::ErrorType::InvalidFormat);
@@ -1131,6 +1034,9 @@ int test_reflector_enumflags00(reflClass &input) {
   cPair = input.GetReflectedPair(11);
   TEST_EQUAL(cPair.name, "test12");
   TEST_EQUAL(cPair.value, "E1 | E3");
+  TEST_EQUAL(input.GetReflectedValue(11, (size_t)EnumWrap00::E1), "true");
+  TEST_EQUAL(input.GetReflectedValue(11, (size_t)EnumWrap00::E2), "false");
+  TEST_EQUAL(input.GetReflectedValue(11, (size_t)EnumWrap00::E3), "true");
 
   return 0;
 }
@@ -1148,6 +1054,9 @@ int test_reflector_enumflags01(reflClass &input) {
   Reflector::KVPair cPair = input.GetReflectedPair(12);
   TEST_EQUAL(cPair.name, "test13");
   TEST_EQUAL(cPair.value, "EnumWrap01_E1 | EnumWrap01_E2 | EnumWrap01_E3");
+  TEST_EQUAL(input.GetReflectedValue(12, EnumWrap01_E1), "true");
+  TEST_EQUAL(input.GetReflectedValue(12, EnumWrap01_E2), "true");
+  TEST_EQUAL(input.GetReflectedValue(12, EnumWrap01_E3), "true");
 
   TEST_EQUAL(input.SetReflectedValue(
                  "test13",
@@ -1159,6 +1068,9 @@ int test_reflector_enumflags01(reflClass &input) {
   cPair = input.GetReflectedPair(12);
   TEST_EQUAL(cPair.name, "test13");
   TEST_EQUAL(cPair.value, "EnumWrap01_E1 | EnumWrap01_E2 | EnumWrap01_E3");
+  TEST_EQUAL(input.GetReflectedValue(12, EnumWrap01_E1), "true");
+  TEST_EQUAL(input.GetReflectedValue(12, EnumWrap01_E2), "true");
+  TEST_EQUAL(input.GetReflectedValue(12, EnumWrap01_E3), "true");
 
   TEST_EQUAL(input.SetReflectedValue(
                  "test13", "EnumWrap01_E1|EnumWrap01_E2|EnumWrap01_E3"),
@@ -1169,6 +1081,9 @@ int test_reflector_enumflags01(reflClass &input) {
   cPair = input.GetReflectedPair(12);
   TEST_EQUAL(cPair.name, "test13");
   TEST_EQUAL(cPair.value, "EnumWrap01_E1 | EnumWrap01_E2 | EnumWrap01_E3");
+  TEST_EQUAL(input.GetReflectedValue(12, EnumWrap01_E1), "true");
+  TEST_EQUAL(input.GetReflectedValue(12, EnumWrap01_E2), "true");
+  TEST_EQUAL(input.GetReflectedValue(12, EnumWrap01_E3), "true");
 
   TEST_EQUAL(
       input.SetReflectedValue("test13", "EnumWrap01_E1 | EnumWrap01_E2 | "),
@@ -1179,6 +1094,9 @@ int test_reflector_enumflags01(reflClass &input) {
   cPair = input.GetReflectedPair(12);
   TEST_EQUAL(cPair.name, "test13");
   TEST_EQUAL(cPair.value, "EnumWrap01_E1 | EnumWrap01_E2");
+  TEST_EQUAL(input.GetReflectedValue(12, EnumWrap01_E1), "true");
+  TEST_EQUAL(input.GetReflectedValue(12, EnumWrap01_E2), "true");
+  TEST_EQUAL(input.GetReflectedValue(12, EnumWrap01_E3), "false");
 
   TEST_EQUAL(
       input.SetReflectedValue("test13", "EnumWrap01_E1 |  | EnumWrap01_E3"),
@@ -1189,6 +1107,9 @@ int test_reflector_enumflags01(reflClass &input) {
   cPair = input.GetReflectedPair(12);
   TEST_EQUAL(cPair.name, "test13");
   TEST_EQUAL(cPair.value, "EnumWrap01_E1 | EnumWrap01_E3");
+  TEST_EQUAL(input.GetReflectedValue(12, EnumWrap01_E1), "true");
+  TEST_EQUAL(input.GetReflectedValue(12, EnumWrap01_E2), "false");
+  TEST_EQUAL(input.GetReflectedValue(12, EnumWrap01_E3), "true");
 
   TEST_EQUAL(input.SetReflectedValue("test13", " |  | EnumWrap01_E3"),
              Reflector::ErrorType::EmptyInput);
@@ -1198,6 +1119,9 @@ int test_reflector_enumflags01(reflClass &input) {
   cPair = input.GetReflectedPair(12);
   TEST_EQUAL(cPair.name, "test13");
   TEST_EQUAL(cPair.value, "EnumWrap01_E3");
+  TEST_EQUAL(input.GetReflectedValue(12, EnumWrap01_E1), "false");
+  TEST_EQUAL(input.GetReflectedValue(12, EnumWrap01_E2), "false");
+  TEST_EQUAL(input.GetReflectedValue(12, EnumWrap01_E3), "true");
 
   TEST_EQUAL(input.SetReflectedValue(
                  "test13", "EnumWrap01_E1 | EnumWrap01_ | EnumWrap01_E3"),
@@ -1208,6 +1132,9 @@ int test_reflector_enumflags01(reflClass &input) {
   cPair = input.GetReflectedPair(12);
   TEST_EQUAL(cPair.name, "test13");
   TEST_EQUAL(cPair.value, "EnumWrap01_E1 | EnumWrap01_E3");
+  TEST_EQUAL(input.GetReflectedValue(12, EnumWrap01_E1), "true");
+  TEST_EQUAL(input.GetReflectedValue(12, EnumWrap01_E2), "false");
+  TEST_EQUAL(input.GetReflectedValue(12, EnumWrap01_E3), "true");
 
   TEST_EQUAL(
       input.SetReflectedValue("test13", "EnumWrap01_E1 || EnumWrap01_E3"),
@@ -1218,6 +1145,9 @@ int test_reflector_enumflags01(reflClass &input) {
   cPair = input.GetReflectedPair(12);
   TEST_EQUAL(cPair.name, "test13");
   TEST_EQUAL(cPair.value, "EnumWrap01_E1 | EnumWrap01_E3");
+  TEST_EQUAL(input.GetReflectedValue(12, EnumWrap01_E1), "true");
+  TEST_EQUAL(input.GetReflectedValue(12, EnumWrap01_E2), "false");
+  TEST_EQUAL(input.GetReflectedValue(12, EnumWrap01_E3), "true");
 
   return 0;
 }
@@ -1259,6 +1189,9 @@ int test_reflector_vector(reflClass &input) {
   Reflector::KVPair cPair = input.GetReflectedPair(17);
   TEST_EQUAL(cPair.name, "test18");
   TEST_EQUAL(cPair.value, "[1.5, 2.8, 5.4]");
+  TEST_EQUAL(input.GetReflectedValue(17, 0), "1.5");
+  TEST_EQUAL(input.GetReflectedValue(17, 1), "2.8");
+  TEST_EQUAL(input.GetReflectedValue(17, 2), "5.4");
 
   TEST_EQUAL(input.SetReflectedValue("test18", "[3.5, 2.1, 1.4,]"),
              Reflector::ErrorType::None);
@@ -1313,6 +1246,8 @@ int test_reflector_vector2(reflClass &input) {
   Reflector::KVPair cPair = input.GetReflectedPair(18);
   TEST_EQUAL(cPair.name, "test19");
   TEST_EQUAL(cPair.value, "[1.5, 5.4]");
+  TEST_EQUAL(input.GetReflectedValue(18, 0), "1.5");
+  TEST_EQUAL(input.GetReflectedValue(18, 1), "5.4");
 
   TEST_EQUAL(input.SetReflectedValue("test19", "[3.5, 2.1,]"),
              Reflector::ErrorType::None);
@@ -1366,6 +1301,10 @@ int test_reflector_vector4(reflClass &input) {
   Reflector::KVPair cPair = input.GetReflectedPair(19);
   TEST_EQUAL(cPair.name, "test20");
   TEST_EQUAL(cPair.value, "[1.5, 2.8, 5.4, 7.2]");
+  TEST_EQUAL(input.GetReflectedValue(19, 0), "1.5");
+  TEST_EQUAL(input.GetReflectedValue(19, 1), "2.8");
+  TEST_EQUAL(input.GetReflectedValue(19, 2), "5.4");
+  TEST_EQUAL(input.GetReflectedValue(19, 3), "7.2");
 
   TEST_EQUAL(input.SetReflectedValue("test20", "[3.5, 2.1, 1.4, 6.1,]"),
              Reflector::ErrorType::None);
@@ -1421,6 +1360,10 @@ int test_reflector_vector4A16(reflClass &input) {
   Reflector::KVPair cPair = input.GetReflectedPair(20);
   TEST_EQUAL(cPair.name, "test21");
   TEST_EQUAL(cPair.value, "[1.5, 2.8, 5.4, 7.2]");
+  TEST_EQUAL(input.GetReflectedValue(20, 0), "1.5");
+  TEST_EQUAL(input.GetReflectedValue(20, 1), "2.8");
+  TEST_EQUAL(input.GetReflectedValue(20, 2), "5.4");
+  TEST_EQUAL(input.GetReflectedValue(20, 3), "7.2");
 
   TEST_EQUAL(input.SetReflectedValue("test21", "[3.5, 2.1, 1.4, 6.1,]"),
              Reflector::ErrorType::None);
@@ -1481,6 +1424,30 @@ int test_reflector_arrays(reflClass &input) {
   Reflector::KVPair cPair = input.GetReflectedPair(22);
   TEST_EQUAL(cPair.name, "test40");
   TEST_EQUAL(cPair.value, "{false, true, true, false}");
+  TEST_EQUAL(input.GetReflectedValue(22, 0), "false");
+  TEST_EQUAL(input.GetReflectedValue(22, 1), "true");
+  TEST_EQUAL(input.GetReflectedValue(22, 2), "true");
+  TEST_EQUAL(input.GetReflectedValue(22, 3), "false");
+  input.SetReflectedValue(22, "true", 0);
+  TEST_EQUAL(input.test40[0], true);
+  TEST_EQUAL(input.test40[1], true);
+  TEST_EQUAL(input.test40[2], true);
+  TEST_EQUAL(input.test40[3], false);
+  input.SetReflectedValue(22, "false", 1);
+  TEST_EQUAL(input.test40[0], true);
+  TEST_EQUAL(input.test40[1], false);
+  TEST_EQUAL(input.test40[2], true);
+  TEST_EQUAL(input.test40[3], false);
+  input.SetReflectedValue(22, "false", 2);
+  TEST_EQUAL(input.test40[0], true);
+  TEST_EQUAL(input.test40[1], false);
+  TEST_EQUAL(input.test40[2], false);
+  TEST_EQUAL(input.test40[3], false);
+  input.SetReflectedValue(22, "true", 3);
+  TEST_EQUAL(input.test40[0], true);
+  TEST_EQUAL(input.test40[1], false);
+  TEST_EQUAL(input.test40[2], false);
+  TEST_EQUAL(input.test40[3], true);
 
   TEST_EQUAL(input.test41[0], 0);
   TEST_EQUAL(input.test41[1], 0);
@@ -1490,6 +1457,14 @@ int test_reflector_arrays(reflClass &input) {
   cPair = input.GetReflectedPair(23);
   TEST_EQUAL(cPair.name, "test41");
   TEST_EQUAL(cPair.value, "{12, -69}");
+  TEST_EQUAL(input.GetReflectedValue(23, 0), "12");
+  TEST_EQUAL(input.GetReflectedValue(23, 1), "-69");
+  input.SetReflectedValue(23, "13", 0);
+  TEST_EQUAL(input.test41[0], 13);
+  TEST_EQUAL(input.test41[1], -69);
+  input.SetReflectedValue(23, "-66", 1);
+  TEST_EQUAL(input.test41[0], 13);
+  TEST_EQUAL(input.test41[1], -66);
 
   TEST_EQUAL(input.test42[0], 0);
   TEST_EQUAL(input.test42[1], 0);
@@ -1503,6 +1478,30 @@ int test_reflector_arrays(reflClass &input) {
   cPair = input.GetReflectedPair(24);
   TEST_EQUAL(cPair.name, "test42");
   TEST_EQUAL(cPair.value, "{128, 57, 251, 181}");
+  TEST_EQUAL(input.GetReflectedValue(24, 0), "128");
+  TEST_EQUAL(input.GetReflectedValue(24, 1), "57");
+  TEST_EQUAL(input.GetReflectedValue(24, 2), "251");
+  TEST_EQUAL(input.GetReflectedValue(24, 3), "181");
+  input.SetReflectedValue(24, "120", 0);
+  TEST_EQUAL(input.test42[0], 120);
+  TEST_EQUAL(input.test42[1], 57);
+  TEST_EQUAL(input.test42[2], 251);
+  TEST_EQUAL(input.test42[3], 181);
+  input.SetReflectedValue(24, "50", 1);
+  TEST_EQUAL(input.test42[0], 120);
+  TEST_EQUAL(input.test42[1], 50);
+  TEST_EQUAL(input.test42[2], 251);
+  TEST_EQUAL(input.test42[3], 181);
+  input.SetReflectedValue(24, "252", 2);
+  TEST_EQUAL(input.test42[0], 120);
+  TEST_EQUAL(input.test42[1], 50);
+  TEST_EQUAL(input.test42[2], 252);
+  TEST_EQUAL(input.test42[3], 181);
+  input.SetReflectedValue(24, "172", 3);
+  TEST_EQUAL(input.test42[0], 120);
+  TEST_EQUAL(input.test42[1], 50);
+  TEST_EQUAL(input.test42[2], 252);
+  TEST_EQUAL(input.test42[3], 172);
 
   TEST_EQUAL(input.test43[0], 0);
   TEST_EQUAL(input.test43[1], 0);
@@ -1512,6 +1511,14 @@ int test_reflector_arrays(reflClass &input) {
   cPair = input.GetReflectedPair(25);
   TEST_EQUAL(cPair.name, "test43");
   TEST_EQUAL(cPair.value, "{1200, -6956}");
+  TEST_EQUAL(input.GetReflectedValue(25, 0), "1200");
+  TEST_EQUAL(input.GetReflectedValue(25, 1), "-6956");
+  input.SetReflectedValue(25, "1208", 0);
+  TEST_EQUAL(input.test43[0], 1208);
+  TEST_EQUAL(input.test43[1], -6956);
+  input.SetReflectedValue(25, "-5669", 1);
+  TEST_EQUAL(input.test43[0], 1208);
+  TEST_EQUAL(input.test43[1], -5669);
 
   TEST_EQUAL(input.test44[0], 0);
   TEST_EQUAL(input.test44[1], 0);
@@ -1525,6 +1532,30 @@ int test_reflector_arrays(reflClass &input) {
   cPair = input.GetReflectedPair(26);
   TEST_EQUAL(cPair.name, "test44");
   TEST_EQUAL(cPair.value, "{1286, 572, 2515, 64781}");
+  TEST_EQUAL(input.GetReflectedValue(26, 0), "1286");
+  TEST_EQUAL(input.GetReflectedValue(26, 1), "572");
+  TEST_EQUAL(input.GetReflectedValue(26, 2), "2515");
+  TEST_EQUAL(input.GetReflectedValue(26, 3), "64781");
+  input.SetReflectedValue(26, "1862", 0);
+  TEST_EQUAL(input.test44[0], 1862);
+  TEST_EQUAL(input.test44[1], 572);
+  TEST_EQUAL(input.test44[2], 2515);
+  TEST_EQUAL(input.test44[3], 64781);
+  input.SetReflectedValue(26, "678", 1);
+  TEST_EQUAL(input.test44[0], 1862);
+  TEST_EQUAL(input.test44[1], 678);
+  TEST_EQUAL(input.test44[2], 2515);
+  TEST_EQUAL(input.test44[3], 64781);
+  input.SetReflectedValue(26, "4879", 2);
+  TEST_EQUAL(input.test44[0], 1862);
+  TEST_EQUAL(input.test44[1], 678);
+  TEST_EQUAL(input.test44[2], 4879);
+  TEST_EQUAL(input.test44[3], 64781);
+  input.SetReflectedValue(26, "62158", 3);
+  TEST_EQUAL(input.test44[0], 1862);
+  TEST_EQUAL(input.test44[1], 678);
+  TEST_EQUAL(input.test44[2], 4879);
+  TEST_EQUAL(input.test44[3], 62158);
 
   TEST_EQUAL(input.test45[0], 0);
   TEST_EQUAL(input.test45[1], 0);
@@ -1534,6 +1565,14 @@ int test_reflector_arrays(reflClass &input) {
   cPair = input.GetReflectedPair(27);
   TEST_EQUAL(cPair.name, "test45");
   TEST_EQUAL(cPair.value, "{120053, -695641}");
+  TEST_EQUAL(input.GetReflectedValue(27, 0), "120053");
+  TEST_EQUAL(input.GetReflectedValue(27, 1), "-695641");
+  input.SetReflectedValue(27, "350021", 0);
+  TEST_EQUAL(input.test45[0], 350021);
+  TEST_EQUAL(input.test45[1], -695641);
+  input.SetReflectedValue(27, "-415669", 1);
+  TEST_EQUAL(input.test45[0], 350021);
+  TEST_EQUAL(input.test45[1], -415669);
 
   TEST_EQUAL(input.test46[0], 0);
   TEST_EQUAL(input.test46[1], 0);
@@ -1547,6 +1586,10 @@ int test_reflector_arrays(reflClass &input) {
   cPair = input.GetReflectedPair(28);
   TEST_EQUAL(cPair.name, "test46");
   TEST_EQUAL(cPair.value, "{128612, 572573, 2515513, 4294211683}");
+  TEST_EQUAL(input.GetReflectedValue(28, 0), "128612");
+  TEST_EQUAL(input.GetReflectedValue(28, 1), "572573");
+  TEST_EQUAL(input.GetReflectedValue(28, 2), "2515513");
+  TEST_EQUAL(input.GetReflectedValue(28, 3), "4294211683");
 
   TEST_EQUAL(input.test47[0], 0);
   TEST_EQUAL(input.test47[1], 0);
@@ -1556,6 +1599,8 @@ int test_reflector_arrays(reflClass &input) {
   cPair = input.GetReflectedPair(29);
   TEST_EQUAL(cPair.name, "test47");
   TEST_EQUAL(cPair.value, "{120053613654541, -6956415461654}");
+  TEST_EQUAL(input.GetReflectedValue(29, 0), "120053613654541");
+  TEST_EQUAL(input.GetReflectedValue(29, 1), "-6956415461654");
 
   TEST_EQUAL(input.test48[0], 0);
   TEST_EQUAL(input.test48[1], 0);
@@ -1573,6 +1618,10 @@ int test_reflector_arrays(reflClass &input) {
   TEST_EQUAL(
       cPair.value,
       "{128612465345, 5725735436343, 2515513435453, 18446668512364206295}");
+  TEST_EQUAL(input.GetReflectedValue(30, 0), "128612465345");
+  TEST_EQUAL(input.GetReflectedValue(30, 1), "5725735436343");
+  TEST_EQUAL(input.GetReflectedValue(30, 2), "2515513435453");
+  TEST_EQUAL(input.GetReflectedValue(30, 3), "18446668512364206295");
 
   TEST_EQUAL(input.test49[0], 0);
   TEST_EQUAL(input.test49[1], 0);
@@ -1582,6 +1631,14 @@ int test_reflector_arrays(reflClass &input) {
   cPair = input.GetReflectedPair(31);
   TEST_EQUAL(cPair.name, "test49");
   TEST_EQUAL(cPair.value, "{1.5, -3.6}");
+  TEST_EQUAL(input.GetReflectedValue(31, 0), "1.5");
+  TEST_EQUAL(input.GetReflectedValue(31, 1), "-3.6");
+  input.SetReflectedValue(31, "1.22", 0);
+  TEST_EQUAL(input.test49[0], 1.22f);
+  TEST_EQUAL(input.test49[1], -3.6f);
+  input.SetReflectedValue(31, "-3.72", 1);
+  TEST_EQUAL(input.test49[0], 1.22f);
+  TEST_EQUAL(input.test49[1], -3.72f);
 
   TEST_EQUAL(input.test50[0], 0);
   TEST_EQUAL(input.test50[1], 0);
@@ -1595,6 +1652,10 @@ int test_reflector_arrays(reflClass &input) {
   cPair = input.GetReflectedPair(32);
   TEST_EQUAL(cPair.name, "test50");
   TEST_EQUAL(cPair.value, "{1.536, 9.861, 6.45521, -7.32123}");
+  TEST_EQUAL(input.GetReflectedValue(32, 0), "1.536");
+  TEST_EQUAL(input.GetReflectedValue(32, 1), "9.861");
+  TEST_EQUAL(input.GetReflectedValue(32, 2), "6.45521");
+  TEST_EQUAL(input.GetReflectedValue(32, 3), "-7.32123");
 
   TEST_NOT_EQUAL(input.test51[0], EnumWrap00::E1);
   TEST_NOT_EQUAL(input.test51[0], EnumWrap00::E2);
@@ -1612,6 +1673,28 @@ int test_reflector_arrays(reflClass &input) {
   cPair = input.GetReflectedPair(33);
   TEST_EQUAL(cPair.name, "test51");
   TEST_EQUAL(cPair.value, "{E1 | E3, E2}");
+  TEST_EQUAL(input.GetReflectedValue(33, 0), "E1 | E3");
+  TEST_EQUAL(input.GetReflectedValue(33, 1), "E2");
+  TEST_EQUAL(input.GetReflectedValue(33, 0, (size_t)EnumWrap00::E1), "true");
+  TEST_EQUAL(input.GetReflectedValue(33, 0, (size_t)EnumWrap00::E2), "false");
+  TEST_EQUAL(input.GetReflectedValue(33, 0, (size_t)EnumWrap00::E3), "true");
+  TEST_EQUAL(input.GetReflectedValue(33, 1, (size_t)EnumWrap00::E1), "false");
+  TEST_EQUAL(input.GetReflectedValue(33, 1, (size_t)EnumWrap00::E2), "true");
+  TEST_EQUAL(input.GetReflectedValue(33, 1, (size_t)EnumWrap00::E3), "false");
+  input.SetReflectedValue(33, "E1", 0);
+  TEST_EQUAL(input.test51[0], EnumWrap00::E1);
+  TEST_NOT_EQUAL(input.test51[0], EnumWrap00::E2);
+  TEST_NOT_EQUAL(input.test51[0], EnumWrap00::E3);
+  TEST_NOT_EQUAL(input.test51[1], EnumWrap00::E1);
+  TEST_EQUAL(input.test51[1], EnumWrap00::E2);
+  TEST_NOT_EQUAL(input.test51[1], EnumWrap00::E3);
+  input.SetReflectedValue(33, "E2 | E3", 1);
+  TEST_EQUAL(input.test51[0], EnumWrap00::E1);
+  TEST_NOT_EQUAL(input.test51[0], EnumWrap00::E2);
+  TEST_NOT_EQUAL(input.test51[0], EnumWrap00::E3);
+  TEST_NOT_EQUAL(input.test51[1], EnumWrap00::E1);
+  TEST_EQUAL(input.test51[1], EnumWrap00::E2);
+  TEST_EQUAL(input.test51[1], EnumWrap00::E3);
 
   TEST_NOT_EQUAL(input.test52[0], EnumWrap01_E1);
   TEST_NOT_EQUAL(input.test52[0], EnumWrap01_E2);
@@ -1644,6 +1727,74 @@ int test_reflector_arrays(reflClass &input) {
   TEST_EQUAL(cPair.name, "test52");
   TEST_EQUAL(cPair.value, "{EnumWrap01_E1 | EnumWrap01_E3, EnumWrap01_E2, "
                           "EnumWrap01_E2 | EnumWrap01_E3, NULL}");
+  TEST_EQUAL(input.GetReflectedValue(34, 0), "EnumWrap01_E1 | EnumWrap01_E3");
+  TEST_EQUAL(input.GetReflectedValue(34, 1), "EnumWrap01_E2");
+  TEST_EQUAL(input.GetReflectedValue(34, 2), "EnumWrap01_E2 | EnumWrap01_E3");
+  TEST_EQUAL(input.GetReflectedValue(34, 3), "NULL");
+  TEST_EQUAL(input.GetReflectedValue(34, 0, EnumWrap01_E1), "true");
+  TEST_EQUAL(input.GetReflectedValue(34, 0, EnumWrap01_E2), "false");
+  TEST_EQUAL(input.GetReflectedValue(34, 0, EnumWrap01_E3), "true");
+  TEST_EQUAL(input.GetReflectedValue(34, 1, EnumWrap01_E1), "false");
+  TEST_EQUAL(input.GetReflectedValue(34, 1, EnumWrap01_E2), "true");
+  TEST_EQUAL(input.GetReflectedValue(34, 1, EnumWrap01_E3), "false");
+  TEST_EQUAL(input.GetReflectedValue(34, 2, EnumWrap01_E1), "false");
+  TEST_EQUAL(input.GetReflectedValue(34, 2, EnumWrap01_E2), "true");
+  TEST_EQUAL(input.GetReflectedValue(34, 2, EnumWrap01_E3), "true");
+  TEST_EQUAL(input.GetReflectedValue(34, 3, EnumWrap01_E1), "false");
+  TEST_EQUAL(input.GetReflectedValue(34, 3, EnumWrap01_E2), "false");
+  TEST_EQUAL(input.GetReflectedValue(34, 3, EnumWrap01_E3), "false");
+  input.SetReflectedValue(34, "NULL", 0);
+  TEST_NOT_EQUAL(input.test52[0], EnumWrap01_E1);
+  TEST_NOT_EQUAL(input.test52[0], EnumWrap01_E2);
+  TEST_NOT_EQUAL(input.test52[0], EnumWrap01_E3);
+  TEST_NOT_EQUAL(input.test52[1], EnumWrap01_E1);
+  TEST_EQUAL(input.test52[1], EnumWrap01_E2);
+  TEST_NOT_EQUAL(input.test52[1], EnumWrap01_E3);
+  TEST_NOT_EQUAL(input.test52[2], EnumWrap01_E1);
+  TEST_EQUAL(input.test52[2], EnumWrap01_E2);
+  TEST_EQUAL(input.test52[2], EnumWrap01_E3);
+  TEST_NOT_EQUAL(input.test52[3], EnumWrap01_E1);
+  TEST_NOT_EQUAL(input.test52[3], EnumWrap01_E2);
+  TEST_NOT_EQUAL(input.test52[3], EnumWrap01_E3);
+  input.SetReflectedValue(34, "EnumWrap01_E1 | EnumWrap01_E3", 1);
+  TEST_NOT_EQUAL(input.test52[0], EnumWrap01_E1);
+  TEST_NOT_EQUAL(input.test52[0], EnumWrap01_E2);
+  TEST_NOT_EQUAL(input.test52[0], EnumWrap01_E3);
+  TEST_EQUAL(input.test52[1], EnumWrap01_E1);
+  TEST_NOT_EQUAL(input.test52[1], EnumWrap01_E2);
+  TEST_EQUAL(input.test52[1], EnumWrap01_E3);
+  TEST_NOT_EQUAL(input.test52[2], EnumWrap01_E1);
+  TEST_EQUAL(input.test52[2], EnumWrap01_E2);
+  TEST_EQUAL(input.test52[2], EnumWrap01_E3);
+  TEST_NOT_EQUAL(input.test52[3], EnumWrap01_E1);
+  TEST_NOT_EQUAL(input.test52[3], EnumWrap01_E2);
+  TEST_NOT_EQUAL(input.test52[3], EnumWrap01_E3);
+  input.SetReflectedValue(34, "EnumWrap01_E2", 2);
+  TEST_NOT_EQUAL(input.test52[0], EnumWrap01_E1);
+  TEST_NOT_EQUAL(input.test52[0], EnumWrap01_E2);
+  TEST_NOT_EQUAL(input.test52[0], EnumWrap01_E3);
+  TEST_EQUAL(input.test52[1], EnumWrap01_E1);
+  TEST_NOT_EQUAL(input.test52[1], EnumWrap01_E2);
+  TEST_EQUAL(input.test52[1], EnumWrap01_E3);
+  TEST_NOT_EQUAL(input.test52[2], EnumWrap01_E1);
+  TEST_EQUAL(input.test52[2], EnumWrap01_E2);
+  TEST_NOT_EQUAL(input.test52[2], EnumWrap01_E3);
+  TEST_NOT_EQUAL(input.test52[3], EnumWrap01_E1);
+  TEST_NOT_EQUAL(input.test52[3], EnumWrap01_E2);
+  TEST_NOT_EQUAL(input.test52[3], EnumWrap01_E3);
+  input.SetReflectedValue(34, "EnumWrap01_E2 | EnumWrap01_E3", 3);
+  TEST_NOT_EQUAL(input.test52[0], EnumWrap01_E1);
+  TEST_NOT_EQUAL(input.test52[0], EnumWrap01_E2);
+  TEST_NOT_EQUAL(input.test52[0], EnumWrap01_E3);
+  TEST_EQUAL(input.test52[1], EnumWrap01_E1);
+  TEST_NOT_EQUAL(input.test52[1], EnumWrap01_E2);
+  TEST_EQUAL(input.test52[1], EnumWrap01_E3);
+  TEST_NOT_EQUAL(input.test52[2], EnumWrap01_E1);
+  TEST_EQUAL(input.test52[2], EnumWrap01_E2);
+  TEST_NOT_EQUAL(input.test52[2], EnumWrap01_E3);
+  TEST_NOT_EQUAL(input.test52[3], EnumWrap01_E1);
+  TEST_EQUAL(input.test52[3], EnumWrap01_E2);
+  TEST_EQUAL(input.test52[3], EnumWrap01_E3);
 
   TEST_EQUAL(input.test53[0], EnumWrap00::E1);
   TEST_EQUAL(input.test53[1], EnumWrap00::E1);
@@ -1653,6 +1804,14 @@ int test_reflector_arrays(reflClass &input) {
   cPair = input.GetReflectedPair(35);
   TEST_EQUAL(cPair.name, "test53");
   TEST_EQUAL(cPair.value, "{E2, E1}");
+  TEST_EQUAL(input.GetReflectedValue(35, 0), "E2");
+  TEST_EQUAL(input.GetReflectedValue(35, 1), "E1");
+  input.SetReflectedValue(35, "E3", 0);
+  TEST_EQUAL(input.test53[0], EnumWrap00::E3);
+  TEST_EQUAL(input.test53[1], EnumWrap00::E1);
+  input.SetReflectedValue(35, "E2", 1);
+  TEST_EQUAL(input.test53[0], EnumWrap00::E3);
+  TEST_EQUAL(input.test53[1], EnumWrap00::E2);
 
   TEST_EQUAL(input.test54[0], EnumWrap02::E4);
   TEST_EQUAL(input.test54[1], EnumWrap02::E4);
@@ -1666,6 +1825,10 @@ int test_reflector_arrays(reflClass &input) {
   cPair = input.GetReflectedPair(36);
   TEST_EQUAL(cPair.name, "test54");
   TEST_EQUAL(cPair.value, "{E5, E6, E4, E5}");
+  TEST_EQUAL(input.GetReflectedValue(36, 0), "E5");
+  TEST_EQUAL(input.GetReflectedValue(36, 1), "E6");
+  TEST_EQUAL(input.GetReflectedValue(36, 2), "E4");
+  TEST_EQUAL(input.GetReflectedValue(36, 3), "E5");
 
   TEST_EQUAL(int(input.test55[0]), 0);
   TEST_EQUAL(int(input.test55[1]), 0);
@@ -1675,6 +1838,8 @@ int test_reflector_arrays(reflClass &input) {
   cPair = input.GetReflectedPair(37);
   TEST_EQUAL(cPair.name, "test55");
   TEST_EQUAL(cPair.value, "{E9, E8}");
+  TEST_EQUAL(input.GetReflectedValue(37, 0), "E9");
+  TEST_EQUAL(input.GetReflectedValue(37, 1), "E8");
 
   TEST_EQUAL(input.test56[0], EnumWrap04::E10);
   TEST_EQUAL(input.test56[1], EnumWrap04::E10);
@@ -1688,6 +1853,10 @@ int test_reflector_arrays(reflClass &input) {
   cPair = input.GetReflectedPair(38);
   TEST_EQUAL(cPair.name, "test56");
   TEST_EQUAL(cPair.value, "{E11, E12, E10, E12}");
+  TEST_EQUAL(input.GetReflectedValue(38, 0), "E11");
+  TEST_EQUAL(input.GetReflectedValue(38, 1), "E12");
+  TEST_EQUAL(input.GetReflectedValue(38, 2), "E10");
+  TEST_EQUAL(input.GetReflectedValue(38, 3), "E12");
 
   TEST_EQUAL(input.test57[0], Vector());
   TEST_EQUAL(input.test57[1], Vector());
@@ -1697,6 +1866,26 @@ int test_reflector_arrays(reflClass &input) {
   cPair = input.GetReflectedPair(39);
   TEST_EQUAL(cPair.name, "test57");
   TEST_EQUAL(cPair.value, "{[5.6, 51.6, 31.7], [18.1, 3.5, 6.1]}");
+  TEST_EQUAL(input.GetReflectedValue(39, 0), "[5.6, 51.6, 31.7]");
+  TEST_EQUAL(input.GetReflectedValue(39, 1), "[18.1, 3.5, 6.1]");
+  TEST_EQUAL(input.GetReflectedValue(39, 0, 0), "5.6");
+  TEST_EQUAL(input.GetReflectedValue(39, 0, 1), "51.6");
+  TEST_EQUAL(input.GetReflectedValue(39, 0, 2), "31.7");
+  TEST_EQUAL(input.GetReflectedValue(39, 1, 0), "18.1");
+  TEST_EQUAL(input.GetReflectedValue(39, 1, 1), "3.5");
+  TEST_EQUAL(input.GetReflectedValue(39, 1, 2), "6.1");
+  input.SetReflectedValue(39, "[7.1, 11.8, 105.1]", 0);
+  TEST_EQUAL(input.test57[0], Vector(7.1f, 11.8f, 105.1f));
+  TEST_EQUAL(input.test57[1], Vector(18.1f, 3.5f, 6.1f));
+  input.SetReflectedValue(39, "[12.5, 78.1, 478.85]", 1);
+  TEST_EQUAL(input.test57[0], Vector(7.1, 11.8f, 105.1f));
+  TEST_EQUAL(input.test57[1], Vector(12.5f, 78.1f, 478.85f));
+  input.SetReflectedValue(39, "8.11", 0, 1);
+  TEST_EQUAL(input.test57[0], Vector(7.1f, 8.11f, 105.1f));
+  TEST_EQUAL(input.test57[1], Vector(12.5f, 78.1f, 478.85f));
+  input.SetReflectedValue(39, "54.62", 1, 2);
+  TEST_EQUAL(input.test57[0], Vector(7.1f, 8.11f, 105.1f));
+  TEST_EQUAL(input.test57[1], Vector(12.5f, 78.1f, 54.62f));
 
   TEST_EQUAL(input.test58[0], Vector2());
   TEST_EQUAL(input.test58[1], Vector2());
@@ -1712,6 +1901,18 @@ int test_reflector_arrays(reflClass &input) {
   TEST_EQUAL(cPair.name, "test58");
   TEST_EQUAL(cPair.value,
              "{[5.6, 51.6], [31.7, 18.1], [3.5, 6.1], [7.5, 62.1]}");
+  TEST_EQUAL(input.GetReflectedValue(40, 0), "[5.6, 51.6]");
+  TEST_EQUAL(input.GetReflectedValue(40, 1), "[31.7, 18.1]");
+  TEST_EQUAL(input.GetReflectedValue(40, 2), "[3.5, 6.1]");
+  TEST_EQUAL(input.GetReflectedValue(40, 3), "[7.5, 62.1]");
+  TEST_EQUAL(input.GetReflectedValue(40, 0, 0), "5.6");
+  TEST_EQUAL(input.GetReflectedValue(40, 0, 1), "51.6");
+  TEST_EQUAL(input.GetReflectedValue(40, 1, 0), "31.7");
+  TEST_EQUAL(input.GetReflectedValue(40, 1, 1), "18.1");
+  TEST_EQUAL(input.GetReflectedValue(40, 2, 0), "3.5");
+  TEST_EQUAL(input.GetReflectedValue(40, 2, 1), "6.1");
+  TEST_EQUAL(input.GetReflectedValue(40, 3, 0), "7.5");
+  TEST_EQUAL(input.GetReflectedValue(40, 3, 1), "62.1");
 
   TEST_EQUAL(input.test59[0], Vector4());
   TEST_EQUAL(input.test59[1], Vector4());
@@ -1722,6 +1923,8 @@ int test_reflector_arrays(reflClass &input) {
   cPair = input.GetReflectedPair(41);
   TEST_EQUAL(cPair.name, "test59");
   TEST_EQUAL(cPair.value, "{[5.6, 51.6, 31.7, 18.1], [3.5, 6.1, 7.5, 62.1]}");
+  TEST_EQUAL(input.GetReflectedValue(41, 0), "[5.6, 51.6, 31.7, 18.1]");
+  TEST_EQUAL(input.GetReflectedValue(41, 1), "[3.5, 6.1, 7.5, 62.1]");
 
   TEST_EQUAL(input.test60[0], Vector4A16());
   TEST_EQUAL(input.test60[1], Vector4A16());
@@ -1738,6 +1941,26 @@ int test_reflector_arrays(reflClass &input) {
   TEST_EQUAL(cPair.name, "test60");
   TEST_EQUAL(cPair.value, "{[5.6, 51.6, 31.7, 18.1], [3.5, 6.1, 7.5, 62.1], "
                           "[1.8, 57.5, 36.9, 5.78], [7.41, 5.8, 41.8, 6.12]}");
+  TEST_EQUAL(input.GetReflectedValue(42, 0), "[5.6, 51.6, 31.7, 18.1]");
+  TEST_EQUAL(input.GetReflectedValue(42, 1), "[3.5, 6.1, 7.5, 62.1]");
+  TEST_EQUAL(input.GetReflectedValue(42, 2), "[1.8, 57.5, 36.9, 5.78]");
+  TEST_EQUAL(input.GetReflectedValue(42, 3), "[7.41, 5.8, 41.8, 6.12]");
+  TEST_EQUAL(input.GetReflectedValue(42, 0, 0), "5.6");
+  TEST_EQUAL(input.GetReflectedValue(42, 0, 1), "51.6");
+  TEST_EQUAL(input.GetReflectedValue(42, 0, 2), "31.7");
+  TEST_EQUAL(input.GetReflectedValue(42, 0, 3), "18.1");
+  TEST_EQUAL(input.GetReflectedValue(42, 1, 0), "3.5");
+  TEST_EQUAL(input.GetReflectedValue(42, 1, 1), "6.1");
+  TEST_EQUAL(input.GetReflectedValue(42, 1, 2), "7.5");
+  TEST_EQUAL(input.GetReflectedValue(42, 1, 3), "62.1");
+  TEST_EQUAL(input.GetReflectedValue(42, 2, 0), "1.8");
+  TEST_EQUAL(input.GetReflectedValue(42, 2, 1), "57.5");
+  TEST_EQUAL(input.GetReflectedValue(42, 2, 2), "36.9");
+  TEST_EQUAL(input.GetReflectedValue(42, 2, 3), "5.78");
+  TEST_EQUAL(input.GetReflectedValue(42, 3, 0), "7.41");
+  TEST_EQUAL(input.GetReflectedValue(42, 3, 1), "5.8");
+  TEST_EQUAL(input.GetReflectedValue(42, 3, 2), "41.8");
+  TEST_EQUAL(input.GetReflectedValue(42, 3, 3), "6.12");
 
   return 0;
 }
@@ -1844,6 +2067,12 @@ int test_reflector_bitfield(reflClass &input) {
   return 0;
 }
 
+struct ReflectedInstanceFriend : ReflectedInstance {
+  void *Instance() { return instance; }
+  const void *Instance() const { return constInstance; }
+  const reflectorStatic *Refl() const { return rfStatic; }
+};
+
 int test_reflector(reflClass &input) {
   TEST_CHECK(input.UseNames());
   TEST_EQUAL(input.GetClassName(), es::string_view("reflClass"));
@@ -1856,12 +2085,11 @@ int test_reflector(reflClass &input) {
              Reflector::ErrorType::InvalidDestination);
   TEST_EQUAL(input.SetReflectedValueUInt("non existant", 0),
              Reflector::ErrorType::InvalidDestination);
-  /*auto noClass = input.GetReflectedSubClass(0);
+  auto noClass = input.GetReflectedSubClass(0);
+  auto &&ncls = static_cast<ReflectedInstanceFriend &&>(noClass);
 
-  TEST_NOT_CHECK(noClass.instc.rfInstance);
-  TEST_NOT_CHECK(noClass.instc.rfStatic);
-  TEST_NOT_CHECK(noClass.inst.rfInstance);
-  TEST_NOT_CHECK(noClass.inst.rfStatic);*/
+  TEST_NOT_CHECK(ncls.Instance());
+  TEST_NOT_CHECK(ncls.Refl());
 
   auto noPair = input.GetReflectedPair(200);
 

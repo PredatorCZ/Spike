@@ -49,8 +49,7 @@
   VA_NARGS_EVAL(_REFLECTOR_START_VER##numFlags(classname, __VA_ARGS__))
 
 class Reflector {
-  friend class ReflectorBinUtil;
-  friend class ReflectorXMLUtil;
+  friend class ReflectorFriend;
 
 public:
   struct KVPairFormat {
@@ -83,13 +82,21 @@ protected:
   const reflType *GetReflectedType(JenHash hashName) const;
   const reflType *GetReflectedType(size_t ID) const;
   ErrorType SetReflectedValue(reflType type, es::string_view value);
+  ErrorType SetReflectedValue(reflType type, es::string_view value, size_t subID);
+  ErrorType SetReflectedValue(reflType type, es::string_view value, size_t subID, size_t element);
   ErrorType SetReflectedValueUInt(reflType type, uint64 value, size_t subID = 0);
   ErrorType SetReflectedValueInt(reflType type, int64 value, size_t subID = 0);
   ErrorType SetReflectedValueFloat(reflType type, double value, size_t subID = 0);
 
 public:
-  ErrorType SetReflectedValue(JenHash hashName, es::string_view value);
   ErrorType SetReflectedValue(size_t id, es::string_view value);
+  ErrorType SetReflectedValue(JenHash hashName, es::string_view value);
+
+  ErrorType SetReflectedValue(size_t id, es::string_view value, size_t subID);
+  ErrorType SetReflectedValue(JenHash hashName, es::string_view value, size_t subID);
+
+  ErrorType SetReflectedValue(size_t id, es::string_view value, size_t subID, size_t element);
+  ErrorType SetReflectedValue(JenHash hashName, es::string_view value, size_t subID, size_t element);
 
   ErrorType SetReflectedValueInt(JenHash hashName, int64 value, size_t subID = 0);
   ErrorType SetReflectedValueInt(size_t id, int64 value, size_t subID = 0);
@@ -106,6 +113,12 @@ public:
 
   std::string GetReflectedValue(size_t id) const;
   std::string GetReflectedValue(JenHash hashName) const;
+
+  std::string GetReflectedValue(size_t id, size_t subID) const;
+  std::string GetReflectedValue(JenHash hashName, size_t subID) const;
+
+  std::string GetReflectedValue(size_t id, size_t subID, size_t element) const;
+  std::string GetReflectedValue(JenHash hashName, size_t subID, size_t element) const;
 
   bool IsReflectedSubClass(JenHash hashName) const;
   bool IsReflectedSubClass(size_t id) const;

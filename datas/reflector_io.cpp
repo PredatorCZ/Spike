@@ -414,6 +414,12 @@ struct ReflectedInstanceFriend : ReflectedInstance {
   const reflectorStatic *Refl() const { return rfStatic; }
 };
 
+class ReflectorFriend : public Reflector {
+public:
+  using Reflector::GetReflectedInstance;
+  using Reflector::GetReflectedType;
+};
+
 static int SaveClass(const Reflector &ri, ReflectedInstanceFriend inst,
                      BinWritterRef wr);
 
@@ -520,8 +526,9 @@ static int SaveClass(const Reflector &ri, ReflectedInstanceFriend inst,
 }
 
 int ReflectorBinUtil::Save(const Reflector &ri, BinWritterRef wr) {
+  auto &&rif = static_cast<const ReflectorFriend &>(ri);
   auto inst =
-      static_cast<ReflectedInstanceFriend &&>(ri.GetReflectedInstance());
+      static_cast<ReflectedInstanceFriend &&>(rif.GetReflectedInstance());
   auto refData = inst.Refl();
 
   wr.Write(refData->classHash);
@@ -598,15 +605,6 @@ static int LoadDataItem(Reflector &ri, BinReaderRef rd, char *objAddr,
   }
 }
 
-class ReflectorBinUtilFriend : ReflectorBinUtil {
-public:
-  using ReflectorBinUtil::Find;
-};
-
-const reflType *ReflectorBinUtil::Find(Reflector &ri, JenHash hash) {
-  return ri.GetReflectedType(hash);
-}
-
 static int LoadClass(ReflectedInstanceFriend inst, BinReaderRef rd) {
   auto refData = inst.Refl();
   const uint32 numItems = refData->nTypes;
@@ -635,7 +633,8 @@ static int LoadClass(ReflectedInstanceFriend inst, BinReaderRef rd) {
     rd.Push();
 
     ReflectorPureWrap ri(inst);
-    const reflType *cType = ReflectorBinUtilFriend::Find(ri, valueNameHash);
+    auto &&rif = static_cast<ReflectorFriend &>(static_cast<Reflector &>(ri));
+    const reflType *cType = rif.GetReflectedType(valueNameHash);
 
     if (!cType) {
       rd.Pop();
@@ -655,8 +654,9 @@ static int LoadClass(ReflectedInstanceFriend inst, BinReaderRef rd) {
 }
 
 int ReflectorBinUtil::Load(Reflector &ri, BinReaderRef rd) {
+  auto &&rif = static_cast<ReflectorFriend &>(ri);
   auto inst =
-      static_cast<ReflectedInstanceFriend &&>(ri.GetReflectedInstance());
+      static_cast<ReflectedInstanceFriend &&>(rif.GetReflectedInstance());
   auto refData = inst.Refl();
   JenHash clsHash;
 

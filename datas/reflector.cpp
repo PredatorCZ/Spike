@@ -502,6 +502,60 @@ Reflector::ErrorType Reflector::SetReflectedValue(reflType type,
   return SetReflectedMember(type, value, thisAddr);
 }
 
+Reflector::ErrorType Reflector::SetReflectedValue(reflType type,
+                                                  es::string_view value,
+                                                  size_t subID) {
+  auto inst = GetReflectedInstance();
+  char *thisAddr = static_cast<char *>(inst.instance);
+  thisAddr += type.offset + type.subSize * subID;
+  type.type = type.subType;
+
+  if (type.type == REFType::Vector) {
+    _DecomposedVectorHash dec = {type.typeHash};
+    type.subSize = dec.size;
+    type.numItems = dec.numItems;
+    type.subType = dec.type;
+  }
+
+  return SetReflectedMember(type, value, thisAddr);
+}
+
+Reflector::ErrorType Reflector::SetReflectedValue(reflType type,
+                                                  es::string_view value,
+                                                  size_t subID,
+                                                  size_t element) {
+  bool enumFlags = false;
+
+  switch (type.subType) {
+  /*case REFType::EnumFlags:
+    enumFlags = true;*/
+  case REFType::Vector:
+    break;
+  default:
+    return ErrorType::InvalidDestination;
+  }
+
+  auto inst = GetReflectedInstance();
+  char *thisAddr = static_cast<char *>(inst.instance);
+  thisAddr += type.offset + type.subSize * subID;
+
+  if (!enumFlags) {
+    _DecomposedVectorHash dec = {type.typeHash};
+    type.subSize = dec.size;
+
+    if (element >= dec.size) {
+      printerror("[Reflector] Too many vector elements, " << dec.size
+                                                          << " expected.");
+      return ErrorType::OutOfRange;
+    }
+
+    thisAddr += dec.size * element;
+    type.type = dec.type;
+  }
+
+  return SetReflectedMember(type, value, thisAddr);
+}
+
 Reflector::ErrorType
 Reflector::SetReflectedValueInt(reflType reflValue, int64 value, size_t subID) {
   auto inst = GetReflectedInstance();
@@ -831,6 +885,101 @@ std::string Reflector::GetReflectedValue(size_t id) const {
       reflValue.type == REFType::BitFieldMember ? 0 : reflValue.offset;
 
   return GetReflectedPrimitive(thisAddr + valueOffset, reflValue);
+}
+
+std::string Reflector::GetReflectedValue(size_t id, size_t subID) const {
+  if (id >= GetNumReflectedValues())
+    return "";
+
+  auto inst = GetReflectedInstance();
+  const char *thisAddr = static_cast<const char *>(inst.constInstance);
+  const reflType &reflValue = inst.rfStatic->types[id];
+  const char *objAddr = thisAddr + reflValue.offset;
+
+  switch (reflValue.type) {
+  case REFType::Array:
+  case REFType::Vector:
+  case REFType::ArrayClass: {
+    if (reflValue.numItems <= subID) {
+      return "";
+    }
+
+    reflType subType = reflValue;
+    subType.type = reflValue.subType;
+
+    if (subType.type == REFType::Vector) {
+      _DecomposedVectorHash dec{subType.typeHash};
+      subType.subType = dec.type;
+      subType.numItems = dec.numItems;
+      subType.subSize = dec.size;
+    }
+
+    return GetReflectedPrimitive(objAddr + reflValue.subSize * subID, subType);
+  }
+  case REFType::EnumFlags: {
+    if (reflValue.subSize * 8 <= subID) {
+      return "";
+    }
+
+    uint64 eValue;
+
+    memcpy(reinterpret_cast<char *>(&eValue), objAddr, reflValue.subSize);
+
+    return (eValue & (1 << subID)) ? "true" : "false";
+  }
+
+  default:
+    return "";
+  }
+}
+
+std::string Reflector::GetReflectedValue(size_t id, size_t subID,
+                                         size_t element) const {
+  if (id >= GetNumReflectedValues() || !IsArray(id))
+    return "";
+
+  auto inst = GetReflectedInstance();
+  const char *thisAddr = static_cast<const char *>(inst.constInstance);
+  const reflType &reflValue = inst.rfStatic->types[id];
+  const char *objAddr = thisAddr + reflValue.offset;
+
+  switch (reflValue.subType) {
+  case REFType::Vector: {
+    if (reflValue.numItems <= subID) {
+      return "";
+    }
+
+    reflType subType = reflValue;
+    subType.type = reflValue.subType;
+    _DecomposedVectorHash dec{subType.typeHash};
+    subType.type = dec.type;
+    subType.numItems = dec.numItems;
+    subType.subSize = dec.size;
+
+    if (subType.numItems <= element) {
+      return "";
+    }
+
+    return GetReflectedPrimitive(objAddr + reflValue.subSize * subID +
+                                     subType.subSize * element,
+                                 subType);
+  }
+  case REFType::EnumFlags: {
+    if (reflValue.subSize * 8 <= element || reflValue.numItems <= subID) {
+      return "";
+    }
+
+    uint64 eValue;
+
+    memcpy(reinterpret_cast<char *>(&eValue),
+           objAddr + reflValue.subSize * subID, reflValue.subSize);
+
+    return (eValue & (1 << element)) ? "true" : "false";
+  }
+
+  default:
+    return "";
+  }
 }
 
 ReflectedInstance Reflector::GetReflectedSubClass(size_t id,
