@@ -84,6 +84,18 @@ public:
   using parent::const_iterator;
   using parent::end;
   using parent::iterator;
+
+  es::string_view find(uint64 value) const {
+    auto valueEnd = values + size();
+
+    for (auto it = values; it != valueEnd; it++){
+      if (*it == value) {
+        return at(std::distance(values, it));
+      }
+    }
+
+    return {};
+  }
 };
 
 template <class E> static ReflectedEnum GetReflectedEnum() {
