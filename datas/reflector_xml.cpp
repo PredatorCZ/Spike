@@ -34,8 +34,14 @@ public:
 
 static bool SaveV2(const reflType &cType, const Reflector &ri,
                    pugi::xml_node thisNode, size_t t,
-                   const std::string &varName) {
+                   const std::string &varName,
+                   ReflectorXMLUtil::flag_type flags) {
   switch (cType.type) {
+  case REFType::String: {
+    if (!flags[ReflectorXMLUtil::Flags_StringAsAttribute]) {
+      return false;
+    }
+  }
   case REFType::Bool:
   case REFType::Enum:
   case REFType::FloatingPoint:
@@ -153,17 +159,25 @@ pugi::xml_node ReflectorXMLUtil::Save(const Reflector &ri, pugi::xml_node node,
 
 pugi::xml_node ReflectorXMLUtil::SaveV2(const Reflector &ri,
                                         pugi::xml_node node, bool asNewNode) {
+  flag_type opts;
+  opts.Set(Flags_ClassNode, asNewNode);
+  return SaveV2a(ri, node, opts);
+}
+
+pugi::xml_node ReflectorXMLUtil::SaveV2a(const Reflector &ri,
+                                         pugi::xml_node node, flag_type opts) {
   auto &&rif = static_cast<const ReflectorFriend &>(ri);
   auto stat =
       static_cast<ReflectedInstanceFriend &&>(rif.GetReflectedInstance())
           .Refl();
-  pugi::xml_node thisNode = asNewNode ? MakeNode(ri, stat, node) : node;
+  pugi::xml_node thisNode =
+      opts[Flags_ClassNode] ? MakeNode(ri, stat, node) : node;
 
   for (size_t t = 0; t < stat->nTypes; t++) {
     auto &&cType = stat->types[t];
     std::string varName = GetName(ri, stat, cType, t);
 
-    if (::SaveV2(cType, ri, thisNode, t, varName)) {
+    if (::SaveV2(cType, ri, thisNode, t, varName, opts)) {
       continue;
     }
 
@@ -176,14 +190,18 @@ pugi::xml_node ReflectorXMLUtil::SaveV2(const Reflector &ri,
           ReflectorPureWrap subCl(subRef);
           auto nodeName = varName + '-' + std::to_string(s);
           pugi::xml_node cNode = thisNode.append_child(nodeName.data());
-          ReflectorXMLUtil::SaveV2(subCl, cNode, false);
+          auto subOpts = opts;
+          subOpts -= Flags_ClassNode;
+          SaveV2a(subCl, cNode, subOpts);
         }
 
       } else {
         pugi::xml_node cNode = thisNode.append_child(varName.c_str());
         auto subRef = ri.GetReflectedSubClass(t);
         ReflectorPureWrap subCl(subRef);
-        ReflectorXMLUtil::SaveV2(subCl, cNode, false);
+        auto subOpts = opts;
+        subOpts -= Flags_ClassNode;
+        SaveV2a(subCl, cNode, subOpts);
       }
     } else if (ri.IsArray(t)) {
       switch (cType.subType) {
