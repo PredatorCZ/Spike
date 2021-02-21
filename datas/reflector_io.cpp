@@ -276,6 +276,7 @@ int ReflectorIO::Save(BinWritterRef wr) {
 
   for (auto i : classes) {
     if (i->typeNames) {
+      wr.ApplyPadding(8);
       itemStringsFixups.FixupDestination();
       wr.Skip(sizeof(uint32) * i->nTypes);
 
@@ -288,6 +289,7 @@ int ReflectorIO::Save(BinWritterRef wr) {
 
   for (auto i : classes) {
     if (i->typeAliases) {
+      wr.ApplyPadding(8);
       aliasesFixups.FixupDestination();
       wr.Skip(sizeof(uint32) * i->nTypes);
 
