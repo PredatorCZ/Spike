@@ -1,5 +1,6 @@
 # PreCore
 
+[![build](https://github.com/PredatorCZ/PreCore/actions/workflows/cmake.yml/badge.svg)](https://github.com/PredatorCZ/PreCore/actions/workflows/cmake.yml)
 [![Build Status](https://travis-ci.com/PredatorCZ/PreCore.svg?branch=master)](https://travis-ci.com/PredatorCZ/PreCore)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![Codacy Badge](https://app.codacy.com/project/badge/Grade/50479b1d15d848bcb389dc2166c294e2)](https://www.codacy.com/manual/PredatorCZ/PreCore?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=PredatorCZ/PreCore&amp;utm_campaign=Badge_Grade)
