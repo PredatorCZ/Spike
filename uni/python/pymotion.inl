@@ -1,6 +1,6 @@
 /*  Python binding definitions for uni::Skeleton
     part of uni module
-    Copyright 2020 Lukas Cone
+    Copyright 2020-2021 Lukas Cone
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -15,9 +15,12 @@
     limitations under the License.
 */
 
+#include "datas/python/matrix44.hpp"
+#include "datas/python/vectors.hpp"
 #include "pyenum.hpp"
 #include "pylist.hpp"
 #include "pymotion.hpp"
+#include "pyrts.hpp"
 #include <vector>
 
 namespace UniPy {
@@ -182,8 +185,7 @@ PyObject *MotionTrack::GetValues(MotionTrack *self, PyObject *index) {
     Vector4A16 rtVal;
     for (auto &t : times) {
       self->item->GetValue(rtVal, t);
-      auto cVal = Py_BuildValue("(ffff)", rtVal.X, rtVal.Y, rtVal.Z, rtVal.W);
-      PyList_SetItem(retList, curItem++, cVal);
+      PyList_SetItem(retList, curItem++, Py_BuildValue(rtVal));
     }
     break;
   }
@@ -200,15 +202,7 @@ PyObject *MotionTrack::GetValues(MotionTrack *self, PyObject *index) {
     uni::RTSValue rts;
     for (auto &t : times) {
       self->item->GetValue(rts, t);
-      auto cVal =
-          Py_BuildValue("((ffff)(ffff)(ffff))", /****************************/
-                        rts.translation.X, rts.translation.Y, /**************/
-                        rts.translation.Z, rts.translation.W, /**************/
-                        rts.rotation.X, rts.rotation.Y,       /**************/
-                        rts.rotation.Z, rts.rotation.W,       /**************/
-                        rts.scale.X, rts.scale.Y, rts.scale.Z, rts.scale.W ///
-          );
-        PyList_SetItem(retList, curItem++, cVal);
+      PyList_SetItem(retList, curItem++, Py_BuildValue(rts));
     }
     break;
   }
@@ -216,14 +210,7 @@ PyObject *MotionTrack::GetValues(MotionTrack *self, PyObject *index) {
     esMatrix44 mtx;
     for (auto &t : times) {
       self->item->GetValue(mtx, t);
-      auto cVal =
-          Py_BuildValue("((ffff)(ffff)(ffff)(ffff))", /**********************/
-                        mtx.r1.X, mtx.r1.Y, mtx.r1.Z, mtx.r1.W, /************/
-                        mtx.r2.X, mtx.r2.Y, mtx.r2.Z, mtx.r2.W, /************/
-                        mtx.r3.X, mtx.r3.Y, mtx.r3.Z, mtx.r3.W, /************/
-                        mtx.r4.X, mtx.r4.Y, mtx.r4.Z, mtx.r4.W  /************/
-          );
-      PyList_SetItem(retList, curItem++, cVal);
+      PyList_SetItem(retList, curItem++, Py_BuildValue(mtx));
     }
     break;
   }

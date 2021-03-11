@@ -1,6 +1,6 @@
 /*  List abstraction
     part of uni module
-    Copyright 2020 Lukas Cone
+    Copyright 2020-2021 Lukas Cone
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -20,14 +20,13 @@
 #include "common.hpp"
 
 namespace _uni_ {
-template <class C, class _const_type> class _List {
+template <class C, class _const_type> class _List : public uni::Base {
 public:
   typedef C value_type;
   typedef _const_type const_type;
 
   virtual size_t Size() const = 0;
   virtual const_type At(size_t id) const = 0;
-  virtual ~_List() {}
 
   typedef uni::VirtualIterator<_List, &_List::Size, const_type, &_List::At>
       iterator_type_const;

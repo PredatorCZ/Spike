@@ -19,167 +19,118 @@
 #pragma once
 #include "endian_fwd.hpp"
 #include "reflector_fwd.hpp"
+#include "vectors_fwd.hpp"
+#include <cfloat>
 #include <cmath>
-#include <float.h>
-#include <ostream>
 
-#define FLTCMP(a, b) (a <= (b + FLT_EPSILON) && a >= (b - FLT_EPSILON))
-
-template <typename T> class t_Vector;
-template <typename T> class _t_Vector4;
-template <typename T> class V4ScalarType;
+template <class C> static bool fltcmp(C a, C b) {
+  return a <= (b + FLT_EPSILON) && a >= (b - FLT_EPSILON);
+}
 
 template <typename T> class t_Vector2 {
+  using vector = t_Vector2;
+  using vec_ref = vector &;
+  using vec_cref = const vector &;
+
 public:
+  using value_type = T;
+  using shift_value = int32;
+  using shift_vec = const t_Vector2<shift_value> &;
   union {
     T _arr[2];
     struct {
       T X, Y;
     };
+    struct {
+      T x, y;
+    };
   };
 
   t_Vector2() : X(0), Y(0) {}
+  t_Vector2(T sc) : X(sc), Y(sc) {}
   t_Vector2(T inx, T iny) : X(inx), Y(iny) {}
 
-  t_Vector2 &operator+=(const t_Vector2 &input) {
-    X += input.X;
-    Y += input.Y;
-    return *this;
+  vector operator+(vec_cref input) const { return {X + input.X, Y + input.Y}; }
+  vector operator-(vec_cref input) const { return {X - input.X, Y - input.Y}; }
+  vector operator*(vec_cref input) const { return {X * input.X, Y * input.Y}; }
+  vector operator/(vec_cref input) const { return {X / input.X, Y / input.Y}; }
+  vector operator&(vec_cref input) const { return {X & input.X, Y & input.Y}; }
+  vector operator|(vec_cref input) const { return {X | input.X, Y | input.Y}; }
+  vector operator>>(shift_vec input) const {
+    return {X >> input.X, Y >> input.Y};
   }
-  t_Vector2 &operator-=(const t_Vector2 &input) {
-    X -= input.X;
-    Y -= input.Y;
-    return *this;
-  }
-  t_Vector2 &operator*=(const t_Vector2 &input) {
-    X *= input.X;
-    Y *= input.Y;
-    return *this;
-  }
-  t_Vector2 &operator/=(const t_Vector2 &input) {
-    X /= input.X;
-    Y /= input.Y;
-    return *this;
+  vector operator<<(shift_vec input) const {
+    return {X << input.X, Y << input.Y};
   }
 
-  t_Vector2 operator+(const t_Vector2 &input) const {
-    return t_Vector2(X + input.X, Y + input.Y);
-  }
-  t_Vector2 operator-(const t_Vector2 &input) const {
-    return t_Vector2(X - input.X, Y - input.Y);
-  }
-  t_Vector2 operator*(const t_Vector2 &input) const {
-    return t_Vector2(X * input.X, Y * input.Y);
-  }
-  t_Vector2 operator/(const t_Vector2 &input) const {
-    return t_Vector2(X / input.X, Y / input.Y);
-  }
+  vector operator+(value_type input) const { return *this + vector(input); }
+  vector operator-(value_type input) const { return *this - vector(input); }
+  vector operator*(value_type input) const { return *this * vector(input); }
+  vector operator/(value_type input) const { return *this / vector(input); }
+  vector operator&(value_type input) const { return *this & vector(input); }
+  vector operator|(value_type input) const { return *this | vector(input); }
+  vector operator>>(shift_value input) const { return *this >> vector(input); }
+  vector operator<<(shift_value input) const { return *this << vector(input); }
 
-  t_Vector2 &operator+=(T input) {
-    X += input;
-    Y += input;
-    return *this;
-  }
-  t_Vector2 &operator-=(T input) {
-    X -= input;
-    Y -= input;
-    return *this;
-  }
-  t_Vector2 &operator*=(T input) {
-    X *= input;
-    Y *= input;
-    return *this;
-  }
-  t_Vector2 &operator/=(T input) {
-    X /= input;
-    Y /= input;
-    return *this;
-  }
+  vec_ref operator+=(vec_cref input) { return *this = *this + input; }
+  vec_ref operator-=(vec_cref input) { return *this = *this - input; }
+  vec_ref operator*=(vec_cref input) { return *this = *this * input; }
+  vec_ref operator/=(vec_cref input) { return *this = *this / input; }
+  vec_ref operator&=(vec_cref input) { return *this = *this & input; }
+  vec_ref operator|=(vec_cref input) { return *this = *this | input; }
+  vec_ref operator>>=(shift_vec input) { return *this = *this >> input; }
+  vec_ref operator<<=(shift_vec input) { return *this = *this << input; }
 
-  t_Vector2 operator+(T input) const { return t_Vector2(X + input, Y + input); }
-  t_Vector2 operator-(T input) const { return t_Vector2(X - input, Y - input); }
-  t_Vector2 operator*(T input) const { return t_Vector2(X * input, Y * input); }
-  t_Vector2 operator/(T input) const { return t_Vector2(X / input, Y / input); }
+  vec_ref operator+=(value_type input) { return *this = *this + input; }
+  vec_ref operator-=(value_type input) { return *this = *this - input; }
+  vec_ref operator*=(value_type input) { return *this = *this * input; }
+  vec_ref operator/=(value_type input) { return *this = *this / input; }
+  vec_ref operator&=(value_type input) { return *this = *this & input; }
+  vec_ref operator|=(value_type input) { return *this = *this | input; }
+  vec_ref operator>>=(shift_value input) { return *this = *this >> input; }
+  vec_ref operator<<=(shift_value input) { return *this = *this << input; }
 
-  t_Vector2 operator&(T input) const { return t_Vector2(X & input, Y & input); }
-  t_Vector2 operator|(T input) const { return t_Vector2(X | input, Y | input); }
-  t_Vector2 operator>>(size_t input) const {
-    return t_Vector2(X >> input, Y >> input);
-  }
-  t_Vector2 operator<<(size_t input) const {
-    return t_Vector2(X << input, Y << input);
-  }
-
-  t_Vector2 &operator&=(T input) {
-    X &= input;
-    Y &= input;
-    return *this;
-  }
-  t_Vector2 &operator|=(T input) {
-    X |= input;
-    Y |= input;
-    return *this;
-  }
-  t_Vector2 &operator>>=(size_t input) {
-    X >>= input;
-    Y >>= input;
-    return *this;
-  }
-  t_Vector2 &operator<<=(size_t input) {
-    X <<= input;
-    Y <<= input;
-    return *this;
-  }
-
-  t_Vector2 operator-() const { return *this * -1; }
+  vector operator-() const { return *this * -1; }
 
   // t_Vector<T> ToVector() const { return t_Vector<T>(this->X, this->Y, 0.0f);
   // } t_Vector4<T> ToVector4() const { return t_Vector4<T>(this->X, this->Y,
   // 0.0f, 0.0f); }
 
-  T &operator[](size_t pos) { return _arr[pos]; }
-  const T &operator[](size_t pos) const { return _arr[pos]; }
+  value_type &operator[](size_t pos) { return _arr[pos]; }
+  const value_type &operator[](size_t pos) const { return _arr[pos]; }
 
   template <typename _T = T>
   typename std::enable_if<std::is_integral<_T>::value, bool>::type
-  operator==(const t_Vector2 &input) const {
-    return (X == input.X && Y == input.Y);
+  operator==(vec_cref input) const {
+    return X == input.X && Y == input.Y;
   }
 
   template <typename _T = T>
   typename std::enable_if<std::is_floating_point<_T>::value, bool>::type
-  operator==(const t_Vector2 &input) const {
-    return FLTCMP(X, input.X) && FLTCMP(Y, input.Y);
+  operator==(vec_cref input) const {
+    return fltcmp(X, input.X) && fltcmp(Y, input.Y);
   }
 
-  bool operator!=(const t_Vector2 &input) const { return !(*this == input); }
+  bool operator!=(vec_cref input) const { return !(*this == input); }
 
-  bool IsSymetrical() const { return (X == Y); }
+  bool IsSymetrical() const { return *this == vector{Y, X}; }
 
-  template <typename T2> t_Vector2<T2> Convert(void) const {
-    return t_Vector2<T2>(static_cast<T2>(X), static_cast<T2>(Y));
-  }
-  std::string ToString() const {
-    return std::to_string(X) + ' ' + std::to_string(Y);
-  }
-  std::wstring ToWString() const {
-    return std::to_wstring(X) + L' ' + std::to_wstring(Y);
+  template <typename T2> t_Vector2<T2> Convert() const {
+    return {static_cast<T2>(X), static_cast<T2>(Y)};
   }
 
-  T Length() const { return static_cast<T>(sqrt(pow(X, 2) + pow(Y, 2))); }
-  int Sign() const { return X * Y < 0 ? -1 : 1; }
-  T Dot(const t_Vector2 &input) const { return X * input.X + Y * input.Y; }
-  friend std::ostream &operator<<(std::ostream &strm, const t_Vector2<T> &v) {
-    return strm << v.X << " " << v.Y;
+  value_type Length() const {
+    return static_cast<value_type>(sqrt(pow(X, 2) + pow(Y, 2)));
   }
+  int Sign() const { return (X | Y) < 0 ? -1 : 1; }
+  value_type Dot(vec_cref input) const { return X * input.X + Y * input.Y; }
 
-  t_Vector2 &Normalize() {
-    T len = Length();
-    if (!len)
+  vec_ref Normalize() {
+    value_type len = Length();
+    if (!len) {
       return *this;
-    X /= len;
-    Y /= len;
-    return *this;
+    }
+    return *this /= len;
   }
 
   void SwapEndian() {
@@ -191,202 +142,128 @@ public:
     FByteswapper(Y);
   }
 };
-typedef t_Vector2<float> Vector2;
-typedef Vector2 FVector2;
-typedef t_Vector2<int32> IVector2;
-typedef t_Vector2<int16> SVector2;
-typedef t_Vector2<int8> CVector2;
-typedef t_Vector2<uint32> UIVector2;
-typedef t_Vector2<uint16> USVector2;
-typedef t_Vector2<uint8> UCVector2;
 
 template <typename T> class t_Vector {
+  using vector = t_Vector;
+  using vec_ref = vector &;
+  using vec_cref = const vector &;
+
 public:
+  using value_type = T;
+  using shift_value = int32;
+  using shift_vec = const t_Vector<shift_value> &;
   union {
     T _arr[3];
     struct {
       T X, Y, Z;
     };
+    struct {
+      T x, y, z;
+    };
   };
 
   t_Vector() : X(0), Y(0), Z(0) {}
+  t_Vector(T sc) : X(sc), Y(sc), Z(sc) {}
   t_Vector(T inx, T iny, T inz) : X(inx), Y(iny), Z(inz) {}
 
-  t_Vector operator+(const t_Vector &input) const {
-    return t_Vector(X + input.X, Y + input.Y, Z + input.Z);
+  vector operator+(vec_cref input) const {
+    return {X + input.X, Y + input.Y, Z + input.Z};
   }
-  t_Vector operator-(const t_Vector &input) const {
-    return t_Vector(X - input.X, Y - input.Y, Z - input.Z);
+  vector operator-(vec_cref input) const {
+    return {X - input.X, Y - input.Y, Z - input.Z};
   }
-  t_Vector operator*(const t_Vector &input) const {
-    return t_Vector(X * input.X, Y * input.Y, Z * input.Z);
+  vector operator*(vec_cref input) const {
+    return {X * input.X, Y * input.Y, Z * input.Z};
   }
-  t_Vector operator/(const t_Vector &input) const {
-    return t_Vector(X / input.X, Y / input.Y, Z / input.Z);
+  vector operator/(vec_cref input) const {
+    return {X / input.X, Y / input.Y, Z / input.Z};
   }
-
-  t_Vector &operator+=(const t_Vector &input) {
-    X += input.X;
-    Y += input.Y;
-    Z += input.Z;
-    return *this;
+  vector operator&(vec_cref input) const {
+    return {X & input.X, Y & input.Y, Z & input.Z};
   }
-  t_Vector &operator-=(const t_Vector &input) {
-    X -= input.X;
-    Y -= input.Y;
-    Z -= input.Z;
-    return *this;
+  vector operator|(vec_cref input) const {
+    return {X | input.X, Y | input.Y, Z | input.Z};
   }
-  t_Vector &operator*=(const t_Vector &input) {
-    X *= input.X;
-    Y *= input.Y;
-    Z *= input.Z;
-    return *this;
+  vector operator>>(shift_vec input) const {
+    return {X >> input.X, Y >> input.Y, Z >> input.Z};
   }
-  t_Vector &operator/=(const t_Vector &input) {
-    X /= input.X;
-    Y /= input.Y;
-    Z /= input.Z;
-    return *this;
+  vector operator<<(shift_vec input) const {
+    return {X << input.X, Y << input.Y, Z << input.Z};
   }
 
-  t_Vector operator*(T input) const {
-    return t_Vector(X * input, Y * input, Z * input);
-  }
-  t_Vector operator+(T input) const {
-    return t_Vector(X + input, Y + input, Z + input);
-  }
-  t_Vector operator/(T input) const {
-    return t_Vector(X / input, Y / input, Z / input);
-  }
-  t_Vector operator-(T input) const {
-    return t_Vector(X - input, Y - input, Z - input);
-  }
+  vector operator+(value_type input) const { return *this + vector(input); }
+  vector operator-(value_type input) const { return *this - vector(input); }
+  vector operator*(value_type input) const { return *this * vector(input); }
+  vector operator/(value_type input) const { return *this / vector(input); }
+  vector operator&(value_type input) const { return *this & vector(input); }
+  vector operator|(value_type input) const { return *this | vector(input); }
+  vector operator>>(shift_value input) const { return *this >> vector(input); }
+  vector operator<<(shift_value input) const { return *this << vector(input); }
 
-  t_Vector &operator*=(T input) {
-    X *= input;
-    Y *= input;
-    Z *= input;
-    return *this;
-  }
-  t_Vector &operator/=(T input) {
-    X /= input;
-    Y /= input;
-    Z /= input;
-    return *this;
-  }
-  t_Vector &operator+=(T input) {
-    X += input;
-    Y += input;
-    Z += input;
-    return *this;
-  }
-  t_Vector &operator-=(T input) {
-    X -= input;
-    Y -= input;
-    Z -= input;
-    return *this;
-  }
+  vec_ref operator+=(vec_cref input) { return *this = *this + input; }
+  vec_ref operator-=(vec_cref input) { return *this = *this - input; }
+  vec_ref operator*=(vec_cref input) { return *this = *this * input; }
+  vec_ref operator/=(vec_cref input) { return *this = *this / input; }
+  vec_ref operator&=(vec_cref input) { return *this = *this & input; }
+  vec_ref operator|=(vec_cref input) { return *this = *this | input; }
+  vec_ref operator>>=(shift_vec input) { return *this = *this >> input; }
+  vec_ref operator<<=(shift_vec input) { return *this = *this << input; }
 
-  t_Vector operator&(T input) const {
-    return t_Vector(X & input, Y & input, Z & input);
-  }
-  t_Vector operator|(T input) const {
-    return t_Vector(X | input, Y | input, Z | input);
-  }
-  t_Vector operator>>(size_t input) const {
-    return t_Vector(X >> input, Y >> input, Z >> input);
-  }
-  t_Vector operator<<(size_t input) const {
-    return t_Vector(X << input, Y << input, Z << input);
-  }
+  vec_ref operator+=(value_type input) { return *this = *this + input; }
+  vec_ref operator-=(value_type input) { return *this = *this - input; }
+  vec_ref operator*=(value_type input) { return *this = *this * input; }
+  vec_ref operator/=(value_type input) { return *this = *this / input; }
+  vec_ref operator&=(value_type input) { return *this = *this & input; }
+  vec_ref operator|=(value_type input) { return *this = *this | input; }
+  vec_ref operator>>=(shift_value input) { return *this = *this >> input; }
+  vec_ref operator<<=(shift_value input) { return *this = *this << input; }
 
-  t_Vector &operator&=(T input) {
-    X &= input;
-    Y &= input;
-    Z &= input;
-    return *this;
-  }
-  t_Vector &operator|=(T input) {
-    X |= input;
-    Y |= input;
-    Z |= input;
-    return *this;
-  }
-  t_Vector &operator>>=(size_t input) {
-    X >>= input;
-    Y >>= input;
-    Z >>= input;
-    return *this;
-  }
-  t_Vector &operator<<=(size_t input) {
-    X <<= input;
-    Y <<= input;
-    Z <<= input;
-    return *this;
-  }
-
-  template <typename R> operator _t_Vector4<R>() const;
+  template <typename R> operator t_Vector4_<R>() const;
   operator t_Vector2<T>() const { return t_Vector2<T>(this->X, this->Y); }
 
-  t_Vector operator-() const { return *this * -1; }
+  vector operator-() const { return *this * -1; }
 
   template <typename _T = T>
   typename std::enable_if<std::is_integral<_T>::value, bool>::type
-  operator==(const t_Vector &input) const {
-    return (X == input.X && Y == input.Y && Z == input.Z);
+  operator==(vec_cref input) const {
+    return X == input.X && Y == input.Y && Z == input.Z;
   }
 
   template <typename _T = T>
   typename std::enable_if<std::is_floating_point<_T>::value, bool>::type
-  operator==(const t_Vector &input) const {
-    return FLTCMP(X, input.X) && FLTCMP(Y, input.Y) && FLTCMP(Z, input.Z);
+  operator==(vec_cref input) const {
+    return fltcmp(X, input.X) && fltcmp(Y, input.Y) && fltcmp(Z, input.Z);
   }
 
-  bool operator!=(const t_Vector &input) const { return !(*this == input); }
+  bool operator!=(vec_cref input) const { return !(*this == input); }
 
-  T &operator[](size_t pos) { return _arr[pos]; }
-  const T &operator[](size_t pos) const { return _arr[pos]; }
+  value_type &operator[](size_t pos) { return _arr[pos]; }
+  const value_type &operator[](size_t pos) const { return _arr[pos]; }
 
   bool IsSymetrical() const { return (X == Y) && (X == Z); }
 
   template <typename T2> t_Vector<T2> Convert(void) const {
-    return t_Vector<T2>(static_cast<T2>(X), static_cast<T2>(Y),
-                        static_cast<T2>(Z));
+    return {static_cast<T2>(X), static_cast<T2>(Y), static_cast<T2>(Z)};
   }
 
-  std::string ToString() const {
-    return std::to_string(X) + ' ' + std::to_string(Y) + ' ' +
-           std::to_string(Z);
-  }
-  std::wstring ToStringW() const {
-    return std::to_wstring(X) + L' ' + std::to_wstring(Y) + L' ' +
-           std::to_wstring(Z);
-  }
-  int Sign() const { return X | Y | Z < 0 ? -1 : 1; }
-  T Length() const {
+  int Sign() const { return (X | Y | Z) < 0 ? -1 : 1; }
+  value_type Length() const {
     return static_cast<T>(sqrt(pow(X, 2) + pow(Y, 2) + pow(Z, 2)));
   }
-  T Dot(const t_Vector &input) const {
+  value_type Dot(vec_cref input) const {
     return X * input.X + Y * input.Y + Z * input.Z;
   }
-  t_Vector Cross(const t_Vector &input) const {
-    return t_Vector((Y * input.Z - Z * input.Y), (Z * input.X - X * input.Z),
-                    (X * input.Y - Y * input.X));
-  }
-  friend std::ostream &operator<<(std::ostream &strm, const t_Vector<T> &v) {
-    return strm << v.X << " " << v.Y << " " << v.Z;
+  vector Cross(vec_cref input) const {
+    return {Y * input.Z - Z * input.Y, Z * input.X - X * input.Z,
+            X * input.Y - Y * input.X};
   }
 
-  t_Vector &Normalize() {
-    T len = Length();
+  vec_ref Normalize() {
+    value_type len = Length();
     if (!len) {
       return *this;
     }
-    X /= len;
-    Y /= len;
-    Z /= len;
-    return *this;
+    return *this /= len;
   }
 
   void SwapEndian() {
@@ -399,23 +276,24 @@ public:
     FByteswapper(Z);
   }
 };
-typedef t_Vector<float> Vector;
-typedef Vector FVector;
-typedef t_Vector<int32> IVector;
-typedef t_Vector<int16> SVector;
-typedef t_Vector<int8> CVector;
-typedef t_Vector<uint32> UIVector;
-typedef t_Vector<uint16> USVector;
-typedef t_Vector<uint8> UCVector;
 
 template <typename T> class V4ScalarType {
+  using vector = V4ScalarType;
+  using vec_ref = vector &;
+  using vec_cref = const vector &;
+
 public:
-  typedef T eltype;
+  using value_type = T;
+  using shift_value = int32;
+  using shift_vec = const V4ScalarType<shift_value> &;
 
   union {
-    eltype _arr[4];
+    value_type _arr[4];
     struct {
-      eltype X, Y, Z, W;
+      value_type X, Y, Z, W;
+    };
+    struct {
+      value_type x, y, z, w;
     };
   };
 
@@ -423,85 +301,75 @@ public:
   V4ScalarType(T s) : X(s), Y(s), Z(s), W(s) {}
   V4ScalarType(T x, T y, T z, T w) : X(x), Y(y), Z(z), W(w) {}
 
-  V4ScalarType &operator+=(const V4ScalarType &input) {
-    return *this = *this + input;
-  }
-  V4ScalarType &operator-=(const V4ScalarType &input) {
-    return *this = *this - input;
-  }
-  V4ScalarType &operator*=(const V4ScalarType &input) {
-    return *this = *this * input;
-  }
-  V4ScalarType &operator/=(const V4ScalarType &input) {
-    return *this = *this / input;
-  }
-
-  V4ScalarType operator+(const V4ScalarType &input) const {
+  vector operator+(vec_cref input) const {
     return {X + input.X, Y + input.Y, Z + input.Z, W + input.W};
   }
-  V4ScalarType operator-(const V4ScalarType &input) const {
+  vector operator-(vec_cref input) const {
     return {X - input.X, Y - input.Y, Z - input.Z, W - input.W};
   }
-  V4ScalarType operator*(const V4ScalarType &input) const {
+  vector operator*(vec_cref input) const {
     return {X * input.X, Y * input.Y, Z * input.Z, W * input.W};
   }
-  V4ScalarType operator/(const V4ScalarType &input) const {
+  vector operator/(vec_cref input) const {
     return {X / input.X, Y / input.Y, Z / input.Z, W / input.W};
   }
-
-  V4ScalarType &operator+=(const eltype &input) {
-    return *this = *this + input;
-  }
-  V4ScalarType &operator-=(const eltype &input) {
-    return *this = *this - input;
-  }
-  V4ScalarType &operator*=(const eltype &input) {
-    return *this = *this * input;
-  }
-  V4ScalarType &operator/=(const eltype &input) {
-    return *this = *this / input;
-  }
-
-  V4ScalarType operator+(const eltype &input) {
-    return *this = *this + V4ScalarType(input);
-  }
-  V4ScalarType operator-(const eltype &input) {
-    return *this = *this - V4ScalarType(input);
-  }
-  V4ScalarType operator*(const eltype &input) {
-    return *this = *this * V4ScalarType(input);
-  }
-  V4ScalarType operator/(const eltype &input) {
-    return *this = *this / V4ScalarType(input);
-  }
-
-  V4ScalarType operator&(const V4ScalarType &input) const {
+  vector operator&(vec_cref input) const {
     return {X & input.X, Y & input.Y, Z & input.Z, W & input.W};
   }
-  V4ScalarType operator|(const V4ScalarType &input) const {
+  vector operator|(vec_cref input) const {
     return {X | input.X, Y | input.Y, Z | input.Z, W | input.W};
   }
-
-  V4ScalarType operator&(const eltype &input) const {
-    return *this = *this & V4ScalarType(input);
+  vector operator>>(shift_vec input) const {
+    return {X >> input.X, Y >> input.Y, Z >> input.Z, W >> input.W};
   }
-  V4ScalarType operator|(const eltype &input) const {
-    return *this = *this | V4ScalarType(input);
-  }
-
-  V4ScalarType operator>>(const int &input) const {
-    return {X >> input, Y >> input, Z >> input, W >> input};
-  }
-  V4ScalarType operator<<(const int &input) const {
-    return {X << input, Y << input, Z << input, W << input};
+  vector operator<<(shift_vec input) const {
+    return {X << input.X, Y << input.Y, Z << input.Z, W << input.W};
   }
 
-  V4ScalarType &operator&=(const T &input) { return *this = *this & input; }
-  V4ScalarType &operator|=(const T &input) { return *this = *this & input; }
-  V4ScalarType &operator>>=(const int &input) { return *this = *this >> input; }
-  V4ScalarType &operator<<=(const int &input) { return *this = *this << input; }
+  vector operator+(value_type input) const {
+    return *this = *this + vector(input);
+  }
+  vector operator-(value_type input) const {
+    return *this = *this - vector(input);
+  }
+  vector operator*(value_type input) const {
+    return *this = *this * vector(input);
+  }
+  vector operator/(value_type input) const {
+    return *this = *this / vector(input);
+  }
+  vector operator&(value_type input) const {
+    return *this = *this & vector(input);
+  }
+  vector operator|(value_type input) const {
+    return *this = *this | vector(input);
+  }
+  vector operator>>(shift_value input) const {
+    return *this = *this >> vector(input);
+  }
+  vector operator<<(shift_value input) const {
+    return *this = *this << vector(input);
+  }
 
-  V4ScalarType operator-() const { return *this * -1.f; }
+  vec_ref operator+=(vec_cref input) { return *this = *this + input; }
+  vec_ref operator-=(vec_cref input) { return *this = *this - input; }
+  vec_ref operator*=(vec_cref input) { return *this = *this * input; }
+  vec_ref operator/=(vec_cref input) { return *this = *this / input; }
+  vec_ref operator&=(vec_cref input) { return *this = *this & input; }
+  vec_ref operator|=(vec_cref input) { return *this = *this & input; }
+  vec_ref operator>>=(shift_vec input) { return *this = *this >> input; }
+  vec_ref operator<<=(shift_vec input) { return *this = *this << input; }
+
+  vec_ref operator+=(value_type input) { return *this = *this + input; }
+  vec_ref operator-=(value_type input) { return *this = *this - input; }
+  vec_ref operator*=(value_type input) { return *this = *this * input; }
+  vec_ref operator/=(value_type input) { return *this = *this / input; }
+  vec_ref operator&=(value_type input) { return *this = *this & input; }
+  vec_ref operator|=(value_type input) { return *this = *this & input; }
+  vec_ref operator>>=(shift_value input) { return *this = *this >> input; }
+  vec_ref operator<<=(shift_value input) { return *this = *this << input; }
+
+  vector operator-() const { return *this * -1.f; }
 
   bool IsSymetrical() const { return (X == Y) && (X == Z) && (Z == W); }
 
@@ -514,30 +382,27 @@ public:
 
   template <typename _T = T>
   typename std::enable_if<std::is_integral<_T>::value, bool>::type
-  operator==(const V4ScalarType &input) const {
-    return (this->X == input.X && this->Y == input.Y && this->Z == input.Z &&
-            this->W == input.W);
+  operator==(vec_cref input) const {
+    return X == input.X && Y == input.Y && Z == input.Z && W == input.W;
   }
 
   template <typename _T = T>
   typename std::enable_if<std::is_floating_point<_T>::value, bool>::type
-  operator==(const V4ScalarType &input) const {
-    return FLTCMP(this->X, input.X) && FLTCMP(this->Y, input.Y) &&
-           FLTCMP(this->Z, input.Z) && FLTCMP(this->W, input.W);
+  operator==(vec_cref input) const {
+    return fltcmp(X, input.X) && fltcmp(Y, input.Y) && fltcmp(Z, input.Z) &&
+           fltcmp(W, input.W);
   }
 
-  bool operator!=(const V4ScalarType &input) const { return !(*this == input); }
+  bool operator!=(vec_cref input) const { return !(*this == input); }
 
-  T Length() const {
-    return static_cast<T>(sqrt(pow(this->X, 2) + pow(this->Y, 2) +
-                               pow(this->Z, 2) + pow(this->W, 2)));
+  value_type Length() const {
+    return static_cast<T>(sqrt(pow(X, 2) + pow(Y, 2) + pow(Z, 2) + pow(W, 2)));
   }
-  T Dot(const V4ScalarType &input) const {
-    return this->X * input.X + this->Y * input.Y + this->Z * input.Z +
-           this->W * input.W;
+  value_type Dot(vec_cref input) const {
+    return X * input.X + Y * input.Y + Z * input.Z + W * input.W;
   }
-  V4ScalarType &Normalize() {
-    T len = Length();
+  vec_ref Normalize() {
+    value_type len = Length();
 
     if (!len)
       return *this;
@@ -546,46 +411,32 @@ public:
   }
 };
 
-template <class C> class _t_Vector4 : public C {
+template <class C> class t_Vector4_ : public C {
 public:
   using C::C;
-  typedef typename C::eltype eltype;
-  _t_Vector4() = default;
-  _t_Vector4(const C &input) : C(input) {}
-  _t_Vector4(C &&input) : C(input) {}
+  using value_type = typename C::value_type;
+  t_Vector4_() = default;
+  t_Vector4_(const C &input) : C(input) {}
+  t_Vector4_(C &&input) : C(input) {}
 
-  _t_Vector4 &operator=(const C &input) {
+  t_Vector4_ &operator=(const C &input) {
     static_cast<C &>(*this) = input;
     return *this;
   }
-  _t_Vector4 &operator=(C &&input) {
+  t_Vector4_ &operator=(C &&input) {
     static_cast<C &>(*this) = input;
     return *this;
   }
 
-  operator t_Vector<eltype>() const {
-    return t_Vector<eltype>(this->X, this->Y, this->Z);
+  operator t_Vector<value_type>() const {
+    return t_Vector<value_type>(this->X, this->Y, this->Z);
   }
-  operator t_Vector2<eltype>() const {
-    return t_Vector2<eltype>(this->X, this->Y);
-  }
-
-  std::string ToString() const {
-    return std::to_string(this->X) + ' ' + std::to_string(this->Y) + ' ' +
-           std::to_string(this->Z) + ' ' + std::to_string(this->W);
+  operator t_Vector2<value_type>() const {
+    return t_Vector2<value_type>(this->X, this->Y);
   }
 
-  std::wstring ToStringW() const {
-    return std::to_wstring(this->X) + ' ' + std::to_wstring(this->Y) + ' ' +
-           std::to_wstring(this->Z) + ' ' + std::to_wstring(this->W);
-  }
-
-  eltype &operator[](size_t pos) { return this->_arr[pos]; }
-  const eltype &operator[](size_t pos) const { return this->_arr[pos]; }
-
-  friend std::ostream &operator<<(std::ostream &strm, const _t_Vector4 &v) {
-    return strm << v.X << " " << v.Y << " " << v.Z << " " << v.W;
-  }
+  value_type &operator[](size_t pos) { return this->_arr[pos]; }
+  const value_type &operator[](size_t pos) const { return this->_arr[pos]; }
 
   void SwapEndian() {
     if (sizeof(this->X) == 1) {
@@ -599,22 +450,11 @@ public:
   }
 };
 
-template <typename T> using t_Vector4 = _t_Vector4<V4ScalarType<T>>;
-
 template <typename T>
 template <typename R>
-t_Vector<T>::operator _t_Vector4<R>() const {
-  return _t_Vector4<R>(this->X, this->Y, this->Z, 0.0f);
+t_Vector<T>::operator t_Vector4_<R>() const {
+  return t_Vector4_<R>(this->X, this->Y, this->Z, 0.0f);
 }
-
-typedef t_Vector4<float> Vector4;
-typedef Vector4 FVector4;
-typedef t_Vector4<int32> IVector4;
-typedef t_Vector4<int16> SVector4;
-typedef t_Vector4<int8> CVector4;
-typedef t_Vector4<uint32> UIVector4;
-typedef t_Vector4<uint16> USVector4;
-typedef t_Vector4<uint8> UCVector4;
 
 constexpr JenHash CompileVectorHash_(REFType type, uint8 size,
                                      uint16 numItems) {
@@ -640,10 +480,10 @@ template <class C> struct _getType<t_Vector<C>> {
     return CompileVectorHash_(SUBTYPE, SUBSIZE, NUMITEMS);
   }
 };
-template <class C> struct _getType<_t_Vector4<C>> {
+template <class C> struct _getType<t_Vector4_<C>> {
   static constexpr REFType TYPE = REFType::Vector;
-  static constexpr REFType SUBTYPE = _getType<typename C::eltype>::TYPE;
-  static constexpr uint8 SUBSIZE = sizeof(typename C::eltype);
+  static constexpr REFType SUBTYPE = _getType<typename C::value_type>::TYPE;
+  static constexpr uint8 SUBSIZE = sizeof(typename C::value_type);
   static constexpr uint16 NUMITEMS = 4;
   static constexpr JenHash Hash() {
     return CompileVectorHash_(SUBTYPE, SUBSIZE, NUMITEMS);

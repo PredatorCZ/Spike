@@ -1,4 +1,5 @@
-/*  Common classes for uni module
+/*  Rotation Translation Scale class
+    part of uni module
     Copyright 2020-2021 Lukas Cone
 
     Licensed under the Apache License, Version 2.0 (the "License");
@@ -15,25 +16,24 @@
 */
 
 #pragma once
-#include "datas/deleter_hybrid.hpp"
-#include <memory>
+#include "datas/vectors_simd.hpp"
 
 namespace uni {
-template <class C> using Element = std::unique_ptr<C, es::deleter_hybrid>;
+struct RTSValue {
+  Vector4A16 translation;
+  Vector4A16 rotation;
+  Vector4A16 scale;
 
-class Base {
-public:
-  virtual ~Base() = default;
+  RTSValue()
+      : translation(0), rotation(0, 0, 0, 1.f), scale(1.f, 1.f, 1.f, 0) {}
+  RTSValue(const Vector4A16 &pos, const Vector4A16 &rot, const Vector4A16 &scl)
+      : translation(pos), rotation(rot), scale(scl) {}
+
+  bool operator==(const RTSValue &o) const {
+    return translation == o.translation && rotation == o.rotation &&
+           scale == o.scale;
+  }
+
+  bool operator!=(const RTSValue &o) const { return !(*this == o); }
 };
-
-using BaseElementConst = Element<const Base>;
-using BaseElement = Element<Base>;
-
-template <class C> auto ToElement(std::unique_ptr<C> &uptr) {
-  return Element<C>{uptr.release()};
-}
-
-template <class C> auto ToElement(std::unique_ptr<C> &&uptr) {
-  return Element<C>{uptr.release()};
-}
 } // namespace uni

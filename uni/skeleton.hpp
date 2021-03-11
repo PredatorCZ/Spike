@@ -1,6 +1,6 @@
 /*  Abstraction for skeletons
     part of uni module
-    Copyright 2020 Lukas Cone
+    Copyright 2020-2021 Lukas Cone
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -17,12 +17,15 @@
 
 #pragma once
 #include "common.hpp"
-#include "datas/matrix44.hpp"
 #include "list.hpp"
+#include <string>
+
+class esMatrix44;
 
 namespace uni {
+struct RTSValue;
 
-class Bone {
+class Bone : public Base {
 public:
   enum TransformType { TMTYPE_RTS, TMTYPE_MATRIX };
 
@@ -30,30 +33,28 @@ public:
   virtual void GetTM(RTSValue &out) const;
   virtual void GetTM(esMatrix44 &out) const;
   virtual const Bone *Parent() const = 0;
-  // A special bone identicator, this is not a bone index within skeleton
+  // A special bone identifier, this is not a bone index within skeleton
   virtual size_t Index() const = 0;
   virtual std::string Name() const = 0;
-  virtual ~Bone() {}
 };
 
-typedef Element<const List<Bone>> SkeletonBonesConst;
-typedef Element<List<Bone>> SkeletonBones;
+using SkeletonBonesConst = Element<const List<Bone>>;
+using SkeletonBones = Element<List<Bone>>;
 
-class Skeleton {
+class Skeleton : public Base {
 public:
-  typedef SkeletonBonesConst::element_type::iterator_type_const
-      iterator_type_const;
+  using iterator_type_const =
+      SkeletonBonesConst::element_type::iterator_type_const;
 
   virtual SkeletonBonesConst Bones() const = 0;
   virtual std::string Name() const = 0;
-  virtual ~Skeleton() {}
 
   iterator_type_const begin() const { return Bones()->begin(); }
   iterator_type_const end() const { return Bones()->end(); }
 };
 
-typedef Element<const List<Skeleton>> SkeletonsConst;
-typedef Element<List<Skeleton>> Skeletons;
+using SkeletonsConst = Element<const List<Skeleton>>;
+using Skeletons = Element<List<Skeleton>>;
 } // namespace uni
 
 #include "internal/skeleton.inl"

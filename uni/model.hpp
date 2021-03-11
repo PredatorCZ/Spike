@@ -1,6 +1,6 @@
 /*  render model module
     part of uni module
-    Copyright 2020 Lukas Cone
+    Copyright 2020-2021 Lukas Cone
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -16,10 +16,8 @@
 */
 
 #pragma once
-#include "datas/vectors_simd.hpp"
 #include "format.hpp"
 #include "list.hpp"
-#include <vector>
 
 namespace uni {
 struct BBOX {
@@ -27,7 +25,7 @@ struct BBOX {
   Vector4A16 max;
 };
 
-class PrimitiveDescriptor {
+class PrimitiveDescriptor : public Base {
 public:
   enum class UnpackDataType_e {
     None,
@@ -61,13 +59,12 @@ public:
   virtual FormatCodec &Codec() const { return FormatCodec::Get(Type()); }
   virtual BBOX UnpackData() const = 0;
   virtual UnpackDataType_e UnpackDataType() const = 0;
-  virtual ~PrimitiveDescriptor() {}
 };
 
 typedef Element<const List<PrimitiveDescriptor>> PrimitiveDescriptorsConst;
 typedef Element<List<PrimitiveDescriptor>> PrimitiveDescriptors;
 
-class Primitive {
+class Primitive : public Base {
 public:
   enum class IndexType_e { None, Line, Triangle, Strip, Fan };
 
@@ -80,7 +77,6 @@ public:
   virtual size_t NumVertexBuffers() const = 0;
   virtual size_t NumIndices() const = 0;
   virtual const std::string &Name() const = 0;
-  virtual ~Primitive() {}
 };
 
 typedef Element<const List<Primitive>> PrimitivesConst;

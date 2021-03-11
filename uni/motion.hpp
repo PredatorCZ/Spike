@@ -1,6 +1,6 @@
 /*  Abstraction for motion/animations
     part of uni module
-    Copyright 2020 Lukas Cone
+    Copyright 2020-2021 Lukas Cone
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -17,11 +17,16 @@
 
 #pragma once
 #include "common.hpp"
-#include "datas/matrix44.hpp"
+#include "datas/vectors_fwd.hpp"
 #include "list.hpp"
+#include <string>
+
+class esMatrix44;
 
 namespace uni {
-class MotionTrack {
+struct RTSValue;
+
+class MotionTrack : public Base {
 public:
   enum TrackType_e {
     Position,
@@ -38,15 +43,14 @@ public:
   virtual void GetValue(esMatrix44 &output, float time) const;
   virtual void GetValue(Vector4A16 &output, float time) const;
   virtual void GetValue(float &output, float time) const;
-  virtual ~MotionTrack() {}
 };
 
-typedef Element<const List<MotionTrack>> MotionTracksConst;
-typedef Element<List<MotionTrack>> MotionTracks;
+using MotionTracksConst = Element<const List<MotionTrack>>;
+using MotionTracks = Element<List<MotionTrack>>;
 
-class Motion {
+class Motion : public Base {
 public:
-  typedef MotionTracks::element_type::iterator_type_const iterator_type_const;
+  using iterator_type_const = MotionTracks::element_type::iterator_type_const;
   enum MotionType_e { Absolute, Relative, Additive, Delta };
 
   virtual std::string Name() const = 0;
@@ -55,14 +59,13 @@ public:
   virtual float Duration() const = 0;
   virtual MotionTracksConst Tracks() const = 0;
   virtual MotionType_e MotionType() const = 0;
-  virtual ~Motion() {}
 
   iterator_type_const begin() const { return Tracks()->begin(); }
   iterator_type_const end() const { return Tracks()->end(); }
 };
 
-typedef Element<const List<Motion>> MotionsConst;
-typedef Element<List<Motion>> Motions;
+using MotionsConst = Element<const List<Motion>>;
+using Motions = Element<List<Motion>>;
 
 } // namespace uni
 
