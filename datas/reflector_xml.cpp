@@ -280,10 +280,10 @@ pugi::xml_node ReflectorXMLUtil::LoadV2(Reflector &ri, pugi::xml_node node,
       static_cast<ReflectedInstanceFriend &&>(rif.GetReflectedInstance())
           .Refl();
   pugi::xml_node thisNode;
-  constexpr size_t nan = -1;
+  static constexpr size_t nan_ = -1;
   struct retval {
     JenHash hash;
-    size_t index = nan;
+    size_t index = nan_;
   };
 
   auto MakeHash = [](es::string_view name) -> JenHash {
@@ -320,7 +320,7 @@ pugi::xml_node ReflectorXMLUtil::LoadV2(Reflector &ri, pugi::xml_node node,
 
   for (auto a : thisNode.attributes()) {
     auto node = MakeNode(a);
-    if (node.index == nan) {
+    if (node.index == nan_) {
       ri.SetReflectedValue(node.hash, a.value());
     } else {
       ri.SetReflectedValue(node.hash, a.value(), node.index);
@@ -331,7 +331,7 @@ pugi::xml_node ReflectorXMLUtil::LoadV2(Reflector &ri, pugi::xml_node node,
     auto node = MakeNode(a);
 
     if (ri.IsReflectedSubClass(node.hash)) {
-      if (node.index == nan) {
+      if (node.index == nan_) {
         node.index = 0;
       }
 
@@ -367,7 +367,7 @@ pugi::xml_node ReflectorXMLUtil::LoadV2(Reflector &ri, pugi::xml_node node,
           break;
         }
 
-        if (node.index == nan) {
+        if (node.index == nan_) {
           ri.SetReflectedValue(refType->ID, t.value(), element);
         } else {
           ri.SetReflectedValue(refType->ID, t.value(), node.index, element);
@@ -391,7 +391,7 @@ pugi::xml_node ReflectorXMLUtil::LoadV2(Reflector &ri, pugi::xml_node node,
         cpString.pop_back();
       }
 
-      if (node.index == nan) {
+      if (node.index == nan_) {
         ri.SetReflectedValue(refType->ID, cpString.data());
       } else {
         ri.SetReflectedValue(refType->ID, cpString.data(), node.index);

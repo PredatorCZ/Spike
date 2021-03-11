@@ -43,7 +43,7 @@ const reflType *Reflector::GetReflectedType(const JenHash hash) const {
   return nullptr;
 }
 
-template <typename T> T SetNumber(const std::string &input);
+template <typename T> static T SetNumber(const std::string &input);
 
 template <> float SetNumber(const std::string &input) {
   return std::stof(input);
