@@ -9,7 +9,7 @@ endif()
 # ~~~
 # build_target(
 #   NAME <name of target>
-#   TYPE <library type or APP>
+#   TYPE <library type or APP or PYMODULE>
 #   SOURCES <source files> ...
 #   LINKS <link targets> ...
 #   DEFINITIONS ...
@@ -53,28 +53,48 @@ function(build_target)
   get_target_property(TARGET_PREFIX ${_arg_NAME} PREFIX)
 
   if(NOT TARGET_PREFIX)
-    set(TARGET_PREFIX)
+    set(TARGET_PREFIX ${CMAKE_SHARED_LIBRARY_PREFIX})
   endif()
 
   get_target_property(TARGET_SUFFIX ${_arg_NAME} SUFFIX)
 
   if(NOT TARGET_SUFFIX)
-    set(TARGET_SUFFIX)
+    set(TARGET_SUFFIX ${CMAKE_SHARED_LIBRARY_SUFFIX})
   endif()
 
   get_target_property(TARGET_TYPE ${_arg_NAME} TYPE)
 
-  if(NOT PROJECT_VERSION_PATCH)
-    set(PROJECT_VERSION_PATCH 0)
+  set(PROJECT_VERSION_MAJOR_ 0)
+  set(PROJECT_VERSION_MINOR_ 0)
+  set(PROJECT_VERSION_PATCH_ 0)
+  set(PROJECT_VERSION_TWEAK_ 0)
+
+  if(PROJECT_VERSION)
+    set(PROJECT_VERSION_ ${PROJECT_VERSION})
+    if(PROJECT_VERSION_MAJOR)
+      set(PROJECT_VERSION_MAJOR_ ${PROJECT_VERSION_MAJOR})
+      if(PROJECT_VERSION_MINOR)
+        set(PROJECT_VERSION_MINOR_ ${PROJECT_VERSION_MINOR})
+        if(PROJECT_VERSION_PATCH)
+          set(PROJECT_VERSION_PATCH_ ${PROJECT_VERSION_PATCH})
+          if(PROJECT_VERSION_TWEAK)
+            set(PROJECT_VERSION_TWEAK_ ${PROJECT_VERSION_TWEAK})
+          endif()
+        endif()
+      endif()
+    endif()
+  else()
+    set(PROJECT_VERSION_ no_version)
   endif()
 
-  if(NOT PROJECT_VERSION_TWEAK)
-    set(PROJECT_VERSION_TWEAK 0)
+  if(_arg_TYPE STREQUAL SHARED)
+    set_target_properties(${_arg_NAME} PROPERTIES VERSION ${PROJECT_VERSION_MAJOR_})
   endif()
 
   set(TARGET_AUTHOR ${_arg_AUTHOR})
   set(TARGET_DESC ${_arg_DESCR})
-  set(TARGET_PRODUCT_NAME ${_arg_NAME})
+  set(TARGET_NAME ${_arg_NAME})
+  set(TARGET_PRODUCT_NAME ${PROJECT_NAME})
 
   string(TIMESTAMP _TARGET_DATE_YYYY "%Y")
   set(TARGET_COPYRIGHT "Copyright (C) ")
