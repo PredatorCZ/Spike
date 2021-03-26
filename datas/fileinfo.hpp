@@ -55,7 +55,7 @@ public:
     else
       endFolder = 0;
 
-    if (lastDot == fullPath.npos)
+    if (!lastDot || lastDot == fullPath.npos)
       lastDot = fullPath.size();
   }
 

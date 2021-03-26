@@ -1,9 +1,7 @@
 if(NOT DEFINED RELEASEVER AND NOT CMAKE_BUILD_TYPE STREQUAL "Debug")
   set(RELEASEVER TRUE)
-  set(BuildType Release)
 else()
   set(RELEASEVER FALSE)
-  set(BuildType Debug)
 endif()
 
 # ~~~
@@ -107,20 +105,20 @@ function(build_target)
 
   string(APPEND TARGET_COPYRIGHT "${_TARGET_DATE_YYYY} ")
 
-  if(NOT _arg_NO_VERINFO)
+  if(NOT _arg_NO_VERINFO AND WIN32)
     configure_file(${PRECORE_SOURCE_DIR}/cmake/verinfo.rc.tmpl
-                   ${PROJECT_BINARY_DIR}/${_arg_NAME}/verinfo.rc)
-    target_sources(${_arg_NAME} PRIVATE ${PROJECT_BINARY_DIR}/${_arg_NAME}/verinfo.rc)
+                   ${PROJECT_BINARY_DIR}/${_arg_NAME}_/verinfo.rc)
+    target_sources(${_arg_NAME} PRIVATE ${PROJECT_BINARY_DIR}/${_arg_NAME}_/verinfo.rc)
   endif()
 
   if(NOT _arg_NO_PROJECT_H)
     configure_file(${PRECORE_SOURCE_DIR}/cmake/project.h.tmpl
-                   ${PROJECT_BINARY_DIR}/${_arg_NAME}/project.h)
+                   ${PROJECT_BINARY_DIR}/${_arg_NAME}_/project.h)
     target_include_directories(${_arg_NAME}
-                               PRIVATE ${PROJECT_BINARY_DIR}/${_arg_NAME})
+                               PRIVATE ${PROJECT_BINARY_DIR}/${_arg_NAME}_)
   endif()
 
-  if(CMAKE_CXX_COMPILER_ID MATCHES Clang OR CMAKE_COMPILER_IS_GNUCXX)
+  if(NOT MSVC)
     target_compile_options(${_arg_NAME} PRIVATE -fvisibility=hidden)
   endif()
 

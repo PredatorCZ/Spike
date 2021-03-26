@@ -25,12 +25,14 @@
 #ifdef UNICODE
 typedef wchar_t TCHAR;
 #define _tmain wmain
+#define _tmkdir wmkdir
 #define __T(x) L##x
 #define _tcsftime wcsftime
 #else
 typedef char TCHAR;
 #define __T(x) x
 #define _tmain main
+#define _tmkdir mkdir
 #endif
 #define _T(x) __T(x)
 #define _tcsftime strftime
