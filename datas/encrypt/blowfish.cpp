@@ -455,13 +455,15 @@ void BlowfishEncoder::DecodeOFB(char *buffer, size_t size) const {
   }
 }
 
-void BlowfishEncoder::SetKey(const char *inKey, int inSize) {
+void BlowfishEncoder::SetKey(es::string_view key) {
   if (mode)
     CreateVector();
 
   uint64 lastblock = 0;
 
   memcpy(sboxes, BF_SBOXES, BF_NUMSBOXES * 4);
+  auto inKey = key.data();
+  auto inSize = key.size();
 
   for (int i = 0; i < BF_NUMPBOXES; i++) {
     const uint32 curKey = i * 4;

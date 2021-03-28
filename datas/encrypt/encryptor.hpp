@@ -19,7 +19,7 @@
 #ifndef ES_ENCRYPTION_DEFINED
 #define ES_ENCRYPTION_DEFINED
 
-#include "string_view.hpp"
+#include "../string_view.hpp"
 
 class IEncryptor {
 public:

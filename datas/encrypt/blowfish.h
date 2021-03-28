@@ -17,7 +17,7 @@
 */
 
 #pragma once
-#include "supercore.hpp"
+#include "../supercore.hpp"
 #include "encryptor.hpp"
 
 #define BF_NUMPBOXES 18
@@ -42,9 +42,9 @@ protected:
 	Mode mode;
 public:
 	BlowfishEncoder() : enabled(0), mode(ECB) {};
-	virtual void SetKey(const char *inKey, int inSize);
-	void Encode(char *buffer, size_t size) const;
-	void Decode(char *buffer, size_t size) const;
+	void SetKey(es::string_view key) override;
+	void Encode(char *buffer, size_t size) const override;
+	void Decode(char *buffer, size_t size) const override;
 
 	void EncodeECB(char *buffer, size_t size) const;
 	void DecodeECB(char *buffer, size_t size) const;
