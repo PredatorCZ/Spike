@@ -17,7 +17,6 @@
 
 #pragma once
 #include "unicode.hpp"
-#include <string>
 
 #ifdef _MSC_VER
 #include <tchar.h>
@@ -25,14 +24,12 @@
 #ifdef UNICODE
 typedef wchar_t TCHAR;
 #define _tmain wmain
-#define _tmkdir wmkdir
 #define __T(x) L##x
 #define _tcsftime wcsftime
 #else
 typedef char TCHAR;
 #define __T(x) x
 #define _tmain main
-#define _tmkdir mkdir
 #endif
 #define _T(x) __T(x)
 #define _tcsftime strftime
@@ -72,3 +69,8 @@ template <typename T> TSTRING ToTSTRING(const T &type) {
 }
 static inline void UPrintf(const char *data) { printf("%s", data); }
 #endif
+
+inline bool IsHelp(es::basic_string_view<TCHAR> data) {
+  return data == _T("-h") || data == _T("-?") || data == _T("/?") ||
+         data == _T("--help");
+}
