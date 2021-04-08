@@ -21,7 +21,6 @@
 #include "tchar.hpp"
 
 #include <chrono>
-#include <codecvt>
 #include <ctime>
 #include <fstream>
 #include <locale>
@@ -67,5 +66,50 @@ template <class Base> struct SettingsManager : public ReflectorBase<Base> {
     }
 
     GetLogger() << std::endl;
+  }
+
+  void GetHelp(std::ostream &str, const reflectorStatic *ref,
+               size_t level = 1) {
+    auto fillIndent = [&](size_t mod = 0) -> std::ostream & {
+      for (size_t i = 0; i < level + mod; i++) {
+        str << '\t';
+      }
+
+      return str;
+    };
+
+    for (size_t i = 0; i < ref->nTypes; i++) {
+      es::string_view elName = ref->typeNames[i];
+      auto elDesc = ref->typeDescs[i];
+      fillIndent() << elName << std::endl;
+
+      if (!elDesc.part1.empty()) {
+        fillIndent(1) << elDesc.part1 << std::endl;
+      }
+
+      auto fl = ref->types[i];
+
+      if (fl.type == REFType::Class || fl.type == REFType::BitFieldClass ||
+          ((fl.type == REFType::Array || fl.type == REFType::ArrayClass) &&
+           (fl.subType == REFType::Class ||
+            fl.subType == REFType::BitFieldClass))) {
+        GetHelp(str, REFSubClassStorage.at(fl.typeHash), level + 1);
+      } else if (fl.type == REFType::Enum) {
+        auto refEnum = REFEnumStorage.at(fl.typeHash);
+        fillIndent(1) << "Values: ";
+
+        for (auto r : refEnum) {
+          str << r << ", ";
+        }
+
+        str << std::endl;
+      }
+    }
+  }
+
+  void GetHelp(std::ostream &str) {
+    auto ref = GetReflectedClass<Base>();
+    str << ref->className << " settings." << std::endl;
+    GetHelp(str, ref);
   }
 };
