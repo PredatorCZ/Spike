@@ -41,6 +41,9 @@ public:
     struct {
       value_type X, Y, Z, W;
     };
+    struct {
+      value_type x, y, z, w;
+    };
   };
 
 private:
@@ -228,6 +231,9 @@ public:
     value_type _arr[4];
     struct {
       value_type X, Y, Z, W;
+    };
+    struct {
+      value_type x, y, z, w;
     };
   };
 
