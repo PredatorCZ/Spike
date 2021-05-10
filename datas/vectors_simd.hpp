@@ -217,7 +217,6 @@ public:
 };
 
 template <class eType> class alignas(16) V4SimdIntType_t {
-  static constexpr bool IsUnsigned() { return std::is_unsigned<eType>::value; }
   using vector = V4SimdIntType_t;
   using vec_ref = vector &;
   using vec_cref = const vector &;
@@ -285,14 +284,14 @@ public:
 
   // Logical shift
   template <class C = vector>
-  typename std::enable_if<IsUnsigned(), C>::type
+  typename std::enable_if<std::is_unsigned<eType>::value, C>::type
   operator>>(value_type input) const {
     return _mm_srli_epi32(_data, input);
   }
 
   // Arithmetic shift
   template <class C = vector>
-  typename std::enable_if<!IsUnsigned(), C>::type
+  typename std::enable_if<!std::is_unsigned<eType>::value, C>::type
   operator>>(value_type input) const {
     return _mm_srai_epi32(_data, input);
   }
