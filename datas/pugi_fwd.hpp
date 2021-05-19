@@ -27,6 +27,6 @@ namespace pugi {
     class xml_attribute_iterator;
     class xml_named_node_iterator;
     class xml_tree_walker;
-    class xml_parse_result;
+    struct xml_parse_result;
     class xml_document;
 }

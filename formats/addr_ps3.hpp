@@ -32,8 +32,8 @@ struct MortonSettings {
     const size_t minBits = bitOffsetW > bitOffsetH ? bitOffsetH : bitOffsetW;
 
     for (size_t b = 4; b < minBits; b++) {
-      xmask[b - 4] = 1 << b;
-      ymask[b - 4] = 1 << b;
+      xmask[b - 4] = size_t(1) << b;
+      ymask[b - 4] = size_t(1) << b;
     }
 
     if (bitOffsetW != bitOffsetH) {

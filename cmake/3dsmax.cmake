@@ -9,7 +9,7 @@
 #  MaxSDK = a path to a SDK
 #  MaxPlugins = a path to a "3ds max yyyy/plugins" folder
 
-include(${PRECORE_SOURCE_DIR}/cmake/targetex.cmake)
+include(targetex)
 
 if (NOT DEFINED MAX_VERSION)
 	set (MAX_VERSION 2017)
@@ -55,7 +55,7 @@ else()
     set(CHAR_TYPE CHAR)
 endif()
 
-include(${PRECORE_SOURCE_DIR}/cmake/chartype.cmake)
+include(chartype)
 
 if (RELEASEVER EQUAL TRUE)
 	set (WPO /GL) #Whole program optimalization
