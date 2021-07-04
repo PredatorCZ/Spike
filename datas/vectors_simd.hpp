@@ -148,8 +148,25 @@ public:
   }
 
   bool operator==(vec_cref input) const { return Compare(input._data, _data); }
-
   bool operator!=(vec_cref input) const { return !(*this == input); }
+
+  bool operator<(vec_cref input) const {
+    return _mm_movemask_ps(_mm_cmplt_ps(_data, input._data)) == 0xF;
+  }
+  bool operator>(vec_cref input) const {
+    return _mm_movemask_ps(_mm_cmpgt_ps(_data, input._data)) == 0xF;
+  }
+  bool operator<=(vec_cref input) const {
+    return *this < input || *this == input;
+  }
+  bool operator>=(vec_cref input) const {
+    return *this > input || *this == input;
+  }
+
+  bool operator<(value_type input) const { return *this < vector(input); }
+  bool operator>(value_type input) const { return *this > vector(input); }
+  bool operator<=(value_type input) const { return *this <= vector(input); }
+  bool operator>=(value_type input) const { return *this >= vector(input); }
 
   // Check if X == Y == Z == W
   bool IsSymetrical() const {
@@ -186,14 +203,18 @@ public:
     return (temp0 * temp1) - (temp2 * temp3);
   }
 
-  vec_ref Normalize() {
+  vector Normalized() const {
     value_type len = Length();
 
     if (!len) {
       return *this;
     }
 
-    return *this /= len;
+    return *this / len;
+  }
+
+  vec_ref Normalize() {
+    return *this = Normalized();
   }
 
   vector QConjugate() const {
