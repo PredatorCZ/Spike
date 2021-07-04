@@ -18,10 +18,48 @@
 #include "exception.hpp"
 
 namespace uni {
-inline void Bone::GetTM(RTSValue &) const {
+inline void Skin::GetTM(RTSValue &, size_t) const {
   throw _uni_::ThrowVoidCall<TransformType, TMTYPE_RTS>(this->TMType());
 }
-inline void Bone::GetTM(esMatrix44 &) const {
+inline void Skin::GetTM(esMatrix44 &, size_t) const {
   throw _uni_::ThrowVoidCall<TransformType, TMTYPE_MATRIX>(this->TMType());
 }
+
+inline void PrimitiveDescriptor::Resample(FormatCodec::fvec &data) const {
+  switch (UnpackDataType()) {
+  case UnpackDataType_e::None:
+    break;
+
+  case UnpackDataType_e::Mul: {
+    auto udata = UnpackData();
+
+    for (auto &d : data) {
+      d *= udata.min;
+    }
+    break;
+  }
+
+  case UnpackDataType_e::Madd: {
+    auto udata = UnpackData();
+
+    for (auto &d : data) {
+      d = udata.max + d * udata.min;
+    }
+    break;
+  }
+
+  case UnpackDataType_e::Add: {
+    auto udata = UnpackData();
+
+    for (auto &d : data) {
+      d += udata.min;
+    }
+    break;
+  }
+
+  default:
+    break;
+  }
+}
+
 } // namespace uni

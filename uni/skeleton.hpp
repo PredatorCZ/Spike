@@ -27,8 +27,6 @@ struct RTSValue;
 
 class Bone : public Base {
 public:
-  enum TransformType { TMTYPE_RTS, TMTYPE_MATRIX };
-
   virtual TransformType TMType() const = 0;
   virtual void GetTM(RTSValue &out) const;
   virtual void GetTM(esMatrix44 &out) const;

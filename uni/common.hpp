@@ -26,6 +26,8 @@ public:
   virtual ~Base() = default;
 };
 
+enum TransformType { TMTYPE_RTS, TMTYPE_MATRIX };
+
 using BaseElementConst = Element<const Base>;
 using BaseElement = Element<Base>;
 

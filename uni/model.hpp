@@ -20,6 +20,7 @@
 #include "list.hpp"
 
 namespace uni {
+struct RTSValue;
 struct BBOX {
   Vector4A16 min;
   Vector4A16 max;
@@ -32,7 +33,6 @@ public:
     Add,  // x + min
     Mul,  // x * min
     Madd, // max + x * min
-    Lerp  // min + (max - min) * x, x = [0, 1]
   };
 
   enum class Usage_e : uint8 {
@@ -59,6 +59,7 @@ public:
   virtual FormatCodec &Codec() const { return FormatCodec::Get(Type()); }
   virtual BBOX UnpackData() const = 0;
   virtual UnpackDataType_e UnpackDataType() const = 0;
+  void Resample(FormatCodec::fvec &data) const;
 };
 
 typedef Element<const List<PrimitiveDescriptor>> PrimitiveDescriptorsConst;
@@ -76,9 +77,31 @@ public:
   virtual size_t NumVertices() const = 0;
   virtual size_t NumVertexBuffers() const = 0;
   virtual size_t NumIndices() const = 0;
-  virtual const std::string &Name() const = 0;
+  virtual std::string Name() const = 0;
+  virtual size_t SkinIndex() const = 0;
+  virtual size_t LODIndex() const = 0;
 };
 
 typedef Element<const List<Primitive>> PrimitivesConst;
 typedef Element<List<Primitive>> Primitives;
+
+class Skin : public Base {
+public:
+  virtual size_t NumNodes() const = 0;
+  virtual TransformType TMType() const = 0;
+  virtual void GetTM(RTSValue &out, size_t index) const;
+  virtual void GetTM(esMatrix44 &out, size_t index) const;
+  virtual size_t NodeIndex(size_t index) const = 0;
+};
+
+typedef Element<const List<Skin>> SkinsConst;
+typedef Element<List<Skin>> Skins;
+
+class Model : public Base {
+public:
+  virtual PrimitivesConst Primitives() const = 0;
+  virtual SkinsConst Skins() const = 0;
+};
 } // namespace uni
+
+#include "internal/model.inl"

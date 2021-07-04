@@ -27,8 +27,8 @@ static const struct {
   int id;
   es::string_view name;
 } boneTMTypes[]{
-    {uni::Bone::TMTYPE_RTS, "TMTYPE_RTS"},
-    {uni::Bone::TMTYPE_MATRIX, "TMTYPE_MATRIX"},
+    {uni::TransformType::TMTYPE_RTS, "TMTYPE_RTS"},
+    {uni::TransformType::TMTYPE_MATRIX, "TMTYPE_MATRIX"},
 };
 
 struct BoneTMTypeInfo {
@@ -122,12 +122,12 @@ PyObject *Bone::GetTMType(Bone *self) {
 
 PyObject *Bone::GetTM(Bone *self) {
   switch (self->item->TMType()) {
-  case uni::Bone::TMTYPE_MATRIX: {
+  case uni::TransformType::TMTYPE_MATRIX: {
     esMatrix44 mtx;
     self->item->GetTM(mtx);
     return Py_BuildValue(mtx);
   }
-  case uni::Bone::TMTYPE_RTS: {
+  case uni::TransformType::TMTYPE_RTS: {
     uni::RTSValue rts;
     self->item->GetTM(rts);
     return Py_BuildValue(rts);

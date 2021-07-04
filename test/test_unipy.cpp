@@ -10,12 +10,12 @@ class BoneMock : public uni::Bone {
 public:
   es::string_view name;
   size_t ID;
-  TransformType tmType;
+  uni::TransformType tmType;
   BoneMock *parent;
   uni::RTSValue rval;
   esMatrix44 mval;
 
-  TransformType TMType() const override { return tmType; }
+  uni::TransformType TMType() const override { return tmType; }
   void GetTM(uni::RTSValue &out) const override { out = rval; }
   void GetTM(esMatrix44 &out) const override { out = mval; }
   const Bone *Parent() const override { return parent; }
@@ -51,7 +51,7 @@ PyObject *GetSkeletonData() {
   bone0.name = "bone0";
   bone0.ID = 0;
   bone0.parent = nullptr;
-  bone0.tmType = bone0.TMTYPE_RTS;
+  bone0.tmType = uni::TransformType::TMTYPE_RTS;
   bone0.rval.rotation = Vector4A16(1, 2, 3, 4);
   bone0.rval.translation = Vector4A16(5, 6, 7, 8);
   bone0.rval.scale = Vector4A16(9, 10, 11, 12);
@@ -60,7 +60,7 @@ PyObject *GetSkeletonData() {
   bone1.name = "bone1";
   bone1.ID = 1;
   bone1.parent = &bone0;
-  bone1.tmType = bone0.TMTYPE_MATRIX;
+  bone1.tmType = uni::TransformType::TMTYPE_MATRIX;
   bone1.mval.r1 = Vector4A16(1, 2, 3, 4);
   bone1.mval.r2 = Vector4A16(5, 6, 7, 8);
   bone1.mval.r3 = Vector4A16(9, 10, 11, 12);
