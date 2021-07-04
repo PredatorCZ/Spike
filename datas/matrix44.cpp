@@ -20,35 +20,35 @@
 
 void esMatrix44::Decompose(Vector4A16 &position, Vector4A16 &rotation,
                            Vector4A16 &scale) const {
-  position = r4;
-  scale.X = r1.Length();
-  scale.Y = r2.Length();
-  scale.Z = r3.Length();
+  position = r4();
+  scale.X = r1().Length();
+  scale.Y = r2().Length();
+  scale.Z = r3().Length();
 
-  if (r1.Dot(Vector4A16(Vector(r2).Cross(r3), 0.0f)) < 0)
+  if (r1().Dot(Vector4A16(Vector(r2()).Cross(r3()), 0.0f)) < 0)
     scale *= -1;
 
   esMatrix44 tmp(*this);
-  tmp.r1 /= scale.X;
-  tmp.r2 /= scale.Y;
-  tmp.r3 /= scale.Z;
+  tmp.r1() /= scale.X;
+  tmp.r2() /= scale.Y;
+  tmp.r3() /= scale.Z;
   rotation = tmp.ToQuat();
 }
 
 void esMatrix44::Compose(const Vector4A16 &position, const Vector4A16 &rotation,
                          const Vector4A16 &scale) {
   FromQuat(rotation);
-  r4 = position;
-  r1 *= scale.X;
-  r2 *= scale.Y;
-  r3 *= scale.Z;
+  r4() = position;
+  r1() *= scale.X;
+  r2() *= scale.Y;
+  r3() *= scale.Z;
 }
 
 void esMatrix44::MakeIdentity() {
-  r1 = Vector4A16(1.0f, 0.0f, 0.0f, 0.0f);
-  r2 = Vector4A16(0.0f, 1.0f, 0.0f, 0.0f);
-  r3 = Vector4A16(0.0f, 0.0f, 1.0f, 0.0f);
-  r4 = Vector4A16(0.0f, 0.0f, 0.0f, 1.0f);
+  r1() = Vector4A16(1.0f, 0.0f, 0.0f, 0.0f);
+  r2() = Vector4A16(0.0f, 1.0f, 0.0f, 0.0f);
+  r3() = Vector4A16(0.0f, 0.0f, 1.0f, 0.0f);
+  r4() = Vector4A16(0.0f, 0.0f, 0.0f, 1.0f);
 }
 
 esMatrix44::esMatrix44() { MakeIdentity(); }
@@ -62,9 +62,9 @@ Vector4A16 esMatrix44::RotatePoint(const Vector4A16 &point) const {
   auto mtxCopy = *this;
   mtxCopy.Transpose();
 
-  const float v0 = mtxCopy.r1.Dot(point);
-  const float v1 = mtxCopy.r2.Dot(point);
-  const float v2 = mtxCopy.r3.Dot(point);
+  const float v0 = mtxCopy.r1().Dot(point);
+  const float v1 = mtxCopy.r2().Dot(point);
+  const float v2 = mtxCopy.r3().Dot(point);
 
   return Vector4A16(v0, v1, v2, 1.0f);
 }
@@ -107,29 +107,30 @@ void esMatrix44::FromQuat(const Vector4A16 &q) {
       Vector4A16(_mm_shuffle_ps(tmp06, tmp06, _MM_SHUFFLE(1, 1, 0, 3))) *
       Vector4A16(-1.f, 1.f, 1.f, 0.f);
 
-  r1 = Vector4A16(1.0f, 0.0f, 0.0f, 0.0f) +
-       (r10 + r11) * Vector4A16(-2.f, 2.0f, 2.0f, 0.0f);
-  r2 = Vector4A16(0.0f, 1.0f, 0.0f, 0.0f) +
-       (r20 + r21) * Vector4A16(2.f, -2.0f, 2.0f, 0.0f);
-  r3 = Vector4A16(0.0f, 0.0f, 1.0f, 0.0f) +
-       (r30 + r31) * Vector4A16(2.f, 2.0f, -2.0f, 0.0f);
+  r1() = Vector4A16(1.0f, 0.0f, 0.0f, 0.0f) +
+         (r10 + r11) * Vector4A16(-2.f, 2.0f, 2.0f, 0.0f);
+  r2() = Vector4A16(0.0f, 1.0f, 0.0f, 0.0f) +
+         (r20 + r21) * Vector4A16(2.f, -2.0f, 2.0f, 0.0f);
+  r3() = Vector4A16(0.0f, 0.0f, 1.0f, 0.0f) +
+         (r30 + r31) * Vector4A16(2.f, 2.0f, -2.0f, 0.0f);
 }
 
 Vector4A16 esMatrix44::ToQuat() const {
-  const bool traceType0 = r3.Z < 0.f;
-  const bool traceType1 = traceType0 ? r1.X > r2.Y : r1.X < -r2.Y;
-  // r1.x, r1.z, r2.x, r2.z
+  const bool traceType0 = r3().Z < 0.f;
+  const bool traceType1 = traceType0 ? r1().X > r2().Y : r1().X < -r2().Y;
+  // r1().x, r1().z, r2().x, r2().z
   const auto tmp10 =
-      _mm_shuffle_ps(r1._data, r2._data, _MM_SHUFFLE(2, 0, 2, 0));
-  // r3.x, r1.y, r1.z, r1.w
-  const auto tmp11 = _mm_move_ss(r1._data, r3._data);
+      _mm_shuffle_ps(r1()._data, r2()._data, _MM_SHUFFLE(2, 0, 2, 0));
+  // r3().x, r1().y, r1().z, r1().w
+  const auto tmp11 = _mm_move_ss(r1()._data, r3()._data);
 
-  // r1.x, r2.z, r2.x, r1.z
+  // r1().x, r2().z, r2().x, r1().z
   Vector4A16 tmp00(_mm_shuffle_ps(tmp10, tmp10, _MM_SHUFFLE(1, 2, 3, 0)));
-  // r3.z, r3.y, r1.y, r3.x
-  Vector4A16 tmp01(_mm_shuffle_ps(r3._data, tmp11, _MM_SHUFFLE(0, 1, 1, 2)));
-  // r2.y, 0, 0, 0
-  Vector4A16 tmp03(_mm_shuffle_ps(r2._data, r2._data, _MM_SHUFFLE(3, 3, 3, 1)));
+  // r3().z, r3().y, r1().y, r3().x
+  Vector4A16 tmp01(_mm_shuffle_ps(r3()._data, tmp11, _MM_SHUFFLE(0, 1, 1, 2)));
+  // r2().y, 0, 0, 0
+  Vector4A16 tmp03(
+      _mm_shuffle_ps(r2()._data, r2()._data, _MM_SHUFFLE(3, 3, 3, 1)));
 
   if (traceType0) {
     if (traceType1) {
@@ -174,38 +175,48 @@ Vector4A16 esMatrix44::ToQuat() const {
 }
 
 void esMatrix44::Transpose() {
-  __m128 tmp00 = _mm_shuffle_ps(r1._data, r2._data, _MM_SHUFFLE(1, 0, 1, 0));
-  __m128 tmp01 = _mm_shuffle_ps(r1._data, r2._data, _MM_SHUFFLE(2, 1, 2, 1));
+  __m128 tmp00 =
+      _mm_shuffle_ps(r1()._data, r2()._data, _MM_SHUFFLE(1, 0, 1, 0));
+  __m128 tmp01 =
+      _mm_shuffle_ps(r1()._data, r2()._data, _MM_SHUFFLE(2, 1, 2, 1));
 
-  r1._data = _mm_shuffle_ps(tmp00, r3._data, _MM_SHUFFLE(3, 0, 2, 0));
-  r2._data = _mm_shuffle_ps(tmp01, r3._data, _MM_SHUFFLE(3, 1, 2, 0));
-  r3._data = _mm_shuffle_ps(tmp01, r3._data, _MM_SHUFFLE(3, 2, 3, 1));
+  r1()._data = _mm_shuffle_ps(tmp00, r3()._data, _MM_SHUFFLE(3, 0, 2, 0));
+  r2()._data = _mm_shuffle_ps(tmp01, r3()._data, _MM_SHUFFLE(3, 1, 2, 0));
+  r3()._data = _mm_shuffle_ps(tmp01, r3()._data, _MM_SHUFFLE(3, 2, 3, 1));
+}
+
+void esMatrix44::TransposeFull() {
+  _MM_TRANSPOSE4_PS(r1()._data, r2()._data, r3()._data, r4()._data);
 }
 
 esMatrix44 &esMatrix44::operator*=(const esMatrix44 &right) {
   esMatrix44 rCopy(right);
-  rCopy.Transpose();
+  rCopy.TransposeFull();
 
-  const float v00 = r1.Dot(rCopy.r1);
-  const float v01 = r1.Dot(rCopy.r2);
-  const float v02 = r1.Dot(rCopy.r3);
+  const float v00 = r1().Dot(rCopy.r1());
+  const float v01 = r1().Dot(rCopy.r2());
+  const float v02 = r1().Dot(rCopy.r3());
+  const float v03 = r1().Dot(rCopy.r4());
 
-  const float v10 = r2.Dot(rCopy.r1);
-  const float v11 = r2.Dot(rCopy.r2);
-  const float v12 = r2.Dot(rCopy.r3);
+  const float v10 = r2().Dot(rCopy.r1());
+  const float v11 = r2().Dot(rCopy.r2());
+  const float v12 = r2().Dot(rCopy.r3());
+  const float v13 = r2().Dot(rCopy.r4());
 
-  const float v20 = r3.Dot(rCopy.r1);
-  const float v21 = r3.Dot(rCopy.r2);
-  const float v22 = r3.Dot(rCopy.r3);
+  const float v20 = r3().Dot(rCopy.r1());
+  const float v21 = r3().Dot(rCopy.r2());
+  const float v22 = r3().Dot(rCopy.r3());
+  const float v23 = r3().Dot(rCopy.r4());
 
-  const float v30 = rCopy.r1.Dot(r4);
-  const float v31 = rCopy.r2.Dot(r4);
-  const float v32 = rCopy.r3.Dot(r4);
+  const float v30 = r4().Dot(rCopy.r1());
+  const float v31 = r4().Dot(rCopy.r2());
+  const float v32 = r4().Dot(rCopy.r3());
+  const float v33 = r4().Dot(rCopy.r4());
 
-  r1 = Vector4A16(v00, v01, v02, 0.0f);
-  r2 = Vector4A16(v10, v11, v12, 0.0f);
-  r3 = Vector4A16(v20, v21, v22, 0.0f);
-  r4 = right.r4 + Vector4A16(v30, v31, v32, 0.0f);
+  r1() = Vector4A16(v00, v01, v02, v03);
+  r2() = Vector4A16(v10, v11, v12, v13);
+  r3() = Vector4A16(v20, v21, v22, v23);
+  r4() = Vector4A16(v30, v31, v32, v33);
 
   return *this;
 }
@@ -215,9 +226,9 @@ esMatrix44 esMatrix44::operator-() const {
   esMatrix44 retVal(*this);
   retVal.Transpose();
 
-  Vector4A16 sizeSqr = retVal.r1 * retVal.r1;
-  sizeSqr += retVal.r2 * retVal.r2;
-  sizeSqr += retVal.r3 * retVal.r3;
+  Vector4A16 sizeSqr = retVal.r1() * retVal.r1();
+  sizeSqr += retVal.r2() * retVal.r2();
+  sizeSqr += retVal.r3() * retVal.r3();
 
   const Vector4A16 vEps(0.000001f);
   const Vector4A16 oneVal(1.0f);
@@ -225,15 +236,15 @@ esMatrix44 esMatrix44::operator-() const {
 
   sizeSqr = oneVal / ((ltMask & oneVal) + (~ltMask & sizeSqr));
 
-  retVal.r1 *= sizeSqr;
-  retVal.r2 *= sizeSqr;
-  retVal.r3 *= sizeSqr;
+  retVal.r1() *= sizeSqr;
+  retVal.r2() *= sizeSqr;
+  retVal.r3() *= sizeSqr;
 
-  const float v30 = r1.Dot(r4);
-  const float v31 = r2.Dot(r4);
-  const float v32 = r3.Dot(r4);
+  const float v30 = retVal.r1().Dot(r4());
+  const float v31 = retVal.r2().Dot(r4());
+  const float v32 = retVal.r3().Dot(r4());
 
-  retVal.r4 = Vector4A16(v30, v31, v32, 1.0f).QConjugate();
+  retVal.r4() = Vector4A16(v30, v31, v32, 1.0f).QConjugate();
 
   return retVal;
 }

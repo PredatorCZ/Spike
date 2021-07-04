@@ -61,10 +61,10 @@ PyObject *GetSkeletonData() {
   bone1.ID = 1;
   bone1.parent = &bone0;
   bone1.tmType = uni::TransformType::TMTYPE_MATRIX;
-  bone1.mval.r1 = Vector4A16(1, 2, 3, 4);
-  bone1.mval.r2 = Vector4A16(5, 6, 7, 8);
-  bone1.mval.r3 = Vector4A16(9, 10, 11, 12);
-  bone1.mval.r4 = Vector4A16(13, 14, 15, 16);
+  bone1.mval.r1() = Vector4A16(1, 2, 3, 4);
+  bone1.mval.r2() = Vector4A16(5, 6, 7, 8);
+  bone1.mval.r3() = Vector4A16(9, 10, 11, 12);
+  bone1.mval.r4() = Vector4A16(13, 14, 15, 16);
 
   PyObject *obj = reinterpret_cast<PyObject *>(
       UniPy::Skeleton::Create(uni::Element<const uni::Skeleton>(skel)));

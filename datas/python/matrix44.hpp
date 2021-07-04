@@ -20,9 +20,9 @@
 
 inline PyObject *Py_BuildValue(const esMatrix44 &mtx) {
   return Py_BuildValue("((ffff)(ffff)(ffff)(ffff))", /**********************/
-                       mtx.r1.X, mtx.r1.Y, mtx.r1.Z, mtx.r1.W, /************/
-                       mtx.r2.X, mtx.r2.Y, mtx.r2.Z, mtx.r2.W, /************/
-                       mtx.r3.X, mtx.r3.Y, mtx.r3.Z, mtx.r3.W, /************/
-                       mtx.r4.X, mtx.r4.Y, mtx.r4.Z, mtx.r4.W  /************/
+                       mtx.r1().X, mtx.r1().Y, mtx.r1().Z, mtx.r1().W, /************/
+                       mtx.r2().X, mtx.r2().Y, mtx.r2().Z, mtx.r2().W, /************/
+                       mtx.r3().X, mtx.r3().Y, mtx.r3().Z, mtx.r3().W, /************/
+                       mtx.r4().X, mtx.r4().Y, mtx.r4().Z, mtx.r4().W  /************/
   );
 }

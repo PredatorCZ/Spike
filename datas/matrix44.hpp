@@ -21,17 +21,16 @@
 
 class esMatrix44 {
 public:
-  Vector4A16 r1, r2, r3, r4;
+  Vector4A16 v[4];
   esMatrix44();
   esMatrix44(const Vector4A16 &row1, const Vector4A16 &row2,
              const Vector4A16 &row3)
-      : r1(row1), r2(row2), r3(row3) {}
+      : v{row1, row2, row3, {}} {}
   esMatrix44(const Vector4A16 &row1, const Vector4A16 &row2,
              const Vector4A16 &row3, const Vector4A16 &row4)
-      : r1(row1), r2(row2), r3(row3), r4(row4) {}
+      : v{row1, row2, row3, row4} {}
   esMatrix44(const Vector4A16 &quat);
-  esMatrix44(const Vector4A16 *rows)
-      : r1(rows[0]), r2(rows[1]), r3(rows[2]), r4(rows[3]) {}
+  esMatrix44(const Vector4A16 *rows) : v{rows[0], rows[1], rows[2], rows[3]} {}
 
   void MakeIdentity();
   void Decompose(Vector4A16 &position, Vector4A16 &rotation,
@@ -41,19 +40,29 @@ public:
   Vector4A16 RotatePoint(const Vector4A16 &input) const;
   void FromQuat(const Vector4A16 &q);
   Vector4A16 ToQuat() const;
+  // Transpose 3x3
   void Transpose();
+  // Transpose 4x4
+  void TransposeFull();
 
   esMatrix44 operator*(const esMatrix44 &right) const {
     return esMatrix44(*this) *= right;
   }
 
+  const Vector4A16 &operator[](size_t index) const { return v[index]; }
+  Vector4A16 &operator[](size_t index) { return v[index]; }
+
+  const Vector4A16 &r1() const { return v[0]; }
+  const Vector4A16 &r2() const { return v[1]; }
+  const Vector4A16 &r3() const { return v[2]; }
+  const Vector4A16 &r4() const { return v[3]; }
+  Vector4A16 &r1() { return v[0]; }
+  Vector4A16 &r2() { return v[1]; }
+  Vector4A16 &r3() { return v[2]; }
+  Vector4A16 &r4() { return v[3]; }
+
   esMatrix44 &operator*=(const esMatrix44 &right);
   esMatrix44 operator-() const;
 
-  void SwapEndian() {
-    FByteswapper(r1);
-    FByteswapper(r2);
-    FByteswapper(r3);
-    FByteswapper(r4);
-  }
+  void SwapEndian() { FByteswapper(v); }
 };

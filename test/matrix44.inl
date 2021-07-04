@@ -5,17 +5,17 @@ int test_matrix44_00() {
   esMatrix44 mtx({1, 2, 3, 0}, {5, 6, 7, 0}, {9, 10, 11, 0}, {13, 14, 15, 16});
   mtx.Transpose();
 
-  TEST_EQUAL(mtx.r1, Vector4A16(1, 5, 9, 0));
-  TEST_EQUAL(mtx.r2, Vector4A16(2, 6, 10, 0));
-  TEST_EQUAL(mtx.r3, Vector4A16(3, 7, 11, 0));
-  TEST_EQUAL(mtx.r4, Vector4A16(13, 14, 15, 16));
+  TEST_EQUAL(mtx.r1(), Vector4A16(1, 5, 9, 0));
+  TEST_EQUAL(mtx.r2(), Vector4A16(2, 6, 10, 0));
+  TEST_EQUAL(mtx.r3(), Vector4A16(3, 7, 11, 0));
+  TEST_EQUAL(mtx.r4(), Vector4A16(13, 14, 15, 16));
 
   mtx.MakeIdentity();
 
-  TEST_EQUAL(mtx.r1, Vector4A16(1, 0, 0, 0));
-  TEST_EQUAL(mtx.r2, Vector4A16(0, 1, 0, 0));
-  TEST_EQUAL(mtx.r3, Vector4A16(0, 0, 1, 0));
-  TEST_EQUAL(mtx.r4, Vector4A16(0, 0, 0, 1));
+  TEST_EQUAL(mtx.r1(), Vector4A16(1, 0, 0, 0));
+  TEST_EQUAL(mtx.r2(), Vector4A16(0, 1, 0, 0));
+  TEST_EQUAL(mtx.r3(), Vector4A16(0, 0, 1, 0));
+  TEST_EQUAL(mtx.r4(), Vector4A16(0, 0, 0, 1));
 
   Vector4A16 qt, pos, scale;
   
@@ -30,10 +30,10 @@ int test_matrix44_00() {
 
   mtx.Compose(pos, qt, scale);
 
-  TEST_EQUAL(mtx.r1, Vector4A16(2, 0, 0, 0));
-  TEST_EQUAL(mtx.r2, Vector4A16(0, 3, 0, 0));
-  TEST_EQUAL(mtx.r3, Vector4A16(0, 0, 4, 0));
-  TEST_EQUAL(mtx.r4, Vector4A16(10, 20, 30, 1));
+  TEST_EQUAL(mtx.r1(), Vector4A16(2, 0, 0, 0));
+  TEST_EQUAL(mtx.r2(), Vector4A16(0, 3, 0, 0));
+  TEST_EQUAL(mtx.r3(), Vector4A16(0, 0, 4, 0));
+  TEST_EQUAL(mtx.r4(), Vector4A16(10, 20, 30, 1));
 
   return 0;
 }
@@ -44,10 +44,10 @@ int test_matrix44_01() {
   mtx.Transpose();
   Vector4A16::SetEpsilon(0.0001f);
 
-  TEST_EQUAL(mtx.r1, Vector4A16(0.75f, -0.64952f, -0.125f, 0));
-  TEST_EQUAL(mtx.r2, Vector4A16(0.43301f, 0.625f, -0.64952f, 0));
-  TEST_EQUAL(mtx.r3, Vector4A16(0.5f, 0.43301f, 0.75f, 0));
-  TEST_EQUAL(mtx.r4, Vector4A16(0, 0, 0, 1));
+  TEST_EQUAL(mtx.r1(), Vector4A16(0.75f, -0.64952f, -0.125f, 0));
+  TEST_EQUAL(mtx.r2(), Vector4A16(0.43301f, 0.625f, -0.64952f, 0));
+  TEST_EQUAL(mtx.r3(), Vector4A16(0.5f, 0.43301f, 0.75f, 0));
+  TEST_EQUAL(mtx.r4(), Vector4A16(0, 0, 0, 1));
 
   return 0;
 }
@@ -99,10 +99,10 @@ int test_matrix44_03() {
 
   esMatrix44 mtxi(-mtx);
 
-  TEST_EQUAL(mtxi.r1, Vector4A16(0.3530f, -0.9339f, -0.0556f, 0));
-  TEST_EQUAL(mtxi.r2, Vector4A16(0.4187f, 0.2109f, -0.8832f, 0));
-  TEST_EQUAL(mtxi.r3, Vector4A16(0.8366f, 0.2885f, 0.4655f, 0));
-  TEST_EQUAL(mtxi.r4, Vector4A16(4.8836f, -20.7030f, 20.2177f, 1));
+  TEST_EQUAL(mtxi.r1(), Vector4A16(0.3530f, -0.9339f, -0.0556f, 0));
+  TEST_EQUAL(mtxi.r2(), Vector4A16(0.4187f, 0.2109f, -0.8832f, 0));
+  TEST_EQUAL(mtxi.r3(), Vector4A16(0.8366f, 0.2885f, 0.4655f, 0));
+  TEST_EQUAL(mtxi.r4(), Vector4A16(25.4658f, -2.5554f, 14.3589f, 1));
 
   esMatrix44 mtx2(
       {-0.703221, -0.174721, 0.689168, 0}, {0.539334f, -0.762686, 0.356973, 0},
@@ -110,17 +110,17 @@ int test_matrix44_03() {
 
   mtxi = esMatrix44(-mtx2);
 
-  TEST_EQUAL(mtxi.r1, Vector4A16(-0.7032f, 0.5393f, 0.4632f, 0));
-  TEST_EQUAL(mtxi.r2, Vector4A16(-0.1747f, -0.7626f, 0.6227f, 0));
-  TEST_EQUAL(mtxi.r3, Vector4A16(0.6891f, 0.3569f, 0.6305f, 0));
-  TEST_EQUAL(mtxi.r4, Vector4A16(1.8715f, -17.3702f, -22.0403f, 1));
+  TEST_EQUAL(mtxi.r1(), Vector4A16(-0.7032f, 0.5393f, 0.4632f, 0));
+  TEST_EQUAL(mtxi.r2(), Vector4A16(-0.1747f, -0.7626f, 0.6227f, 0));
+  TEST_EQUAL(mtxi.r3(), Vector4A16(0.6891f, 0.3569f, 0.6305f, 0));
+  TEST_EQUAL(mtxi.r4(), Vector4A16(5.5467f, -7.4487f, -26.5471f, 1));
 
   mtxi = mtx * mtx2;
 
-  TEST_EQUAL(mtxi.r1, Vector4A16(0.3651f, 0.14f, 0.9203f, 0));
-  TEST_EQUAL(mtxi.r2, Vector4A16(0.9041f, 0.182f, -0.3864f, 0));
-  TEST_EQUAL(mtxi.r3, Vector4A16(-0.2216f, 0.9732f, -0.0601f, 0));
-  TEST_EQUAL(mtxi.r4, Vector4A16(42.3110f, -15.7893f, 7.5297f, 1));
+  TEST_EQUAL(mtxi.r1(), Vector4A16(0.3651f, 0.14f, 0.9203f, 0));
+  TEST_EQUAL(mtxi.r2(), Vector4A16(0.9041f, 0.182f, -0.3864f, 0));
+  TEST_EQUAL(mtxi.r3(), Vector4A16(-0.2216f, 0.9732f, -0.0601f, 0));
+  TEST_EQUAL(mtxi.r4(), Vector4A16(42.3110f, -15.7893f, 7.5297f, 1));
 
   return 0;
 }
