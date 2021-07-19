@@ -12,6 +12,10 @@ It also contains logging services, algorhitms, data types, muti-threading queue 
 
 Library is made for C++14 standard and it's compilable under Clang 3.5+, GCC 5+, MSVC 2017+.
 
+## Uses additional libraries
+
+* pugixml (Copyright (C) 2006-2020, by Arseny Kapoulkine)
+
 ## Main modules
 
 ### RTTI/RTTR (Run Time Type Introspection/Reflection)
