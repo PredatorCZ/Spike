@@ -18,32 +18,33 @@
 
 #pragma once
 #include "vectors_simd.hpp"
+#include "settings.hpp"
 
 class esMatrix44 {
 public:
   Vector4A16 v[4];
-  esMatrix44();
+  PC_EXTERN esMatrix44();
   esMatrix44(const Vector4A16 &row1, const Vector4A16 &row2,
              const Vector4A16 &row3)
       : v{row1, row2, row3, {}} {}
   esMatrix44(const Vector4A16 &row1, const Vector4A16 &row2,
              const Vector4A16 &row3, const Vector4A16 &row4)
       : v{row1, row2, row3, row4} {}
-  esMatrix44(const Vector4A16 &quat);
+  PC_EXTERN esMatrix44(const Vector4A16 &quat);
   esMatrix44(const Vector4A16 *rows) : v{rows[0], rows[1], rows[2], rows[3]} {}
 
-  void MakeIdentity();
-  void Decompose(Vector4A16 &position, Vector4A16 &rotation,
+  void PC_EXTERN MakeIdentity();
+  void PC_EXTERN Decompose(Vector4A16 &position, Vector4A16 &rotation,
                  Vector4A16 &scale) const;
-  void Compose(const Vector4A16 &position, const Vector4A16 &rotation,
+  void PC_EXTERN Compose(const Vector4A16 &position, const Vector4A16 &rotation,
                const Vector4A16 &scale);
-  Vector4A16 RotatePoint(const Vector4A16 &input) const;
-  void FromQuat(const Vector4A16 &q);
-  Vector4A16 ToQuat() const;
+  Vector4A16 PC_EXTERN RotatePoint(const Vector4A16 &input) const;
+  void PC_EXTERN FromQuat(const Vector4A16 &q);
+  Vector4A16 PC_EXTERN ToQuat() const;
   // Transpose 3x3
-  void Transpose();
+  void PC_EXTERN Transpose();
   // Transpose 4x4
-  void TransposeFull();
+  void PC_EXTERN TransposeFull();
 
   esMatrix44 operator*(const esMatrix44 &right) const {
     return esMatrix44(*this) *= right;
@@ -61,8 +62,8 @@ public:
   Vector4A16 &r3() { return v[2]; }
   Vector4A16 &r4() { return v[3]; }
 
-  esMatrix44 &operator*=(const esMatrix44 &right);
-  esMatrix44 operator-() const;
+  esMatrix44 PC_EXTERN &operator*=(const esMatrix44 &right);
+  esMatrix44 PC_EXTERN operator-() const;
 
   void SwapEndian() { FByteswapper(v); }
 };

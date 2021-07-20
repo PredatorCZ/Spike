@@ -17,13 +17,14 @@
 */
 
 #pragma once
+#include "../settings.hpp"
 #include "../supercore.hpp"
 #include "encryptor.hpp"
 
 #define BF_NUMPBOXES 18
 #define BF_NUMSBOXES 1024
 
-class BlowfishEncoder : public IEncryptor
+class PC_EXTERN BlowfishEncoder : public IEncryptor
 {
 public:
 	enum Mode

@@ -1,25 +1,32 @@
 ﻿cmake_minimum_required(VERSION 3.3)
-project(PreCore)
+project(PreCore VERSION 6)
+
+set(CMAKE_CXX_STANDARD 14)
 
 set(PRECORE_SOURCE_DIR
     ${CMAKE_CURRENT_SOURCE_DIR}
     CACHE STRING "")
-
-set(CMAKE_MODULE_PATH ${PRECORE_SOURCE_DIR}/cmake;${CMAKE_MODULE_PATH} CACHE STRING "")
+set(CMAKE_MODULE_PATH
+    ${PRECORE_SOURCE_DIR}/cmake;${CMAKE_MODULE_PATH}
+    CACHE STRING "")
+set(CMAKE_INSTALL_LIBDIR
+    ${CMAKE_INSTALL_PREFIX}
+    CACHE STRING "")
+option(PC_SHARED_LIB "" OFF)
 
 if(CMAKE_COMPILER_IS_GNUCXX AND USE_GCOV)
   message("Compiling with GCOV.")
 endif()
 
-function(_set_basic_flags TARGET_NAME)
+function(_set_basic_flags TARGET_NAME SCOPE)
   if(CMAKE_COMPILER_IS_GNUCXX AND USE_GCOV)
-    target_compile_options(${TARGET_NAME} PRIVATE -fprofile-arcs
-                                                  -ftest-coverage)
+    target_compile_options(${TARGET_NAME} ${SCOPE} -fprofile-arcs
+                           -ftest-coverage)
     target_link_libraries(${TARGET_NAME} gcov)
   endif()
 
   if(NOT MSVC)
-    target_compile_options(${TARGET_NAME} PRIVATE -msse4 -Wno-invalid-offsetof)
+    target_compile_options(${TARGET_NAME} ${SCOPE} -msse4 -Wno-invalid-offsetof)
   endif()
 endfunction()
 
@@ -42,7 +49,7 @@ endfunction()
 # Secify what sources should be built for PreCore and sets them for current
 # target
 function(set_precore_sources TARGET_NAME)
-  _set_basic_flags(${TARGET_NAME})
+  _set_basic_flags(${TARGET_NAME} PRIVATE)
   target_include_directories(${TARGET_NAME} PRIVATE ${PRECORE_SOURCE_DIR})
 
   foreach(cFile ${ARGN})
@@ -67,3 +74,49 @@ if(${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_CURRENT_SOURCE_DIR})
   enable_testing()
   add_subdirectory(test)
 endif()
+
+if(PC_SHARED_LIB)
+  add_library(
+    precore SHARED
+    datas/encrypt/blowfish
+    datas/directory_scanner
+    datas/master_printer
+    datas/matrix44
+    datas/reflector_io
+    datas/reflector_xml
+    datas/reflector
+    datas/stat
+    uni/uni_format)
+
+  target_compile_definitions(
+    precore
+    PRIVATE PC_EXPORT
+    INTERFACE PC_IMPORT)
+
+  _set_basic_flags(precore PUBLIC)
+  _set_threads(precore)
+
+  if(NOT MSVC)
+    target_compile_options(precore PRIVATE -fvisibility=hidden)
+  else()
+    set_target_properties(precore PROPERTIES SUFFIX ${PROJECT_VERSION}.dll)
+  endif()
+
+  target_include_directories(precore PUBLIC ${PRECORE_SOURCE_DIR})
+  set_target_properties(precore PROPERTIES VERSION ${PROJECT_VERSION}
+                                           SOVERSION ${PROJECT_VERSION_MAJOR})
+
+  if(PUGI_SHARED_LIBS)
+    target_link_libraries(precore pugixml)
+  else()
+    set(PUGI_SHARED_OBJECTS
+        ON
+        CACHE BOOL "")
+    target_link_libraries(precore pugixml-shared)
+  endif()
+
+  install(TARGETS precore LIBRARY NAMELINK_SKIP
+                                  DESTINATION ${CMAKE_INSTALL_LIBDIR})
+endif()
+
+add_subdirectory(3rd_party/pugixml)

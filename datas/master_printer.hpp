@@ -18,6 +18,7 @@
 
 #pragma once
 #include <sstream>
+#include "settings.hpp"
 
 #define printerror(...) printer << MPType::ERR << __VA_ARGS__ >> 1;
 #define printwarning(...) printer << MPType::WRN << __VA_ARGS__ >> 1;
@@ -38,15 +39,15 @@ public:
     return *this;
   }
 
-  void AddPrinterFunction(print_func func, bool useColor = true);
-  void FlushAll();
-  void operator>>(int endWay);
-  void PrintThreadID(bool yn);
+  void PC_EXTERN AddPrinterFunction(print_func func, bool useColor = true);
+  void PC_EXTERN FlushAll();
+  void PC_EXTERN operator>>(int endWay);
+  void PC_EXTERN PrintThreadID(bool yn);
   void Locale(const char *localeName) {
     _masterstream.imbue(std::locale(localeName));
   }
   void Locale(const std::locale &loc) { _masterstream.imbue(loc); }
-  MasterPrinterThread();
+  PC_EXTERN MasterPrinterThread();
   ~MasterPrinterThread() = default;
 } printer;
 
@@ -57,5 +58,5 @@ MasterPrinterThread::operator<<(const MPType input) {
   return *this;
 }
 
-void SetConsoleTextColor(int red, int green, int blue);
-void RestoreConsoleTextColor();
+void PC_EXTERN SetConsoleTextColor(int red, int green, int blue);
+void PC_EXTERN RestoreConsoleTextColor();

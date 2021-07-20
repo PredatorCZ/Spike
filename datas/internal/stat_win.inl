@@ -16,9 +16,10 @@
 */
 
 #include <Windows.h>
+#include <direct.h>
 
 namespace es {
-int mkdir(const char *path, uint32 mode = 0777) {
+int mkdir(const char *path, uint32) {
 #ifdef UNICODE
   auto cvted = es::ToUTF1632(path);
   return ::_wmkdir(cvted.data());
@@ -27,7 +28,7 @@ int mkdir(const char *path, uint32 mode = 0777) {
 #endif
 }
 
-int mkdir(const std::string &path, uint32 mode = 0777) {
+int mkdir(const std::string &path, uint32) {
 #ifdef UNICODE
   auto cvted = es::ToUTF1632(path);
   return ::_wmkdir(cvted.data());

@@ -18,6 +18,7 @@
 #pragma once
 #include "fileinfo.hpp"
 #include "unicode.hpp"
+#include "settings.hpp"
 #include <set>
 
 enum FileType_e {
@@ -27,11 +28,19 @@ enum FileType_e {
   File,
 };
 
-FileType_e FileType(const std::string &path);
+#ifdef _MSC_VER
+#define MKDIR_EXTERN_ PC_EXTERN
+#else
+#define MKDIR_EXTERN_
+#endif
+
+FileType_e PC_EXTERN FileType(const std::string &path);
 namespace es {
-int mkdir(const char *path, uint32 mode = 0777);
-int mkdir(const std::string &path, uint32 mode = 0777);
+int MKDIR_EXTERN_ mkdir(const char *path, uint32 mode = 0777);
+int MKDIR_EXTERN_ mkdir(const std::string &path, uint32 mode = 0777);
 } // namespace es
+
+#undef MKDIR_EXTERN_
 
 #ifndef _MSC_VER
 #include <sys/stat.h>

@@ -17,6 +17,7 @@
 
 #pragma once
 #include "datas/vectors_simd.hpp"
+#include "datas/settings.hpp"
 #include <memory>
 #include <vector>
 
@@ -94,12 +95,12 @@ public:
   // Samples single integer value
   // exceptions:
   //             runtime_error for incorrect call (format isn't int)
-  virtual void GetValue(IVector4A16 &out, const char *input) const;
+  virtual void PC_EXTERN GetValue(IVector4A16 &out, const char *input) const;
 
   // Samples single float value
   // exceptions:
   //             runtime_error for incorrect call (format is int)
-  virtual void GetValue(Vector4A16 &out, const char *input) const;
+  virtual void PC_EXTERN GetValue(Vector4A16 &out, const char *input) const;
 
   // Samples an array of values
   // count: if 0, count will be taken from 'out.size()'
@@ -107,7 +108,7 @@ public:
   // exceptions:
   //             runtime_error if 0 < stride < format size
   //             runtime_error for incorrect call (format isn't int)
-  virtual void Sample(ivec &out, const char *input, size_t count,
+  virtual void PC_EXTERN Sample(ivec &out, const char *input, size_t count,
                       size_t stride = 0) const;
 
   // Samples an array of values
@@ -116,10 +117,10 @@ public:
   // exceptions:
   //             runtime_error if 0 < stride < format size
   //             runtime_error for incorrect call (format is int)
-  virtual void Sample(fvec &out, const char *input, size_t count,
+  virtual void PC_EXTERN Sample(fvec &out, const char *input, size_t count,
                       size_t stride = 0) const;
 
-  static FormatCodec &Get(const FormatDescr &input);
+  static FormatCodec PC_EXTERN &Get(const FormatDescr &input);
 };
 
 } // namespace uni

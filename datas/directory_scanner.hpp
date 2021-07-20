@@ -19,6 +19,7 @@
 #pragma once
 #include <string>
 #include <vector>
+#include "settings.hpp"
 
 class DirectoryScanner {
   bool IsFilteredFile(const std::string &fileName);
@@ -28,7 +29,7 @@ public:
   typedef storage_type::iterator iterator;
   typedef storage_type::const_iterator const_iterator;
 
-  void Scan(std::string dir);
+  void PC_EXTERN Scan(std::string dir);
 
   iterator begin() { return files.begin(); }
   iterator end() { return files.end(); }

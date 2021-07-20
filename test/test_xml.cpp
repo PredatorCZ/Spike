@@ -3,6 +3,7 @@
 #include "datas/reflector_xml.hpp"
 #include "datas/unit_testing.hpp"
 #include "reflector_def.inl"
+#include "pugixml.hpp"
 
 int test_reflector_xml_v1() {
   BinReader mrd("reflected.bin");

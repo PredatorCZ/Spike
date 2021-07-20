@@ -1,0 +1,5 @@
+add_library(class SHARED class.cpp)
+target_link_libraries(class precore)
+add_executable(shared_test shared.cpp)
+target_link_libraries(shared_test class precore)
+add_test(shared_test shared_test)

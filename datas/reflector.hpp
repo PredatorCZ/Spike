@@ -48,7 +48,7 @@
 #define REFLECTOR_CREATE(classname, numFlags, ...)                             \
   VA_NARGS_EVAL(_REFLECTOR_START_VER##numFlags(classname, __VA_ARGS__))
 
-class Reflector {
+class PC_EXTERN Reflector {
   friend class ReflectorFriend;
 
 public:

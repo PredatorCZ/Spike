@@ -157,7 +157,7 @@ constexpr size_t _GetReflDescPart(const char (&value)[n], bool part2 = false) {
 
 #define _REFLECTOR_INTERFACE(clseval, classname)                               \
   template <>                                                                  \
-  const reflectorStatic *                                                      \
+  const reflectorStatic ES_EXPORT *                                                      \
   ReflectorInterface<clseval(classname)>::GetReflector() {                     \
     static const reflectorStatic rclass(_RTag<clseval(classname)>{});          \
     return &rclass;                                                            \

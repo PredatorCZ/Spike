@@ -27,8 +27,8 @@ class ReflectorIO {
   enums_type enums;
 
 public:
-  int Load(BinReaderRef rd);
-  int Save(BinWritterRef wr);
+  int PC_EXTERN Load(BinReaderRef rd);
+  int PC_EXTERN Save(BinWritterRef wr);
 
   void AddClass(const reflectorStatic *ref) { classes.push_back(ref); }
   template <class C> void AddClass() {
@@ -46,6 +46,6 @@ class ReflectorBinUtil {
   static const reflType *Find(Reflector &ri, JenHash hash);
 
 public:
-  static int Save(const Reflector &ri, BinWritterRef wr);
-  static int Load(Reflector &ri, BinReaderRef rd);
+  static int PC_EXTERN Save(const Reflector &ri, BinWritterRef wr);
+  static int PC_EXTERN Load(Reflector &ri, BinReaderRef rd);
 };

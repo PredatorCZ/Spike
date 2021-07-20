@@ -19,7 +19,7 @@
 #pragma once
 #include "blowfish.h"
 
-class BlowfishEncoder2 : public BlowfishEncoder
+class PC_EXTERN BlowfishEncoder2 : public BlowfishEncoder
 {
 public:
 	void SetKey(const char *inKey, int inSize);

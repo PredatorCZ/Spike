@@ -17,7 +17,7 @@
 
 #pragma once
 #include "reflector.hpp"
-#include "pugixml.hpp"
+#include "pugi_fwd.hpp"
 #include "flags.hpp"
 
 
@@ -29,9 +29,9 @@ public:
     Flags_StringAsAttribute,
   };
   using flag_type = es::Flags<Flags>;
-  static pugi::xml_node Save(const Reflector &ri, pugi::xml_node iNode, bool asNewNode = false);
-  static pugi::xml_node SaveV2(const Reflector &ri, pugi::xml_node iNode, bool asNewNode = false);
-  static pugi::xml_node SaveV2a(const Reflector &ri, pugi::xml_node iNode, flag_type options = {});
-  static pugi::xml_node Load(Reflector &ri, pugi::xml_node iNode, bool lookupClassNode = false);
-  static pugi::xml_node LoadV2(Reflector &ri, pugi::xml_node iNode, bool lookupClassNode = false);
+  static pugi::xml_node PC_EXTERN Save(const Reflector &ri, pugi::xml_node iNode, bool asNewNode = false);
+  static pugi::xml_node PC_EXTERN SaveV2(const Reflector &ri, pugi::xml_node iNode, bool asNewNode = false);
+  static pugi::xml_node PC_EXTERN SaveV2a(const Reflector &ri, pugi::xml_node iNode, flag_type options = {});
+  static pugi::xml_node PC_EXTERN Load(Reflector &ri, pugi::xml_node iNode, bool lookupClassNode = false);
+  static pugi::xml_node PC_EXTERN LoadV2(Reflector &ri, pugi::xml_node iNode, bool lookupClassNode = false);
 };

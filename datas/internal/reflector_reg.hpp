@@ -19,12 +19,13 @@
 #pragma once
 #include "reflector_class_reg.hpp"
 #include "reflector_enum_reg.hpp"
+#include "../settings.hpp"
 #include <map>
 
 typedef std::map<JenHash, ReflectedEnum> RefEnumMapper;
-extern RefEnumMapper REFEnumStorage;
+extern RefEnumMapper PC_EXTERN REFEnumStorage;
 typedef std::map<JenHash, const reflectorStatic *> RefSubClassMapper;
-extern RefSubClassMapper REFSubClassStorage;
+extern RefSubClassMapper PC_EXTERN REFSubClassStorage;
 
 template <class C> struct RegisterReflectedType {
   template <class C_ = C>

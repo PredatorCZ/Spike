@@ -96,7 +96,7 @@ public:
 };
 
 template <class C> struct ReflectorInterface {
-  static const reflectorStatic *GetReflector();
+  static const reflectorStatic ES_IMPORT *GetReflector();
 };
 
 template <class C> const reflectorStatic *GetReflectedClass() {
