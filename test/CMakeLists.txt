@@ -120,6 +120,20 @@ build_target(
 
 add_test(test_xml test_xml)
 
+build_target(
+  NAME
+  test_blowfish
+  TYPE
+  APP
+  SOURCES
+  test_blowfish.cpp
+  LINKS
+  precore
+  NO_PROJECT_H
+  NO_VERINFO)
+
+add_test(test_blowfish test_blowfish)
+
 add_subdirectory(shared)
 
 if(CMAKE_CXX_COMPILER_ID MATCHES Clang)

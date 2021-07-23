@@ -25,6 +25,8 @@
   (((_BF_SBKEY(_item, 0) + _BF_SBKEY(_item, 1)) ^ _BF_SBKEY(_item, 2)) +       \
    _BF_SBKEY(_item, 3))
 #define BF_XOR(_item, _item2, _pid) _item.d ^= BF_SBKEY(_item2) ^ pboxes[_pid]
+#define BF_NUMPBOXES 18
+#define BF_NUMSBOXES 1024
 
 static const uint32 BF_PBOXES[] = {
     0x243f6a88, 0x85a308d3, 0x13198a2e, 0x03707344, 0xa4093822, 0x299f31d0,
@@ -205,15 +207,31 @@ static const uint32 BF_SBOXES[] = {
     0xb74e6132, 0xce77e25b, 0x578fdfe3, 0x3ac372e6,
 };
 
+class BlowfishContext {
+public:
+  uint32 pboxes[BF_NUMPBOXES];
+  uint32 sboxes[BF_NUMSBOXES];
+  mutable uint64 eVector;
+
+  virtual void EncodeBlock(uint64 &block) const;
+  virtual void DecodeBlock(uint64 &block) const;
+  void CreateVector();
+};
+
 union BFDataChunk {
   uint32 d;
   uint8 b[4];
 };
 
-void BlowfishEncoder::EncodeBlock(uint64 &block) const {
-  uint32 &val0 = reinterpret_cast<uint32 &>(block);
-  uint32 &val1 = *(reinterpret_cast<uint32 *>(&block) + 1);
-  BFDataChunk _val0{val0}, _val1{val1};
+struct BFBlockChunk {
+  BFDataChunk val0;
+  BFDataChunk val1;
+};
+
+void BlowfishContext::EncodeBlock(uint64 &block) const {
+  auto &values = reinterpret_cast<BFBlockChunk &>(block);
+  BFDataChunk &_val0 = values.val0;
+  BFDataChunk &_val1 = values.val1;
 
   _val0.d ^= pboxes[0];
   BF_XOR(_val1, _val0, 1);
@@ -234,14 +252,13 @@ void BlowfishEncoder::EncodeBlock(uint64 &block) const {
   BF_XOR(_val0, _val1, 16);
   _val1.d ^= pboxes[17];
 
-  val0 = _val1.d;
-  val1 = _val0.d;
+  std::swap(_val0, _val1);
 }
 
-void BlowfishEncoder::DecodeBlock(uint64 &block) const {
-  uint32 &val0 = reinterpret_cast<uint32 &>(block);
-  uint32 &val1 = *(reinterpret_cast<uint32 *>(&block) + 1);
-  BFDataChunk _val0{val0}, _val1{val1};
+void BlowfishContext::DecodeBlock(uint64 &block) const {
+  auto &values = reinterpret_cast<BFBlockChunk &>(block);
+  BFDataChunk &_val0 = values.val0;
+  BFDataChunk &_val1 = values.val1;
 
   _val0.d ^= pboxes[17];
   BF_XOR(_val1, _val0, 16);
@@ -262,31 +279,37 @@ void BlowfishEncoder::DecodeBlock(uint64 &block) const {
   BF_XOR(_val0, _val1, 1);
   _val1.d ^= pboxes[0];
 
-  val0 = _val1.d;
-  val1 = _val0.d;
+  std::swap(_val0, _val1);
 }
 
-void BlowfishEncoder::CreateVector() {
+void BlowfishContext::CreateVector() {
   std::uniform_int_distribution<uint64> rd;
   std::default_random_engine re;
   eVector = rd(re);
 }
 
+BlowfishEncoder::BlowfishEncoder() : pi(std::make_unique<BlowfishContext>()) {}
+BlowfishEncoder::BlowfishEncoder(BlowfishContext *ctx) : pi(ctx) {}
+BlowfishEncoder::~BlowfishEncoder() = default;
+size_t BlowfishEncoder::GetStride() const { return 64; }
+void BlowfishEncoder::Vector(uint64 vec) { pi->eVector = vec; }
+uint64 BlowfishEncoder::Vector() const { return pi->eVector; }
+
 void BlowfishEncoder::Encode(char *buffer, size_t size) const {
   switch (mode) {
-  case ECB:
+  case Mode::ECB:
     EncodeECB(buffer, size);
     break;
-  case CBC:
+  case Mode::CBC:
     EncodeCBC(buffer, size);
     break;
-  case PCBC:
+  case Mode::PCBC:
     EncodePCBC(buffer, size);
     break;
-  case CFB:
+  case Mode::CFB:
     EncodeCFB(buffer, size);
     break;
-  case OFB:
+  case Mode::OFB:
     EncodeOFB(buffer, size);
     break;
   }
@@ -294,174 +317,174 @@ void BlowfishEncoder::Encode(char *buffer, size_t size) const {
 
 void BlowfishEncoder::Decode(char *buffer, size_t size) const {
   switch (mode) {
-  case ECB:
+  case Mode::ECB:
     DecodeECB(buffer, size);
     break;
-  case CBC:
+  case Mode::CBC:
     DecodeCBC(buffer, size);
     break;
-  case PCBC:
+  case Mode::PCBC:
     DecodePCBC(buffer, size);
     break;
-  case CFB:
+  case Mode::CFB:
     DecodeCFB(buffer, size);
     break;
-  case OFB:
+  case Mode::OFB:
     DecodeOFB(buffer, size);
     break;
   }
 }
 
-void BlowfishEncoder::EncodeECB(char *buffer, size_t size) const {
-  const int numblocks = static_cast<int>(size / 8);
-  const int restbytes = static_cast<int>(size % 8);
+size_t CheckInputs(const char *buffer, size_t size) {
+  if (reinterpret_cast<uintptr_t>(buffer) % 8) {
+    throw std::runtime_error("Buffer's address must be 8 byte aligned.");
+  }
+  if (size % 8) {
+    throw std::length_error("Buffer length expected to be multiple of 8.");
+  }
 
-  for (int b = 0; b < numblocks; b++) {
-    char *curBuffer = buffer + (8 * b);
-    uint64 &block = reinterpret_cast<uint64 &>(*curBuffer);
-    EncodeBlock(block);
+  return size / 8;
+}
+
+void BlowfishEncoder::EncodeECB(char *buffer, size_t size) const {
+  const size_t numblocks = CheckInputs(buffer, size);
+  uint64 *curBuffer = reinterpret_cast<uint64 *>(buffer);
+
+  for (size_t b = 0; b < numblocks; b++) {
+    pi->EncodeBlock(curBuffer[b]);
   }
 }
 
 void BlowfishEncoder::DecodeECB(char *buffer, size_t size) const {
-  const int numblocks = static_cast<int>(size / 8);
-  const int restbytes = static_cast<int>(size % 8);
+  const size_t numblocks = CheckInputs(buffer, size);
+  uint64 *curBuffer = reinterpret_cast<uint64 *>(buffer);
 
-  for (int b = 0; b < numblocks; b++) {
-    char *curBuffer = buffer + (8 * b);
-    uint64 &block = reinterpret_cast<uint64 &>(*curBuffer);
-    DecodeBlock(block);
+  for (size_t b = 0; b < numblocks; b++) {
+    pi->DecodeBlock(curBuffer[b]);
   }
 }
 
 void BlowfishEncoder::EncodeCBC(char *buffer, size_t size) const {
-  const int numblocks = static_cast<int>(size / 8);
-  const int restbytes = static_cast<int>(size % 8);
-  uint64 currentVector = eVector;
+  const size_t numblocks = CheckInputs(buffer, size);
+  uint64 currentVector = pi->eVector;
+  uint64 *curBuffer = reinterpret_cast<uint64 *>(buffer);
 
-  for (int b = 0; b < numblocks; b++) {
-    char *curBuffer = buffer + (8 * b);
-    uint64 &block = reinterpret_cast<uint64 &>(*curBuffer);
-    block ^= currentVector;
-    EncodeBlock(block);
-    currentVector = block;
+  for (size_t b = 0; b < numblocks; b++) {
+    auto &chunk = curBuffer[b];
+    chunk ^= currentVector;
+    pi->EncodeBlock(chunk);
+    currentVector = chunk;
   }
 }
 
 void BlowfishEncoder::DecodeCBC(char *buffer, size_t size) const {
-  const int numblocks = static_cast<int>(size / 8);
-  const int restbytes = static_cast<int>(size % 8);
-  uint64 currentVector = eVector;
+  const size_t numblocks = CheckInputs(buffer, size);
+  uint64 currentVector = pi->eVector;
   uint64 lastVector = 0;
+  uint64 *curBuffer = reinterpret_cast<uint64 *>(buffer);
 
-  for (int b = 0; b < numblocks; b++) {
-    char *curBuffer = buffer + (8 * b);
-    uint64 &block = reinterpret_cast<uint64 &>(*curBuffer);
-    lastVector = block;
-    DecodeBlock(block);
-    block ^= currentVector;
+  for (size_t b = 0; b < numblocks; b++) {
+    auto &chunk = curBuffer[b];
+    lastVector = chunk;
+    pi->DecodeBlock(chunk);
+    chunk ^= currentVector;
     currentVector = lastVector;
   }
 }
 
 void BlowfishEncoder::EncodePCBC(char *buffer, size_t size) const {
-  const int numblocks = static_cast<int>(size / 8);
-  const int restbytes = static_cast<int>(size % 8);
-  uint64 currentVector = eVector;
+  const size_t numblocks = CheckInputs(buffer, size);
+  uint64 currentVector = pi->eVector;
   uint64 lastVector = 0;
+  uint64 *curBuffer = reinterpret_cast<uint64 *>(buffer);
 
-  for (int b = 0; b < numblocks; b++) {
-    char *curBuffer = buffer + (8 * b);
-    uint64 &block = reinterpret_cast<uint64 &>(*curBuffer);
-    lastVector = block;
-    block ^= currentVector;
-    EncodeBlock(block);
-    currentVector = block ^ lastVector;
+  for (size_t b = 0; b < numblocks; b++) {
+    auto &chunk = curBuffer[b];
+    lastVector = chunk;
+    chunk ^= currentVector;
+    pi->EncodeBlock(chunk);
+    currentVector = chunk ^ lastVector;
   }
 }
 
 void BlowfishEncoder::DecodePCBC(char *buffer, size_t size) const {
-  const int numblocks = static_cast<int>(size / 8);
-  const int restbytes = static_cast<int>(size % 8);
-  uint64 currentVector = eVector;
+  const size_t numblocks = CheckInputs(buffer, size);
+  uint64 currentVector = pi->eVector;
   uint64 lastVector = 0;
+  uint64 *curBuffer = reinterpret_cast<uint64 *>(buffer);
 
-  for (int b = 0; b < numblocks; b++) {
-    char *curBuffer = buffer + (8 * b);
-    uint64 &block = reinterpret_cast<uint64 &>(*curBuffer);
-    lastVector = block;
-    DecodeBlock(block);
-    block ^= currentVector;
-    currentVector = block ^ lastVector;
+  for (size_t b = 0; b < numblocks; b++) {
+    auto &chunk = curBuffer[b];
+    lastVector = chunk;
+    pi->DecodeBlock(chunk);
+    chunk ^= currentVector;
+    currentVector = chunk ^ lastVector;
   }
 }
 
 void BlowfishEncoder::EncodeCFB(char *buffer, size_t size) const {
-  const int numblocks = static_cast<int>(size / 8);
-  const int restbytes = static_cast<int>(size % 8);
-  uint64 currentVector = eVector;
+  const size_t numblocks = CheckInputs(buffer, size);
+  uint64 currentVector = pi->eVector;
+  uint64 *curBuffer = reinterpret_cast<uint64 *>(buffer);
 
-  for (int b = 0; b < numblocks; b++) {
-    char *curBuffer = buffer + (8 * b);
-    uint64 &block = reinterpret_cast<uint64 &>(*curBuffer);
-    EncodeBlock(currentVector);
-    block ^= currentVector;
-    currentVector = block;
+  for (size_t b = 0; b < numblocks; b++) {
+    auto &chunk = curBuffer[b];
+    pi->EncodeBlock(currentVector);
+    chunk ^= currentVector;
+    currentVector = chunk;
   }
 }
 
 void BlowfishEncoder::DecodeCFB(char *buffer, size_t size) const {
-  const int numblocks = static_cast<int>(size / 8);
-  const int restbytes = static_cast<int>(size % 8);
-  uint64 currentVector = eVector;
+  const size_t numblocks = CheckInputs(buffer, size);
+  uint64 currentVector = pi->eVector;
   uint64 lastVector = 0;
+  uint64 *curBuffer = reinterpret_cast<uint64 *>(buffer);
 
-  for (int b = 0; b < numblocks; b++) {
-    char *curBuffer = buffer + (8 * b);
-    uint64 &block = reinterpret_cast<uint64 &>(*curBuffer);
-    EncodeBlock(currentVector);
-    lastVector = block;
-    block ^= currentVector;
+  for (size_t b = 0; b < numblocks; b++) {
+    auto &chunk = curBuffer[b];
+    pi->EncodeBlock(currentVector);
+    lastVector = chunk;
+    chunk ^= currentVector;
     currentVector = lastVector;
   }
 }
 
 void BlowfishEncoder::EncodeOFB(char *buffer, size_t size) const {
-  const int numblocks = static_cast<int>(size / 8);
-  const int restbytes = static_cast<int>(size % 8);
-  uint64 currentVector = eVector;
+  const size_t numblocks = CheckInputs(buffer, size);
+  uint64 currentVector = pi->eVector;
   uint64 lastVector = 0;
+  uint64 *curBuffer = reinterpret_cast<uint64 *>(buffer);
 
-  for (int b = 0; b < numblocks; b++) {
-    char *curBuffer = buffer + (8 * b);
-    uint64 &block = reinterpret_cast<uint64 &>(*curBuffer);
-    EncodeBlock(currentVector);
+  for (size_t b = 0; b < numblocks; b++) {
+    auto &chunk = curBuffer[b];
+    pi->EncodeBlock(currentVector);
     lastVector = currentVector;
-    block ^= currentVector;
+    chunk ^= currentVector;
     currentVector = lastVector;
   }
 }
 
 void BlowfishEncoder::DecodeOFB(char *buffer, size_t size) const {
-  const int numblocks = static_cast<int>(size / 8);
-  const int restbytes = static_cast<int>(size % 8);
-  uint64 currentVector = eVector;
+  const size_t numblocks = CheckInputs(buffer, size);
+  uint64 currentVector = pi->eVector;
+  uint64 *curBuffer = reinterpret_cast<uint64 *>(buffer);
 
-  for (int b = 0; b < numblocks; b++) {
-    char *curBuffer = buffer + (8 * b);
-    uint64 &block = reinterpret_cast<uint64 &>(*curBuffer);
-    EncodeBlock(currentVector);
-    block ^= currentVector;
+  for (size_t b = 0; b < numblocks; b++) {
+    auto &chunk = curBuffer[b];
+    pi->EncodeBlock(currentVector);
+    chunk ^= currentVector;
   }
 }
 
 void BlowfishEncoder::SetKey(es::string_view key) {
-  if (mode)
-    CreateVector();
+  if (static_cast<bool>(mode)) {
+    pi->CreateVector();
+  }
 
   uint64 lastblock = 0;
 
-  memcpy(sboxes, BF_SBOXES, BF_NUMSBOXES * 4);
+  memcpy(pi->sboxes, BF_SBOXES, BF_NUMSBOXES * 4);
   auto inKey = key.data();
   auto inSize = key.size();
 
@@ -472,19 +495,19 @@ void BlowfishEncoder::SetKey(es::string_view key) {
                             (*(inKey + ((curKey + 1) % inSize)) << 16) |
                             (*(inKey + ((curKey) % inSize)) << 24);
 
-    pboxes[i] = BF_PBOXES[i] ^ keyEntry;
+    pi->pboxes[i] = BF_PBOXES[i] ^ keyEntry;
   }
 
   for (int i = 0; i < BF_NUMPBOXES; i += 2) {
-    EncodeBlock(lastblock);
-    pboxes[i] = static_cast<uint32>(lastblock);
-    pboxes[i + 1] = *(reinterpret_cast<uint32 *>(&lastblock) + 1);
+    pi->EncodeBlock(lastblock);
+    pi->pboxes[i] = static_cast<uint32>(lastblock);
+    pi->pboxes[i + 1] = *(reinterpret_cast<uint32 *>(&lastblock) + 1);
   }
 
   for (int i = 0; i < BF_NUMSBOXES; i += 2) {
-    EncodeBlock(lastblock);
-    sboxes[i] = static_cast<uint32>(lastblock);
-    sboxes[i + 1] = *(reinterpret_cast<uint32 *>(&lastblock) + 1);
+    pi->EncodeBlock(lastblock);
+    pi->sboxes[i] = static_cast<uint32>(lastblock);
+    pi->sboxes[i + 1] = *(reinterpret_cast<uint32 *>(&lastblock) + 1);
   }
 }
 
@@ -494,10 +517,17 @@ void BlowfishEncoder::SetKey(es::string_view key) {
 #undef _BF_SBKEY
 #define _BF_SBKEY(_item, _id) sboxes[(_id * 256) + _item.b[_id]]
 
-void BlowfishEncoder2::EncodeBlock(uint64 &block) const {
-  uint32 &val0 = reinterpret_cast<uint32 &>(block);
-  uint32 &val1 = *(reinterpret_cast<uint32 *>(&block) + 1);
-  BFDataChunk _val0{val0}, _val1{val1};
+class BlowfishContext2 : public BlowfishContext {
+  void EncodeBlock(uint64 &block) const override;
+  void DecodeBlock(uint64 &block) const override;
+};
+
+BlowfishEncoder2::BlowfishEncoder2() : BlowfishEncoder(new BlowfishContext2) {}
+
+void BlowfishContext2::EncodeBlock(uint64 &block) const {
+  auto &values = reinterpret_cast<BFBlockChunk &>(block);
+  BFDataChunk &_val0 = values.val0;
+  BFDataChunk &_val1 = values.val1;
 
   _val0.d ^= pboxes[0];
   BF_XOR(_val1, _val0, 1);
@@ -518,14 +548,13 @@ void BlowfishEncoder2::EncodeBlock(uint64 &block) const {
   BF_XOR(_val0, _val1, 16);
   _val1.d ^= pboxes[17];
 
-  val0 = _val1.d;
-  val1 = _val0.d;
+  std::swap(_val0, _val1);
 }
 
-void BlowfishEncoder2::DecodeBlock(uint64 &block) const {
-  uint32 &val0 = reinterpret_cast<uint32 &>(block);
-  uint32 &val1 = *(reinterpret_cast<uint32 *>(&block) + 1);
-  BFDataChunk _val0{val0}, _val1{val1};
+void BlowfishContext2::DecodeBlock(uint64 &block) const {
+  auto &values = reinterpret_cast<BFBlockChunk &>(block);
+  BFDataChunk &_val0 = values.val0;
+  BFDataChunk &_val1 = values.val1;
 
   _val0.d ^= pboxes[17];
   BF_XOR(_val1, _val0, 16);
@@ -546,17 +575,19 @@ void BlowfishEncoder2::DecodeBlock(uint64 &block) const {
   BF_XOR(_val0, _val1, 1);
   _val1.d ^= pboxes[0];
 
-  val0 = _val1.d;
-  val1 = _val0.d;
+  std::swap(_val0, _val1);
 }
 
-void BlowfishEncoder2::SetKey(const char *inKey, int inSize) {
-  if (mode)
-    CreateVector();
+void BlowfishEncoder2::SetKey(es::string_view key) {
+  if (static_cast<bool>(mode)) {
+    pi->CreateVector();
+  }
 
   uint64 lastblock = 0;
 
-  memcpy(sboxes, BF_SBOXES, BF_NUMSBOXES * 4);
+  memcpy(pi->sboxes, BF_SBOXES, BF_NUMSBOXES * 4);
+  auto inKey = key.data();
+  auto inSize = key.size();
 
   for (int i = 0; i < BF_NUMPBOXES; i++) {
     const uint32 curKey = i * 4;
@@ -565,18 +596,18 @@ void BlowfishEncoder2::SetKey(const char *inKey, int inSize) {
                             (*(inKey + ((curKey + 2) % inSize)) << 16) |
                             (*(inKey + ((curKey + 3) % inSize)) << 24);
 
-    pboxes[i] = BF_PBOXES[i] ^ keyEntry;
+    pi->pboxes[i] = BF_PBOXES[i] ^ keyEntry;
   }
 
   for (int i = 0; i < BF_NUMPBOXES; i += 2) {
-    EncodeBlock(lastblock);
-    pboxes[i] = static_cast<uint32>(lastblock);
-    pboxes[i + 1] = *(reinterpret_cast<uint32 *>(&lastblock) + 1);
+    pi->EncodeBlock(lastblock);
+    pi->pboxes[i] = static_cast<uint32>(lastblock);
+    pi->pboxes[i + 1] = *(reinterpret_cast<uint32 *>(&lastblock) + 1);
   }
 
   for (int i = 0; i < BF_NUMSBOXES; i += 2) {
-    EncodeBlock(lastblock);
-    sboxes[i] = static_cast<uint32>(lastblock);
-    sboxes[i + 1] = *(reinterpret_cast<uint32 *>(&lastblock) + 1);
+    pi->EncodeBlock(lastblock);
+    pi->sboxes[i] = static_cast<uint32>(lastblock);
+    pi->sboxes[i + 1] = *(reinterpret_cast<uint32 *>(&lastblock) + 1);
   }
 }

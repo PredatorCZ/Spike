@@ -26,13 +26,13 @@ public:
   virtual void Encode(char *buffer, size_t size) const = 0;
   virtual void Decode(char *buffer, size_t size) const = 0;
   virtual void SetKey(es::string_view key) = 0;
-  virtual ~IEncryptor() {}
+  virtual ~IEncryptor() = default;
 };
 
 class IBlockEncryptor : public IEncryptor {
 public:
   enum class Mode { ECB, CBC, PCBC, CFB, OFB };
-  Mode mode;
+  Mode mode = Mode::ECB;
 
   virtual size_t GetStride() const = 0;
 };
