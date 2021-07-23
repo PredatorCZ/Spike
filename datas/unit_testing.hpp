@@ -35,7 +35,7 @@ auto append_scan(const D &input, const char *varName, int)
   printer << input;
   (void)varName;
 #endif
-};
+}
 
 template <class C, class D>
 void append_scan(const D &, const char *varName, ...) {
