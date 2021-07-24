@@ -48,7 +48,7 @@
 #define REFLECTOR_CREATE(classname, numFlags, ...)                             \
   VA_NARGS_EVAL(_REFLECTOR_START_VER##numFlags(classname, __VA_ARGS__))
 
-class PC_EXTERN Reflector {
+class Reflector {
   friend class ReflectorFriend;
 
 public:
@@ -74,21 +74,19 @@ public:
     ShortInput,         // Input string have insufficient number of elements.
   };
 
-private:
-  virtual ReflectedInstance GetReflectedInstance() const = 0;
-  ReflectedInstance GetReflectedInstance();
-  // clang-format off
-protected:
-  const reflType *GetReflectedType(JenHash hashName) const;
-  const reflType *GetReflectedType(size_t ID) const;
-  ErrorType SetReflectedValue(reflType type, es::string_view value);
-  ErrorType SetReflectedValue(reflType type, es::string_view value, size_t subID);
-  ErrorType SetReflectedValue(reflType type, es::string_view value, size_t subID, size_t element);
-  ErrorType SetReflectedValueUInt(reflType type, uint64 value, size_t subID = 0);
-  ErrorType SetReflectedValueInt(reflType type, int64 value, size_t subID = 0);
-  ErrorType SetReflectedValueFloat(reflType type, double value, size_t subID = 0);
+  virtual ~Reflector() = default;
 
-public:
+  size_t GetNumReflectedValues() const;
+  es::string_view GetClassName() const;
+  bool UseNames() const;
+
+  bool IsReflectedSubClass(JenHash hashName) const;
+  bool IsReflectedSubClass(size_t id) const;
+
+  bool IsArray(JenHash hashName) const;
+  bool IsArray(size_t id) const;
+
+  // clang-format off
   ErrorType SetReflectedValue(size_t id, es::string_view value);
   ErrorType SetReflectedValue(JenHash hashName, es::string_view value);
 
@@ -107,34 +105,37 @@ public:
   ErrorType SetReflectedValueFloat(JenHash hashName, double value, size_t subID = 0);
   ErrorType SetReflectedValueFloat(size_t id, double value, size_t subID = 0);
 
-  size_t GetNumReflectedValues() const;
-  es::string_view GetClassName() const;
-  bool UseNames() const;
-
-  std::string GetReflectedValue(size_t id) const;
+  std::string PC_EXTERN GetReflectedValue(size_t id) const;
   std::string GetReflectedValue(JenHash hashName) const;
 
-  std::string GetReflectedValue(size_t id, size_t subID) const;
+  std::string PC_EXTERN GetReflectedValue(size_t id, size_t subID) const;
   std::string GetReflectedValue(JenHash hashName, size_t subID) const;
 
-  std::string GetReflectedValue(size_t id, size_t subID, size_t element) const;
+  std::string PC_EXTERN GetReflectedValue(size_t id, size_t subID, size_t element) const;
   std::string GetReflectedValue(JenHash hashName, size_t subID, size_t element) const;
 
-  bool IsReflectedSubClass(JenHash hashName) const;
-  bool IsReflectedSubClass(size_t id) const;
-
-  bool IsArray(JenHash hashName) const;
-  bool IsArray(size_t id) const; 
-
   ReflectedInstance GetReflectedSubClass(JenHash hashName, size_t subID = 0) const;
-  ReflectedInstance GetReflectedSubClass(size_t id, size_t subID = 0) const;
+  ReflectedInstance PC_EXTERN GetReflectedSubClass(size_t id, size_t subID = 0) const;
 
   ReflectedInstance GetReflectedSubClass(JenHash hashName, size_t subID = 0);
-  ReflectedInstance GetReflectedSubClass(size_t id, size_t subID = 0);
+  ReflectedInstance PC_EXTERN GetReflectedSubClass(size_t id, size_t subID = 0);
 
   KVPair GetReflectedPair(size_t id, const KVPairFormat &settings = {}) const;
   KVPair GetReflectedPair(JenHash hashName, const KVPairFormat &settings = {}) const;
+
+protected:
+  const reflType PC_EXTERN *GetReflectedType(JenHash hashName) const;
+  const reflType *GetReflectedType(size_t ID) const;
+  ErrorType PC_EXTERN SetReflectedValue(reflType type, es::string_view value);
+  ErrorType PC_EXTERN SetReflectedValue(reflType type, es::string_view value, size_t subID);
+  ErrorType PC_EXTERN SetReflectedValue(reflType type, es::string_view value, size_t subID, size_t element);
+  ErrorType PC_EXTERN SetReflectedValueUInt(reflType type, uint64 value, size_t subID = 0);
+  ErrorType PC_EXTERN SetReflectedValueInt(reflType type, int64 value, size_t subID = 0);
+  ErrorType PC_EXTERN SetReflectedValueFloat(reflType type, double value, size_t subID = 0);
   // clang-format on
+private:
+  virtual ReflectedInstance GetReflectedInstance() const = 0;
+  ReflectedInstance GetReflectedInstance();
 };
 
 template <class C> class ReflectorWrap : public Reflector {

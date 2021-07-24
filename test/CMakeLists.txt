@@ -17,7 +17,7 @@ test_odr(
 target_link_libraries(test_odr precore)
 
 if(MSVC)
-  add_custom_command(TARGET test_odr COMMAND setx PATH "$<TARGET_FILE_DIR:precore>";)
+  add_custom_command(TARGET test_odr COMMAND setx PATH "$<TARGET_FILE_DIR:precore>;")
 endif()
 
 build_target(
