@@ -80,6 +80,7 @@ public:
   virtual std::string Name() const = 0;
   virtual size_t SkinIndex() const = 0;
   virtual size_t LODIndex() const = 0;
+  virtual size_t MaterialIndex() const = 0;
 };
 
 typedef Element<const List<Primitive>> PrimitivesConst;
@@ -97,10 +98,25 @@ public:
 typedef Element<const List<Skin>> SkinsConst;
 typedef Element<List<Skin>> Skins;
 
+using ResourcesConst = Element<const List<std::string>>;
+using Resources = Element<List<std::string>>;
+
+class Material : public Base {
+public:
+  virtual size_t Version() const = 0;
+  virtual std::string Name() const = 0;
+  virtual std::string TypeName() const = 0;
+};
+
+using MaterialsConst = Element<const List<Material>>;
+using Materials = Element<List<Material>>;
+
 class Model : public Base {
 public:
   virtual PrimitivesConst Primitives() const = 0;
   virtual SkinsConst Skins() const = 0;
+  virtual ResourcesConst Resources() const = 0;
+  virtual MaterialsConst Materials() const = 0;
 };
 } // namespace uni
 

@@ -18,12 +18,16 @@
 #include "datas/deleter_hybrid.hpp"
 #include <memory>
 
+class Reflector;
+
 namespace uni {
 template <class C> using Element = std::unique_ptr<C, es::deleter_hybrid>;
+using MetadataConst = Element<const Reflector>;
 
 class Base {
 public:
   virtual ~Base() = default;
+  virtual MetadataConst Metadata() const { return nullptr; }
 };
 
 enum TransformType { TMTYPE_RTS, TMTYPE_MATRIX };
