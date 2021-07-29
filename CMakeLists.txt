@@ -1,4 +1,4 @@
-﻿cmake_minimum_required(VERSION 3.3)
+﻿cmake_minimum_required(VERSION 3.12)
 project(PreCore VERSION 6)
 
 set(CMAKE_CXX_STANDARD 14)
@@ -8,9 +8,6 @@ set(PRECORE_SOURCE_DIR
     CACHE STRING "")
 set(CMAKE_MODULE_PATH
     ${PRECORE_SOURCE_DIR}/cmake;${CMAKE_MODULE_PATH}
-    CACHE STRING "")
-set(CMAKE_INSTALL_LIBDIR
-    ${CMAKE_INSTALL_PREFIX}
     CACHE STRING "")
 option(PC_SHARED_LIB "" OFF)
 
@@ -115,8 +112,7 @@ if(PC_SHARED_LIB)
     target_link_libraries(precore pugixml-shared)
   endif()
 
-  install(TARGETS precore LIBRARY NAMELINK_SKIP
-                                  DESTINATION ${CMAKE_INSTALL_LIBDIR})
+  install(TARGETS precore LIBRARY NAMELINK_SKIP DESTINATION bin)
 endif()
 
 add_subdirectory(3rd_party/pugixml)
