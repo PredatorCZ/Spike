@@ -15,11 +15,11 @@
     limitations under the License.
 */
 
-#include <Windows.h>
+#include <windows.h>
 
 template <class _Func>
 void SetConsoleTextColor(_Func, int red, int green, int blue) {
-  consoleColorAttrFlags newFlags = __MasterPrinter.consoleColorAttr;
+  consoleColorAttrFlags newFlags = MASTER_PRINTER.consoleColorAttr;
   const bool intesify = (red | green | blue) > 128;
 
   if (intesify) {
@@ -41,7 +41,7 @@ void SetConsoleTextColor(_Func, int red, int green, int blue) {
 template <class _Func> void RestoreConsoleTextColor(_Func) {
   SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE),
                           reinterpret_cast<consoleColorAttrFlags::ValueType &>(
-                              __MasterPrinter.consoleColorAttr));
+                              MASTER_PRINTER.consoleColorAttr));
 }
 
 void SetConsoleTextColor(int red, int green, int blue) {
@@ -52,10 +52,10 @@ void RestoreConsoleTextColor() {
   SetConsoleTextColor(nullptr, 0x1f, 0x1f, 0x1f);
 }
 
-MasterPrinterThread::MasterPrinterThread() {
+MasterPrinter::MasterPrinter() {
   CONSOLE_SCREEN_BUFFER_INFO conInfo;
   GetConsoleScreenBufferInfo(GetStdHandle(STD_OUTPUT_HANDLE), &conInfo);
-  __MasterPrinter.consoleColorAttr =
+  MASTER_PRINTER.consoleColorAttr =
       conInfo.wAttributes & (FOREGROUND_RED | FOREGROUND_GREEN |
                              FOREGROUND_BLUE | FOREGROUND_INTENSITY);
 }

@@ -142,7 +142,7 @@ int test_blowfish2() {
 }
 
 int main() {
-  printer.AddPrinterFunction(UPrintf);
+  es::print::AddPrinterFunction(UPrintf);
 
   TEST_CASES(int testResult, TEST_FUNC(test_blowfish_ECB),
              TEST_FUNC(test_blowfish_CBC), TEST_FUNC(test_blowfish_CFB),

@@ -15,11 +15,14 @@
     limitations under the License.
 */
 
-#include "flags.hpp"
 #include "master_printer.hpp"
+#include "flags.hpp"
 #include <mutex>
+#include <sstream>
 #include <thread>
 #include <vector>
+
+using namespace es::print;
 
 enum MSVC_Console_Flags {
   MSC_Text_Blue,
@@ -32,18 +35,22 @@ typedef es::Flags<MSVC_Console_Flags> consoleColorAttrFlags;
 
 static struct MasterPrinter {
   struct FuncType {
-    typename MasterPrinterThread::print_func func;
+    print_func func;
     bool useColor;
 
-    FuncType(typename MasterPrinterThread::print_func fp, bool cl)
-        : func(fp), useColor(cl) {}
+    FuncType(print_func fp, bool cl) : func(fp), useColor(cl) {}
   };
+
+  MasterPrinter();
+
   std::vector<FuncType> functions;
-  std::vector<bool> functionUseColor;
-  std::mutex _mutexPrint;
+  std::stringstream buffer;
+  std::mutex mutex;
+  std::thread::id lockedThread;
   bool printThreadID = false;
+  MPType cType = MPType::MSG;
   consoleColorAttrFlags consoleColorAttr;
-} __MasterPrinter;
+} MASTER_PRINTER;
 
 #if defined(_MSC_VER) or defined(__MINGW64__)
 #include "internal/master_printer_win.inl"
@@ -51,32 +58,30 @@ static struct MasterPrinter {
 #include "internal/master_printer_ix.inl"
 #endif
 
-void MasterPrinterThread::AddPrinterFunction(print_func func, bool useColor) {
-  for (auto &c : __MasterPrinter.functions)
+namespace es::print {
+
+void AddPrinterFunction(print_func func, bool useColor) {
+  for (auto &c : MASTER_PRINTER.functions)
     if (c.func == func)
       return;
-  __MasterPrinter.functions.emplace_back(func, useColor);
+  MASTER_PRINTER.functions.emplace_back(func, useColor);
 }
 
-void MasterPrinterThread::FlushAll() {
-  const size_t buffsize = static_cast<size_t>(_masterstream.tellp()) + 1;
+std::ostream &Get(MPType type) {
+  if (!(MASTER_PRINTER.lockedThread == std::this_thread::get_id())) {
+    MASTER_PRINTER.mutex.lock();
+    MASTER_PRINTER.lockedThread = std::this_thread::get_id();
+  }
 
-  _masterstream.seekp(0);
+  if (type != MPType::PREV) {
+    MASTER_PRINTER.cType = type;
+  }
+  return MASTER_PRINTER.buffer;
+}
 
-  char *tempOut = static_cast<char *>(malloc(buffsize));
-
-  _masterstream.read(tempOut, buffsize);
-
-  if (buffsize > static_cast<size_t>(maximumStreamSize))
-    _masterstream.str("");
-
-  _masterstream.clear();
-  _masterstream.seekg(0);
-
-  std::lock_guard<std::mutex> guard(__MasterPrinter._mutexPrint);
-
-  for (auto &fc : __MasterPrinter.functions) {
-    if (__MasterPrinter.printThreadID) {
+void FlushAll() {
+  for (auto &fc : MASTER_PRINTER.functions) {
+    if (MASTER_PRINTER.printThreadID) {
       fc.func("Thread[0x");
       std::thread::id threadID = std::this_thread::get_id();
       char buffer[65];
@@ -86,37 +91,33 @@ void MasterPrinterThread::FlushAll() {
     }
 
     if (fc.useColor) {
-      if (cType == MPType::WRN) {
+      if (MASTER_PRINTER.cType == MPType::WRN) {
         SetConsoleTextColor(255, 255, 0);
-      } else if (cType == MPType::ERR) {
+      } else if (MASTER_PRINTER.cType == MPType::ERR) {
         SetConsoleTextColor(255, 0, 0);
       }
     }
 
-    if (cType == MPType::WRN) {
+    if (MASTER_PRINTER.cType == MPType::WRN) {
       fc.func("WARNING: ");
-    } else if (cType == MPType::ERR) {
+    } else if (MASTER_PRINTER.cType == MPType::ERR) {
       fc.func("ERROR: ");
     }
 
-    fc.func(tempOut);
+    auto &&tmpData = MASTER_PRINTER.buffer.str();
 
-    if (fc.useColor && cType != MPType::MSG)
+    fc.func(tmpData.data());
+
+    if (fc.useColor && MASTER_PRINTER.cType != MPType::MSG) {
       RestoreConsoleTextColor();
+    }
   }
 
-  cType = MPType::MSG;
-  free(tempOut);
+  MASTER_PRINTER.buffer.str("");
+  MASTER_PRINTER.cType = MPType::MSG;
+  MASTER_PRINTER.mutex.unlock();
+  MASTER_PRINTER.lockedThread = {};
 }
 
-void MasterPrinterThread::operator>>(int endWay) {
-  if (endWay)
-    _masterstream << std::endl;
-
-  _masterstream << std::ends;
-  FlushAll();
-}
-
-void MasterPrinterThread::PrintThreadID(bool yn) {
-  __MasterPrinter.printThreadID = yn;
-}
+void PrintThreadID(bool yn) { MASTER_PRINTER.printThreadID = yn; }
+} // namespace es::print

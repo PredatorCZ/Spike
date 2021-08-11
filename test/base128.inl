@@ -1,5 +1,6 @@
 #include "../datas/base_128.hpp"
 #include "../datas/unit_testing.hpp"
+#include <sstream>
 
 int test_base128() {
   std::stringstream ss;

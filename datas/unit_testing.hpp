@@ -19,6 +19,7 @@
 #include "macroLoop.hpp"
 #include "master_printer.hpp"
 #include <type_traits>
+#include <ostream>
 
 #define _CHECK_FAILED_TMP(...)                                                 \
   printerror("Check failed " << __FILE__ << '(' << __LINE__                    \
@@ -26,20 +27,14 @@
 
 namespace es {
 template <class C, class D>
-auto append_scan(const D &input, const char *varName, int)
+auto append_scan(const D &input, const char *, int)
     -> decltype(std::declval<std::ostream>() << std::declval<C>(), void()) {
-#if defined(__clang__) || (defined(__GNUC__) && __GNUC__ < 7)
-  printer << varName;
-  (void)input;
-#else
-  printer << input;
-  (void)varName;
-#endif
+  es::print::Get() << input;
 }
 
 template <class C, class D>
 void append_scan(const D &, const char *varName, ...) {
-  printer << varName;
+  es::print::Get() << varName;
 }
 
 template <class C> struct ValuePrinter {
@@ -56,14 +51,12 @@ template <class C> struct ValuePrinter {
 };
 
 template <class A, class B>
-MasterPrinterThread &PrintCheckFailed(const A &aVal, const B &bVal,
-                                      const char *aName, const char *bName,
-                                      const char *op, const char *file,
-                                      int line) {
+void PrintCheckFailed(const A &aVal, const B &bVal, const char *aName,
+                      const char *bName, const char *op, const char *file,
+                      int line) {
   printerror("Check failed " << file << '(' << line << "): " << aName << op
                              << bName << ", " << ValuePrinter<A>(aVal, aName)
                              << op << ValuePrinter<B>(bVal, bName));
-  return printer;
 }
 } // namespace es
 

@@ -46,7 +46,7 @@ template <class Base> struct SettingsManager : public ReflectorBase<Base> {
     logName.append(std::to_string(dateBuffer));
     logName.append(".txt");
     GetLogger().open(ToTSTRING(logName), std::ios::out);
-    printer.AddPrinterFunction(SettingsManager::printf, false);
+    es::print::AddPrinterFunction(SettingsManager::printf, false);
 
     _tcsftime(dateBuffer, dateBufferSize, _T("%c %Z"), &timeStruct);
 

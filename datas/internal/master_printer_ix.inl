@@ -27,7 +27,7 @@ template <class _Func> void RestoreConsoleTextColor(_Func fc) {
 }
 
 void SetConsoleTextColor(int red, int green, int blue) {
-  for (auto &f : __MasterPrinter.functions) {
+  for (auto &f : MASTER_PRINTER.functions) {
     if (!f.useColor)
       continue;
 
@@ -36,7 +36,7 @@ void SetConsoleTextColor(int red, int green, int blue) {
 }
 
 void RestoreConsoleTextColor() {
-  for (auto &f : __MasterPrinter.functions) {
+  for (auto &f : MASTER_PRINTER.functions) {
     if (!f.useColor)
       continue;
 
@@ -44,4 +44,4 @@ void RestoreConsoleTextColor() {
   }
 }
 
-MasterPrinterThread::MasterPrinterThread() {}
+MasterPrinter::MasterPrinter() = default;

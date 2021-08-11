@@ -1,5 +1,6 @@
 #include "../datas/binwritter.hpp"
 #include "../datas/binreader.hpp"
+#include <sstream>
 
 struct BinStr00 {
   int8 v0;

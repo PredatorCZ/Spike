@@ -7,7 +7,7 @@ int test_mt_thread00() {
   const size_t numTasks = 3;
   size_t pted[numTasks];
   std::atomic_size_t curIndex(0);
-  printer.PrintThreadID(true);
+  es::print::PrintThreadID(true);
 
   RunThreadedQueue(numTasks, [&](size_t curTask) {
     printline("Hello thread.");
@@ -19,7 +19,7 @@ int test_mt_thread00() {
     TEST_NOT_CHECK(es::IsEnd(pted, std::find(std::begin(pted), std::end(pted), i)));
   }
 
-  printer.PrintThreadID(false);
+  es::print::PrintThreadID(false);
 
   return 0;
 }

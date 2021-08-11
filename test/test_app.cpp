@@ -44,7 +44,7 @@ int test_dirscan() {
 int main() {
   setlocale(LC_ALL, "C.UTF-8");
   setlocale(LC_NUMERIC, "en-US");
-  printer.AddPrinterFunction(UPrintf);
+  es::print::AddPrinterFunction(UPrintf);
   settings.CreateLog("build/testingLog");
 
   printline("Printed some line into console and logger.");

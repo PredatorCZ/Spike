@@ -17,46 +17,36 @@
 */
 
 #pragma once
-#include <sstream>
 #include "settings.hpp"
+#include <iosfwd>
 
-#define printerror(...) printer << MPType::ERR << __VA_ARGS__ >> 1;
-#define printwarning(...) printer << MPType::WRN << __VA_ARGS__ >> 1;
-#define printline(...) printer << __VA_ARGS__ >> 1;
-
-enum class MPType { MSG, WRN, ERR, INF };
-
-thread_local static class MasterPrinterThread {
-  std::stringstream _masterstream;
-  int maximumStreamSize = 2048;
-  MPType cType = MPType::MSG;
-
-public:
-  typedef void (*print_func)(const char *c);
-
-  template <class C> MasterPrinterThread &operator<<(const C input) {
-    _masterstream << input;
-    return *this;
+#define printerror(...)                                                        \
+  {                                                                            \
+    es::print::Get(es::print::MPType::ERR) << __VA_ARGS__ << std::endl;        \
+    es::print::FlushAll();                                                     \
+  }
+#define printwarning(...)                                                      \
+  {                                                                            \
+    es::print::Get(es::print::MPType::WRN) << __VA_ARGS__ << std::endl;        \
+    es::print::FlushAll();                                                     \
+  }
+#define printline(...)                                                         \
+  {                                                                            \
+    es::print::Get(es::print::MPType::MSG) << __VA_ARGS__ << std::endl;        \
+    es::print::FlushAll();                                                     \
   }
 
-  void PC_EXTERN AddPrinterFunction(print_func func, bool useColor = true);
-  void PC_EXTERN FlushAll();
-  void PC_EXTERN operator>>(int endWay);
-  void PC_EXTERN PrintThreadID(bool yn);
-  void Locale(const char *localeName) {
-    _masterstream.imbue(std::locale(localeName));
-  }
-  void Locale(const std::locale &loc) { _masterstream.imbue(loc); }
-  PC_EXTERN MasterPrinterThread();
-  ~MasterPrinterThread() = default;
-} printer;
+namespace es::print {
+typedef void (*print_func)(const char *c);
+enum class MPType { PREV, MSG, WRN, ERR, INF };
 
-template <>
-inline MasterPrinterThread &
-MasterPrinterThread::operator<<(const MPType input) {
-  cType = input;
-  return *this;
-}
+// Calling this will lock other threads that will try to access stream until FlushAll is called!
+std::ostream PC_EXTERN &Get(MPType type = MPType::PREV);
+void PC_EXTERN AddPrinterFunction(print_func func, bool useColor = true);
+// Unlocks other threads access to Get
+void PC_EXTERN FlushAll();
+void PC_EXTERN PrintThreadID(bool yn);
+} // namespace es::print
 
 void PC_EXTERN SetConsoleTextColor(int red, int green, int blue);
 void PC_EXTERN RestoreConsoleTextColor();

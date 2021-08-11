@@ -13,7 +13,7 @@
 #include "bincore.inl"
 
 int main() {
-  printer.AddPrinterFunction(UPrintf);
+  es::print::AddPrinterFunction(UPrintf);
 
   printline("Compiler info:\n\tLittle Endian: "
             << LittleEndian()

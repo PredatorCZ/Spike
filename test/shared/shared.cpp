@@ -11,7 +11,7 @@ struct SimpleStruct2 {
 REFLECTOR_CREATE(SimpleStruct2, 1, VARNAMES, field)
 
 int main() {
-    printer.AddPrinterFunction(UPrintf);
+    es::print::AddPrinterFunction(UPrintf);
     auto rf0 = GetReflectedClass<SimpleStruct>();
 
     TEST_EQUAL(rf0->nTypes, 2);

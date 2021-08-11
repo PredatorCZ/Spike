@@ -5,7 +5,7 @@
 #include "reflector.inl"
 
 int main() {
-  printer.AddPrinterFunction(UPrintf);
+  es::print::AddPrinterFunction(UPrintf);
 
   RegisterReflectedTypes<subrefl, reflClass, roomInfo, roomInfo01, EnumWrap00,
                          EnumWrap01, EnumWrap02, EnumWrap03, EnumWrap04,

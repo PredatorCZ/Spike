@@ -34,7 +34,7 @@ int test_reflector_xml_v2() {
 }
 
 int main() {
-  printer.AddPrinterFunction(UPrintf);
+  es::print::AddPrinterFunction(UPrintf);
 
   RegisterReflectedTypes<subrefl, reflClass, EnumWrap00, EnumWrap01, EnumWrap02,
                          EnumWrap03, EnumWrap04, BitTypeRefl>();

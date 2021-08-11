@@ -2,7 +2,7 @@
 #include "uni_format.inl"
 
 int main() {
-  printer.AddPrinterFunction(UPrintf);
+  es::print::AddPrinterFunction(UPrintf);
 
   TEST_CASES(int testResult, TEST_FUNC(test_format_00),
              TEST_FUNC(test_format_01), TEST_FUNC(test_format_02),
