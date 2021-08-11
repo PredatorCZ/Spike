@@ -4,6 +4,13 @@ else()
   set(RELEASEVER FALSE)
 endif()
 
+if(MINGW)
+  set(CMAKE_RC_COMPILER "x86_64-w64-mingw32-windres")
+  set(CMAKE_RC_COMPILE_OBJECT
+      "<CMAKE_RC_COMPILER> <FLAGS> -O coff <DEFINES> -i <SOURCE> -o <OBJECT>")
+  enable_language(RC)
+endif()
+
 # ~~~
 # build_target(
 #   NAME <name of target>
@@ -48,18 +55,6 @@ function(build_target)
     set_target_properties(${_arg_NAME} PROPERTIES ${_arg_PROPERTIES})
   endif()
 
-  get_target_property(TARGET_PREFIX ${_arg_NAME} PREFIX)
-
-  if(NOT TARGET_PREFIX)
-    set(TARGET_PREFIX ${CMAKE_SHARED_LIBRARY_PREFIX})
-  endif()
-
-  get_target_property(TARGET_SUFFIX ${_arg_NAME} SUFFIX)
-
-  if(NOT TARGET_SUFFIX)
-    set(TARGET_SUFFIX ${CMAKE_SHARED_LIBRARY_SUFFIX})
-  endif()
-
   get_target_property(TARGET_TYPE ${_arg_NAME} TYPE)
 
   set(PROJECT_VERSION_MAJOR_ 0)
@@ -85,8 +80,39 @@ function(build_target)
     set(PROJECT_VERSION_ no_version)
   endif()
 
+  if(MINGW)
+    if(_arg_TYPE STREQUAL APP)
+      set_target_properties(${_arg_NAME} PROPERTIES SUFFIX ".exe")
+    elseif(_arg_TYPE STREQUAL SHARED)
+      set_target_properties(${_arg_NAME}
+                            PROPERTIES SUFFIX "${PROJECT_VERSION_MAJOR_}.dll")
+    endif()
+  endif()
+
+  get_target_property(TARGET_PREFIX ${_arg_NAME} PREFIX)
+
+  if(NOT TARGET_PREFIX)
+    if(_arg_TYPE STREQUAL SHARED)
+      set(TARGET_PREFIX ${CMAKE_SHARED_LIBRARY_PREFIX})
+    else()
+      set(TARGET_PREFIX)
+    endif()
+  endif()
+
+  get_target_property(TARGET_SUFFIX ${_arg_NAME} SUFFIX)
+
+  if(NOT TARGET_SUFFIX)
+    if(_arg_TYPE STREQUAL SHARED)
+      set(TARGET_PREFIX ${CMAKE_SHARED_LIBRARY_SUFFIX})
+    else()
+      set(TARGET_SUFFIX)
+    endif()
+    set(TARGET_SUFFIX ${CMAKE_SHARED_LIBRARY_SUFFIX})
+  endif()
+
   if(_arg_TYPE STREQUAL SHARED)
-    set_target_properties(${_arg_NAME} PROPERTIES VERSION ${PROJECT_VERSION_MAJOR_})
+    set_target_properties(${_arg_NAME} PROPERTIES VERSION
+                                                  ${PROJECT_VERSION_MAJOR_})
   endif()
 
   set(TARGET_AUTHOR ${_arg_AUTHOR})
@@ -105,10 +131,11 @@ function(build_target)
 
   string(APPEND TARGET_COPYRIGHT "${_TARGET_DATE_YYYY} ")
 
-  if(NOT _arg_NO_VERINFO AND WIN32)
+  if(NOT _arg_NO_VERINFO AND (MSVC OR MINGW))
     configure_file(${PRECORE_SOURCE_DIR}/cmake/verinfo.rc.tmpl
                    ${PROJECT_BINARY_DIR}/${_arg_NAME}_/verinfo.rc)
-    target_sources(${_arg_NAME} PRIVATE ${PROJECT_BINARY_DIR}/${_arg_NAME}_/verinfo.rc)
+    target_sources(${_arg_NAME}
+                   PRIVATE ${PROJECT_BINARY_DIR}/${_arg_NAME}_/verinfo.rc)
   endif()
 
   if(NOT _arg_NO_PROJECT_H)
@@ -123,7 +150,7 @@ function(build_target)
   endif()
 
   if(${_is_python_module})
-    if(WIN32)
+    if(MSVC OR MINGW)
       set_target_properties(${_arg_NAME} PROPERTIES SUFFIX .pyd)
     endif()
 

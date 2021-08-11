@@ -136,6 +136,20 @@ add_test(test_blowfish test_blowfish)
 
 add_subdirectory(shared)
 
+if(MINGW)
+  install(
+    TARGETS test_base
+            test_app
+            test_blowfish
+            test_reflector
+            test_uni
+            test_xml
+            test_unipy
+    RUNTIME DESTINATION bin
+    LIBRARY DESTINATION bin)
+  install(FILES test_uni.py DESTINATION bin)
+endif()
+
 if(CMAKE_CXX_COMPILER_ID MATCHES Clang)
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra")
   message("Compiler is Clang")

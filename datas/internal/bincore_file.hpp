@@ -17,8 +17,57 @@
 
 #pragma once
 #include "../unicode.hpp"
-#include <fstream>
 
+#ifdef __MINGW64__
+#include <ext/stdio_filebuf.h>
+#include <iostream>
+
+template <std::ios_base::openmode MODE> class BinStreamFile {
+  using filebuf = __gnu_cxx::stdio_filebuf<char>;
+  filebuf underLying;
+
+protected:
+  std::iostream FileStream{
+      static_cast<std::basic_streambuf<char> *>(&underLying)};
+  void Close_() {
+    if (!FileStream.fail()) {
+      fclose(underLying.file());
+      underLying.close();
+    }
+  }
+
+  bool WOpen(const std::wstring &fileName) {
+    FILE *cFile = nullptr;
+    if constexpr (MODE & std::ios_base::in) {
+      cFile = _wfopen(fileName.data(), L"rb");
+    } else {
+      cFile = _wfopen(fileName.data(), L"wb");
+    }
+
+    if (!cFile) {
+      FileStream.setstate(std::ios_base::badbit);
+      return false;
+    }
+
+    // TODO tweak buffer size?
+    underLying = filebuf(cFile, MODE);
+    new (&FileStream)
+        std::iostream{static_cast<std::basic_streambuf<char> *>(&underLying)};
+
+    return !FileStream.fail();
+  }
+
+  bool Open_(const char *_fileName) { return WOpen(es::ToUTF1632(_fileName)); }
+
+  bool Open_(const std::string &_fileName) {
+    return WOpen(es::ToUTF1632(_fileName));
+  }
+
+public:
+  bool IsValid() const { return !FileStream.fail(); }
+};
+#else
+#include <fstream>
 template <std::ios_base::openmode MODE> class BinStreamFile {
 protected:
   std::fstream FileStream;
@@ -47,6 +96,8 @@ protected:
 
     return !FileStream.fail();
   }
+
 public:
   bool IsValid() const { return !FileStream.fail(); }
 };
+#endif

@@ -28,8 +28,9 @@ enum FileType_e {
   File,
 };
 
-#ifdef _MSC_VER
+#if defined(_MSC_VER) || defined(__MINGW64__)
 #define MKDIR_EXTERN_ PC_EXTERN
+#define USEWIN
 #else
 #define MKDIR_EXTERN_
 #endif
@@ -42,7 +43,7 @@ int MKDIR_EXTERN_ mkdir(const std::string &path, uint32 mode = 0777);
 
 #undef MKDIR_EXTERN_
 
-#ifndef _MSC_VER
+#ifndef USEWIN
 #include <sys/stat.h>
 
 namespace es {

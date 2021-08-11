@@ -18,10 +18,11 @@
 #include "directory_scanner.hpp"
 #include "tchar.hpp"
 
-#if defined(__GNUC__) || defined(__GNUG__)
-#include <dirent.h>
-#else
+#if defined(_MSC_VER) || defined(__MINGW64__)
+#define USEWIN
 #include <windows.h>
+#elif defined(__GNUC__) || defined(__GNUG__)
+#include <dirent.h>
 #endif
 
 #include <cstring>
@@ -50,7 +51,7 @@ void DirectoryScanner::Scan(std::string dir) {
     }
   }
 
-#if defined(__GNUC__) || defined(__GNUG__)
+#ifndef USEWIN
   dir.push_back('.');
   
   DIR *cDir = opendir(dir.data());

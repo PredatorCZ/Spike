@@ -19,7 +19,11 @@
 #include "sc_type.hpp"
 #include <type_traits>
 
-#if defined(__GNUC__) || defined(__GNUG__)
+#ifdef __MINGW64__
+#define ES_PRAGMA(command) _Pragma(#command)
+#define ES_EXPORT __attribute__((dllexport))
+#define ES_IMPORT
+#elif defined(__GNUC__) || defined(__GNUG__)
 #define ES_PRAGMA(command) _Pragma(#command)
 #define ES_EXPORT __attribute__((visibility("default")))
 #define ES_IMPORT

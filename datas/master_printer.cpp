@@ -45,7 +45,7 @@ static struct MasterPrinter {
   consoleColorAttrFlags consoleColorAttr;
 } __MasterPrinter;
 
-#ifdef _MSC_VER
+#if defined(_MSC_VER) or defined(__MINGW64__)
 #include "internal/master_printer_win.inl"
 #else
 #include "internal/master_printer_ix.inl"

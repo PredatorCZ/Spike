@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.12)
+﻿cmake_minimum_required(VERSION 3.12)
 project(PreCore VERSION 6)
 
 set(CMAKE_CXX_STANDARD 17)
@@ -30,7 +30,7 @@ function(_set_basic_flags TARGET_NAME SCOPE)
 endfunction()
 
 function(_set_threads TARGET_NAME)
-  if(NOT MSVC)
+  if(NOT (MSVC OR MINGW))
     set(THREADS_PREFER_PTHREAD_FLAG TRUE)
     find_package(Threads REQUIRED)
     target_link_libraries(${TARGET_NAME} Threads::Threads)
@@ -100,15 +100,26 @@ if(PC_SHARED_LIB)
   _set_basic_flags(precore PUBLIC)
   _set_threads(precore)
 
-  if(NOT MSVC)
-    target_compile_options(precore PRIVATE -fvisibility=hidden)
+  if(MSVC OR MINGW)
+    set_target_properties(precore PROPERTIES SUFFIX ${PROJECT_VERSION_MAJOR}.dll
+                                             PREFIX "")
   else()
-    set_target_properties(precore PROPERTIES SUFFIX ${PROJECT_VERSION}.dll)
+    set_target_properties(precore PROPERTIES VERSION ${PROJECT_VERSION}
+                                             SOVERSION ${PROJECT_VERSION_MAJOR})
+  endif()
+
+  if(NOT MSVC)
+    target_compile_options(precore PUBLIC -fvisibility=hidden)
+  endif()
+
+  if(MINGW)
+    target_link_libraries(precore
+                          -Wl,--strip-all,--discard-all,--exclude-all-symbols)
+    target_compile_options(precore PUBLIC -municode -fexcess-precision=fast)
+    target_compile_definitions(precore PUBLIC UNICODE _UNICODE)
   endif()
 
   target_include_directories(precore PUBLIC ${PRECORE_SOURCE_DIR})
-  set_target_properties(precore PROPERTIES VERSION ${PROJECT_VERSION}
-                                           SOVERSION ${PROJECT_VERSION_MAJOR})
 
   if(PUGI_SHARED_LIBS)
     target_link_libraries(precore pugixml)
@@ -123,3 +134,21 @@ if(PC_SHARED_LIB)
 endif()
 
 add_subdirectory(3rd_party/pugixml)
+
+function(install_mingw_lib libname)
+  file(GLOB foundfile /usr/lib/gcc/x86_64-w64-mingw32/*-posix/${libname})
+  if(NOT foundfile)
+    file(GLOB foundfile /usr/x86_64-w64-mingw32/lib/${libname})
+  endif()
+  add_custom_target(
+    ${libname}-install ALL
+    COMMAND x86_64-w64-mingw32-strip --discard-all --strip-all -o
+            ${CMAKE_INSTALL_PREFIX}/bin/${libname} ${foundfile})
+endfunction(install_mingw_lib)
+
+if(MINGW)
+  file(MAKE_DIRECTORY ${CMAKE_INSTALL_PREFIX}/bin/)
+  install_mingw_lib(libstdc++-6.dll)
+  install_mingw_lib(libgcc_s_seh-1.dll)
+  install_mingw_lib(libwinpthread-1.dll)
+endif()

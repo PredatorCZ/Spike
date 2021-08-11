@@ -649,28 +649,35 @@ int test_reflector_float(reflClass &input) {
   TEST_EQUAL(input.test10, FLT_MAX);
   cPair = input.GetReflectedPair(9);
   TEST_EQUAL(cPair.name, "test10");
-  TEST_EQUAL(cPair.value, "3.40282e+38");
-
+  if (cPair.value != "3.40282e+38") {
+    TEST_EQUAL(cPair.value, "3.40282e+038");
+  }
   TEST_EQUAL(input.SetReflectedValue("test10", "-3.41282347e+38"),
              Reflector::ErrorType::OutOfRange);
   TEST_EQUAL(input.test10, -FLT_MAX);
   cPair = input.GetReflectedPair(9);
   TEST_EQUAL(cPair.name, "test10");
-  TEST_EQUAL(cPair.value, "-3.40282e+38");
+  if (cPair.value != "-3.40282e+38") {
+    TEST_EQUAL(cPair.value, "-3.40282e+038");
+  }
 
   TEST_EQUAL(input.SetReflectedValue("test10", "1.10549435e-38F"),
              Reflector::ErrorType::OutOfRange);
   TEST_EQUAL(input.test10, FLT_MIN);
   cPair = input.GetReflectedPair(9);
   TEST_EQUAL(cPair.name, "test10");
-  TEST_EQUAL(cPair.value, "1.17549e-38");
+  if (cPair.value != "1.17549e-38") {
+    TEST_EQUAL(cPair.value, "1.17549e-038");
+  }
 
   TEST_EQUAL(input.SetReflectedValue("test10", "-1.10549435e-38F"),
              Reflector::ErrorType::OutOfRange);
   TEST_EQUAL(input.test10, -FLT_MIN);
   cPair = input.GetReflectedPair(9);
   TEST_EQUAL(cPair.name, "test10");
-  TEST_EQUAL(cPair.value, "-1.17549e-38");
+  if (cPair.value != "-1.17549e-38") {
+    TEST_EQUAL(cPair.value, "-1.17549e-038");
+  }
 
   TEST_EQUAL(input.SetReflectedValue("test10", "\t   1.48 \t  "),
              Reflector::ErrorType::None);
