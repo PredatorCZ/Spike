@@ -41,10 +41,24 @@ public:
   void ReadContainer(_containerClass &input, size_t numitems) const {
     input.resize(numitems);
 
-    if (!numitems)
+    if (!numitems) {
       return;
+    }
 
-    _ReadElements<T>(&input[0], numitems, 0);
+    if constexpr (use_read_v<T>) {
+      for (auto &item : input) {
+        item.Read(*this);
+      }
+    } else {
+      const size_t size = sizeof(T);
+      ReadBuffer(reinterpret_cast<char *>(&input[0]), size * numitems);
+
+      if (this->swapEndian && size > 1) {
+        for (auto &item : input) {
+          FByteswapper(item);
+        }
+      }
+    }
   }
 
   // Will read any container (vector, basic_string, etc..)
@@ -111,42 +125,26 @@ public:
     }
   }
 
-  // SFINAE
   // Read class with its Read(BinReaderRef_t) member method, or read type itself
-  template <typename T> void Read(T &value) const { _ReadSingle<T>(value, 0); }
+  template <typename T> void Read(T &value) const {
+    if constexpr (use_read_v<T>) {
+      value.Read(*this);
+    } else {
+      const size_t size = sizeof(T);
+      ReadBuffer(reinterpret_cast<char *>(&value), size);
 
-private:
-  template <class C, class D>
-  auto _ReadSingle(D &input, int) const
-      -> decltype(std::declval<C>().Read(*this), void()) {
-    input.Read(*this);
-  };
-
-  template <class C, class T> void _ReadSingle(T &value, ...) const {
-    const size_t size = sizeof(T);
-    ReadBuffer(reinterpret_cast<char *>(&value), size);
-
-    if (this->swapEndian && size > 1) {
-      FByteswapper(value);
-    }
-  }
-
-  template <class C, class D>
-  auto _ReadElements(D *input, size_t numElements, int) const
-      -> decltype(std::declval<C>().Read(*this), void()) {
-    for (size_t e = 0; e < numElements; e++)
-      (input + e)->Read(*this);
-  };
-
-  template <class C, class T>
-  void _ReadElements(T *value, size_t numElements, ...) const {
-    const size_t size = sizeof(T);
-    ReadBuffer(reinterpret_cast<char *>(value), size * numElements);
-
-    if (this->swapEndian && size > 1) {
-      for (size_t e = 0; e < numElements; e++) {
-        FByteswapper(*(value + e));
+      if (this->swapEndian && size > 1) {
+        FByteswapper(value);
       }
     }
   }
+
+private:
+  using Self = BinReaderRef_t<_Traits>;
+  template <class C, class = void> struct use_read : std::false_type {};
+  template <class C>
+  struct use_read<
+      C, std::void_t<decltype(std::declval<C>().Read(std::declval<Self>()))>>
+      : std::true_type {};
+  template <class C> constexpr static bool use_read_v = use_read<C>::value;
 };

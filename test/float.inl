@@ -10,7 +10,8 @@ int test_float_00() {
   const uint16 num4 = 0xe2a7; // -851.5
 
   TEST_EQUAL(float16::ToFloat(num0), 851.5f);
-  TEST_EQUAL(float16::ToFloat(num1), 1.847744e-06f);
+  auto flt0 = 1.847744e-06f;
+  TEST_EQUAL(float16::ToFloat(num1), flt0);
   TEST_CHECK(std::isinf(float16::ToFloat(num2)));
   TEST_CHECK(std::isnan(float16::ToFloat(num3)));
   TEST_EQUAL(float16::ToFloat(num4), -851.5f);
@@ -31,7 +32,7 @@ int test_float_01() {
   const float num1 = 1.847744e-06f;
   const float num2 = INFINITY;
   const uint32 _num3 = 0x7fffffff;
-  const float num3 = reinterpret_cast<const float&>(_num3);
+  const float num3 = reinterpret_cast<const float &>(_num3);
   const float num4 = -851.5f;
 
   TEST_EQUAL(float16::FromFloat(num0), 0x62a7);

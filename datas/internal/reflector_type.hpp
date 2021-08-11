@@ -35,30 +35,29 @@ struct reflType {
 
 const int __sizeof_RelfType = sizeof(reflType);
 
-ES_STATIC_ASSERT(__sizeof_RelfType == 16);
+static_assert(__sizeof_RelfType == 16);
 
 struct reflectorInstance;
 
-template <class C>
-constexpr auto refl_is_reflected_(int)
-    -> decltype(std::declval<C>().ReflectorTag(), bool()) {
-  return true;
-}
-
-template <class C> constexpr bool refl_is_reflected_(...) { return false; }
+template <class C, class = void> struct refl_is_reflected_ : std::false_type {};
 
 template <class C>
-constexpr bool refl_is_reflected_v_ = refl_is_reflected_<C>(0);
+struct refl_is_reflected_<
+    C, std::void_t<decltype(std::declval<C>().ReflectorTag())>>
+    : std::true_type {};
+
+template <class C>
+constexpr bool refl_is_reflected_v_ = refl_is_reflected_<C>::value;
 
 template <class C> constexpr REFType RefGetType() {
   if (refl_is_reflected_v_<C>) {
     return REFType::Class;
-  } else if (std::is_enum<C>::value) {
+  } else if (std::is_enum_v<C>) {
     return REFType::Enum;
-  } else if (std::is_arithmetic<C>::value) {
-    if (std::is_floating_point<C>::value) {
+  } else if (std::is_arithmetic_v<C>) {
+    if (std::is_floating_point_v<C>) {
       return REFType::FloatingPoint;
-    } else if (std::is_unsigned<C>::value) {
+    } else if (std::is_unsigned_v<C>) {
       return REFType::UnsignedInteger;
     } else {
       return REFType::Integer;
@@ -68,22 +67,25 @@ template <class C> constexpr REFType RefGetType() {
   }
 }
 
-ES_STATIC_ASSERT(RefGetType<int32>() == REFType::Integer);
-ES_STATIC_ASSERT(RefGetType<float>() == REFType::FloatingPoint);
-ES_STATIC_ASSERT(RefGetType<uint32>() == REFType::UnsignedInteger);
-ES_STATIC_ASSERT(RefGetType<int64>() == REFType::Integer);
-ES_STATIC_ASSERT(RefGetType<double>() == REFType::FloatingPoint);
-ES_STATIC_ASSERT(RefGetType<uint64>() == REFType::UnsignedInteger);
-ES_STATIC_ASSERT(RefGetType<int8>() == REFType::Integer);
-ES_STATIC_ASSERT(RefGetType<uint8>() == REFType::UnsignedInteger);
-ES_STATIC_ASSERT(RefGetType<int16>() == REFType::Integer);
-ES_STATIC_ASSERT(RefGetType<uint16>() == REFType::UnsignedInteger);
+static_assert(RefGetType<int32>() == REFType::Integer);
+static_assert(RefGetType<float>() == REFType::FloatingPoint);
+static_assert(RefGetType<uint32>() == REFType::UnsignedInteger);
+static_assert(RefGetType<int64>() == REFType::Integer);
+static_assert(RefGetType<double>() == REFType::FloatingPoint);
+static_assert(RefGetType<uint64>() == REFType::UnsignedInteger);
+static_assert(RefGetType<int8>() == REFType::Integer);
+static_assert(RefGetType<uint8>() == REFType::UnsignedInteger);
+static_assert(RefGetType<int16>() == REFType::Integer);
+static_assert(RefGetType<uint16>() == REFType::UnsignedInteger);
 
 template <typename _Ty> struct _getType : reflTypeDefault_ {
   static constexpr REFType TYPE = RefGetType<_Ty>();
   static constexpr JenHash Hash() {
-    return JenHash(_EnumWrap<_Ty>::GetHash().raw() +
-                   ReflectorType<_Ty>::Hash().raw());
+    if constexpr (std::is_enum_v<_Ty>) {
+      return _EnumWrap<_Ty>::GetHash();
+    } else {
+      return ReflectorType<_Ty>::Hash();
+    }
   }
   static constexpr uint8 SUBSIZE = sizeof(_Ty);
 };

@@ -206,7 +206,7 @@ public:
   vector Normalized() const {
     value_type len = Length();
 
-    if (!len) {
+    if (len == value_type{}) {
       return *this;
     }
 
@@ -303,18 +303,12 @@ public:
     return _mm_slli_epi32(_data, input);
   }
 
-  // Logical shift
-  template <class C = vector>
-  typename std::enable_if<std::is_unsigned<eType>::value, C>::type
-  operator>>(value_type input) const {
-    return _mm_srli_epi32(_data, input);
-  }
-
-  // Arithmetic shift
-  template <class C = vector>
-  typename std::enable_if<!std::is_unsigned<eType>::value, C>::type
-  operator>>(value_type input) const {
-    return _mm_srai_epi32(_data, input);
+  vector operator>>(value_type input) const {
+    if constexpr (std::is_unsigned_v<eType>) {
+      return _mm_srli_epi32(_data, input);
+    } else {
+      return _mm_srai_epi32(_data, input);
+    }
   }
 
   vec_ref operator+=(vec_cref input) { return *this = *this + input; }

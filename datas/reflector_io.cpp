@@ -17,6 +17,7 @@
 
 #include "reflector_io.hpp"
 #include "base_128.hpp"
+#include "except.hpp"
 #include <sstream>
 
 struct Fixups {
@@ -51,22 +52,6 @@ struct Fixups {
   }
 };
 
-static constexpr uint32 PAD_CHECK[6] = {0x78563412, 0xEFCDAB90, 0XFECAADDE,
-                                        0XADDEBEBA, 0XBEBAFECA, 0xADDEEFBE};
-struct reflectorStatic_io {
-  JenHash hash;
-  uint32 numItems, _x64Padding[6], typesPtr, memberNamesPtr, classNamePtr,
-      aliassesPtr, aliassesHashesPtr, descsPtr;
-
-  bool IsValid() const {
-    return _x64Padding[0] == PAD_CHECK[0] && _x64Padding[1] == PAD_CHECK[1] &&
-           _x64Padding[2] == PAD_CHECK[2] && _x64Padding[3] == PAD_CHECK[3] &&
-           _x64Padding[4] == PAD_CHECK[4] && _x64Padding[5] == PAD_CHECK[5];
-  }
-};
-
-ES_STATIC_ASSERT(__sizeof_reflectorStatic == sizeof(reflectorStatic_io));
-
 class ReflectedEnum_io : public ReflectedEnum {
 public:
   using parent::resize;
@@ -74,7 +59,7 @@ public:
 
 struct ReflectorIOHeader {
   static constexpr uint32 ID = CompileFourCC("RFDB");
-  static constexpr uint32 VERSION = 1000;
+  static constexpr uint32 VERSION = 2000;
 
   uint32 id, version, numClasses, numEnums, numEnumStrings, enumsOffset,
       bufferSize, reserved;
@@ -82,105 +67,107 @@ struct ReflectorIOHeader {
   ReflectorIOHeader() : id(ID), version(VERSION), reserved() {}
 };
 
+struct reflectorStatic_io {
+  uint32 classHash;
+  uint32 nTypes;
+  uintptr_t types;
+  uintptr_t typeNames;
+  uintptr_t className;
+  uintptr_t typeAliases;
+  uintptr_t typeAliasHashes;
+  uintptr_t typeDescs;
+
+  void Fixup(uintptr_t base) {
+    auto fixup = [base](uintptr_t &item) {
+      if (item) {
+        item += base;
+      }
+    };
+
+    auto fixupmore = [base, fixup](auto &...items) { (fixup(items), ...); };
+
+    fixupmore(types, className, typeAliasHashes, typeDescs, typeNames,
+              typeAliases);
+
+    if (typeAliases) {
+      auto castedBase = reinterpret_cast<uintptr_t *>(typeAliases);
+      auto casted = &*castedBase;
+      for (uint32 i = 0; i < nTypes; i++) {
+        if (casted[i]) {
+          casted[i] += base;
+        }
+      }
+    }
+
+    if (typeNames) {
+      auto castedBase = reinterpret_cast<uintptr_t *>(typeNames);
+      auto casted = &*castedBase;
+      for (uint32 i = 0; i < nTypes; i++) {
+        if (casted[i]) {
+          casted[i] += base;
+        }
+      }
+    }
+
+    if (typeDescs) {
+      union Desc {
+        struct {
+          uintptr_t data1;
+          size_t size1;
+          uintptr_t data2;
+          size_t size2;
+        } io;
+        struct {
+          size_t size1;
+          uintptr_t data1;
+          size_t size2;
+          uintptr_t data2;
+        } invert;
+      };
+
+      auto casted = reinterpret_cast<Desc *>(typeDescs);
+
+      for (uint32 t = 0; t < nTypes; t++) {
+        auto &item = casted[t];
+        fixupmore(item.io.data1, item.io.data2);
+      }
+    }
+  }
+};
+
+static_assert(sizeof(reflectorStatic_io) == sizeof(reflectorStatic));
+
 int ReflectorIO::Load(BinReaderRef rd) {
   ReflectorIOHeader hdr;
 
   rd.Read(hdr);
 
-  if (hdr.id != hdr.ID)
-    return 1;
+  if (hdr.id != hdr.ID) {
+    throw es::InvalidHeaderError(hdr.id);
+  }
 
-  if (hdr.version > hdr.VERSION)
-    return 2;
+  if (hdr.version != hdr.VERSION) {
+    throw es::InvalidVersionError(hdr.version);
+  }
 
   rd.ReadContainer(data, hdr.bufferSize);
 
-  const reflectorStatic *classesStart =
-      reinterpret_cast<const reflectorStatic *>(data.data());
+  reflectorStatic_io *classesStart =
+      reinterpret_cast<reflectorStatic_io *>(&data[0]);
+  const uintptr_t bufferStart = reinterpret_cast<uintptr_t>(classesStart);
 
-  for (uint64 c = 0; c < hdr.numClasses; c++)
-    classes.push_back(classesStart + c);
+  for (uint32 c = 0; c < hdr.numClasses; c++) {
+    classesStart[c].Fixup(bufferStart);
 
-  const esIntPtr bufferStart = reinterpret_cast<esIntPtr>(classesStart);
-
-  for (auto i : classes) {
-    reflectorStatic_io *itemIO = reinterpret_cast<reflectorStatic_io *>(
-        const_cast<reflectorStatic *>(i));
-    esIntPtr *itemPtrsBegin = reinterpret_cast<esIntPtr *>(itemIO->_x64Padding);
-
-    itemPtrsBegin[0] = bufferStart + itemIO->typesPtr;
-
-    if (itemIO->memberNamesPtr) {
-      itemPtrsBegin[1] = bufferStart + itemIO->memberNamesPtr;
-
-      esIntPtr *itemNamePtrs = reinterpret_cast<esIntPtr *>(itemPtrsBegin[1]);
-      uint32 *itemNameOffsets =
-          reinterpret_cast<uint32 *>(itemNamePtrs) + itemIO->numItems;
-
-      for (uint32 t = 0; t < itemIO->numItems; t++) {
-        itemNamePtrs[t] = bufferStart + itemNameOffsets[t];
-      }
-    } else {
-      itemPtrsBegin[1] = 0;
-    }
-
-    if (itemIO->classNamePtr) {
-      itemPtrsBegin[2] = bufferStart + itemIO->classNamePtr;
-    } else {
-      itemPtrsBegin[2] = 0;
-    }
-
-    if (itemIO->aliassesPtr) {
-      itemPtrsBegin[3] = bufferStart + itemIO->aliassesPtr;
-
-      esIntPtr *aliasesPtrs = reinterpret_cast<esIntPtr *>(itemPtrsBegin[3]);
-      uint32 *aliasesOffsets =
-          reinterpret_cast<uint32 *>(aliasesPtrs) + itemIO->numItems;
-
-      for (uint32 t = 0; t < itemIO->numItems; t++) {
-        if (aliasesOffsets[t])
-          aliasesPtrs[t] = bufferStart + aliasesOffsets[t];
-        else
-          aliasesPtrs[t] = 0;
-      }
-    } else {
-      itemPtrsBegin[3] = 0;
-    }
-
-    if (itemIO->aliassesHashesPtr) {
-      itemPtrsBegin[3] = bufferStart + itemIO->aliassesHashesPtr;
-    } else {
-      itemPtrsBegin[4] = 0;
-    }
-
-    if (itemIO->descsPtr) {
-      itemPtrsBegin[5] = bufferStart + itemIO->descsPtr;
-
-      esIntPtr *descsPtrs = reinterpret_cast<esIntPtr *>(itemPtrsBegin[5]);
-      uint32 *descsOffsets =
-          reinterpret_cast<uint32 *>(descsPtrs) + itemIO->numItems * 4;
-
-      for (uint32 t = 0; t < itemIO->numItems * 2; t++) {
-        if (*descsOffsets) {
-          *descsPtrs++ = bufferStart + *descsOffsets++;
-        } else {
-          *descsPtrs++ = 0;
-          *descsOffsets++ = 0;
-        }
-
-        *descsPtrs++ = *descsOffsets++;
-      }
-    } else {
-      itemPtrsBegin[5] = 0;
-    }
+    classes.push_back(
+        reinterpret_cast<const reflectorStatic *>(classesStart + c));
   }
 
   uint64 *enumsIter = reinterpret_cast<uint64 *>(&data[0] + hdr.enumsOffset);
 
-  for (uint64 c = 0; c < hdr.numEnums; c++) {
+  for (uint32 c = 0; c < hdr.numEnums; c++) {
     enums.emplace_back();
-    ReflectedEnum_io &lEn =
-        static_cast<ReflectedEnum_io &>(*std::prev(enums.end()));
+    auto &lEn = static_cast<ReflectedEnum_io &>(enums.back());
 
     lEn.hash = *reinterpret_cast<const JenHash *>(enumsIter);
     lEn.resize(*(reinterpret_cast<const uint32 *>(enumsIter++) + 1));
@@ -188,13 +175,16 @@ int ReflectorIO::Load(BinReaderRef rd) {
     enumsIter += lEn.size();
   }
 
-  esIntPtr *enumNamesPtrs = reinterpret_cast<esIntPtr *>(enumsIter);
-  const uint32 *enumNamesOffsets =
-      reinterpret_cast<const uint32 *>(enumsIter) + hdr.numEnumStrings;
   const char **enumNamesIter = reinterpret_cast<const char **>(enumsIter);
 
+  auto Fixup = [bufferStart](auto &item) {
+    if (auto &ptrRef = reinterpret_cast<uintptr_t &>(item)) {
+      ptrRef += bufferStart;
+    }
+  };
+
   for (size_t s = 0; s < hdr.numEnumStrings; s++) {
-    enumNamesPtrs[s] = bufferStart + enumNamesOffsets[s];
+    Fixup(enumNamesIter[s]);
   }
 
   for (auto &e : enums) {
@@ -226,34 +216,38 @@ int ReflectorIO::Save(BinWritterRef wr) {
   for (auto i : classes) {
     wr.Write(i->classHash);
     wr.Write(i->nTypes);
-    wr.Write(PAD_CHECK);
     itemFixups.AddPointer();
-    wr.Skip<uint32>();
+    wr.Skip<uint64>();
 
-    if (i->typeNames)
+    if (i->typeNames) {
       itemStringsFixups.AddPointer();
+    }
 
-    wr.Skip<uint32>();
+    wr.Skip<uint64>();
 
-    if (i->className)
+    if (i->className) {
       classnamesFixups.AddPointer();
+    }
 
-    wr.Skip<uint32>();
+    wr.Skip<uint64>();
 
-    if (i->typeAliases)
+    if (i->typeAliases) {
       aliasesFixups.AddPointer();
+    }
 
-    wr.Skip<uint32>();
+    wr.Skip<uint64>();
 
-    if (i->typeAliasHashes)
+    if (i->typeAliasHashes) {
       aliasHashesFixups.AddPointer();
+    }
 
-    wr.Skip<uint32>();
+    wr.Skip<uint64>();
 
-    if (i->typeDescs)
+    if (i->typeDescs) {
       descsFixups.AddPointer();
+    }
 
-    wr.Skip<uint32>();
+    wr.Skip<uint64>();
   }
 
   for (auto i : classes) {
@@ -278,11 +272,10 @@ int ReflectorIO::Save(BinWritterRef wr) {
     if (i->typeNames) {
       wr.ApplyPadding(8);
       itemStringsFixups.FixupDestination();
-      wr.Skip(sizeof(uint32) * i->nTypes);
 
       for (uint32 r = 0; r < i->nTypes; r++) {
         itemStringsFixups.AddPointer();
-        wr.Skip<uint32>();
+        wr.Skip<uint64>();
       }
     }
   }
@@ -291,12 +284,12 @@ int ReflectorIO::Save(BinWritterRef wr) {
     if (i->typeAliases) {
       wr.ApplyPadding(8);
       aliasesFixups.FixupDestination();
-      wr.Skip(sizeof(uint32) * i->nTypes);
 
       for (uint32 r = 0; r < i->nTypes; r++) {
-        if (i->typeAliases[r])
+        if (i->typeAliases[r]) {
           aliasesFixups.AddPointer();
-        wr.Skip<uint32>();
+        }
+        wr.Skip<uint64>();
       }
     }
   }
@@ -304,20 +297,21 @@ int ReflectorIO::Save(BinWritterRef wr) {
   for (auto i : classes) {
     if (i->typeDescs) {
       descsFixups.FixupDestination();
-      wr.Skip(sizeof(uint64) * i->nTypes * 2);
 
       for (uint32 r = 0; r < i->nTypes; r++) {
-        if (!i->typeDescs[r].part1.empty())
+        if (!i->typeDescs[r].part1.empty()) {
           descsFixups.AddPointer();
+        }
 
-        wr.Skip<uint32>();
-        wr.Write(static_cast<uint32>(i->typeDescs[r].part1.size()));
+        wr.Skip<uint64>();
+        wr.Write(i->typeDescs[r].part1.size());
 
-        if (!i->typeDescs[r].part2.empty())
+        if (!i->typeDescs[r].part2.empty()) {
           descsFixups.AddPointer();
+        }
 
-        wr.Skip<uint32>();
-        wr.Write(static_cast<uint32>(i->typeDescs[r].part2.size()));
+        wr.Skip<uint64>();
+        wr.Write(i->typeDescs[r].part2.size());
       }
     }
   }
@@ -332,8 +326,9 @@ int ReflectorIO::Save(BinWritterRef wr) {
 
     if (i->typeAliases) {
       for (uint32 r = 0; r < i->nTypes; r++) {
-        if (!i->typeAliases[r])
+        if (!i->typeAliases[r]) {
           continue;
+        }
 
         aliasesFixups.FixupDestination();
         wr.WriteT(i->typeAliases[r]);
@@ -378,11 +373,10 @@ int ReflectorIO::Save(BinWritterRef wr) {
   }
 
   hdr.numEnumStrings = static_cast<uint32>(totalStrings);
-  wr.Skip(sizeof(uint32) * totalStrings);
 
   for (size_t s = 0; s < totalStrings; s++) {
     itemStringsFixups.AddPointer();
-    wr.Skip<uint32>();
+    wr.Skip<uint64>();
   }
 
   for (auto &e : enums) {
@@ -398,6 +392,7 @@ int ReflectorIO::Save(BinWritterRef wr) {
   }
 
   hdr.bufferSize = static_cast<uint32>(wr.Tell());
+  wr.Push();
   wr.ResetRelativeOrigin();
   wr.Write(hdr);
   itemFixups.WriteFixups();
@@ -405,7 +400,7 @@ int ReflectorIO::Save(BinWritterRef wr) {
   classnamesFixups.WriteFixups();
   aliasesFixups.WriteFixups();
   descsFixups.WriteFixups();
-  wr.Seek(0, std::ios_base::end);
+  wr.Pop();
 
   return 0;
 }

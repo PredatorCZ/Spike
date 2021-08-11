@@ -20,6 +20,7 @@
 #pragma once
 #include "endian_fwd.hpp"
 #include "supercore.hpp"
+#include <cstring>
 
 namespace {
 
@@ -45,45 +46,52 @@ template <> constexpr uint64 _fbswap(uint64 input) {
          ((input & 0xFF00000000000000ULL) >> 56);
 }
 
-ES_STATIC_ASSERT(_fbswap<uint16>(0xabcd) == 0xcdab);
-ES_STATIC_ASSERT(_fbswap<uint32>(0x89abcdef) == 0xefcdab89);
-ES_STATIC_ASSERT(_fbswap<uint64>(0x0123456789abcdef) == 0xefcdab8967452301);
+static_assert(_fbswap<uint16>(0xabcd) == 0xcdab);
+static_assert(_fbswap<uint32>(0x89abcdef) == 0xefcdab89);
+static_assert(_fbswap<uint64>(0x0123456789abcdef) == 0xefcdab8967452301);
 
-template <class C, class D>
-auto fbswap(D &input, bool, int)
-    -> decltype(std::declval<C>().SwapEndian(), void()) {
-  input.SwapEndian();
-};
+template <typename T, typename = void>
+struct SwapTypeBasic_ : std::false_type {};
 
-template <class C, class D>
-auto fbswap(D &input, bool outway, int)
-    -> decltype(std::declval<C>().SwapEndian(false), void()) {
-  input.SwapEndian(outway);
-};
+template <typename T>
+struct SwapTypeBasic_<T, std::void_t<decltype(std::declval<T>().SwapEndian())>>
+    : std::true_type {};
 
-template <class C, class D> void fbswap(D &input, bool, ...) {
-  auto rType = _fbswap(
-      reinterpret_cast<typename es::TypeFromSize<sizeof(C)>::type &>(input));
-  input = reinterpret_cast<C &>(rType);
-}
+template <typename T, typename = void> struct SwapTypeNew_ : std::false_type {};
+
+template <typename T>
+struct SwapTypeNew_<T,
+                    std::void_t<decltype(std::declval<T>().SwapEndian(false))>>
+    : std::true_type {};
 } // namespace
 
 template <class C> void FByteswapper(C &input, bool outWay) {
-  fbswap<C>(input, outWay, 0);
+  (void)(outWay);
+  if constexpr (SwapTypeBasic_<C>::value) {
+    input.SwapEndian();
+  } else if constexpr (SwapTypeNew_<C>::value) {
+    input.SwapEndian(outWay);
+  } else {
+    auto rType = _fbswap(
+        reinterpret_cast<typename es::TypeFromSize<sizeof(C)>::type &>(input));
+    memcpy(&input, &rType, sizeof(input));
+  }
 }
 
 template <class C, size_t _size>
 void FByteswapper(C (&input)[_size], bool outWay) {
-  for (auto &a : input)
-    fbswap<C>(a, outWay, 0);
+  for (auto &a : input) {
+    FByteswapper(a, outWay);
+  }
 }
 
 template <class E, class C> void FArraySwapper(C &input) {
   const size_t numItems = sizeof(C) / sizeof(E);
   E *inputPtr = reinterpret_cast<E *>(&input);
 
-  for (size_t t = 0; t < numItems; t++)
+  for (size_t t = 0; t < numItems; t++) {
     FByteswapper(*(inputPtr + t));
+  }
 }
 
 struct Endian_ {

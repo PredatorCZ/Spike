@@ -17,9 +17,9 @@
 */
 
 #pragma once
+#include "../settings.hpp"
 #include "reflector_class_reg.hpp"
 #include "reflector_enum_reg.hpp"
-#include "../settings.hpp"
 #include <map>
 
 typedef std::map<JenHash, ReflectedEnum> RefEnumMapper;
@@ -27,32 +27,17 @@ extern RefEnumMapper PC_EXTERN REFEnumStorage;
 typedef std::map<JenHash, const reflectorStatic *> RefSubClassMapper;
 extern RefSubClassMapper PC_EXTERN REFSubClassStorage;
 
-template <class C> struct RegisterReflectedType {
-  template <class C_ = C>
-  static typename std::enable_if<std::is_class<C_>::value>::type
-  RegisterRefClass() {
-    REFSubClassStorage[ReflectorType<C>::Hash()] =
-        GetReflectedClass<C>();
-  }
-
-  template <class C_ = C>
-  static typename std::enable_if<std::is_enum<C_>::value>::type
-  RegisterRefClass() {
+template <class C> void RegisterReflectedType() {
+  if constexpr (std::is_class_v<C>) {
+    REFSubClassStorage[ReflectorType<C>::Hash()] = GetReflectedClass<C>();
+  } else {
     REFEnumStorage[_EnumWrap<C>::GetHash()] = GetReflectedEnum<C>();
   }
-  RegisterReflectedType() { RegisterRefClass(); }
-};
+}
 
 // Adding reflected classes/enums into global registry
 // Required for enums/classes, if they are being used as a class member for
 // another reflected class or for a run-time serialization
-template <class... C>
-struct RegisterReflectedTypes : RegisterReflectedType<C>... {};
-
-#define _REFLECTOR_REGISTER(classname)                                         \
-  RegisterReflectedType<classname>::RegisterRefClass();
-
-#define REFLECTOR_REGISTER(...)                                                \
-  StaticFor(_REFLECTOR_REGISTER, __VA_ARGS__);                                 \
-  ES_PRAGMA(message("REFLECTOR_REGISTER is deprecated, use "                   \
-                    "RegisterReflectedTypes instead."))
+template <class... C> void RegisterReflectedTypes() {
+  (RegisterReflectedType<C>(), ...);
+}

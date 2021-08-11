@@ -3,7 +3,7 @@
 
 constexpr auto flgtest00 = es::Flags<uint8>(1, 2);
 
-ES_STATIC_ASSERT(static_cast<uint8>(flgtest00) == 0b110);
+static_assert(static_cast<uint8>(flgtest00) == 0b110);
 
 int test_flags_00() {
   es::Flags<uint8> flags;

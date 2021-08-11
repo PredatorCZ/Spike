@@ -2,9 +2,9 @@
 #include "../datas/unit_testing.hpp"
 #include "reflector_def.inl"
 
-ES_STATIC_ASSERT(sizeof(EnumWrap02) == 1);
-ES_STATIC_ASSERT(sizeof(EnumWrap03) == 2);
-ES_STATIC_ASSERT(sizeof(EnumWrap04) == 4);
+static_assert(sizeof(EnumWrap02) == 1);
+static_assert(sizeof(EnumWrap03) == 2);
+static_assert(sizeof(EnumWrap04) == 4);
 
 int test_reflector_enum00() {
   ReflectedEnum rEnum = GetReflectedEnum<EnumWrap00>();

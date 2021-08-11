@@ -29,4 +29,4 @@ struct VAG {
   uint32 null[11];
 };
 
-ES_STATIC_ASSERT(sizeof(VAG) == 0x40);
+static_assert(sizeof(VAG) == 0x40);

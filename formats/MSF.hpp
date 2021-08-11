@@ -35,4 +35,4 @@ struct MSF {
   uint32 numChannels, dataSize, sampleRate, flags, loopStart, loopDuration, unk[8];
 };
 
-ES_STATIC_ASSERT(sizeof(MSF) == 0x40);
+static_assert(sizeof(MSF) == 0x40);

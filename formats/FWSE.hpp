@@ -32,4 +32,4 @@ struct FWSE {
   uint8 unk[992]; // 4bit?
 };
 
-ES_STATIC_ASSERT(sizeof(FWSE) == 0x400);
+static_assert(sizeof(FWSE) == 0x400);

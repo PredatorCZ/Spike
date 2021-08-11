@@ -16,8 +16,8 @@
 */
 
 #pragma once
-#include "supercore.hpp"
 #include "reflector_fwd.hpp"
+#include "supercore.hpp"
 
 namespace es {
 template <class enum_type, class store_override_type =
@@ -30,14 +30,11 @@ public:
   constexpr Flags() noexcept : value() {}
 
   template <typename... args>
-  constexpr Flags(args... inputs) noexcept : value() {
-    unpack_(inputs...);
-  }
+  constexpr Flags(args... inputs) noexcept : value((... | MakeMask_(inputs))) {}
 
   template <typename... args>
-  constexpr Flags(const Flags &input, args... inputs) noexcept : value(input) {
-    unpack_(inputs...);
-  }
+  constexpr Flags(const Flags &input, args... inputs) noexcept
+      : value(input | (... | MakeMask_(inputs))) {}
 
   void operator=(ValueType inval) noexcept { value = inval; }
 
@@ -79,17 +76,9 @@ private:
     return static_cast<ValueType>(1) << static_cast<ValueType>(at);
   }
 
-  constexpr void unpack_(EnumClass input) { value |= MakeMask_(input); }
-
-  template <typename... Others>
-  constexpr void unpack_(EnumClass input, Others... inputs) {
-    value |= MakeMask_(input);
-    unpack_(inputs...);
-  }
-
   ValueType value;
 };
-}
+} // namespace es
 
 template <class C, class E>
 struct _getType<es::Flags<E, C>> : reflTypeDefault_ {

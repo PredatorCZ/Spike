@@ -7,7 +7,6 @@
 #include "float.inl"
 #include "matrix44.inl"
 #include "multi_thread.inl"
-#include "supercore.inl"
 #include "vector_simd.inl"
 
 #include "base128.inl"
@@ -17,7 +16,7 @@ int main() {
   printer.AddPrinterFunction(UPrintf);
 
   printline("Compiler info:\n\tLittle Endian: "
-            << LittleEndian() << "\n\tX64: " << ES_X64
+            << LittleEndian()
             << "\n\tClass padding optimalization: " << ES_REUSE_PADDING);
 
   printerror("I am error and I'm red.");
@@ -38,9 +37,8 @@ int main() {
              TEST_FUNC(test_vector_simd_01), TEST_FUNC(test_vector_simd_02),
              TEST_FUNC(test_vector_simd_03), TEST_FUNC(test_vector_simd_10),
              TEST_FUNC(test_vector_simd_11), TEST_FUNC(test_vector_simd_12),
-             TEST_FUNC(test_supercore_00), TEST_FUNC(test_mt_thread00),
-             TEST_FUNC(test_mt_thread01), TEST_FUNC(test_base128),
-             TEST_FUNC(test_ubase128));
+             TEST_FUNC(test_mt_thread00), TEST_FUNC(test_mt_thread01),
+             TEST_FUNC(test_base128), TEST_FUNC(test_ubase128));
 
   return testResult;
 }

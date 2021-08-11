@@ -119,18 +119,9 @@ public:
     return *this;
   }
 };
-
-template <class C, bool x64> struct _PointerX86 {
-  typedef PointerX86<C> value_type;
-};
-template <class C> struct _PointerX86<C, false> {
-  typedef Pointer_t<C, uint32> value_type;
-};
-
 } // namespace es
 
 template <class C> using esPointerX64 = es::Pointer_t<C, uint64>;
-template <class C>
-using esPointerX86 = typename es::_PointerX86<C, ES_X64>::value_type;
+template <class C> using esPointerX86 = es::Pointer_t<C, uint32>;
 
 static inline void ClearESPointers() { es::usedPts.clear(); }

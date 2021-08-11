@@ -1,5 +1,6 @@
 #include "../datas/unit_testing.hpp"
 #include "../uni/format.hpp"
+#include "datas/vectors_stream.hpp"
 
 using namespace uni;
 
@@ -305,22 +306,22 @@ int test_format_02() {
   TEST_EQUAL(out, IVector4A16(-500, -420, -10, 0));
 
   int32 vc5 = (-250 & 0x3ff) | ((-110 & 0x3ff) << 10) | ((-50 & 0x3ff) << 20) |
-              (-2 << 30);
+              (-2u << 30);
 
   FormatCodec::Get({FormatType::INT, DataType::R10G10B10A2})
       .GetValue(out, reinterpret_cast<const char *>(&vc5));
 
   TEST_EQUAL(out, IVector4A16(-250, -110, -50, -2));
 
-  int16 vc6 = (-15 & 0x1f) | ((-10 & 0x3f) << 5) | ((-5 & 0x1f) << 11);
+  int16 vc6 = (-15 & 0x1f) | ((-10 & 0x3f) << 5) | ((-5u & 0x1f) << 11);
 
   FormatCodec::Get({FormatType::INT, DataType::R5G6B5})
       .GetValue(out, reinterpret_cast<const char *>(&vc6));
 
   TEST_EQUAL(out, IVector4A16(-15, -10, -5, 0));
 
-  int16 vc7 =
-      (-14 & 0x1f) | ((-9 & 0x1f) << 5) | ((-6 & 0x1f) << 10) | (-1 << 15);
+  int16 vc7 = (-14 & 0x1f) | ((-9 & 0x1f) << 5) | ((-6 & 0x1f) << 10) |
+              int16(-1u << 15);
 
   FormatCodec::Get({FormatType::INT, DataType::R5G5B5A1})
       .GetValue(out, reinterpret_cast<const char *>(&vc7));
@@ -545,7 +546,7 @@ int test_format_04() {
   TEST_EQUAL(out, Vector4A16(-0.488758564f, -0.410557181f, -0.0185728259f, 0));
 
   int32 vc5 = (-250 & 0x3ff) | ((-110 & 0x3ff) << 10) | ((-50 & 0x3ff) << 20) |
-              (-1 << 30);
+              int32(-1u << 30);
 
   FormatCodec::Get({FormatType::NORM, DataType::R10G10B10A2})
       .GetValue(out, reinterpret_cast<const char *>(&vc5));
@@ -553,15 +554,15 @@ int test_format_04() {
   TEST_EQUAL(out,
              Vector4A16(-0.489236772f, -0.215264186f, -0.0978473574f, -1.f));
 
-  int16 vc6 = (-15 & 0x1f) | ((-10 & 0x3f) << 5) | ((-5 & 0x1f) << 11);
+  int16 vc6 = (-15 & 0x1f) | ((-10 & 0x3f) << 5) | ((-5u & 0x1f) << 11);
 
   FormatCodec::Get({FormatType::NORM, DataType::R5G6B5})
       .GetValue(out, reinterpret_cast<const char *>(&vc6));
 
   TEST_EQUAL(out, Vector4A16(-0.967741907f, -0.322580636f, -0.290322572f, 0));
 
-  int16 vc7 =
-      (-14 & 0x1f) | ((-9 & 0x1f) << 5) | ((-6 & 0x1f) << 10) | (-1 << 15);
+  int16 vc7 = (-14 & 0x1f) | ((-9 & 0x1f) << 5) | ((-6 & 0x1f) << 10) |
+              int16(-1u << 15);
 
   FormatCodec::Get({FormatType::NORM, DataType::R5G5B5A1})
       .GetValue(out, reinterpret_cast<const char *>(&vc7));

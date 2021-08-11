@@ -181,32 +181,32 @@ static constexpr uint32 _bpps[] = {
     32, 32,  32,  32,  8,   8,  8,  8,  8,  8,  32, 32, 64, 12, 32, 64, 32, 32,
     32, 64,  0,   0,   0,   0,  0,  16, 0,  0,  0,  0};
 
-ES_STATIC_ASSERT(_bpps[DXGI_FORMAT_R32G32B32A32_TYPELESS] == 128);
-ES_STATIC_ASSERT(_bpps[DXGI_FORMAT_R32G32B32_TYPELESS] == 96);
-ES_STATIC_ASSERT(_bpps[DXGI_FORMAT_R16G16B16A16_TYPELESS] == 64);
-ES_STATIC_ASSERT(_bpps[DXGI_FORMAT_X32_TYPELESS_G8X24_UINT] == 64);
-ES_STATIC_ASSERT(_bpps[DXGI_FORMAT_R10G10B10A2_TYPELESS] == 32);
-ES_STATIC_ASSERT(_bpps[DXGI_FORMAT_X24_TYPELESS_G8_UINT] == 32);
-ES_STATIC_ASSERT(_bpps[DXGI_FORMAT_R8G8_TYPELESS] == 16);
-ES_STATIC_ASSERT(_bpps[DXGI_FORMAT_R16_SINT] == 16);
-ES_STATIC_ASSERT(_bpps[DXGI_FORMAT_R1_UNORM] == 1);
-ES_STATIC_ASSERT(_bpps[DXGI_FORMAT_R9G9B9E5_SHAREDEXP] == 32);
-ES_STATIC_ASSERT(_bpps[DXGI_FORMAT_G8R8_G8B8_UNORM] == 32);
-ES_STATIC_ASSERT(_bpps[DXGI_FORMAT_BC1_TYPELESS] == 4);
-ES_STATIC_ASSERT(_bpps[DXGI_FORMAT_BC1_UNORM_SRGB] == 4);
-ES_STATIC_ASSERT(_bpps[DXGI_FORMAT_BC2_TYPELESS] == 8);
-ES_STATIC_ASSERT(_bpps[DXGI_FORMAT_BC3_UNORM_SRGB] == 8);
-ES_STATIC_ASSERT(_bpps[DXGI_FORMAT_BC4_TYPELESS] == 4);
-ES_STATIC_ASSERT(_bpps[DXGI_FORMAT_BC5_SNORM] == 8);
-ES_STATIC_ASSERT(_bpps[DXGI_FORMAT_B5G6R5_UNORM] == 16);
-ES_STATIC_ASSERT(_bpps[DXGI_FORMAT_B8G8R8A8_UNORM] == 32);
-ES_STATIC_ASSERT(_bpps[DXGI_FORMAT_B8G8R8X8_UNORM_SRGB] == 32);
-ES_STATIC_ASSERT(_bpps[DXGI_FORMAT_BC6H_TYPELESS] == 8);
-ES_STATIC_ASSERT(_bpps[DXGI_FORMAT_BC7_UNORM_SRGB] == 8);
-ES_STATIC_ASSERT(_bpps[DXGI_FORMAT_AYUV] == 32);
-ES_STATIC_ASSERT(_bpps[DXGI_FORMAT_P016] == 64);
-ES_STATIC_ASSERT(_bpps[DXGI_FORMAT_Y216] == 64);
-ES_STATIC_ASSERT(_bpps[DXGI_FORMAT_B4G4R4A4_UNORM] == 16);
+static_assert(_bpps[DXGI_FORMAT_R32G32B32A32_TYPELESS] == 128);
+static_assert(_bpps[DXGI_FORMAT_R32G32B32_TYPELESS] == 96);
+static_assert(_bpps[DXGI_FORMAT_R16G16B16A16_TYPELESS] == 64);
+static_assert(_bpps[DXGI_FORMAT_X32_TYPELESS_G8X24_UINT] == 64);
+static_assert(_bpps[DXGI_FORMAT_R10G10B10A2_TYPELESS] == 32);
+static_assert(_bpps[DXGI_FORMAT_X24_TYPELESS_G8_UINT] == 32);
+static_assert(_bpps[DXGI_FORMAT_R8G8_TYPELESS] == 16);
+static_assert(_bpps[DXGI_FORMAT_R16_SINT] == 16);
+static_assert(_bpps[DXGI_FORMAT_R1_UNORM] == 1);
+static_assert(_bpps[DXGI_FORMAT_R9G9B9E5_SHAREDEXP] == 32);
+static_assert(_bpps[DXGI_FORMAT_G8R8_G8B8_UNORM] == 32);
+static_assert(_bpps[DXGI_FORMAT_BC1_TYPELESS] == 4);
+static_assert(_bpps[DXGI_FORMAT_BC1_UNORM_SRGB] == 4);
+static_assert(_bpps[DXGI_FORMAT_BC2_TYPELESS] == 8);
+static_assert(_bpps[DXGI_FORMAT_BC3_UNORM_SRGB] == 8);
+static_assert(_bpps[DXGI_FORMAT_BC4_TYPELESS] == 4);
+static_assert(_bpps[DXGI_FORMAT_BC5_SNORM] == 8);
+static_assert(_bpps[DXGI_FORMAT_B5G6R5_UNORM] == 16);
+static_assert(_bpps[DXGI_FORMAT_B8G8R8A8_UNORM] == 32);
+static_assert(_bpps[DXGI_FORMAT_B8G8R8X8_UNORM_SRGB] == 32);
+static_assert(_bpps[DXGI_FORMAT_BC6H_TYPELESS] == 8);
+static_assert(_bpps[DXGI_FORMAT_BC7_UNORM_SRGB] == 8);
+static_assert(_bpps[DXGI_FORMAT_AYUV] == 32);
+static_assert(_bpps[DXGI_FORMAT_P016] == 64);
+static_assert(_bpps[DXGI_FORMAT_Y216] == 64);
+static_assert(_bpps[DXGI_FORMAT_B4G4R4A4_UNORM] == 16);
 
 struct DDS_Header {
   static constexpr uint32 ID = CompileFourCC("DDS ");
@@ -799,7 +799,7 @@ struct DDS : DDS_Header, DDS_PixelFormat, DDS_HeaderEnd, DDS_HeaderDX10 {
   }
 };
 
-ES_STATIC_ASSERT(sizeof(DDS_HeaderDX10) == 20);
-ES_STATIC_ASSERT(sizeof(DDS_PixelFormat) == 32);
-ES_STATIC_ASSERT(DDS::LEGACY_SIZE == 128);
-ES_STATIC_ASSERT(DDS::DDS_SIZE == 148);
+static_assert(sizeof(DDS_HeaderDX10) == 20);
+static_assert(sizeof(DDS_PixelFormat) == 32);
+static_assert(DDS::LEGACY_SIZE == 128);
+static_assert(DDS::DDS_SIZE == 148);

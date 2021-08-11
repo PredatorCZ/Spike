@@ -23,6 +23,7 @@
 #include <algorithm>
 #include <cctype>
 #include <cmath>
+#include <ostream>
 
 static Reflector::ErrorType
 SetReflectedMember(reflType reflValue, es::string_view value, char *objAddr);
@@ -31,58 +32,20 @@ const reflType *Reflector::GetReflectedType(const JenHash hash) const {
   const reflectorStatic *inst = GetReflectedInstance().rfStatic;
   const size_t _ntypes = GetNumReflectedValues();
 
-  for (size_t t = 0; t < _ntypes; t++)
-    if (inst->types[t].valueNameHash == hash)
+  for (size_t t = 0; t < _ntypes; t++) {
+    if (inst->types[t].valueNameHash == hash) {
       return GetReflectedType(t);
-
-  if (inst->typeAliasHashes)
-    for (size_t t = 0; t < _ntypes; t++)
-      if (inst->typeAliasHashes[t] == hash)
-        return GetReflectedType(t);
-
-  return nullptr;
-}
-
-template <typename T> static T SetNumber(const std::string &input);
-
-template <> float SetNumber(const std::string &input) {
-  return std::stof(input);
-}
-
-template <> double SetNumber(const std::string &input) {
-  return std::stod(input);
-}
-
-template <typename T>
-static Reflector::ErrorType SetNumber(const std::string &input, T &output,
-                                      std::false_type) {
-  constexpr T fMax = std::numeric_limits<T>::max();
-  constexpr T fMin = std::numeric_limits<T>::min();
-
-  try {
-    output = SetNumber<T>(input);
-
-    // MSVC Underflow fix
-    if (std::fpclassify(output) == FP_SUBNORMAL) {
-      throw std::out_of_range("");
     }
-  } catch (const std::invalid_argument &) {
-    printerror("[Reflector] Invalid value: " << input);
-    return Reflector::ErrorType::InvalidFormat;
-  } catch (const std::out_of_range &) {
-    printwarning("[Reflector] Float out of range, got: " << input);
-
-    double fVal = atof(input.c_str());
-
-    if (fVal > 0)
-      output = fVal > 1.0 ? fMax : fMin;
-    else
-      output = fVal < -1.0 ? -fMax : -fMin;
-
-    return Reflector::ErrorType::OutOfRange;
   }
 
-  return Reflector::ErrorType::None;
+  if (inst->typeAliasHashes)
+    for (size_t t = 0; t < _ntypes; t++) {
+      if (inst->typeAliasHashes[t] == hash) {
+        return GetReflectedType(t);
+      }
+    }
+
+  return nullptr;
 }
 
 template <class T> struct LimitProxy {
@@ -109,15 +72,14 @@ template <class type> struct LimitProxy<BFTag<type>> {
         iMin(~iMax) {}
 };
 
-template <typename T>
-static Reflector::ErrorType SetNumber(const std::string &input, T &output,
-                                      std::true_type,
-                                      LimitProxy<T> proxy = {}) {
+template <typename T, class ProxyType>
+static Reflector::ErrorType SetNumber(es::string_view input_, T &output,
+                                      ProxyType proxy) {
+  std::string input(input_);
   Reflector::ErrorType errType = Reflector::ErrorType::None;
   const int base =
       !input.compare(0, 2, "0x") || !input.compare(0, 3, "-0x") ? 16 : 10;
-
-  if (std::is_signed<T>::value) {
+  if constexpr (std::is_signed_v<T>) {
     int64 value = 0;
     const int64 iMin = proxy.iMin;
     const int64 iMax = proxy.iMax;
@@ -178,8 +140,45 @@ static Reflector::ErrorType SetNumber(const std::string &input, T &output,
 }
 
 template <typename T>
-static Reflector::ErrorType SetValue(const std::string &input, T &output) {
-  return SetNumber(input, output, typename std::is_integral<T>::type{});
+static Reflector::ErrorType SetNumber(es::string_view input_, T &output) {
+  if constexpr (std::is_floating_point_v<T>) {
+    std::string input(input_);
+    constexpr T fMax = std::numeric_limits<T>::max();
+    constexpr T fMin = std::numeric_limits<T>::min();
+
+    try {
+      output = [&input] {
+        if constexpr (std::is_same_v<T, float>) {
+          return std::stof(input);
+        } else {
+          return std::stod(input);
+        }
+      }();
+
+      // MSVC Underflow fix
+      if (std::fpclassify(output) == FP_SUBNORMAL) {
+        throw std::out_of_range("");
+      }
+    } catch (const std::invalid_argument &) {
+      printerror("[Reflector] Invalid value: " << input);
+      return Reflector::ErrorType::InvalidFormat;
+    } catch (const std::out_of_range &) {
+      printwarning("[Reflector] Float out of range, got: " << input);
+
+      double fVal = atof(input.c_str());
+
+      if (fVal > 0)
+        output = fVal > 1.0 ? fMax : fMin;
+      else
+        output = fVal < -1.0 ? -fMax : -fMin;
+
+      return Reflector::ErrorType::OutOfRange;
+    }
+
+    return Reflector::ErrorType::None;
+  } else {
+    return SetNumber(input_, output, LimitProxy<T>{});
+  }
 }
 
 static Reflector::ErrorType SetBoolean(std::string input, bool &output) {
@@ -202,8 +201,9 @@ static uint64 GetEnumValue(es::string_view input, JenHash hash,
                              ? **rEnumFallback
                              : REFEnumStorage.at(hash);
 
-  if (rEnumFallback)
+  if (rEnumFallback) {
     *rEnumFallback = &rEnum;
+  }
 
   ReflectedEnum::iterator foundItem =
       std::find_if(rEnum.begin(), rEnum.end(), [input](es::string_view item) {
@@ -285,12 +285,13 @@ static Reflector::ErrorType SetEnumFlags(es::string_view input, char *objAddr,
 
   for (auto &c : input) {
     if (c == '|') {
-      auto subErrType =
-          FlagFromEnum({lastIterator, &c}, hash, eValue, rEnumFallback);
-      if (subErrType == Reflector::ErrorType::InvalidDestination)
+      auto subErrType = FlagFromEnum({lastIterator, size_t(&c - lastIterator)},
+                                     hash, eValue, rEnumFallback);
+      if (subErrType == Reflector::ErrorType::InvalidDestination) {
         return subErrType;
-      else if (subErrType != Reflector::ErrorType::None)
+      } else if (subErrType != Reflector::ErrorType::None) {
         errType = subErrType;
+      }
 
       lastIterator = &c + 1;
     }
@@ -298,11 +299,13 @@ static Reflector::ErrorType SetEnumFlags(es::string_view input, char *objAddr,
 
   if (lastIterator < input.end()) {
     auto subErrType =
-        FlagFromEnum({lastIterator, input.end()}, hash, eValue, rEnumFallback);
-    if (subErrType == Reflector::ErrorType::InvalidDestination)
+        FlagFromEnum({lastIterator, size_t(input.end() - lastIterator)}, hash,
+                     eValue, rEnumFallback);
+    if (subErrType == Reflector::ErrorType::InvalidDestination) {
       return subErrType;
-    else if (subErrType != Reflector::ErrorType::None)
+    } else if (subErrType != Reflector::ErrorType::None) {
       errType = subErrType;
+    }
   }
 
   memcpy(objAddr, &eValue, size);
@@ -332,7 +335,7 @@ static Reflector::ErrorType SetReflectedArray(char startBrace, char endBrace,
     return Reflector::ErrorType::InvalidFormat;
   }
 
-  value = {value.begin() + arrBegin + 1, value.begin() + arrEnd};
+  value = {value.begin() + arrBegin + 1, arrEnd - arrBegin - 1};
 
   if (value.empty()) {
     printerror("[Reflector] Empty array input.");
@@ -355,8 +358,9 @@ static Reflector::ErrorType SetReflectedArray(char startBrace, char endBrace,
   for (auto it = value.begin(); it != value.end(); it++) {
     const bool isEnding = std::next(it) == value.end();
 
-    if ((*it == ']' || *it == '"' || *it == ')' || *it == '}') && localScope)
+    if ((*it == ']' || *it == '"' || *it == ')' || *it == '}') && localScope) {
       localScope = false;
+    }
 
     if (localScope || *it == '[' || *it == '"' || *it == '(' || *it == '{') {
       localScope = true;
@@ -364,7 +368,7 @@ static Reflector::ErrorType SetReflectedArray(char startBrace, char endBrace,
     }
 
     if (*it == ',' || isEnding) {
-      es::string_view cValue(curIter, isEnding ? value.end() : it);
+      es::string_view cValue(curIter, (isEnding ? value.end() : it) - curIter);
       cValue = es::SkipStartWhitespace(cValue);
 
       if (cValue.empty() && curElement < reflValue.numItems) {
@@ -414,17 +418,17 @@ SetReflectedMember(reflType reflValue, es::string_view value, char *objAddr) {
 
   switch (reflValue.type) {
   case REFType::Bool:
-    return SetBoolean(value, *reinterpret_cast<bool *>(objAddr));
+    return SetBoolean(std::string(value), *reinterpret_cast<bool *>(objAddr));
   case REFType::Integer: {
     switch (reflValue.subSize) {
     case 1:
-      return SetValue(value, *objAddr);
+      return SetNumber(value, *objAddr);
     case 2:
-      return SetValue(value, *reinterpret_cast<short *>(objAddr));
+      return SetNumber(value, *reinterpret_cast<short *>(objAddr));
     case 4:
-      return SetValue(value, *reinterpret_cast<int *>(objAddr));
+      return SetNumber(value, *reinterpret_cast<int *>(objAddr));
     case 8:
-      return SetValue(value, *reinterpret_cast<int64 *>(objAddr));
+      return SetNumber(value, *reinterpret_cast<int64 *>(objAddr));
     default:
       return Reflector::ErrorType::InvalidDestination;
     }
@@ -432,13 +436,13 @@ SetReflectedMember(reflType reflValue, es::string_view value, char *objAddr) {
   case REFType::UnsignedInteger: {
     switch (reflValue.subSize) {
     case 1:
-      return SetValue(value, *reinterpret_cast<unsigned char *>(objAddr));
+      return SetNumber(value, *reinterpret_cast<unsigned char *>(objAddr));
     case 2:
-      return SetValue(value, *reinterpret_cast<unsigned short *>(objAddr));
+      return SetNumber(value, *reinterpret_cast<unsigned short *>(objAddr));
     case 4:
-      return SetValue(value, *reinterpret_cast<unsigned int *>(objAddr));
+      return SetNumber(value, *reinterpret_cast<unsigned int *>(objAddr));
     case 8:
-      return SetValue(value, *reinterpret_cast<uint64 *>(objAddr));
+      return SetNumber(value, *reinterpret_cast<uint64 *>(objAddr));
     default:
       return Reflector::ErrorType::InvalidDestination;
     }
@@ -446,9 +450,9 @@ SetReflectedMember(reflType reflValue, es::string_view value, char *objAddr) {
   case REFType::FloatingPoint: {
     switch (reflValue.subSize) {
     case 4:
-      return SetValue(value, *reinterpret_cast<float *>(objAddr));
+      return SetNumber(value, *reinterpret_cast<float *>(objAddr));
     case 8:
-      return SetValue(value, *reinterpret_cast<double *>(objAddr));
+      return SetNumber(value, *reinterpret_cast<double *>(objAddr));
     default:
       return Reflector::ErrorType::InvalidDestination;
     }
@@ -458,7 +462,7 @@ SetReflectedMember(reflType reflValue, es::string_view value, char *objAddr) {
     auto doStuff = [&](auto &&insertVal) {
       LimitProxy<typename std::remove_reference<decltype(insertVal)>::type>
           proxy{reflValue.subSize};
-      auto err = SetNumber(value, insertVal, std::true_type{}, proxy);
+      auto err = SetNumber(value, insertVal, proxy);
       BitMember bfMember;
       bfMember.size = reflValue.subSize;
       bfMember.position = reflValue.offset;
@@ -655,8 +659,9 @@ Reflector::ErrorType Reflector::SetReflectedValueFloat(reflType reflValue,
   }
 }
 
-static es::string_view PrintEnumValue(JenHash hash, uint64 value,
-                                      ReflectedEnum **rEnumFallback = nullptr) {
+static es::string_view
+PrintEnumValue(JenHash hash, uint64 value,
+               ReflectedEnum **rEnumFallback = nullptr) {
   ReflectedEnum &rEnum = rEnumFallback && *rEnumFallback
                              ? **rEnumFallback
                              : REFEnumStorage.at(hash);
@@ -681,7 +686,7 @@ static std::string PrintEnum(const char *objAddr, JenHash hash, uint16 elSize) {
 
   memcpy(reinterpret_cast<char *>(&eValue), objAddr, elSize);
 
-  return PrintEnumValue(hash, eValue);
+  return std::string{PrintEnumValue(hash, eValue)};
 }
 
 static std::string PrintEnumFlags(const char *objAddr, JenHash hash,

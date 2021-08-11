@@ -38,7 +38,21 @@ public:
   template <class _containerClass,
             class T = typename _containerClass::value_type>
   void WriteContainer(const _containerClass &input) const {
-    _WriteElements<T>(input.data(), input.size(), 0);
+    if constexpr (use_write_v<T>) {
+      for (auto &item : input) {
+        item.Write(*this);
+      }
+    } else {
+      const size_t size = sizeof(T);
+      if (this->swapEndian && size > 1) {
+        for (auto &item : input) {
+          Write(item);
+        }
+      } else {
+        WriteBuffer(reinterpret_cast<const char *>(input.data()),
+                    size * input.size());
+      }
+    }
   }
 
   // Will write any container (vector, basic_string, etc..)
@@ -90,48 +104,29 @@ public:
     Write<charType>(0);
   }
 
-  // SFINAE
   // Write class with its Write(BinWritterRef_t) const member method, or writes
   // type itself
   template <class T> void Write(const T &input) const {
-    _WriteSingle<T>(input, 0);
+    if constexpr (use_write_v<T>) {
+      input.Write(*this);
+    } else {
+      const size_t capacity = sizeof(T);
+      if (this->swapEndian && capacity > 1) {
+        auto outCopy = input;
+        FByteswapper(outCopy, true);
+        WriteBuffer(reinterpret_cast<const char *>(&outCopy), capacity);
+      } else {
+        WriteBuffer(reinterpret_cast<const char *>(&input), capacity);
+      }
+    }
   }
 
 private:
-  template <class C, class D>
-  auto _WriteSingle(const D &input, int) const
-      -> decltype(std::declval<C>().Write(*this), void()) {
-    input.Write(*this);
-  };
-
-  template <class C, class T> void _WriteSingle(const T &value, ...) const {
-    const size_t capacity = sizeof(T);
-    if (this->swapEndian && capacity > 1) {
-      auto outCopy = value;
-      FByteswapper(outCopy, true);
-      WriteBuffer(reinterpret_cast<const char *>(&outCopy), capacity);
-    } else {
-      WriteBuffer(reinterpret_cast<const char *>(&value), capacity);
-    }
-  }
-
-  template <class C, class D>
-  auto _WriteElements(const D *input, size_t numElements, int) const
-      -> decltype(std::declval<C>().Write(*this), void()) {
-    for (size_t e = 0; e < numElements; e++) {
-      (input + e)->Write(*this);
-    }
-  };
-
-  template <class C, class T>
-  void _WriteElements(const T *value, size_t numElements, ...) const {
-    const size_t size = sizeof(T);
-    if (this->swapEndian && size > 1) {
-      for (size_t e = 0; e < numElements; e++) {
-        Write(*(value + e));
-      }
-    } else {
-      WriteBuffer(reinterpret_cast<const char *>(value), size * numElements);
-    }
-  }
+  using Self = BinWritterRef_t<_Traits>;
+  template <class C, class = void> struct use_write : std::false_type {};
+  template <class C>
+  struct use_write<
+      C, std::void_t<decltype(std::declval<C>().Write(std::declval<Self>()))>>
+      : std::true_type {};
+  template <class C> constexpr static bool use_write_v = use_write<C>::value;
 };

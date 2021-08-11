@@ -42,7 +42,7 @@ struct ReflectorTypeBase {
 
 template <class C> struct ReflectorType : ReflectorTypeBase {};
 
-struct reflectorStatic_data {
+struct reflectorStatic {
   const JenHash classHash;
   const uint32 nTypes;
   const reflType *types;
@@ -53,7 +53,7 @@ struct reflectorStatic_data {
   const _ReflDesc *typeDescs;
 
   template <class C>
-  reflectorStatic_data(_RTag<C>)
+  reflectorStatic(_RTag<C>)
       : classHash(ReflectorType<C>::Hash()),
         nTypes(static_cast<uint32>(ReflectorType<C>::NumTypes())),
         types(ReflectorType<C>::Types()),
@@ -64,19 +64,7 @@ struct reflectorStatic_data {
         typeDescs(ReflectorType<C>::TypeDescriptors()) {}
 };
 
-template <bool x64> struct reflectorStatic_t : reflectorStatic_data {
-  using reflectorStatic_data::reflectorStatic_data;
-};
-
-template <> struct reflectorStatic_t<false> : reflectorStatic_data {
-  using reflectorStatic_data::reflectorStatic_data;
-  int _pad[6];
-};
-
-typedef reflectorStatic_t<ES_X64> reflectorStatic;
-const int __sizeof_reflectorStatic = sizeof(reflectorStatic);
-
-ES_STATIC_ASSERT(__sizeof_reflectorStatic == 56);
+static_assert(sizeof(reflectorStatic) == 56);
 
 struct ReflectedInstance {
 private:

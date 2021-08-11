@@ -1,7 +1,8 @@
-﻿cmake_minimum_required(VERSION 3.12)
+cmake_minimum_required(VERSION 3.12)
 project(PreCore VERSION 6)
 
-set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED TRUE)
 
 set(PRECORE_SOURCE_DIR
     ${CMAKE_CURRENT_SOURCE_DIR}
@@ -10,6 +11,7 @@ set(CMAKE_MODULE_PATH
     ${PRECORE_SOURCE_DIR}/cmake;${CMAKE_MODULE_PATH}
     CACHE STRING "")
 option(PC_SHARED_LIB "" OFF)
+option(PRECORE_AS_SYSTEM "" OFF)
 
 if(CMAKE_COMPILER_IS_GNUCXX AND USE_GCOV)
   message("Compiling with GCOV.")
@@ -47,7 +49,12 @@ endfunction()
 # target
 function(set_precore_sources TARGET_NAME)
   _set_basic_flags(${TARGET_NAME} PRIVATE)
-  target_include_directories(${TARGET_NAME} PRIVATE ${PRECORE_SOURCE_DIR})
+  if(PRECORE_AS_SYSTEM)
+    target_include_directories(${TARGET_NAME} SYSTEM
+                               PRIVATE ${PRECORE_SOURCE_DIR})
+  else()
+    target_include_directories(${TARGET_NAME} PRIVATE ${PRECORE_SOURCE_DIR})
+  endif()
 
   foreach(cFile ${ARGN})
     if(${cFile} STREQUAL multi_thread)

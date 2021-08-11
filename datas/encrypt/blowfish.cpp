@@ -19,6 +19,7 @@
 #include "blowfish2.h"
 #include <cstring>
 #include <random>
+#include <stdexcept>
 
 #define _BF_SBKEY(_item, _id) sboxes[(_id * 256) + _item.b[3 - _id]]
 #define BF_SBKEY(_item)                                                        \
