@@ -18,6 +18,7 @@
 #pragma once
 #include "datas/string_view.hpp"
 #include <Python.h>
+#include <algorithm>
 
 namespace UniPy {
 template <class Info> struct Enum {
@@ -79,7 +80,7 @@ template <class Info> struct Enum {
   }
 
   static PyObject *Subscript(PyObject *, PyObject *index) {
-    return SubscriptRaw(PyInt_AsSsize_t(index));
+    return SubscriptRaw(PyLong_AsSize_t(index));
   }
 
   static PyObject *SubscriptRaw(size_t index) {
@@ -90,7 +91,7 @@ template <class Info> struct Enum {
 
     const auto cName = std::next(Info::begin(), index)->name;
 
-    return PyString_FromStringAndSize(cName.data(), cName.size());
+    return PyUnicode_FromStringAndSize(cName.data(), cName.size());
   }
 
   static PyObject *GetAttribute(PyObject *, char *attrName) {
@@ -104,7 +105,7 @@ template <class Info> struct Enum {
       return nullptr;
     }
 
-    return PyInt_FromSize_t(foundEnum->id);
+    return PyLong_FromSize_t(foundEnum->id);
   }
 };
 } // namespace UniPy

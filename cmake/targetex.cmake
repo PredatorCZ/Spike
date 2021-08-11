@@ -134,7 +134,7 @@ function(build_target)
                  "${CMAKE_SOURCE_DIR}/lib"
                  RUNTIME_OUTPUT_DIRECTORY_RELEASE "${CMAKE_SOURCE_DIR}/lib"
                  LIBRARY_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/lib")
-    target_include_directories(${_arg_NAME} PRIVATE ${Python2_INCLUDE_DIRS})
-    target_link_libraries(${_arg_NAME} ${Python2_LIBRARIES})
+    target_include_directories(${_arg_NAME} PRIVATE ${Python3_INCLUDE_DIRS})
+    target_link_libraries(${_arg_NAME} ${Python3_LIBRARIES})
   endif()
 endfunction()

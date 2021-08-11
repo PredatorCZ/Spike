@@ -1,5 +1,4 @@
 #include "datas/matrix44.hpp"
-#include "datas/string_view.hpp"
 #include "uni/list_vector.hpp"
 #include "uni/python/pymotion.hpp"
 #include "uni/python/pyskeleton.hpp"
@@ -8,7 +7,7 @@
 
 class BoneMock : public uni::Bone {
 public:
-  es::string_view name;
+  std::string name;
   size_t ID;
   uni::TransformType tmType;
   BoneMock *parent;
@@ -196,13 +195,22 @@ static PyMethodDef methods[]{
     {NULL},
 };
 
-PyMODINIT_FUNC Py_GCC_ATTRIBUTE((visibility("default"))) inittest_unipy() {
-  PyObject *m =
-      Py_InitModule3("test_unipy", methods, "UNI unit testing module.");
+static PyModuleDef module{
+    PyModuleDef_HEAD_INIT,
+    "test_unipy",
+    "UNI unit testing module.",
+    -1,
+    methods,
+};
+
+extern "C" PyObject ES_EXPORT *PyInit_test_unipy() {
+
+  PyObject *m = PyModule_Create(&module);
 
   if (!m)
-    return;
+    return Py_None;
 
   UniPy::Skeleton::InitType(m);
   UniPy::Motion::InitType(m);
+  return m;
 }

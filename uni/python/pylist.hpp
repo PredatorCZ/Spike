@@ -89,7 +89,7 @@ template <class Info> struct List {
   static size_t Len(List *self) { return self->cList->Size(); }
 
   static PyObject *Subscript(List *self, PyObject *index) {
-    const auto id = PyInt_AsSsize_t(index);
+    const auto id = PyLong_AsSize_t(index);
     return self->SubscriptRaw(id);
   }
 

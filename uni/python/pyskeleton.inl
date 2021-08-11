@@ -80,7 +80,7 @@ static PyTypeObject boneType = {
     0,                                           /* tp_print */
     0,                                           /* tp_getattr */
     0,                                           /* tp_setattr */
-    (cmpfunc)Bone::Compare,                      /* tp_compare */
+    0,                                           /* tp_compare */
     0,                                           /* tp_repr */
     0,                                           /* tp_as_number */
     0,                                           /* tp_as_sequence */
@@ -95,7 +95,7 @@ static PyTypeObject boneType = {
     "Uni Bone interface",                        /* tp_doc */
     0,                                           /* tp_traverse */
     0,                                           /* tp_clear */
-    0,                                           /* tp_richcompare */
+    (richcmpfunc)Bone::Compare,                  /* tp_richcompare */
     0,                                           /* tp_weaklistoffset */
     0,                                           /* tp_iter */
     0,                                           /* tp_iternext */
@@ -138,12 +138,12 @@ PyObject *Bone::GetTM(Bone *self) {
 }
 
 PyObject *Bone::GetIndex(Bone *self) {
-  return PyInt_FromSize_t(self->item->Index());
+  return PyLong_FromSize_t(self->item->Index());
 }
 
 PyObject *Bone::GetName(Bone *self) {
   const auto retName = self->item->Name();
-  return PyString_FromStringAndSize(retName.data(), retName.size());
+  return PyUnicode_FromStringAndSize(retName.data(), retName.size());
 }
 
 PyObject *Bone::GetParent(Bone *self) {
@@ -158,12 +158,20 @@ PyObject *Bone::GetParent(Bone *self) {
   }
 }
 
-int Bone::Compare(Bone *self, Bone *other) {
+PyObject *Bone::Compare(Bone *self, Bone *other, int op) {
+  if (op != Py_EQ && op != Py_NE) {
+    return Py_NotImplemented;
+  }
+
   const auto i0d = self->item.get();
   const auto i1d = other->item.get();
-  const bool eq = (i0d == i1d) ||
-                  (i0d->Index() == i1d->Index() && i0d->Name() == i1d->Name());
-  return eq ? 0 : 1;
+  bool eq = (i0d == i1d) ||
+            (i0d->Index() == i1d->Index() && i0d->Name() == i1d->Name());
+  if (op == Py_NE) {
+    eq = !eq;
+  }
+
+  return eq ? Py_True : Py_False;
 }
 
 static PyGetSet skeletonGetSets[] = {
@@ -222,7 +230,7 @@ void Skeleton::Dealloc(Skeleton *self) { auto t0 = std::move(self->item); }
 
 PyObject *Skeleton::Name(Skeleton *self) {
   auto skName = self->item->Name();
-  return PyString_FromStringAndSize(skName.data(), skName.size());
+  return PyUnicode_FromStringAndSize(skName.data(), skName.size());
 }
 
 PyObject *Skeleton::Bones(Skeleton *self) {

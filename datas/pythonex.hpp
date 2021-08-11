@@ -19,10 +19,6 @@
 
 #include <Python.h>
 
-#if PY_MAJOR_VERSION < 3
-#include <structmember.h>
-#endif
-
 inline void PyAddType(PyObject *module, PyTypeObject *type) {
   if (PyType_Ready(type) < 0)
     return;
@@ -38,7 +34,7 @@ template <class C> void PyAddType(PyObject *module) {
   PyModule_AddObject(module, type->tp_name, (PyObject *)type);
 }
 
-#if PY_MAJOR_VERSION < 3 || (PY_MAJOR_VERSION == 3 && PY_MINOR_VERSION < 7)
+#if (PY_MAJOR_VERSION == 3 && PY_MINOR_VERSION < 7)
 struct PyGetSet {
   const char *name;
   getter get;

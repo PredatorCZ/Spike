@@ -1,4 +1,4 @@
-﻿include(../cmake/targetex.cmake)
+include(../cmake/targetex.cmake)
 include(../cmake/chartype.cmake)
 include(../cmake/odr_test.cmake)
 set(PC_SHARED_LIB
@@ -80,9 +80,9 @@ add_test(
   WORKING_DIRECTORY ${PROJECT_SOURCE_DIR})
 
 if(${RELEASEVER})
-  find_package(Python2 COMPONENTS Development Interpreter)
+  find_package(Python3 COMPONENTS Development Interpreter)
 
-  if(${Python2_FOUND})
+  if(${Python3_FOUND})
     build_target(
       NAME
       test_unipy
@@ -99,7 +99,7 @@ if(${RELEASEVER})
 
     add_test(
       NAME test_unipy
-      COMMAND ${Python2_EXECUTABLE} test_uni.py
+      COMMAND ${Python3_EXECUTABLE} test_uni.py
       WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/test)
 
   endif()

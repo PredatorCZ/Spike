@@ -288,7 +288,7 @@ PyObject *Motion::MotionType(Motion *self) {
 
 PyObject *Motion::Name(Motion *self) {
   const auto rName = self->item->Name();
-  return PyString_FromStringAndSize(rName.data(), rName.size());
+  return PyUnicode_FromStringAndSize(rName.data(), rName.size());
 }
 
 PyObject *Motion::Duration(Motion *self) {
