@@ -154,13 +154,7 @@ function(build_target)
       set_target_properties(${_arg_NAME} PROPERTIES SUFFIX .pyd)
     endif()
 
-    set_target_properties(
-      ${_arg_NAME}
-      PROPERTIES PREFIX ""
-                 RUNTIME_OUTPUT_DIRECTORY_RELWITHDEBINFO
-                 "${CMAKE_SOURCE_DIR}/lib"
-                 RUNTIME_OUTPUT_DIRECTORY_RELEASE "${CMAKE_SOURCE_DIR}/lib"
-                 LIBRARY_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/lib")
+    set_target_properties(${_arg_NAME} PROPERTIES PREFIX "")
     target_include_directories(${_arg_NAME} PRIVATE ${Python3_INCLUDE_DIRS})
     target_link_libraries(${_arg_NAME} ${Python3_LIBRARIES})
   endif()

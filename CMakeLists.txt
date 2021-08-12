@@ -75,8 +75,9 @@ function(set_precore_sources TARGET_NAME)
 endfunction()
 
 if(${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_CURRENT_SOURCE_DIR})
-  enable_testing()
   add_subdirectory(test)
+  enable_testing()
+  add_subdirectory(bin ${CMAKE_SOURCE_DIR}/bin)
 endif()
 
 if(PC_SHARED_LIB)

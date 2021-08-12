@@ -1,6 +1,7 @@
-include(../cmake/targetex.cmake)
-include(../cmake/chartype.cmake)
-include(../cmake/odr_test.cmake)
+﻿include(targetex)
+include(chartype)
+include(odr_test)
+
 set(PC_SHARED_LIB
     ON
     CACHE BOOL "" FORCE)
@@ -16,10 +17,6 @@ test_odr(
 
 target_link_libraries(test_odr precore)
 
-if(MSVC)
-  add_custom_command(TARGET test_odr COMMAND setx PATH "$<TARGET_FILE_DIR:precore>;")
-endif()
-
 build_target(
   NAME
   test_base
@@ -31,8 +28,6 @@ build_target(
   precore
   NO_PROJECT_H
   NO_VERINFO)
-
-add_test(test_base test_base)
 
 build_target(
   NAME
@@ -46,8 +41,6 @@ build_target(
   NO_PROJECT_H
   NO_VERINFO)
 
-add_test(test_reflector test_reflector)
-
 build_target(
   NAME
   test_uni
@@ -59,8 +52,6 @@ build_target(
   precore
   NO_PROJECT_H
   NO_VERINFO)
-
-add_test(test_uni test_uni)
 
 build_target(
   NAME
@@ -74,12 +65,7 @@ build_target(
   NO_PROJECT_H
   NO_VERINFO)
 
-add_test(
-  NAME test_app
-  COMMAND test_app
-  WORKING_DIRECTORY ${PROJECT_SOURCE_DIR})
-
-if(${RELEASEVER})
+if(${RELEASEVER} AND NOT MINGW)
   find_package(Python3 COMPONENTS Development Interpreter)
 
   if(${Python3_FOUND})
@@ -96,12 +82,8 @@ if(${RELEASEVER})
       NO_VERINFO)
 
     set_precore_sources(test_unipy uni_python)
-
-    add_test(
-      NAME test_unipy
-      COMMAND ${Python3_EXECUTABLE} test_uni.py
-      WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/test)
-
+    install(TARGETS test_unipy LIBRARY DESTINATION bin)
+    install(FILES test_uni.py DESTINATION bin)
   endif()
 endif()
 
@@ -118,8 +100,6 @@ build_target(
   NO_PROJECT_H
   NO_VERINFO)
 
-add_test(test_xml test_xml)
-
 build_target(
   NAME
   test_blowfish
@@ -132,23 +112,10 @@ build_target(
   NO_PROJECT_H
   NO_VERINFO)
 
-add_test(test_blowfish test_blowfish)
-
 add_subdirectory(shared)
 
-if(MINGW)
-  install(
-    TARGETS test_base
-            test_app
-            test_blowfish
-            test_reflector
-            test_uni
-            test_xml
-            test_unipy
-    RUNTIME DESTINATION bin
-    LIBRARY DESTINATION bin)
-  install(FILES test_uni.py DESTINATION bin)
-endif()
+install(TARGETS test_base test_app test_blowfish test_reflector test_uni
+                test_xml RUNTIME DESTINATION bin)
 
 if(CMAKE_CXX_COMPILER_ID MATCHES Clang)
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra")

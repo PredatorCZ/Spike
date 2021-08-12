@@ -1,6 +1,10 @@
 name: build
 
-on: [push]
+on:
+  push:
+    branches:
+      - master
+      - dev*
 
 env:
   BUILD_TYPE: Release
@@ -43,11 +47,11 @@ jobs:
         run: |
           mkdir ${{github.workspace}}/build
           cd ${{github.workspace}}/build
-          cmake -DCMAKE_BUILD_TYPE=$BUILD_TYPE -DUSE_GCOV=$USE_GCOV ..
+          cmake -DCMAKE_BUILD_TYPE=$BUILD_TYPE -DUSE_GCOV=$USE_GCOV -DCMAKE_INSTALL_PREFIX=${{github.workspace}} -DCMAKE_INSTALL_RPATH=${{github.workspace}}/bin ..
 
       - name: Build
         working-directory: ${{github.workspace}}/build
-        run: cmake --build . -j 6
+        run: cmake --build . -j 6 --target install
 
       - name: Test
         working-directory: ${{github.workspace}}/build
@@ -75,14 +79,12 @@ jobs:
         run: |
           mkdir ${{github.workspace}}/build
           cd ${{github.workspace}}/build
-          cmake -DCMAKE_BUILD_TYPE=Release -A x64 ..
+          cmake -DCMAKE_BUILD_TYPE=Release -A x64 -DCMAKE_INSTALL_PREFIX=${{github.workspace}} ..
       - name: Build
         working-directory: ${{github.workspace}}/build
         run: |
-          cmake --build . -j 6 --config Release
+          cmake --build . -j 6 --config Release --target install
 
       - name: Test
         working-directory: ${{github.workspace}}/build
-        run: |
-          $Env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")
-          ctest --output-on-failure -C Release
+        run: ctest --output-on-failure -C Release
