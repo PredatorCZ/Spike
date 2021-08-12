@@ -16,10 +16,33 @@
 */
 
 #pragma once
+#include "../bincore_fwd.hpp"
 #include "bincore_endian.hpp"
 #include "bincore_navi.hpp"
-#include "../bincore_fwd.hpp"
+#include <ios>
 
 #define getBlockSize(classname, startval, endval)                              \
   offsetof(classname, endval) - offsetof(classname, startval) +                \
       sizeof(classname::endval)
+
+constexpr std::ios_base::openmode MakeOpenMode(BinCoreOpenMode mode) {
+  std::ios_base::openmode retVal{};
+
+  if (mode & BinCoreOpenMode::Binary) {
+    retVal = retVal | std::ios_base::binary;
+  }
+
+  if (mode & BinCoreOpenMode::Append) {
+    retVal = retVal | std::ios_base::app;
+  }
+
+  if (mode & BinCoreOpenMode::Ate) {
+    retVal = retVal | std::ios_base::ate;
+  }
+
+  if (mode & BinCoreOpenMode::Truncate) {
+    retVal = retVal | std::ios_base::trunc;
+  }
+
+  return retVal;
+}

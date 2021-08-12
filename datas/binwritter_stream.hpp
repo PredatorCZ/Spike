@@ -59,6 +59,8 @@ public:
   }
 
   bool IsEOF() const { return baseStream->eof(); }
+
+  StreamType &BaseStream() { return *baseStream; }
 };
 
 typedef BinWritterRef_t<BinStreamOutTraits> BinWritterRef;

@@ -26,7 +26,7 @@ int test_binwritter(const reflClass &data) {
 int test_binreader(const reflClass &data) {
   TEST_THROW(es::FileNotFoundError, BinReader mrd("nonexistantFile"););
 
-  BinReader mrd;
+  BinReader mrd{};
 
   TEST_THROW(es::FileNotFoundError, mrd.Open("nonexistantFile2"););
 

@@ -20,8 +20,9 @@
 #include "except.hpp"
 #include "internal/bincore_file.hpp"
 
+template<BinCoreOpenMode MODE>
 class BinWritter : public BinWritterRef,
-                   public BinStreamFile<std::ios::binary | std::ios::out> {
+                   public BinStreamFile<MakeOpenMode(MODE) | std::ios::out> {
   template <class C> void OpenFile(const C filePath) {
     if (!this->Open_(filePath)) {
       throw es::FileInvalidAccessError(filePath);

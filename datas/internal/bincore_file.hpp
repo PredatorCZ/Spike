@@ -37,12 +37,11 @@ protected:
   }
 
   bool WOpen(const std::wstring &fileName) {
-    FILE *cFile = nullptr;
-    if constexpr (MODE & std::ios_base::in) {
-      cFile = _wfopen(fileName.data(), L"rb");
-    } else {
-      cFile = _wfopen(fileName.data(), L"wb");
-    }
+    constexpr wchar_t mode[]{(MODE & std::ios_base::in) != 0 ? 'r' : 'w',
+                             (MODE & std::ios_base::binary) != 0 ? 'b' : 't',
+                             0};
+
+    FILE *cFile = _wfopen(fileName.data(), mode);
 
     if (!cFile) {
       FileStream.setstate(std::ios_base::badbit);

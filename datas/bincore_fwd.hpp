@@ -16,12 +16,29 @@
 */
 
 #pragma once
-class BinReader;
+
+enum class BinCoreOpenMode {
+  Text = 0,
+  Append = 1,
+  Ate = 2,
+  Binary = 4,
+  Truncate = 8,
+};
+
+constexpr BinCoreOpenMode operator|(BinCoreOpenMode o1, BinCoreOpenMode o2) {
+  return static_cast<BinCoreOpenMode>(static_cast<long>(o1) |
+                                      static_cast<long>(o2));
+}
+
+constexpr bool operator&(BinCoreOpenMode o1, BinCoreOpenMode o2) {
+  return static_cast<long>(o1) & static_cast<long>(o2);
+}
+
+template <BinCoreOpenMode MODE = BinCoreOpenMode::Binary> class BinReader;
 class BinStreamInTraits;
 template <class _Traits> class BinReaderRef_t;
 typedef BinReaderRef_t<BinStreamInTraits> BinReaderRef;
-
-class BinWritter;
+template <BinCoreOpenMode MODE = BinCoreOpenMode::Binary> class BinWritter;
 class BinStreamOutTraits;
 template <class _Traits> class BinWritterRef_t;
 typedef BinWritterRef_t<BinStreamOutTraits> BinWritterRef;

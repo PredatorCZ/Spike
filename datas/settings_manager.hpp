@@ -19,17 +19,21 @@
 #include "master_printer.hpp"
 #include "reflector.hpp"
 #include "tchar.hpp"
+#include "datas/binwritter.hpp"
 
 #include <chrono>
 #include <ctime>
-#include <fstream>
 #include <locale>
 #include <thread>
 
 template <class Base> struct SettingsManager : public ReflectorBase<Base> {
-  static std::ofstream &GetLogger() {
-    static std::ofstream logger;
-    return logger;
+  using stream_type =  BinWritter<BinCoreOpenMode::Text>;
+  static stream_type &GetStream() {
+    static stream_type outStream;
+    return outStream;
+  }
+  static std::ostream &GetLogger() {
+    return GetStream().BaseStream();
   }
 
   static void printf(const char *str) { GetLogger() << str; }
@@ -45,7 +49,7 @@ template <class Base> struct SettingsManager : public ReflectorBase<Base> {
               &timeStruct);
     logName.append(std::to_string(dateBuffer));
     logName.append(".txt");
-    GetLogger().open(ToTSTRING(logName), std::ios::out);
+    GetStream().Open(logName);
     es::print::AddPrinterFunction(SettingsManager::printf, false);
 
     _tcsftime(dateBuffer, dateBufferSize, _T("%c %Z"), &timeStruct);
