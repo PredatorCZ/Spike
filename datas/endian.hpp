@@ -50,26 +50,22 @@ static_assert(_fbswap<uint16>(0xabcd) == 0xcdab);
 static_assert(_fbswap<uint32>(0x89abcdef) == 0xefcdab89);
 static_assert(_fbswap<uint64>(0x0123456789abcdef) == 0xefcdab8967452301);
 
-template <typename T, typename = void>
-struct SwapTypeBasic_ : std::false_type {};
+template <class T>
+using use_basic_swap = decltype(std::declval<T>().SwapEndian());
+template <class C>
+constexpr bool use_basic_swap_v = es::is_detected_v<use_basic_swap, C>;
 
-template <typename T>
-struct SwapTypeBasic_<T, std::void_t<decltype(std::declval<T>().SwapEndian())>>
-    : std::true_type {};
-
-template <typename T, typename = void> struct SwapTypeNew_ : std::false_type {};
-
-template <typename T>
-struct SwapTypeNew_<T,
-                    std::void_t<decltype(std::declval<T>().SwapEndian(false))>>
-    : std::true_type {};
+template <class T>
+using use_new_swap = decltype(std::declval<T>().SwapEndian(true));
+template <class C>
+constexpr bool use_new_swap_v = es::is_detected_v<use_new_swap, C>;
 } // namespace
 
 template <class C> void FByteswapper(C &input, bool outWay) {
   (void)(outWay);
-  if constexpr (SwapTypeBasic_<C>::value) {
+  if constexpr (use_basic_swap_v<C>) {
     input.SwapEndian();
-  } else if constexpr (SwapTypeNew_<C>::value) {
+  } else if constexpr (use_new_swap_v<C>) {
     input.SwapEndian(outWay);
   } else {
     auto rType = _fbswap(

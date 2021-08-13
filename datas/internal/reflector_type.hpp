@@ -41,16 +41,13 @@ struct reflectorInstance;
 
 template <class C, class = void> struct refl_is_reflected_ : std::false_type {};
 
+template <class T>
+using refl_is_reflected = decltype(std::declval<T>().ReflectorTag());
 template <class C>
-struct refl_is_reflected_<
-    C, std::void_t<decltype(std::declval<C>().ReflectorTag())>>
-    : std::true_type {};
-
-template <class C>
-constexpr bool refl_is_reflected_v_ = refl_is_reflected_<C>::value;
+constexpr bool refl_is_reflected_v = es::is_detected_v<refl_is_reflected, C>;
 
 template <class C> constexpr REFType RefGetType() {
-  if (refl_is_reflected_v_<C>) {
+  if (refl_is_reflected_v<C>) {
     return REFType::Class;
   } else if (std::is_enum_v<C>) {
     return REFType::Enum;

@@ -141,10 +141,8 @@ public:
 
 private:
   using Self = BinReaderRef_t<_Traits>;
-  template <class C, class = void> struct use_read : std::false_type {};
+  template <class T>
+  using use_read = decltype(std::declval<T>().Read(std::declval<Self>()));
   template <class C>
-  struct use_read<
-      C, std::void_t<decltype(std::declval<C>().Read(std::declval<Self>()))>>
-      : std::true_type {};
-  template <class C> constexpr static bool use_read_v = use_read<C>::value;
+  constexpr static bool use_read_v = es::is_detected_v<use_read, C>;
 };

@@ -106,6 +106,18 @@ template <> struct TypeFromSize<2> { typedef uint16 type; };
 template <> struct TypeFromSize<4> { typedef uint32 type; };
 template <> struct TypeFromSize<8> { typedef uint64 type; };
 
+template <class, template <class...> class Op, class... Args>
+struct detector_ : std::false_type {};
+
+template <template <class...> class Op, class... Args>
+struct detector_<std::void_t<Op<Args...>>, Op, Args...> : std::true_type {};
+
+template <template <class...> class Op, class... Args>
+using is_detected = detector_<void, Op, Args...>;
+
+template <template <class...> class Op, class... Args>
+constexpr bool is_detected_v = is_detected<Op, Args...>::value;
+
 } // namespace es
 
 #endif

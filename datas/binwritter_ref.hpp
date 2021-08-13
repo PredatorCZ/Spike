@@ -123,10 +123,8 @@ public:
 
 private:
   using Self = BinWritterRef_t<_Traits>;
-  template <class C, class = void> struct use_write : std::false_type {};
+  template <class T>
+  using use_write = decltype(std::declval<T>().Write(std::declval<Self>()));
   template <class C>
-  struct use_write<
-      C, std::void_t<decltype(std::declval<C>().Write(std::declval<Self>()))>>
-      : std::true_type {};
-  template <class C> constexpr static bool use_write_v = use_write<C>::value;
+  constexpr static bool use_write_v = es::is_detected_v<use_write, C>;
 };
