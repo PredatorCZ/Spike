@@ -43,14 +43,22 @@ public:
         item.Write(*this);
       }
     } else {
-      const size_t size = sizeof(T);
-      if (this->swapEndian && size > 1) {
-        for (auto &item : input) {
-          Write(item);
-        }
-      } else {
+      constexpr size_t size = sizeof(T);
+      auto wrbuffer = [&] {
         WriteBuffer(reinterpret_cast<const char *>(input.data()),
                     size * input.size());
+      };
+
+      if constexpr (size > 1) {
+        if (this->swapEndian) {
+          for (auto &item : input) {
+            Write(item);
+          }
+        } else {
+          wrbuffer();
+        }
+      } else {
+        wrbuffer();
       }
     }
   }
@@ -110,13 +118,21 @@ public:
     if constexpr (use_write_v<T>) {
       input.Write(*this);
     } else {
-      const size_t capacity = sizeof(T);
-      if (this->swapEndian && capacity > 1) {
-        auto outCopy = input;
-        FByteswapper(outCopy, true);
-        WriteBuffer(reinterpret_cast<const char *>(&outCopy), capacity);
+      constexpr size_t capacity = sizeof(T);
+      auto wtbuffer = [&](auto *ptr) {
+        WriteBuffer(reinterpret_cast<const char *>(ptr), capacity);
+      };
+
+      if constexpr (capacity > 1) {
+        if (this->swapEndian) {
+          auto outCopy = input;
+          FByteswapper(outCopy, true);
+          wtbuffer(&outCopy);
+        } else {
+          wtbuffer(&input);
+        }
       } else {
-        WriteBuffer(reinterpret_cast<const char *>(&input), capacity);
+        wtbuffer(&input);
       }
     }
   }

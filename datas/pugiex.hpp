@@ -224,10 +224,9 @@ inline auto XMLFromFile(const std::string &fileName,
 #else
   auto &&fileName_ = fileName;
 #endif
-  auto result = doc.load_file(fileName_.data(), static_cast<uint32>(pflags),
-                              static_cast<pugi::xml_encoding>(encoding));
-
-  if (!result) {
+  if (auto result = doc.load_file(fileName_.data(), static_cast<uint32>(pflags),
+                                  static_cast<pugi::xml_encoding>(encoding));
+      !result) {
     if (static_cast<XMLError>(result.status) == status_file_not_found) {
       throw es::FileNotFoundError(fileName);
     }

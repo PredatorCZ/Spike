@@ -46,9 +46,7 @@ void SwapBitField(size_t numItems, bool outWay, type &input, fn GetMember) {
     }
 
     input = newVal;
-  }
-
-  if (outWay) {
+  } else {
     for (size_t i = 0; i < numItems; i++) {
       BitMember item = GetMember(i);
       type mask = item.GetMask<type>();
@@ -59,7 +57,7 @@ void SwapBitField(size_t numItems, bool outWay, type &input, fn GetMember) {
 
     input = newVal;
 
-    if (sizeof(type) > 1) {
+    if constexpr (sizeof(type) > 1) {
       FByteswapper(input);
     }
   }

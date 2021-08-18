@@ -134,12 +134,10 @@ public:
   }
 
   void SwapEndian() {
-    if (sizeof(X) == 1) {
-      return;
+    if constexpr (sizeof(X) > 1) {
+      FByteswapper(X);
+      FByteswapper(Y);
     }
-
-    FByteswapper(X);
-    FByteswapper(Y);
   }
 };
 
@@ -267,13 +265,11 @@ public:
   }
 
   void SwapEndian() {
-    if (sizeof(X) == 1) {
-      return;
+    if constexpr (sizeof(X) > 1) {
+      FByteswapper(X);
+      FByteswapper(Y);
+      FByteswapper(Z);
     }
-
-    FByteswapper(X);
-    FByteswapper(Y);
-    FByteswapper(Z);
   }
 };
 
@@ -439,14 +435,12 @@ public:
   const value_type &operator[](size_t pos) const { return this->_arr[pos]; }
 
   void SwapEndian() {
-    if (sizeof(this->X) == 1) {
-      return;
+    if constexpr (sizeof(this->X) > 1) {
+      FByteswapper(this->X);
+      FByteswapper(this->Y);
+      FByteswapper(this->Z);
+      FByteswapper(this->W);
     }
-
-    FByteswapper(this->X);
-    FByteswapper(this->Y);
-    FByteswapper(this->Z);
-    FByteswapper(this->W);
   }
 };
 

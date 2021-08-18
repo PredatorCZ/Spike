@@ -50,12 +50,14 @@ public:
         item.Read(*this);
       }
     } else {
-      const size_t size = sizeof(T);
+      constexpr size_t size = sizeof(T);
       ReadBuffer(reinterpret_cast<char *>(&input[0]), size * numitems);
 
-      if (this->swapEndian && size > 1) {
-        for (auto &item : input) {
-          FByteswapper(item);
+      if constexpr (size > 1) {
+        if (this->swapEndian) {
+          for (auto &item : input) {
+            FByteswapper(item);
+          }
         }
       }
     }
@@ -115,13 +117,15 @@ public:
   }
 
   template <typename T, size_t _size> void Read(T (&value)[_size]) const {
-    const size_t size = sizeof(T);
+    constexpr size_t size = sizeof(T);
     const size_t arraySize = size * _size;
 
     ReadBuffer(reinterpret_cast<char *>(value), arraySize);
 
-    if (this->swapEndian && size > 1) {
-      FByteswapper(value);
+    if constexpr (size > 1) {
+      if (this->swapEndian) {
+        FByteswapper(value);
+      }
     }
   }
 
@@ -133,8 +137,10 @@ public:
       const size_t size = sizeof(T);
       ReadBuffer(reinterpret_cast<char *>(&value), size);
 
-      if (this->swapEndian && size > 1) {
-        FByteswapper(value);
+      if constexpr (size > 1) {
+        if (this->swapEndian) {
+          FByteswapper(value);
+        }
       }
     }
   }

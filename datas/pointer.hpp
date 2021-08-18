@@ -21,7 +21,11 @@
 #include <vector>
 
 namespace es {
-thread_local extern std::vector<void *> usedPts;
+template <class T>
+using use_push_back = decltype(std::declval<T>().push_back(
+    std::declval<typename T::value_type>()));
+template <class C>
+constexpr static bool use_push_back_v = es::is_detected_v<use_push_back, C>;
 
 template <class C, typename B> union Pointer_t {
   typedef C value_type;
@@ -44,20 +48,25 @@ public:
   const C &operator*() const { return *pointer; }
   const C *operator->() const { return pointer; }
 
-  bool Fixed() const {
-    return std::any_of(usedPts.begin(), usedPts.end(),
-                       [&](const void *i) { return i == &varPtr; });
-  }
-
-  bool Fixup(char *root, bool noCheck = false) {
-    if (!noCheck && Fixed()) {
+  template <class container = void>
+  bool Fixup(char *root, container *storedPtrs = nullptr) {
+    if (!pointer) {
       return false;
     }
 
-    usedPts.push_back(&varPtr);
+    if constexpr (!std::is_void_v<container>) {
+      if (storedPtrs) {
+        if (std::any_of(storedPtrs->begin(), storedPtrs->end(),
+                        [&](auto i) { return i == &varPtr; })) {
+          return false;
+        }
 
-    if (!pointer) {
-      return false;
+        if constexpr (use_push_back_v<container>) {
+          storedPtrs->push_back(&varPtr);
+        } else {
+          storedPtrs->emplace(&varPtr);
+        }
+      }
     }
 
     rawPtr = root + varPtr;
@@ -89,25 +98,29 @@ public:
   const C &operator*() const { return *static_cast<C *>(*this); }
   const C *operator->() const { return *this; }
 
-  bool Fixed() const {
-    return std::any_of(usedPts.begin(), usedPts.end(),
-                       [&](const void *i) { return i == &varPtr; });
-  }
-
-  bool Fixup(char *root, bool noCheck = false) {
-    if (!noCheck && Fixed()) {
-      return false;
-    }
-
-    usedPts.push_back(&varPtr);
-
+  template <class container = void>
+  bool Fixup(char *root, container *storedPtrs = nullptr) {
     if (!varPtr) {
       return false;
     }
 
+    if constexpr (!std::is_void_v<container>) {
+      if (storedPtrs) {
+        if (std::any_of(storedPtrs->begin(), storedPtrs->end(),
+                        [&](auto i) { return i == &varPtr; })) {
+          return false;
+        }
+
+        if constexpr (use_push_back_v<container>) {
+          storedPtrs->push_back(&varPtr);
+        } else {
+          storedPtrs->emplace(&varPtr);
+        }
+      }
+    }
+
     char *rawAddr = root + varPtr;
     *this = reinterpret_cast<C *>(rawAddr);
-
     return true;
   }
 
@@ -123,5 +136,3 @@ public:
 
 template <class C> using esPointerX64 = es::Pointer_t<C, uint64>;
 template <class C> using esPointerX86 = es::Pointer_t<C, uint32>;
-
-static inline void ClearESPointers() { es::usedPts.clear(); }

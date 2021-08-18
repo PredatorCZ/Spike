@@ -68,9 +68,9 @@ void AddPrinterFunction(print_func func, bool useColor) {
 }
 
 std::ostream &Get(MPType type) {
-  if (!(MASTER_PRINTER.lockedThread == std::this_thread::get_id())) {
+  if (auto threadID = std::this_thread::get_id(); !(MASTER_PRINTER.lockedThread == threadID)) {
     MASTER_PRINTER.mutex.lock();
-    MASTER_PRINTER.lockedThread = std::this_thread::get_id();
+    MASTER_PRINTER.lockedThread = threadID;
   }
 
   if (type != MPType::PREV) {
