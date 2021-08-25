@@ -507,14 +507,15 @@ namespace es {
   using wstring_view   = basic_string_view<wchar_t>;
   using u16string_view = basic_string_view<char16_t>;
   using u32string_view = basic_string_view<char32_t>;
-
-  template<size_t n, typename c>
-  constexpr auto MakeStringView(const c (&input)[n]) {
-    return basic_string_view<c>{input, n - 1};
-  }
-
 } // namespace es
 
 #include "internal/string_view.inl"
+
+namespace es::string_view_literals {
+inline constexpr string_view operator""sv(const char *str,
+                                          size_t len) noexcept {
+  return string_view{str, len};
+}
+} // namespace es::string_view_literals
 
 #endif /* BPSTD_STRING_VIEW_HPP */
