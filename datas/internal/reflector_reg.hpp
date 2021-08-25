@@ -18,20 +18,20 @@
 
 #pragma once
 #include "../settings.hpp"
-#include "reflector_class_reg.hpp"
-#include "reflector_enum_reg.hpp"
+#include "reflector_class.hpp"
+#include "reflector_enum.hpp"
 #include <map>
 
-typedef std::map<JenHash, ReflectedEnum> RefEnumMapper;
+typedef std::map<JenHash, const ReflectedEnum *> RefEnumMapper;
 extern RefEnumMapper PC_EXTERN REFEnumStorage;
 typedef std::map<JenHash, const reflectorStatic *> RefSubClassMapper;
 extern RefSubClassMapper PC_EXTERN REFSubClassStorage;
 
 template <class C> void RegisterReflectedType() {
   if constexpr (std::is_class_v<C>) {
-    REFSubClassStorage[ReflectorType<C>::Hash()] = GetReflectedClass<C>();
+    REFSubClassStorage[ClassHash<C>()] = GetReflectedClass<C>();
   } else {
-    REFEnumStorage[_EnumWrap<C>::GetHash()] = GetReflectedEnum<C>();
+    REFEnumStorage[EnumHash<C>()] = GetReflectedEnum<C>();
   }
 }
 

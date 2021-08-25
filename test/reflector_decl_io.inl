@@ -1,6 +1,6 @@
 #pragma once
-#include "reflector_def.inl"
 #include "reflector_decl.inl"
+#include "reflector_def.inl"
 
 #include "../datas/binreader.hpp"
 #include "../datas/binwritter.hpp"
@@ -34,7 +34,9 @@ template <class C> int test_class(const reflectorStatic *input) {
 
   if (orig->typeNames) {
     for (uint32 i = 0; i < orig->nTypes; i++)
-      TEST_EQUAL(es::string_view(input->typeNames[i]), orig->typeNames[i]);
+      if (auto inputName = input->typeNames[i]) {
+        TEST_EQUAL(es::string_view(input->typeNames[i]), orig->typeNames[i]);
+      }
 
   } else {
     TEST_EQUAL(input->typeNames, nullptr);
@@ -65,16 +67,16 @@ template <class C> int test_class(const reflectorStatic *input) {
   return 0;
 };
 
-template <class ET> int test_enum(const ReflectedEnum &input) {
+template <class ET> int test_enum(const ReflectedEnum *input) {
   auto orig = GetReflectedEnum<ET>();
 
-  TEST_EQUAL(orig.hash, input.hash);
-  TEST_EQUAL(es::string_view(orig.name), input.name);
-  TEST_EQUAL(orig.size(), input.size());
+  TEST_EQUAL(orig->enumHash, input->enumHash);
+  TEST_EQUAL(es::string_view(orig->enumName), input->enumName);
+  TEST_EQUAL(orig->numMembers, input->numMembers);
 
-  for (size_t i = 0; i < orig.size(); i++) {
-    TEST_EQUAL(orig[i], input[i]);
-    TEST_EQUAL(orig.values[i], input.values[i]);
+  for (size_t i = 0; i < input->numMembers; i++) {
+    TEST_EQUAL(es::string_view(orig->names[i]), input->names[i]);
+    TEST_EQUAL(orig->values[i], input->values[i]);
   }
 
   return 0;
@@ -89,7 +91,6 @@ int test_reflector_decl_io() {
     ReflectorIO rio;
     rio.AddClass<reflClass>();
     rio.AddClass<subrefl>();
-    rio.AddClass<refBasic>();
     rio.AddClass<refTypeNames>();
     rio.AddClass<refTypeNames01>();
     rio.AddClass<roomInfo>();
@@ -111,20 +112,19 @@ int test_reflector_decl_io() {
   auto classes = rio2.Classes();
   auto enums = rio2.Enums();
 
-  TEST_EQUAL(classes.size(), 9);
+  TEST_EQUAL(classes.size(), 8);
   TEST_EQUAL(enums.size(), 4);
 
   using tclass = templatedClass<int, float>;
 
   TEST_CASES(int testResult, TEST_FUNC(test_class<reflClass>, classes[0]),
              TEST_FUNC(test_class<subrefl>, classes[1]),
-             TEST_FUNC(test_class<refBasic>, classes[2]),
-             TEST_FUNC(test_class<refTypeNames>, classes[3]),
-             TEST_FUNC(test_class<refTypeNames01>, classes[4]),
-             TEST_FUNC(test_class<roomInfo>, classes[5]),
-             TEST_FUNC(test_class<roomInfo01>, classes[6]),
-             TEST_FUNC(test_class<roomInfo02>, classes[7]),
-             TEST_FUNC(test_class<tclass>, classes[8]),
+             TEST_FUNC(test_class<refTypeNames>, classes[2]),
+             TEST_FUNC(test_class<refTypeNames01>, classes[3]),
+             TEST_FUNC(test_class<roomInfo>, classes[4]),
+             TEST_FUNC(test_class<roomInfo01>, classes[5]),
+             TEST_FUNC(test_class<roomInfo02>, classes[6]),
+             TEST_FUNC(test_class<tclass>, classes[7]),
              TEST_FUNC(test_enum<EnumWrap00>, enums[0]),
              TEST_FUNC(test_enum<EnumWrap01>, enums[1]),
              TEST_FUNC(test_enum<EnumWrap02>, enums[2]),

@@ -26,28 +26,6 @@
 #include "internal/reflector_reg.hpp"
 #include "internal/reflector_type.hpp"
 
-// @numFlags: [0,n] or ENUM + numEnumFlags or BITFIELD + numBitFieldFlags
-// Usable flags: VARNAMES or EXTENDED, TEMPLATE
-// VARNAMES: Saves variable names (do not use with EXTENDED)
-// EXTENDED: Each variable must have (<type>, varname, ...) format
-// EXTENDED <type>: A (use alias), D (use descriptor), AD (use both),
-//   <none> only variable name
-// EXTENDED examples:
-//   REFLECTOR_CREATE(myClass, 1, EXTENDED,
-//     (AD, var1, "var alias", "var descriptor"), (A, var2, "other alias"),
-//     (D, var3, "description"), (, var4), <other vars>...)
-// TEMPLATE: Allows usage of template arguments for class name.
-//   Class name must be in () braces
-// TEMPLATE examples:
-//   REFLECTOR_CREATE((myClass<int, other>), 1, TEMPLATE, <values>...)
-// Usable enum flags: CLASS, enum size (64 or 32 or 16 or 8)
-// ENUM examples:
-//   REFLECTOR_CREATE(myEnum, ENUM, 1 CLASS, var1, var2, <other vars>...)
-// Usable BITFIELD flags: same as for class
-
-#define REFLECTOR_CREATE(classname, numFlags, ...)                             \
-  VA_NARGS_EVAL(_REFLECTOR_START_VER##numFlags(classname, __VA_ARGS__))
-
 class Reflector {
   friend class ReflectorFriend;
 
@@ -78,7 +56,6 @@ public:
 
   size_t GetNumReflectedValues() const;
   es::string_view GetClassName() const;
-  bool UseNames() const;
 
   bool IsReflectedSubClass(JenHash hashName) const;
   bool IsReflectedSubClass(size_t id) const;

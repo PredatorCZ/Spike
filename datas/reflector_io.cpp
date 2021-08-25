@@ -52,19 +52,13 @@ struct Fixups {
   }
 };
 
-class ReflectedEnum_io : public ReflectedEnum {
-public:
-  using parent::resize;
-};
-
 struct ReflectorIOHeader {
   static constexpr uint32 ID = CompileFourCC("RFDB");
   static constexpr uint32 VERSION = 2000;
 
-  uint32 id, version, numClasses, numEnums, numEnumStrings, enumsOffset,
-      bufferSize, reserved;
+  uint32 id, version, numClasses, numEnums, enumsOffset, bufferSize;
 
-  ReflectorIOHeader() : id(ID), version(VERSION), reserved() {}
+  ReflectorIOHeader() : id(ID), version(VERSION) {}
 };
 
 struct reflectorStatic_io {
@@ -110,32 +104,54 @@ struct reflectorStatic_io {
     }
 
     if (typeDescs) {
-      union Desc {
-        struct {
-          uintptr_t data1;
-          size_t size1;
-          uintptr_t data2;
-          size_t size2;
-        } io;
-        struct {
-          size_t size1;
-          uintptr_t data1;
-          size_t size2;
-          uintptr_t data2;
-        } invert;
+      struct Desc {
+        uintptr_t data1;
+        uintptr_t data2;
       };
 
       auto casted = reinterpret_cast<Desc *>(typeDescs);
 
       for (uint32 t = 0; t < nTypes; t++) {
         auto &item = casted[t];
-        fixupmore(item.io.data1, item.io.data2);
+        fixupmore(item.data1, item.data2);
       }
     }
   }
 };
 
 static_assert(sizeof(reflectorStatic_io) == sizeof(reflectorStatic));
+
+struct ReflectedEnum_io {
+  uint32 enumHash;
+  uint32 numMembers;
+  uintptr_t enumName;
+  uintptr_t names;
+  uintptr_t values;
+
+  void Fixup(uintptr_t base) {
+    auto fixup = [base](uintptr_t &item) {
+      if (item) {
+        item += base;
+      }
+    };
+
+    auto fixupmore = [base, fixup](auto &...items) { (fixup(items), ...); };
+
+    fixupmore(enumName, names, values);
+
+    if (names) {
+      auto castedBase = reinterpret_cast<uintptr_t *>(names);
+      auto casted = &*castedBase;
+      for (uint32 i = 0; i < numMembers; i++) {
+        if (casted[i]) {
+          casted[i] += base;
+        }
+      }
+    }
+  }
+};
+
+static_assert(sizeof(ReflectedEnum_io) == sizeof(ReflectedEnum));
 
 int ReflectorIO::Load(BinReaderRef rd) {
   ReflectorIOHeader hdr;
@@ -163,37 +179,12 @@ int ReflectorIO::Load(BinReaderRef rd) {
         reinterpret_cast<const reflectorStatic *>(classesStart + c));
   }
 
-  uint64 *enumsIter = reinterpret_cast<uint64 *>(&data[0] + hdr.enumsOffset);
+  ReflectedEnum_io *enumsIter =
+      reinterpret_cast<ReflectedEnum_io *>(&data[0] + hdr.enumsOffset);
 
   for (uint32 c = 0; c < hdr.numEnums; c++) {
-    enums.emplace_back();
-    auto &lEn = static_cast<ReflectedEnum_io &>(enums.back());
-
-    lEn.hash = *reinterpret_cast<const JenHash *>(enumsIter);
-    lEn.resize(*(reinterpret_cast<const uint32 *>(enumsIter++) + 1));
-    lEn.values = enumsIter;
-    enumsIter += lEn.size();
-  }
-
-  const char **enumNamesIter = reinterpret_cast<const char **>(enumsIter);
-
-  auto Fixup = [bufferStart](auto &item) {
-    if (auto &ptrRef = reinterpret_cast<uintptr_t &>(item)) {
-      ptrRef += bufferStart;
-    }
-  };
-
-  for (size_t s = 0; s < hdr.numEnumStrings; s++) {
-    Fixup(enumNamesIter[s]);
-  }
-
-  for (auto &e : enums) {
-    for (auto &n : e) {
-      n = {*enumNamesIter};
-      enumNamesIter++;
-    }
-
-    e.name = *enumNamesIter++;
+    enumsIter[c].Fixup(bufferStart);
+    enums.push_back(reinterpret_cast<const ReflectedEnum *>(enumsIter + c));
   }
 
   return 0;
@@ -274,7 +265,9 @@ int ReflectorIO::Save(BinWritterRef wr) {
       itemStringsFixups.FixupDestination();
 
       for (uint32 r = 0; r < i->nTypes; r++) {
-        itemStringsFixups.AddPointer();
+        if (i->typeNames[r]) {
+          itemStringsFixups.AddPointer();
+        }
         wr.Skip<uint64>();
       }
     }
@@ -299,19 +292,17 @@ int ReflectorIO::Save(BinWritterRef wr) {
       descsFixups.FixupDestination();
 
       for (uint32 r = 0; r < i->nTypes; r++) {
-        if (!i->typeDescs[r].part1.empty()) {
+        if (i->typeDescs[r].part1) {
           descsFixups.AddPointer();
         }
 
         wr.Skip<uint64>();
-        wr.Write(i->typeDescs[r].part1.size());
 
-        if (!i->typeDescs[r].part2.empty()) {
+        if (i->typeDescs[r].part2) {
           descsFixups.AddPointer();
         }
 
         wr.Skip<uint64>();
-        wr.Write(i->typeDescs[r].part2.size());
       }
     }
   }
@@ -319,8 +310,10 @@ int ReflectorIO::Save(BinWritterRef wr) {
   for (auto i : classes) {
     if (i->typeNames) {
       for (uint32 r = 0; r < i->nTypes; r++) {
-        itemStringsFixups.FixupDestination();
-        wr.WriteT(i->typeNames[r]);
+        if (i->typeNames[r]) {
+          itemStringsFixups.FixupDestination();
+          wr.WriteT(i->typeNames[r]);
+        }
       }
     }
 
@@ -337,16 +330,14 @@ int ReflectorIO::Save(BinWritterRef wr) {
 
     if (i->typeDescs) {
       for (uint32 r = 0; r < i->nTypes; r++) {
-        if (!i->typeDescs[r].part1.empty()) {
+        if (i->typeDescs[r].part1) {
           descsFixups.FixupDestination();
-          wr.WriteContainer(i->typeDescs[r].part1);
-          wr.Skip(1);
+          wr.WriteT(i->typeDescs[r].part1);
         }
 
-        if (!i->typeDescs[r].part2.empty()) {
+        if (i->typeDescs[r].part2) {
           descsFixups.FixupDestination();
-          wr.WriteContainer(i->typeDescs[r].part2);
-          wr.Skip(1);
+          wr.WriteT(i->typeDescs[r].part2);
         }
       }
     }
@@ -360,35 +351,38 @@ int ReflectorIO::Save(BinWritterRef wr) {
   wr.ApplyPadding(8);
   hdr.enumsOffset = static_cast<uint32>(wr.Tell());
 
-  size_t totalStrings = 0;
-
-  for (auto &e : enums) {
-    wr.Write(e.hash);
-    wr.Write(static_cast<uint32>(e.size()));
-    totalStrings += e.size() + 1;
-
-    for (size_t v = 0; v < e.size(); v++) {
-      wr.Write(e.values[v]);
-    }
-  }
-
-  hdr.numEnumStrings = static_cast<uint32>(totalStrings);
-
-  for (size_t s = 0; s < totalStrings; s++) {
+  for (auto e : enums) {
+    wr.Write(e->enumHash);
+    wr.Write(e->numMembers);
+    classnamesFixups.AddPointer();
+    wr.Skip<uint64>();
     itemStringsFixups.AddPointer();
+    wr.Skip<uint64>();
+    itemFixups.AddPointer();
     wr.Skip<uint64>();
   }
 
-  for (auto &e : enums) {
-    for (auto &n : e) {
-      itemStringsFixups.FixupDestination();
-      wr.WriteContainer(n);
-      wr.Skip(1);
+  for (auto e : enums) {
+    itemFixups.FixupDestination();
+    for (size_t v = 0; v < e->numMembers; v++) {
+      wr.Write(e->values[v]);
     }
 
     itemStringsFixups.FixupDestination();
-    wr.WriteContainer(e.name);
-    wr.Skip(1);
+    for (size_t s = 0; s < e->numMembers; s++) {
+      itemStringsFixups.AddPointer();
+      wr.Skip<uint64>();
+    }
+  }
+
+  for (auto e : enums) {
+    classnamesFixups.FixupDestination();
+    wr.WriteT(e->enumName);
+
+    for (size_t v = 0; v < e->numMembers; v++) {
+      itemStringsFixups.FixupDestination();
+      wr.WriteT(e->names[v]);
+    }
   }
 
   hdr.bufferSize = static_cast<uint32>(wr.Tell());

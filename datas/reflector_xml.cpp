@@ -71,14 +71,14 @@ static bool SaveV2(const reflType &cType, const Reflector &ri,
       return false;
     }
 
-    auto &&cEnum = REFEnumStorage.at(cType.typeHash);
+    auto cEnum = REFEnumStorage.at(cType.typeHash);
     pugi::xml_node cNode = thisNode.append_child(varName.c_str());
 
-    for (size_t e = 0; e < cEnum.size(); e++) {
-      auto name = cEnum[e].to_string();
-      const uint64 value = cEnum.values[e];
+    for (size_t e = 0; e < cEnum->numMembers; e++) {
+      auto name = cEnum->names[e];
+      const uint64 value = cEnum->values[e];
       auto valueName = ri.GetReflectedValue(t, value);
-      cNode.append_attribute(name.data()).set_value(valueName.data());
+      cNode.append_attribute(name).set_value(valueName.data());
     }
 
     return true;
@@ -92,7 +92,7 @@ static pugi::xml_node MakeNode(const Reflector &ri, const reflectorStatic *stat,
                                pugi::xml_node node) {
   std::string className;
 
-  if (ri.UseNames())
+  if (stat->className)
     className = stat->className;
   else {
     className.resize(15);
@@ -107,7 +107,7 @@ static std::string GetName(const Reflector &ri, const reflectorStatic *stat,
                            const reflType &cType, size_t t) {
   std::string varName;
 
-  if (ri.UseNames()) {
+  if (stat->typeNames && stat->typeNames[t]) {
     varName = stat->typeNames[t];
   } else {
     varName.resize(15);
@@ -247,11 +247,11 @@ pugi::xml_node ReflectorXMLUtil::SaveV2a(const Reflector &ri,
           auto nodeName = varName + '-' + std::to_string(s);
           pugi::xml_node cNode = thisNode.append_child(nodeName.data());
 
-          for (size_t e = 0; e < cEnum.size(); e++) {
-            auto name = cEnum[e].to_string();
-            const uint64 value = cEnum.values[e];
+          for (size_t e = 0; e < cEnum->numMembers; e++) {
+            auto name = cEnum->names[e];
+            const uint64 value = cEnum->values[e];
             auto valueName = ri.GetReflectedValue(t, s, value);
-            cNode.append_attribute(name.data()).set_value(valueName.data());
+            cNode.append_attribute(name).set_value(valueName.data());
           }
         }
         break;

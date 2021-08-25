@@ -1,5 +1,4 @@
-/*  Contains macros/classes for reflection of enums
-    internal file
+/*  Define reflected enumerations
 
     Copyright 2018-2021 Lukas Cone
 
@@ -17,83 +16,67 @@
 */
 
 #pragma once
-#include <cstddef>
+#include "../jenkinshash.hpp"
 
-template <size_t n>
-constexpr size_t _GetReflEnumItemSize(const char (&value)[n]) {
-  size_t curIndex = 1;
+struct EnumProxy {
+  const char *name;
+  uint64 value;
+};
 
-  for (const auto c : value) {
-    if (c == '=' || c == ' ' || !c) {
-      curIndex--;
-      break;
-    }
-    curIndex++;
+struct ReflectedEnum {
+  JenHash enumHash;
+  uint32 numMembers;
+  const char *enumName;
+  const char *const *names;
+  const uint64 *values;
+
+  template <class... C, size_t cs, class guard>
+  ReflectedEnum(const guard *, const char (&enumName_)[cs], C... members)
+      : enumHash(JenHash(enumName_)), numMembers(sizeof...(C)),
+        enumName(enumName_) {
+    static const char *names_[]{members.name...};
+    names = names_;
+    static const uint64 values_[]{members.value...};
+    values = values_;
   }
+};
 
-  return curIndex;
-}
+template <class E> const ReflectedEnum *GetReflectedEnum();
 
-#define _REFLECTOR_ADDN_ENUM(value) {#value, _GetReflEnumItemSize(#value)},
-#define _REFLECTOR_ADDN_ENUMVAL(value) value,
-#define _REFLECTOR_ADDN_ENUMDUMMY(value) 0,
+#define DECL_EMEMBER(type) type,
+#define DECL_EMEMBERVAL(type, value) type = value,
+#define DECL_ENUM(type) enum type {
+#define DECL_ENUMSCOPE(type, ...) DECL_ENUM(type)
+#define DECL_END_ENUM(...)                                                     \
+  }                                                                            \
+  ;
+#define DECL_END_ENUMSCOPE(...) DECL_END_ENUM()
 
-#define _REFLECTOR_ENUM_CLASS_CLASS class
-#define _REFLECTOR_ENUM_CLASS_64
-#define _REFLECTOR_ENUM_CLASS_32
-#define _REFLECTOR_ENUM_CLASS_16
-#define _REFLECTOR_ENUM_CLASS_8
+#define DEF_EMEMBER(type)                                                      \
+  EnumProxy{#type, static_cast<uint64>(enum_type::type)},
+#define DEF_EMEMBERVAL(type, ...) DEF_EMEMBER(type)
+#define DEF_ENUM(name)                                                         \
+  template <> constexpr JenHash EnumHash<name>() { return #name; }             \
+  template <> const ReflectedEnum *GetReflectedEnum<name>() {                  \
+    using enum_type = name;                                                    \
+    static const ReflectedEnum reflectedEnum {                                 \
+      std::add_pointer_t<enum_type>{nullptr}, #name,
 
-#define _REFLECTOR_ENUM_SIZE_64 : uint64
-#define _REFLECTOR_ENUM_SIZE_32 : uint32
-#define _REFLECTOR_ENUM_SIZE_16 : uint16
-#define _REFLECTOR_ENUM_SIZE_8 : uint8
-#define _REFLECTOR_ENUM_SIZE_CLASS
+#define DEF_ENUMSCOPE(type, name) DEF_ENUM(name)
+#define DEF_END_ENUM(...)                                                      \
+  }                                                                            \
+  ;                                                                            \
+  return &reflectedEnum;                                                       \
+  }
+#define DEF_END_ENUMSCOPE(...) DEF_END_ENUM()
 
-#define _REFLECTOR_ENUM_MAIN_BODY(classname, ...)                              \
-  {StaticFor(_REFLECTOR_ADDN_ENUMVAL, __VA_ARGS__)};                           \
-  template <> struct _EnumWrap<classname> {                                    \
-    static const size_t NUM_ITEMS = VA_NARGS(__VA_ARGS__);                     \
-    static const es::string_view *GetNames() {                                 \
-      static constexpr es::string_view names[] = {                             \
-          StaticFor(_REFLECTOR_ADDN_ENUM, __VA_ARGS__)};                       \
-      return names;                                                            \
-    }                                                                          \
-    static uint64 *GetValues() {                                               \
-      static uint64 _reflectedValues[NUM_ITEMS] = {};                          \
-      return _reflectedValues;                                                 \
-    }                                                                          \
-    static constexpr es::string_view GetClassName() { return #classname; }     \
-    static constexpr JenHash GetHash() { return JenHash(#classname); }         \
-    static bool Initialized(bool yes) {                                        \
-      static bool inited = false;                                              \
-      if (!inited && yes) {                                                    \
-        inited = true;                                                         \
-        return true;                                                           \
-      }                                                                        \
-      return inited;                                                           \
-    }                                                                          \
-  };
+#define MAKE_DECL(x) DECL_##x
+#define MAKE_DEF(x) DEF_##x
 
-#define _REFLECTOR_ENUM_VER0(classname, ...)                                   \
-  enum classname _REFLECTOR_ENUM_MAIN_BODY(classname, __VA_ARGS__);
-
-#define _REFLECTOR_ENUM_VER1(classname, var01, ...)                            \
-  enum _REFLECTOR_ENUM_CLASS_##var01 classname                                 \
-      _REFLECTOR_ENUM_SIZE_##var01 _REFLECTOR_ENUM_MAIN_BODY(classname,        \
-                                                             __VA_ARGS__);
-
-#define _REFLECTOR_ENUM_VER2(classname, var01, var02, ...)                     \
-  enum _REFLECTOR_ENUM_CLASS_##var01 _REFLECTOR_ENUM_CLASS_##var02 classname   \
-      _REFLECTOR_ENUM_SIZE_##var01 _REFLECTOR_ENUM_SIZE_##var02                \
-          _REFLECTOR_ENUM_MAIN_BODY(classname, __VA_ARGS__);
-
-#define _REFLECTOR_ENUM_VER3(classname, var01, var02, var03, ...)              \
-  enum _REFLECTOR_ENUM_CLASS_##var01 _REFLECTOR_ENUM_CLASS_##var02             \
-      _REFLECTOR_ENUM_CLASS_##var03 classname                                  \
-          _REFLECTOR_ENUM_SIZE_##var01 _REFLECTOR_ENUM_SIZE_##var02            \
-              _REFLECTOR_ENUM_SIZE_##var03 _REFLECTOR_ENUM_MAIN_BODY(          \
-                  classname, __VA_ARGS__);
-
-#define _REFLECTOR_START_VERENUM(classname, numFlags, ...)                     \
-  VA_NARGS_EVAL(_REFLECTOR_ENUM_VER##numFlags(classname, __VA_ARGS__))
+// Creates enumeration and it's reflection definition
+// what: ENUM() or ENUMSCOPE()
+// args: EMEMBER or EMEMBERVAL
+#define MAKE_ENUM(what, ...)                                                   \
+  DECL_##what StaticFor(MAKE_DECL, __VA_ARGS__)                                \
+      DECL_END_##what DEF_##what StaticFor(MAKE_DEF, __VA_ARGS__)              \
+          DEF_END_##what

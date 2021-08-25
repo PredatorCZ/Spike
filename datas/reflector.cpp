@@ -196,26 +196,26 @@ static Reflector::ErrorType SetBoolean(std::string input, bool &output) {
 }
 
 static uint64 GetEnumValue(es::string_view input, JenHash hash,
-                           ReflectedEnum **rEnumFallback = nullptr) {
-  ReflectedEnum &rEnum = rEnumFallback && *rEnumFallback
-                             ? **rEnumFallback
-                             : REFEnumStorage.at(hash);
+                           const ReflectedEnum **rEnumFallback = nullptr) {
+  const ReflectedEnum *rEnum =
+      rEnumFallback && *rEnumFallback ? *rEnumFallback : REFEnumStorage.at(hash);
 
   if (rEnumFallback) {
-    *rEnumFallback = &rEnum;
+    *rEnumFallback = rEnum;
   }
 
-  ReflectedEnum::iterator foundItem =
-      std::find_if(rEnum.begin(), rEnum.end(), [input](es::string_view item) {
+  auto namesEnd = rEnum->names + rEnum->numMembers;
+  auto foundItem =
+      std::find_if(rEnum->names, namesEnd, [input](es::string_view item) {
         return !item.compare(input);
       });
 
-  if (es::IsEnd(rEnum, foundItem)) {
+  if (namesEnd == foundItem) {
     throw std::range_error("[Reflector] Enum value not found: " +
                            static_cast<std::string>(input));
   }
 
-  return rEnum.values[std::distance(rEnum.begin(), foundItem)];
+  return rEnum->values[std::distance(rEnum->names, foundItem)];
 }
 
 static Reflector::ErrorType SetEnum(es::string_view input, char *objAddr,
@@ -247,7 +247,7 @@ static Reflector::ErrorType SetEnum(es::string_view input, char *objAddr,
 
 static Reflector::ErrorType FlagFromEnum(es::string_view input, JenHash hash,
                                          uint64 &fallbackValue,
-                                         ReflectedEnum *&fallback) {
+                                         const ReflectedEnum *&fallback) {
   input = es::TrimWhitespace(input);
 
   if (input.empty()) {
@@ -281,7 +281,7 @@ static Reflector::ErrorType SetEnumFlags(es::string_view input, char *objAddr,
   const char *lastIterator = input.begin();
   Reflector::ErrorType errType = Reflector::ErrorType::None;
   uint64 eValue = 0;
-  ReflectedEnum *rEnumFallback = nullptr;
+  const ReflectedEnum *rEnumFallback = nullptr;
 
   for (auto &c : input) {
     if (c == '|') {
@@ -661,24 +661,23 @@ Reflector::ErrorType Reflector::SetReflectedValueFloat(reflType reflValue,
 
 static es::string_view
 PrintEnumValue(JenHash hash, uint64 value,
-               ReflectedEnum **rEnumFallback = nullptr) {
-  ReflectedEnum &rEnum = rEnumFallback && *rEnumFallback
-                             ? **rEnumFallback
-                             : REFEnumStorage.at(hash);
+               const ReflectedEnum **rEnumFallback = nullptr) {
+  const ReflectedEnum *rEnum =
+      rEnumFallback && *rEnumFallback ? *rEnumFallback : REFEnumStorage.at(hash);
 
   if (rEnumFallback)
-    *rEnumFallback = &rEnum;
+    *rEnumFallback = rEnum;
 
-  const uint64 *valuesEnd = rEnum.values + rEnum.size();
+  const uint64 *valuesEnd = rEnum->values + rEnum->numMembers;
   const uint64 *foundItem = std::find_if(
-      rEnum.values, valuesEnd, [value](uint64 item) { return item == value; });
+      rEnum->values, valuesEnd, [value](uint64 item) { return item == value; });
 
   if (foundItem == valuesEnd) {
     throw std::range_error("[Reflector] Enum value not found: " +
                            std::to_string(value));
   }
 
-  return rEnum.at(std::distance(rEnum.values, foundItem));
+  return rEnum->names[std::distance(rEnum->values, foundItem)];
 }
 
 static std::string PrintEnum(const char *objAddr, JenHash hash, uint16 elSize) {
@@ -692,7 +691,7 @@ static std::string PrintEnum(const char *objAddr, JenHash hash, uint16 elSize) {
 static std::string PrintEnumFlags(const char *objAddr, JenHash hash,
                                   uint16 elSize) {
   uint64 eValue;
-  ReflectedEnum *rEnumFallback = nullptr;
+  const ReflectedEnum *rEnumFallback = nullptr;
   std::string result;
   const size_t numBits = elSize * 8;
 

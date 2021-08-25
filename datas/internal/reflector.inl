@@ -157,10 +157,6 @@ inline size_t Reflector::GetNumReflectedValues() const {
   return GetReflectedInstance().rfStatic->nTypes;
 }
 
-inline bool Reflector::UseNames() const {
-  return GetReflectedInstance().rfStatic->typeNames != nullptr;
-}
-
 inline std::string Reflector::GetReflectedValue(JenHash hash) const {
   const reflType *found = GetReflectedType(hash);
 
@@ -213,20 +209,18 @@ Reflector::GetReflectedPair(size_t id, const KVPairFormat &settings) const {
   KVPair retval;
   const auto refInt = GetReflectedInstance().rfStatic;
 
-  if (UseNames()) {
-    if (settings.aliasName && refInt->typeAliases[id]) {
-      retval.name = refInt->typeAliases[id];
-    } else {
-      retval.name = refInt->typeNames[id];
-    }
+  if (settings.aliasName && refInt->typeAliases && refInt->typeAliases[id]) {
+    retval.name = refInt->typeAliases[id];
+  } else {
+    retval.name = refInt->typeNames[id];
   }
 
-  if (settings.formatValue && !refInt->typeDescs[id].part1.empty()) {
-    retval.value =
-        refInt->typeDescs[id].part1.to_string() + ' ' + GetReflectedValue(id);
+  if (settings.formatValue && refInt->typeDescs[id].part1) {
+    retval.value = refInt->typeDescs[id].part1 + (' ' + GetReflectedValue(id));
 
-    if (!refInt->typeDescs[id].part2.empty()) {
-      retval.value += ' ' + refInt->typeDescs[id].part2.to_string();
+    if (refInt->typeDescs[id].part2) {
+      retval.value += ' ';
+      retval.value += refInt->typeDescs[id].part2;
     }
   } else {
     retval.value = GetReflectedValue(id);

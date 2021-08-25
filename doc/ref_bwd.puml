@@ -1,29 +1,44 @@
 @startuml ref_bwd
-title Basic workflow diagram
+title Basic workflow diagram v2
 package Header <<Frame>> {
-    object "REFLECTOR_CREATE(...)" as RCE
-    RCE : classType
-    RCE : ENUM
-    RCE : numFlags
-    RCE : enumFlags ...
-    RCE : class members
-    note right of RCE
-        A macro for creating
-        reflected enumeration
-    end note
+    object "MAKE_ENUM(...)" as RCE
+    RCE : ENUM(enum name) or
+    RCE : ENUMSCOPE(enum declaration, enum name)
+    RCE : ---
+    RCE : EMEMBER(member name) and/or
+    RCE : EMEMBERVAL(member name, member value)
+    RCE : .
+    RCE : .
+    RCE : .
 }
 
 
 package "Source Unit" <<Frame>> {
-    object "REFLECTOR_CREATE(...)" as REFLECTOR_CREATE
-    REFLECTOR_CREATE : classType
-    REFLECTOR_CREATE : numFlags
-    REFLECTOR_CREATE : flags ...
-    REFLECTOR_CREATE : class members
-    note right of REFLECTOR_CREATE
+    object "REFLECT(...)" as REFLECT
+    REFLECT : CLASS(class name declaration)
+    REFLECT : ---
+    REFLECT : MEMBER(...) and/or MEMBERNAME(...)
+    REFLECT : .
+    REFLECT : .
+    REFLECT : .
+    note right of REFLECT
         A macro for creating
         reflection definition
     end note
+
+    object "REFLECT(...)" as BITREFLECT
+    BITREFLECT : CLASS(class name declaration)
+    BITREFLECT : ---
+    BITREFLECT : BITMEMBER(...) and/or 
+    BITREFLECT : BITMEMBERNAME(...)
+    BITREFLECT : .
+    BITREFLECT : .
+    BITREFLECT : .
+    note right of BITREFLECT
+        A macro for creating
+        bitfield reflection definition
+    end note
+
     node "Single call function" as SCF {
         object "RegisterReflectedTypes<...>()" as REFLECTOR_REGISTER
         REFLECTOR_REGISTER : classes and enums
@@ -34,6 +49,7 @@ package "Source Unit" <<Frame>> {
         enums into global registry
     end note
 
-    REFLECTOR_CREATE -[hidden]down- SCF
+    REFLECT -[hidden]down- BITREFLECT
+    BITREFLECT -[hidden]down- SCF
 }
 @enduml

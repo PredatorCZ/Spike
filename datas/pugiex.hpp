@@ -25,50 +25,51 @@
 #include "reflector.hpp"
 #include "string_view.hpp"
 #include "unicode.hpp"
+#include <vector>
 
-REFLECTOR_CREATE(
-    XMLError, ENUM, 0,
+MAKE_ENUM(
+    ENUMSCOPE(class XMLError, XMLError),
     // No error
-    status_ok,
+    EMEMBER(status_ok),
     // File was not found during load_file()
-    status_file_not_found,
+    EMEMBER(status_file_not_found),
     // Error reading from file/stream
-    status_io_error,
+    EMEMBER(status_io_error),
     // Could not allocate memory
-    status_out_of_memory,
+    EMEMBER(status_out_of_memory),
     // Internal error occurred
-    status_internal_error,
+    EMEMBER(status_internal_error),
 
     // Parser could not determine tag type
-    status_unrecognized_tag,
+    EMEMBER(status_unrecognized_tag),
 
     // Parsing error occurred while parsing document declaration/processing
     // instruction
-    status_bad_pi,
+    EMEMBER(status_bad_pi),
     // Parsing error occurred while parsing comment
-    status_bad_comment,
+    EMEMBER(status_bad_comment),
     // Parsing error occurred while parsing CDATA section
-    status_bad_cdata,
+    EMEMBER(status_bad_cdata),
     // Parsing error occurred while parsing document type declaration
-    status_bad_doctype,
+    EMEMBER(status_bad_doctype),
     // Parsing error occurred while parsing PCDATA section
-    status_bad_pcdata,
+    EMEMBER(status_bad_pcdata),
     // Parsing error occurred while parsing start element tag
-    status_bad_start_element,
+    EMEMBER(status_bad_start_element),
     // Parsing error occurred while parsing element attribute
-    status_bad_attribute,
+    EMEMBER(status_bad_attribute),
     // Parsing error occurred while parsing end element tag
-    status_bad_end_element,
+    EMEMBER(status_bad_end_element),
     // There was a mismatch of start-end tags (closing tag had incorrect name,
     // some tag was not closed or there was an excessive closing tag)
-    status_end_element_mismatch,
+    EMEMBER(status_end_element_mismatch),
 
     // Unable to append nodes since root type is not node_element or
     // node_document (exclusive to xml_node::append_buffer)
-    status_append_invalid_root,
+    EMEMBER(status_append_invalid_root),
 
     // Parsing resulted in a document without element nodes
-    status_no_document_element);
+    EMEMBER(status_no_document_element))
 
 enum class XMLParseFlag : uint32 {
   // Processing instructions (node_pi) are added to the DOM tree. [Off].
@@ -227,17 +228,17 @@ inline auto XMLFromFile(const std::string &fileName,
   if (auto result = doc.load_file(fileName_.data(), static_cast<uint32>(pflags),
                                   static_cast<pugi::xml_encoding>(encoding));
       !result) {
-    if (static_cast<XMLError>(result.status) == status_file_not_found) {
+    if (static_cast<XMLError>(result.status) == XMLError::status_file_not_found) {
       throw es::FileNotFoundError(fileName);
     }
 
-    if (static_cast<XMLError>(result.status) == status_no_document_element) {
+    if (static_cast<XMLError>(result.status) == XMLError::status_no_document_element) {
       throw es::InvalidHeaderError();
     }
 
     throw std::runtime_error(
         "Couldn't load XML file <" + fileName + ">[" +
-        GetReflectedEnum<XMLError>()[result.status].to_string() +
+        GetReflectedEnum<XMLError>()->names[result.status] +
         "] at offset " + std::to_string(result.offset));
   }
 

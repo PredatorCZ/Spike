@@ -18,10 +18,11 @@
 #pragma once
 #include "bincore_fwd.hpp"
 #include "reflector.hpp"
+#include <vector>
 
 class ReflectorIO {
   typedef std::vector<const reflectorStatic *> classes_type;
-  typedef std::vector<ReflectedEnum> enums_type;
+  typedef std::vector<const ReflectedEnum *> enums_type;
   std::string data;
   classes_type classes;
   enums_type enums;
@@ -34,7 +35,7 @@ public:
   template <class C> void AddClass() {
     classes.push_back(GetReflectedClass<C>());
   }
-  void AddEnum(const ReflectedEnum &enumRef) { enums.push_back(enumRef); }
+  void AddEnum(const ReflectedEnum *enumRef) { enums.push_back(enumRef); }
   template <class C> void AddEnum() { enums.push_back(GetReflectedEnum<C>()); }
 
   const classes_type &Classes() const { return classes; }

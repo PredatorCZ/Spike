@@ -1,4 +1,4 @@
-/*  Contains macros for reflection of classes
+/*  Class reflection definitions
 
     Copyright 2018-2021 Lukas Cone
 
@@ -16,219 +16,163 @@
 */
 
 #pragma once
-#include "../jenkinshash.hpp"
-#include <cstddef>
+#include "reflector_type.hpp"
 
-template <size_t n>
-constexpr size_t _GetReflDescPart(const char (&value)[n], bool part2 = false) {
-  size_t cutter = 0;
+struct ReflDesc {
+  const char *part1 = nullptr;
+  const char *part2 = nullptr;
+  ReflDesc() = default;
+  ReflDesc(const char *part1_) : part1(part1_) {}
+  ReflDesc(const char *part1_, const char *part2_)
+      : part1(part1_), part2(part2_) {}
+};
 
-  for (auto c : value) {
-    if (!c || c == '%') {
-      if (c && part2) {
-        cutter++;
-      }
-      break;
+struct NoName {};
+
+struct MemberProxy {
+  const char *typeName;
+  const char *aliasName = nullptr;
+  JenHash aliasHash;
+  reflType type;
+  ReflDesc description;
+
+private:
+  void setup(const char *aliasName_) {
+    aliasName = aliasName_;
+    aliasHash = JenHash(aliasName_);
+  }
+
+  void setup(const ReflDesc &desc) { description = desc; }
+
+  void setup(NoName) { typeName = nullptr; }
+
+public:
+  template <class... Input, class type_>
+  explicit MemberProxy(type_ getter, Input... inputs) {
+    auto [offset, name, hash, rtfn, isbitmember] = getter();
+    if constexpr (std::is_same_v<decltype(isbitmember), std::true_type>) {
+      type = BuildBFReflType<std::remove_pointer_t<decltype(offset)>,
+                             std::remove_pointer_t<decltype(rtfn)>>(hash);
+    } else {
+      type = BuildReflType<decltype(*rtfn)>(hash, 0, offset);
     }
 
-    cutter++;
+    typeName = name;
+
+    (setup(inputs), ...);
+  }
+};
+
+struct reflectorStatic {
+  const JenHash classHash;
+  const uint32 nTypes;
+  const reflType *types;
+  const char *const *typeNames = nullptr;
+  const char *className;
+  const char *const *typeAliases = nullptr;
+  const JenHash *typeAliasHashes = nullptr;
+  const ReflDesc *typeDescs;
+
+  template <class guard, class... C, size_t cs>
+  reflectorStatic(const guard *, const char (&className_)[cs], C... members)
+      : classHash(JenHash(className_)), nTypes(sizeof...(C)),
+        className(className_) {
+    size_t index = 0;
+    struct reflType2 : reflType {
+      reflType2(const reflType &r, size_t index) : reflType(r) { ID = index; }
+    };
+    static const reflType types_[]{reflType2{members.type, index++}...};
+    types = types_;
+    union mutate {
+      const char *h;
+      uintptr_t i;
+    };
+
+    if ((mutate{members.typeName}.i | ...)) {
+      static const char *typeNames_[]{members.typeName...};
+      typeNames = typeNames_;
+    }
+
+    if ((mutate{members.aliasName}.i | ...)) {
+      static const char *typeAliases_[]{members.aliasName...};
+      typeAliases = typeAliases_;
+      static JenHash typeAliasHashes_[]{members.aliasHash...};
+      typeAliasHashes = typeAliasHashes_;
+    }
+
+    if ((mutate{members.description.part1}.i | ...) |
+        (mutate{members.description.part2}.i | ...)) {
+      static ReflDesc typeDescs_[]{members.description...};
+      typeDescs = typeDescs_;
+    }
+  }
+};
+
+static_assert(sizeof(reflectorStatic) == 56);
+
+struct ReflectedInstance {
+private:
+  friend class Reflector;
+  friend struct ReflectedInstanceFriend;
+
+  const reflectorStatic *rfStatic = nullptr;
+  union {
+    const void *constInstance = nullptr;
+    void *instance;
+  };
+
+public:
+  ReflectedInstance() = default;
+  ReflectedInstance(const reflectorStatic *rfStat, const void *inst)
+      : rfStatic(rfStat), constInstance(inst) {}
+};
+
+template <class C> const reflectorStatic ES_IMPORT *GetReflectedClass();
+
+#define MEMBERNAME(member, name, ...)                                          \
+  MemberProxy {                                                                \
+    [] {                                                                       \
+      return std::make_tuple(                                                  \
+          offsetof(class_type, member), name, JenHash(name),                   \
+          std::add_pointer_t<decltype(class_type::member)>{nullptr},           \
+          std::false_type{});                                                  \
+    },                                                                         \
+        __VA_ARGS__                                                            \
   }
 
-  return cutter;
-}
+#define MEMBER(member, ...) MEMBERNAME(member, #member, __VA_ARGS__)
 
-#define _REFLECTOR_EXTRACT_0(flags, item, ...) item
-#define _REFLECTOR_EXTRACT_0S(flags, item, ...) #item
-
-#define _REFLECTOR_EXTRACT_ALIASHASH(flags, ...)                               \
-  VA_NARGS_EVAL(_REFLECTOR_EXTRACT_ALIASHASH_##flags(__VA_ARGS__))
-#define _REFLECTOR_EXTRACT_ALIASHASH_A(x, al, ...)                             \
-  JenHash { al }
-#define _REFLECTOR_EXTRACT_ALIASHASH_D(x, ds, ...)                             \
-  {}
-#define _REFLECTOR_EXTRACT_ALIASHASH_AD(x, al, ...)                            \
-  JenHash { al }
-#define _REFLECTOR_EXTRACT_ALIASHASH_(x, ...)                                  \
-  {}
-#define _REFLECTOR_EXTRACT_ALIASHASH_N(x, ...)                                 \
-  {}
-
-#define _REFLECTOR_EXTRACT_ALIAS(flags, ...)                                   \
-  VA_NARGS_EVAL(_REFLECTOR_EXTRACT_ALIAS_##flags(__VA_ARGS__))
-#define _REFLECTOR_EXTRACT_ALIAS_A(x, al, ...) al
-#define _REFLECTOR_EXTRACT_ALIAS_D(x, ds, ...) nullptr
-#define _REFLECTOR_EXTRACT_ALIAS_AD(x, al, ...) al
-#define _REFLECTOR_EXTRACT_ALIAS_(x, ...) nullptr
-#define _REFLECTOR_EXTRACT_ALIAS_N(x, ...) nullptr
-
-#define _REFLECTOR_DESCBUILDER(item)                                           \
-  { {item, _GetReflDescPart(item)}, &item[_GetReflDescPart(item, true)] }
-
-#define _REFLECTOR_EXTRACT_DESC(flags, ...)                                    \
-  VA_NARGS_EVAL(_REFLECTOR_EXTRACT_DESC_##flags(__VA_ARGS__))
-
-#define _REFLECTOR_EXTRACT_DESC_A(...)                                         \
-  {                                                                            \
-    {nullptr, (size_t)0}, { nullptr, (size_t)0 }                               \
-  }
-#define _REFLECTOR_EXTRACT_DESC_D(x, ds, ...) _REFLECTOR_DESCBUILDER(ds)
-#define _REFLECTOR_EXTRACT_DESC_AD(x, al, ds, ...) _REFLECTOR_DESCBUILDER(ds)
-#define _REFLECTOR_EXTRACT_DESC_(...) _REFLECTOR_EXTRACT_DESC_A(__VA_ARGS__)
-#define _REFLECTOR_EXTRACT_DESC_N(...) _REFLECTOR_EXTRACT_DESC_A(__VA_ARGS__)
-
-#define _REFLECTOR_ADDN_ITEM_DESC(value) _REFLECTOR_EXTRACT_DESC value,
-#define _REFLECTOR_ADDN_ITEM_ALIAS(value) _REFLECTOR_EXTRACT_ALIAS value,
-#define _REFLECTOR_ADDN_ITEM_ALIASHASH(value)                                  \
-  _REFLECTOR_EXTRACT_ALIASHASH value,
-#define _REFLECTOR_ADDN_ITEM_EXTNAME(value) _REFLECTOR_EXTRACT_0S value,
-#define _REFLECTOR_ADDN_ITEM(value) #value,
-#define _REFLECTOR_GET_CNAME(...) #__VA_ARGS__
-#define _REFLECTOR_GET_CLASS(...) __VA_ARGS__
-
-#define _REFLECTOR_ADDN(classname, _id, mvalue)                                \
-  BuildReflType<decltype(classname::mvalue), classname>(                       \
-      JenHash(#mvalue), _id, offsetof(classname, mvalue)),
-
-#define _EXT_REFLECTOR_ADDN(classname, _id, value)                             \
-  BuildReflType<decltype(classname::_REFLECTOR_EXTRACT_0 value), classname>(   \
-      JenHash(_REFLECTOR_EXTRACT_0S value), _id,                               \
-      offsetof(classname, _REFLECTOR_EXTRACT_0 value)),
-
-#define _REFLECTOR_MAIN_BODY(extType, ...)                                     \
-  static const reflType *Types() {                                             \
-    static const reflType types[] = {                                          \
-        StaticForArgID(extType, value_type, __VA_ARGS__)};                     \
-    return types;                                                              \
-  }                                                                            \
-  static constexpr size_t NumTypes() { return VA_NARGS(__VA_ARGS__); }
-
-#define _REFLECTOR_MAIN_CLASSHASH(clseval, classname)                          \
-  static constexpr JenHash Hash() { return JenHash(clseval(classname)); }
-
-#define _REFLECTOR_CNAME_VARNAMES(clseval, classname)                          \
-  static const char *ClassName() { return clseval(classname); }
-#define _REFLECTOR_CNAME_TEMPLATE(...)
-#define _REFLECTOR_CNAME_EXTENDED(clseval, classname)                          \
-  static const char *ClassName() { return clseval(classname); }
-
-#define _REFLECTOR_NAMES_VARNAMES(...)                                         \
-  static const char *const *TypeNames() {                                      \
-    static const char *typeNames[] = {                                         \
-        StaticFor(_REFLECTOR_ADDN_ITEM, __VA_ARGS__)};                         \
-    return typeNames;                                                          \
+#define BITMEMBERNAME(member, name, ...)                                       \
+  MemberProxy {                                                                \
+    [] {                                                                       \
+      return std::make_tuple(                                                  \
+          std::add_pointer_t<class_type>{nullptr}, name, JenHash(name),        \
+          std::add_pointer_t<member>{nullptr}, std::true_type{});              \
+    },                                                                         \
+        __VA_ARGS__                                                            \
   }
 
-#define _REFLECTOR_NAMES_TEMPLATE(...)
-#define _REFLECTOR_NAMES_EXTENDED(...)                                         \
-  static const char *const *TypeNames() {                                      \
-    static const char *typeNames[] = {                                         \
-        StaticFor(_REFLECTOR_ADDN_ITEM_EXTNAME, __VA_ARGS__)};                 \
-    return typeNames;                                                          \
+#define BITMEMBER(member, ...) BITMEMBERNAME(member, #member, __VA_ARGS__)
+
+#define CLASS(...)                                                             \
+  template <> constexpr JenHash ClassHash<__VA_ARGS__>() {                     \
+    return #__VA_ARGS__;                                                       \
   }                                                                            \
-  static const char *const *TypeAliases() {                                    \
-    static const char *typeAliases[] = {                                       \
-        StaticFor(_REFLECTOR_ADDN_ITEM_ALIAS, __VA_ARGS__)};                   \
-    return typeAliases;                                                        \
-  }                                                                            \
-  static const JenHash *TypeAliasHashes() {                                    \
-    static const JenHash typeAliasHashes[] = {                                 \
-        StaticFor(_REFLECTOR_ADDN_ITEM_ALIASHASH, __VA_ARGS__)};               \
-    return typeAliasHashes;                                                    \
-  }                                                                            \
-  static const _ReflDesc *TypeDescriptors() {                                  \
-    static const _ReflDesc typeDescriptors[] = {                               \
-        StaticFor(_REFLECTOR_ADDN_ITEM_DESC, __VA_ARGS__)};                    \
-    return typeDescriptors;                                                    \
-  }
-
-#define _REFLECTOR_CNAME(classname) #classname
-#define _TEMPLATE_REFLECTOR_CNAME(classname) _REFLECTOR_GET_CNAME classname
-
-#define _REFLECTOR_CLASS(classname) classname
-#define _TEMPLATE_REFLECTOR_CLASS(classname) _REFLECTOR_GET_CLASS classname
-
-#define _REFLECTOR_TEMPLATE_TEMPLATE _TEMPLATE
-#define _REFLECTOR_TEMPLATE_VARNAMES
-#define _REFLECTOR_TEMPLATE_EXTENDED
-
-#define _REFLECTOR_EXTENDED_EXTENDED _EXT
-#define _REFLECTOR_EXTENDED_TEMPLATE
-#define _REFLECTOR_EXTENDED_VARNAMES
-
-#define _REFLECTOR_INTERFACE(clseval, classname)                               \
   template <>                                                                  \
-  const reflectorStatic ES_EXPORT *                                                      \
-  ReflectorInterface<clseval(classname)>::GetReflector() {                     \
-    static const reflectorStatic rclass(_RTag<clseval(classname)>{});          \
-    return &rclass;                                                            \
+  const reflectorStatic ES_EXPORT *GetReflectedClass<__VA_ARGS__>() {          \
+    using class_type = __VA_ARGS__;                                            \
+    static const reflectorStatic reflectedClass {                              \
+      std::add_pointer_t<class_type>{nullptr}, #__VA_ARGS__,
+
+// internal, do not use
+#define END_CLASS(...)                                                         \
+  }                                                                            \
+  ;                                                                            \
+  return &reflectedClass;                                                      \
   }
 
-#define _REFLECTOR_START_VER0_(adtype, classname, ...)                         \
-  template <> struct ReflectorType<classname> : ReflectorTypeBase {            \
-    using value_type = classname;                                              \
-    _REFLECTOR_MAIN_BODY(adtype, __VA_ARGS__);                                 \
-  };                                                                           \
-  _REFLECTOR_INTERFACE(_REFLECTOR_CLASS, classname)
-
-// clang-format off
-
-#define _REFLECTOR_START_VER1_(adtype, classname, var01, ...)                                                 \
-  template <> struct ReflectorType<_LOOPER_CAT2(_REFLECTOR_TEMPLATE_##var01, _REFLECTOR_CLASS)(classname)>    \
-  : ReflectorTypeBase {                                                                                       \
-    using value_type = _LOOPER_CAT2(_REFLECTOR_TEMPLATE_##var01, _REFLECTOR_CLASS)(classname);                \
-    _REFLECTOR_MAIN_BODY(_LOOPER_CAT2(_REFLECTOR_EXTENDED_##var01, adtype), __VA_ARGS__)                      \
-    _REFLECTOR_NAMES_##var01(__VA_ARGS__);                                                                    \
-    _REFLECTOR_CNAME_##var01(_LOOPER_CAT2(_REFLECTOR_TEMPLATE_##var01, _REFLECTOR_CNAME), classname)          \
-    _REFLECTOR_MAIN_CLASSHASH(_LOOPER_CAT2(_REFLECTOR_TEMPLATE_##var01, _REFLECTOR_CNAME), classname)         \
-  };                                                                                                          \
-  _REFLECTOR_INTERFACE(_LOOPER_CAT2(_REFLECTOR_TEMPLATE_##var01, _REFLECTOR_CLASS), classname)                \
-
-#define _REFLECTOR_START_VER2_(adtype, classname, var01, var02, ...)                                                                   \
-  template <> struct ReflectorType<_LOOPER_CAT2(_REFLECTOR_TEMPLATE_##var01 _REFLECTOR_TEMPLATE_##var02, _REFLECTOR_CLASS)(classname)> \
-  : ReflectorTypeBase {                                                                                                                \
-    using value_type = _LOOPER_CAT2(_REFLECTOR_TEMPLATE_##var01 _REFLECTOR_TEMPLATE_##var02, _REFLECTOR_CLASS)(classname);             \
-    _REFLECTOR_MAIN_BODY(_LOOPER_CAT2(_REFLECTOR_EXTENDED_##var01 _REFLECTOR_EXTENDED_##var02, adtype), __VA_ARGS__)                   \
-    _REFLECTOR_NAMES_##var01(__VA_ARGS__);                                                                                             \
-    _REFLECTOR_NAMES_##var02(__VA_ARGS__);                                                                                             \
-    _REFLECTOR_CNAME_##var01(_LOOPER_CAT2(_REFLECTOR_TEMPLATE_##var01 _REFLECTOR_TEMPLATE_##var02, _REFLECTOR_CNAME), classname)       \
-    _REFLECTOR_CNAME_##var02(_LOOPER_CAT2(_REFLECTOR_TEMPLATE_##var01 _REFLECTOR_TEMPLATE_##var02, _REFLECTOR_CNAME), classname)       \
-    _REFLECTOR_MAIN_CLASSHASH(_LOOPER_CAT2(_REFLECTOR_TEMPLATE_##var01 _REFLECTOR_TEMPLATE_##var02, _REFLECTOR_CNAME), classname)      \
-  };                                                                                                                                   \
-  _REFLECTOR_INTERFACE(_LOOPER_CAT2(_REFLECTOR_TEMPLATE_##var01 _REFLECTOR_TEMPLATE_##var02, _REFLECTOR_CLASS), classname)
-
-#define _REFLECTOR_START_VER3_(adtype, classname, var01, var02, var03, ...)                                                                                        \
-  template <> struct ReflectorType<_LOOPER_CAT2(_REFLECTOR_TEMPLATE_##var01 _REFLECTOR_TEMPLATE_##var02 _REFLECTOR_TEMPLATE_##var03, _REFLECTOR_CLASS)(classname)> \
-  : ReflectorTypeBase {                                                                                                                                            \
-    using value_type = _LOOPER_CAT2(_REFLECTOR_TEMPLATE_##var01 _REFLECTOR_TEMPLATE_##var02 _REFLECTOR_TEMPLATE_##var03, _REFLECTOR_CLASS)(classname);             \
-    _REFLECTOR_MAIN_BODY(_LOOPER_CAT2(_REFLECTOR_EXTENDED_##var01 _REFLECTOR_EXTENDED_##var02 _REFLECTOR_EXTENDED_##var03, adtype), __VA_ARGS__)                   \
-    _REFLECTOR_NAMES_##var01(__VA_ARGS__);                                                                                                                         \
-    _REFLECTOR_NAMES_##var02(__VA_ARGS__);                                                                                                                         \
-    _REFLECTOR_NAMES_##var03(__VA_ARGS__);                                                                                                                         \
-    _REFLECTOR_CNAME_##var01(_LOOPER_CAT2(_REFLECTOR_TEMPLATE_##var01 _REFLECTOR_TEMPLATE_##var02 _REFLECTOR_TEMPLATE_##var03, _REFLECTOR_CNAME), classname)       \
-    _REFLECTOR_CNAME_##var02(_LOOPER_CAT2(_REFLECTOR_TEMPLATE_##var01 _REFLECTOR_TEMPLATE_##var02 _REFLECTOR_TEMPLATE_##var03, _REFLECTOR_CNAME), classname)       \
-    _REFLECTOR_CNAME_##var03(_LOOPER_CAT2(_REFLECTOR_TEMPLATE_##var01 _REFLECTOR_TEMPLATE_##var02 _REFLECTOR_TEMPLATE_##var03, _REFLECTOR_CNAME), classname)       \
-    _REFLECTOR_MAIN_CLASSHASH(_LOOPER_CAT2(_REFLECTOR_TEMPLATE_##var01 _REFLECTOR_TEMPLATE_##var02 _REFLECTOR_TEMPLATE_##var03, _REFLECTOR_CNAME), classname)      \
-  };                                                                                                                                                               \
-  _REFLECTOR_INTERFACE(_LOOPER_CAT2(_REFLECTOR_TEMPLATE_##var01 _REFLECTOR_TEMPLATE_##var02 _REFLECTOR_TEMPLATE_##var03, _REFLECTOR_CLASS), classname)
-
-// clang-format on
-
-#define _REFLECTOR_START_VER0(...)                                             \
-  VA_NARGS_EVAL(_REFLECTOR_START_VER0_(_REFLECTOR_ADDN, __VA_ARGS__))
-#define _REFLECTOR_START_VER1(...)                                             \
-  VA_NARGS_EVAL(_REFLECTOR_START_VER1_(_REFLECTOR_ADDN, __VA_ARGS__))
-#define _REFLECTOR_START_VER2(...)                                             \
-  VA_NARGS_EVAL(_REFLECTOR_START_VER2_(_REFLECTOR_ADDN, __VA_ARGS__))
-#define _REFLECTOR_START_VER3(...)                                             \
-  VA_NARGS_EVAL(_REFLECTOR_START_VER3_(_REFLECTOR_ADDN, __VA_ARGS__))
-
-#define _REFLECTOR_ADDB(classname, _id, mvalue)                                \
-  BuildBFReflType<classname, mvalue>(JenHash(#mvalue)),
-
-#define _EXT_REFLECTOR_ADDB(classname, _id, value)                             \
-  BuildBFReflType<classname, _REFLECTOR_EXTRACT_0 value>(                      \
-      JenHash(_REFLECTOR_EXTRACT_0S value)),
-
-#define _REFLECTOR_START_VERBITFIELD(classname, numFlags, ...)                 \
-  VA_NARGS_EVAL(_REFLECTOR_START_VER##numFlags##_(_REFLECTOR_ADDB, classname,  \
-                                                  __VA_ARGS__))
+// Create reflection definition (use only in TU)
+// what: always CLASS()
+// args: MEMBER, MEMBERNAME or BITMEMBER, BITMEMBERNAME, invokes MemberProxy
+// contructor
+#define REFLECT(what, ...) what __VA_ARGS__ END_##what

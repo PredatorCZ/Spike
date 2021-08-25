@@ -19,10 +19,6 @@
 #pragma once
 #include "jenkinshash.hpp"
 
-template <class E> struct _EnumWrap {
-  static constexpr JenHash GetHash() { return {}; }
-};
-
 enum class REFType : uint8 {
   None,
   Integer,
@@ -49,4 +45,5 @@ struct reflTypeDefault_ {
 };
 
 template <typename _Ty> struct _getType;
-template <class C> struct ReflectorType;
+template <class C> constexpr JenHash ClassHash() { return {}; }
+template <class C> constexpr JenHash EnumHash() { return {}; }

@@ -83,7 +83,7 @@ private:
 template <class C, class E>
 struct _getType<es::Flags<E, C>> : reflTypeDefault_ {
   static constexpr REFType TYPE = REFType::EnumFlags;
-  static constexpr JenHash Hash() { return _EnumWrap<E>::GetHash(); }
+  static constexpr JenHash Hash() { return EnumHash<E>(); }
   static constexpr uint8 SUBSIZE = sizeof(C);
   static constexpr uint16 NUMITEMS = 1;
 };

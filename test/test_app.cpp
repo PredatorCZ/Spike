@@ -9,11 +9,11 @@ static struct SampleSettings : SettingsManager<SampleSettings> {
   float floatVal0 = 50.123f;
 } settings;
 
-REFLECTOR_CREATE(SampleSettings, 1, EXTENDED,
-                 (AD, boolVal0, "setting1", "This is a 1st setting."),
-                 (AD, boolVal1, "setting2", "This is a 2nd setting."),
-                 (AD, intVal0, "number", "A numerical setting."),
-                 (AD, floatVal0, "decimal", "A decimal setting."));
+REFLECT(CLASS(SampleSettings),
+        MEMBER(boolVal0, "setting1", ReflDesc{"This is a 1st setting."}),
+        MEMBER(boolVal1, "setting2", ReflDesc{"This is a 2nd setting."}),
+        MEMBER(intVal0, "number", ReflDesc{"A numerical setting."}),
+        MEMBER(floatVal0, "decimal", ReflDesc{"A decimal setting."}));
 
 int test_dirscan() {
   DirectoryScanner sc;
@@ -21,10 +21,14 @@ int test_dirscan() {
   sc.Scan("");
   const auto &fnd = sc.Files();
 
-  TEST_NOT_CHECK(es::IsEnd(fnd, std::find(fnd.begin(), fnd.end(), "uni/skeleton.hpp")));
-  TEST_NOT_CHECK(es::IsEnd(fnd, std::find(fnd.begin(), fnd.end(), "datas/reflector.hpp")));
-  TEST_NOT_CHECK(es::IsEnd(fnd, std::find(fnd.begin(), fnd.end(), "test/test_app.cpp")));
-  TEST_NOT_CHECK(es::IsEnd(fnd, std::find(fnd.begin(), fnd.end(), ".gitignore")));
+  TEST_NOT_CHECK(
+      es::IsEnd(fnd, std::find(fnd.begin(), fnd.end(), "uni/skeleton.hpp")));
+  TEST_NOT_CHECK(
+      es::IsEnd(fnd, std::find(fnd.begin(), fnd.end(), "datas/reflector.hpp")));
+  TEST_NOT_CHECK(
+      es::IsEnd(fnd, std::find(fnd.begin(), fnd.end(), "test/test_app.cpp")));
+  TEST_NOT_CHECK(
+      es::IsEnd(fnd, std::find(fnd.begin(), fnd.end(), ".gitignore")));
 
   sc.AddFilter(".cpp");
   sc.AddFilter(".inl");
@@ -32,11 +36,15 @@ int test_dirscan() {
   sc.Clear();
   sc.Scan("");
 
-  TEST_CHECK(es::IsEnd(fnd, std::find(fnd.begin(), fnd.end(), "uni/skeleton.hpp")));
-  TEST_CHECK(es::IsEnd(fnd, std::find(fnd.begin(), fnd.end(), "datas/reflector.hpp")));
-  TEST_NOT_CHECK(es::IsEnd(fnd, std::find(fnd.begin(), fnd.end(), "test/test_app.cpp")));
+  TEST_CHECK(
+      es::IsEnd(fnd, std::find(fnd.begin(), fnd.end(), "uni/skeleton.hpp")));
+  TEST_CHECK(
+      es::IsEnd(fnd, std::find(fnd.begin(), fnd.end(), "datas/reflector.hpp")));
+  TEST_NOT_CHECK(
+      es::IsEnd(fnd, std::find(fnd.begin(), fnd.end(), "test/test_app.cpp")));
   TEST_CHECK(es::IsEnd(fnd, std::find(fnd.begin(), fnd.end(), ".gitignore")));
-  TEST_NOT_CHECK(es::IsEnd(fnd, std::find(fnd.begin(), fnd.end(), "test/reflector.inl")));
+  TEST_NOT_CHECK(
+      es::IsEnd(fnd, std::find(fnd.begin(), fnd.end(), "test/reflector.inl")));
 
   return 0;
 }

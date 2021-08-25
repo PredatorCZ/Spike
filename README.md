@@ -1,7 +1,6 @@
 # PreCore
 
 [![build](https://github.com/PredatorCZ/PreCore/actions/workflows/cmake.yml/badge.svg)](https://github.com/PredatorCZ/PreCore/actions/workflows/cmake.yml)
-[![Build Status](https://travis-ci.com/PredatorCZ/PreCore.svg?branch=master)](https://travis-ci.com/PredatorCZ/PreCore)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![Codacy Badge](https://app.codacy.com/project/badge/Grade/50479b1d15d848bcb389dc2166c294e2)](https://www.codacy.com/manual/PredatorCZ/PreCore?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=PredatorCZ/PreCore&amp;utm_campaign=Badge_Grade)
 [![Coverage Status](https://coveralls.io/repos/github/PredatorCZ/PreCore/badge.svg?branch=master)](https://coveralls.io/github/PredatorCZ/PreCore?branch=master)
@@ -10,7 +9,7 @@ PreCore is a library with helper classes.\
 Main focus of this library is: Class/Enum RTTI and RTTR, SIMD classes like Vector and Matrix4x4, stream helpers, uni module.\
 It also contains logging services, algorhitms, data types, muti-threading queue classes, extensions for other libraries and many more.
 
-Library is made for C++14 standard and it's compilable under Clang 3.5+, GCC 5+, MSVC 2017+.
+Library is made for C++17 standard and it's compilable under Clang 5+, GCC 7+, MSVC 2017+.
 
 ## Uses additional libraries
 
@@ -32,12 +31,12 @@ It also allows to fully reflect enumerations.
 
 **Strengths:**
 
-* Easy RTTI creation with ***REFLECTOR_CREATE*** macro
+* Easy RTTI creation with ***REFLECT/MAKE_ENUM*** macros
 * Loading/saving RTTI
 * Built-in XML/Binary de/serializers
 * Can apply other de/serializers with ease.
 * Doesn't eat any class space (except ReflectorBase)
-* Can have member alias and description in RTTI (EXTENDED flag)
+* Can have member alias and description in RTTI
 
 **Disadvantages, that shall be fixed:**
 

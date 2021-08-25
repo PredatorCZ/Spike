@@ -20,7 +20,6 @@
 #include "../jenkinshash.hpp"
 #include "../reflector_fwd.hpp"
 #include "../supercore.hpp"
-#include "reflector_class_reg.hpp"
 
 struct reflType {
   REFType type;          // type of main element
@@ -79,9 +78,9 @@ template <typename _Ty> struct _getType : reflTypeDefault_ {
   static constexpr REFType TYPE = RefGetType<_Ty>();
   static constexpr JenHash Hash() {
     if constexpr (std::is_enum_v<_Ty>) {
-      return _EnumWrap<_Ty>::GetHash();
+      return EnumHash<_Ty>();
     } else {
-      return ReflectorType<_Ty>::Hash();
+      return ClassHash<_Ty>();
     }
   }
   static constexpr uint8 SUBSIZE = sizeof(_Ty);
@@ -118,7 +117,7 @@ union _DecomposedVectorHash {
   };
 };
 
-template <class type, class C>
+template <class type>
 reflType BuildReflType(JenHash classHash, uint8 index, size_t offset) {
   typedef typename std::remove_reference<type>::type unref_type;
   typedef _getType<unref_type> type_class;

@@ -3,19 +3,24 @@
 #include "datas/endian.hpp"
 #include "datas/flags.hpp"
 #include "datas/reflector.hpp"
-#include "datas/vectors_simd.hpp"
 #include "datas/unit_testing.hpp"
+#include "datas/vectors_simd.hpp"
 
-REFLECTOR_CREATE(EnumWrap00, ENUM, 1, CLASS, E1, E2,
-                 E3 = 0x7); // as enum class EnumWrap00 {};
-REFLECTOR_CREATE(EnumWrap01, ENUM, 0, EnumWrap01_E1, EnumWrap01_E2,
-                 EnumWrap01_E3); // as enum EnumWrap01 {};
-REFLECTOR_CREATE(EnumWrap02, ENUM, 2, CLASS, 8, E4, E5,
-                 E6); // as enum class EnumWrap02 : uchar {};
-REFLECTOR_CREATE(EnumWrap03, ENUM, 2, CLASS, 16, E7 = 7, E8 = 16586,
-                 E9 = 0x8bcd); // as enum class EnumWrap03 : ushort {};
-REFLECTOR_CREATE(EnumWrap04, ENUM, 2, CLASS, 32, E10, E11,
-                 E12); // as enum class EnumWrap04 : uint {};
+MAKE_ENUM(ENUMSCOPE(class EnumWrap00, EnumWrap00), EMEMBER(E1), EMEMBER(E2),
+          EMEMBERVAL(E3, 7));
+
+MAKE_ENUM(ENUM(EnumWrap01), EMEMBER(EnumWrap01_E1), EMEMBER(EnumWrap01_E2),
+          EMEMBER(EnumWrap01_E3));
+
+MAKE_ENUM(ENUMSCOPE(class EnumWrap02
+                    : uint8, EnumWrap02),
+          EMEMBER(E4), EMEMBER(E5), EMEMBER(E6));
+MAKE_ENUM(ENUMSCOPE(class EnumWrap03
+                    : uint16, EnumWrap03),
+          EMEMBERVAL(E7, 7), EMEMBERVAL(E8, 16586), EMEMBERVAL(E9, 0x8bcd));
+MAKE_ENUM(ENUMSCOPE(class EnumWrap04
+                    : uint32, EnumWrap04),
+          EMEMBER(E10), EMEMBER(E11), EMEMBER(E12));
 
 struct subrefl {
   int data0;
@@ -28,7 +33,7 @@ struct subrefl {
   void ReflectorTag();
 };
 
-REFLECTOR_CREATE(subrefl, 1, VARNAMES, data0, data1);
+REFLECT(CLASS(subrefl), MEMBER(data0), MEMBER(data1));
 
 using member0 = BitMemberDecl<0, 2>;
 using member1 = BitMemberDecl<1, 5>;
@@ -38,8 +43,8 @@ using member42 = BitMemberDecl<4, 5>;
 using BitTypeRefl =
     BitFieldType<uint16, member0, member1, member2, member3, member42>;
 
-REFLECTOR_CREATE(BitTypeRefl, BITFIELD, 1, VARNAMES, member0, member1, member2,
-                 member3, member42);
+REFLECT(CLASS(BitTypeRefl), BITMEMBER(member0), BITMEMBER(member1),
+        BITMEMBER(member2), BITMEMBER(member3), BITMEMBER(member42));
 
 struct _ReflClassData {
   bool test1;
@@ -111,13 +116,18 @@ struct reflClass : ReflectorBase<reflClass>, _ReflClassData {
   reflClass() = default;
 };
 
-REFLECTOR_CREATE(reflClass, 1, VARNAMES, test1, test2, test3, test4, test5,
-                 test6, test7, test8, test9, test10, test11, test12, test13,
-                 test14, test15, test16, test17, test18, test19, test20, test21,
-                 test22, test40, test41, test42, test43, test44, test45, test46,
-                 test47, test48, test49, test50, test51, test52, test53, test54,
-                 test55, test56, test57, test58, test59, test60, test61, test80,
-                 test23, test62)
+REFLECT(CLASS(reflClass), MEMBER(test1), MEMBER(test2), MEMBER(test3),
+        MEMBER(test4), MEMBER(test5), MEMBER(test6), MEMBER(test7),
+        MEMBER(test8), MEMBER(test9), MEMBER(test10), MEMBER(test11),
+        MEMBER(test12), MEMBER(test13), MEMBER(test14), MEMBER(test15),
+        MEMBER(test16), MEMBER(test17), MEMBER(test18), MEMBER(test19),
+        MEMBER(test20), MEMBER(test21), MEMBER(test22), MEMBER(test40),
+        MEMBER(test41), MEMBER(test42), MEMBER(test43), MEMBER(test44),
+        MEMBER(test45), MEMBER(test46), MEMBER(test47), MEMBER(test48),
+        MEMBER(test49), MEMBER(test50), MEMBER(test51), MEMBER(test52),
+        MEMBER(test53), MEMBER(test54), MEMBER(test55), MEMBER(test56),
+        MEMBER(test57), MEMBER(test58), MEMBER(test59), MEMBER(test60),
+        MEMBER(test61), MEMBER(test80), MEMBER(test23), MEMBER(test62))
 
 int compare_classes(const reflClass &rClass, const reflClass &rClass2) {
   TEST_EQUAL(rClass.test1, rClass2.test1);

@@ -16,10 +16,10 @@
 */
 
 #pragma once
+#include "datas/binwritter.hpp"
 #include "master_printer.hpp"
 #include "reflector.hpp"
 #include "tchar.hpp"
-#include "datas/binwritter.hpp"
 
 #include <chrono>
 #include <ctime>
@@ -27,14 +27,12 @@
 #include <thread>
 
 template <class Base> struct SettingsManager : public ReflectorBase<Base> {
-  using stream_type =  BinWritter<BinCoreOpenMode::Text>;
+  using stream_type = BinWritter<BinCoreOpenMode::Text>;
   static stream_type &GetStream() {
     static stream_type outStream;
     return outStream;
   }
-  static std::ostream &GetLogger() {
-    return GetStream().BaseStream();
-  }
+  static std::ostream &GetLogger() { return GetStream().BaseStream(); }
 
   static void printf(const char *str) { GetLogger() << str; }
 
@@ -87,7 +85,7 @@ template <class Base> struct SettingsManager : public ReflectorBase<Base> {
       auto elDesc = ref->typeDescs[i];
       fillIndent() << elName << std::endl;
 
-      if (!elDesc.part1.empty()) {
+      if (elDesc.part1) {
         fillIndent(1) << elDesc.part1 << std::endl;
       }
 
@@ -102,8 +100,8 @@ template <class Base> struct SettingsManager : public ReflectorBase<Base> {
         auto refEnum = REFEnumStorage.at(fl.typeHash);
         fillIndent(1) << "Values: ";
 
-        for (auto r : refEnum) {
-          str << r << ", ";
+        for (size_t e = 0; e < refEnum->numMembers; e++) {
+          str << refEnum->names[e] << ", ";
         }
 
         str << std::endl;

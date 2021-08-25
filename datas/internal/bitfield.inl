@@ -67,7 +67,7 @@ template <class type, class... members>
 struct _getType<BitFieldType<type, members...>> : reflTypeDefault_ {
   static constexpr REFType TYPE = REFType::BitFieldClass;
   static constexpr JenHash Hash() {
-    return ReflectorType<BitFieldType<type, members...>>::Hash();
+    return ClassHash<BitFieldType<type, members...>>();
   }
   static constexpr uint8 SUBSIZE = sizeof(type);
 };

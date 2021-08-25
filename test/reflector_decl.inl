@@ -3,26 +3,7 @@
 #include "../datas/reflector_io.hpp"
 #include "../datas/unit_testing.hpp"
 
-struct refBasic {
-  uint32 item00;
-  int32 item01;
-  uint64 item02;
-  int64 item03;
-};
-
-REFLECTOR_CREATE(refBasic, 0, item00, item01, item02, item03);
-
-int test_reflector_decl00(
-    const reflectorStatic *mainRefl = GetReflectedClass<refBasic>()) {
-  TEST_EQUAL(mainRefl->className, nullptr);
-  TEST_EQUAL(mainRefl->nTypes, 4);
-  TEST_EQUAL(mainRefl->typeAliases, nullptr);
-  TEST_EQUAL(mainRefl->typeDescs, nullptr);
-  TEST_EQUAL(mainRefl->typeNames, nullptr);
-  TEST_EQUAL(mainRefl->typeAliasHashes, nullptr);
-
-  return 0;
-}
+using namespace es::string_view_literals;
 
 struct refTypeNames {
   float pitch;
@@ -30,21 +11,21 @@ struct refTypeNames {
   uint64 seed;
 };
 
-REFLECTOR_CREATE(refTypeNames, 1, VARNAMES, pitch, volume, seed);
+REFLECT(CLASS(refTypeNames), MEMBER(pitch), MEMBER(volume), MEMBER(seed));
 
 int test_reflector_decl01(
     const reflectorStatic *mainRefl = GetReflectedClass<refTypeNames>()) {
   TEST_NOT_EQUAL(mainRefl->className, nullptr);
-  TEST_EQUAL(es::string_view("refTypeNames"), mainRefl->className);
+  TEST_EQUAL("refTypeNames"sv, mainRefl->className);
   TEST_EQUAL(mainRefl->nTypes, 3);
   TEST_EQUAL(mainRefl->typeAliases, nullptr);
   TEST_EQUAL(mainRefl->typeDescs, nullptr);
   TEST_NOT_EQUAL(mainRefl->typeNames, nullptr);
   TEST_EQUAL(mainRefl->typeAliasHashes, nullptr);
 
-  TEST_EQUAL(es::string_view("pitch"), mainRefl->typeNames[0]);
-  TEST_EQUAL(es::string_view("volume"), mainRefl->typeNames[1]);
-  TEST_EQUAL(es::string_view("seed"), mainRefl->typeNames[2]);
+  TEST_EQUAL("pitch"sv, mainRefl->typeNames[0]);
+  TEST_EQUAL("volume"sv, mainRefl->typeNames[1]);
+  TEST_EQUAL("seed"sv, mainRefl->typeNames[2]);
 
   return 0;
 }
@@ -55,28 +36,22 @@ struct refTypeNames01 {
   uint64 seed;
 };
 
-REFLECTOR_CREATE(refTypeNames01, 1, EXTENDED, (, pitch), (, volume), (, seed));
+REFLECT(CLASS(refTypeNames01), MEMBER(pitch), MEMBER(volume, NoName{}),
+        MEMBER(seed));
 
 int test_reflector_decl02(
     const reflectorStatic *mainRefl = GetReflectedClass<refTypeNames01>()) {
   TEST_NOT_EQUAL(mainRefl->className, nullptr);
-  TEST_EQUAL(es::string_view("refTypeNames01"), mainRefl->className);
+  TEST_EQUAL("refTypeNames01"sv, mainRefl->className);
   TEST_EQUAL(mainRefl->nTypes, 3);
-  TEST_NOT_EQUAL(mainRefl->typeAliases, nullptr);
-  TEST_NOT_EQUAL(mainRefl->typeDescs, nullptr);
+  TEST_EQUAL(mainRefl->typeAliases, nullptr);
+  TEST_EQUAL(mainRefl->typeDescs, nullptr);
   TEST_NOT_EQUAL(mainRefl->typeNames, nullptr);
-  TEST_NOT_EQUAL(mainRefl->typeAliasHashes, nullptr);
+  TEST_EQUAL(mainRefl->typeAliasHashes, nullptr);
 
-  TEST_EQUAL(es::string_view("pitch"), mainRefl->typeNames[0]);
-  TEST_EQUAL(es::string_view("volume"), mainRefl->typeNames[1]);
-  TEST_EQUAL(es::string_view("seed"), mainRefl->typeNames[2]);
-
-  for (uint32 i = 0; i < mainRefl->nTypes; i++) {
-    TEST_EQUAL(mainRefl->typeAliases[i], nullptr);
-    TEST_EQUAL(mainRefl->typeAliasHashes[i], 0);
-    TEST_CHECK(mainRefl->typeDescs[i].part1.empty());
-    TEST_CHECK(mainRefl->typeDescs[i].part2.empty());
-  }
+  TEST_EQUAL("pitch"sv, mainRefl->typeNames[0]);
+  TEST_NOT_CHECK(mainRefl->typeNames[1]);
+  TEST_EQUAL("seed"sv, mainRefl->typeNames[2]);
 
   return 0;
 }
@@ -88,39 +63,34 @@ struct roomInfo {
   int32 reverbType;
 };
 
-REFLECTOR_CREATE(roomInfo, 1, EXTENDED, (A, roomSize, "room_size"),
-                 (A, roomDensity, "room_density"), (, reverb),
-                 (A, reverbType, "reverb_type"));
+REFLECT(CLASS(roomInfo), MEMBER(roomSize, "room_size"),
+        MEMBER(roomDensity, "room_density"), MEMBER(reverb),
+        MEMBER(reverbType, "reverb_type"));
 
 int test_reflector_decl03(
     const reflectorStatic *mainRefl = GetReflectedClass<roomInfo>()) {
   TEST_NOT_EQUAL(mainRefl->className, nullptr);
-  TEST_EQUAL(es::string_view("roomInfo"), mainRefl->className);
+  TEST_EQUAL("roomInfo"sv, mainRefl->className);
   TEST_EQUAL(mainRefl->nTypes, 4);
   TEST_NOT_EQUAL(mainRefl->typeAliases, nullptr);
-  TEST_NOT_EQUAL(mainRefl->typeDescs, nullptr);
+  TEST_EQUAL(mainRefl->typeDescs, nullptr);
   TEST_NOT_EQUAL(mainRefl->typeNames, nullptr);
   TEST_NOT_EQUAL(mainRefl->typeAliasHashes, nullptr);
 
-  TEST_EQUAL(es::string_view("roomSize"), mainRefl->typeNames[0]);
-  TEST_EQUAL(es::string_view("roomDensity"), mainRefl->typeNames[1]);
-  TEST_EQUAL(es::string_view("reverb"), mainRefl->typeNames[2]);
-  TEST_EQUAL(es::string_view("reverbType"), mainRefl->typeNames[3]);
+  TEST_EQUAL("roomSize"sv, mainRefl->typeNames[0]);
+  TEST_EQUAL("roomDensity"sv, mainRefl->typeNames[1]);
+  TEST_EQUAL("reverb"sv, mainRefl->typeNames[2]);
+  TEST_EQUAL("reverbType"sv, mainRefl->typeNames[3]);
 
-  TEST_EQUAL(es::string_view("room_size"), mainRefl->typeAliases[0]);
-  TEST_EQUAL(es::string_view("room_density"), mainRefl->typeAliases[1]);
+  TEST_EQUAL("room_size"sv, mainRefl->typeAliases[0]);
+  TEST_EQUAL("room_density"sv, mainRefl->typeAliases[1]);
   TEST_EQUAL(mainRefl->typeAliases[2], nullptr);
-  TEST_EQUAL(es::string_view("reverb_type"), mainRefl->typeAliases[3]);
+  TEST_EQUAL("reverb_type"sv, mainRefl->typeAliases[3]);
 
   TEST_EQUAL(JenHash("room_size"), mainRefl->typeAliasHashes[0]);
   TEST_EQUAL(JenHash("room_density"), mainRefl->typeAliasHashes[1]);
   TEST_EQUAL(mainRefl->typeAliasHashes[2], 0);
   TEST_EQUAL(JenHash("reverb_type"), mainRefl->typeAliasHashes[3]);
-
-  for (uint32 i = 0; i < mainRefl->nTypes; i++) {
-    TEST_CHECK(mainRefl->typeDescs[i].part1.empty());
-    TEST_CHECK(mainRefl->typeDescs[i].part2.empty());
-  }
 
   return 0;
 }
@@ -132,39 +102,34 @@ struct roomInfo01 {
   int32 reverbDelay;
 };
 
-REFLECTOR_CREATE(roomInfo01, 1, EXTENDED, (D, roomSize, "Size of room is%m3"),
-                 (D, roomDensity, "Density of a room is%%"),
-                 (D, reverb, "Reverb intensity is%dB"),
-                 (D, reverbDelay, "Reverb delay is%seconds"));
+REFLECT(CLASS(roomInfo01), MEMBER(roomSize, ReflDesc{"Size of room is", "m3"}),
+        MEMBER(roomDensity, ReflDesc{"Density of a room is", "%"}),
+        MEMBER(reverb, ReflDesc{"Reverb intensity is", "dB"}),
+        MEMBER(reverbDelay, ReflDesc{"Reverb delay is", "seconds"}));
 
 int test_reflector_decl04(
     const reflectorStatic *mainRefl = GetReflectedClass<roomInfo01>()) {
   TEST_NOT_EQUAL(mainRefl->className, nullptr);
-  TEST_EQUAL(es::string_view("roomInfo01"), mainRefl->className);
+  TEST_EQUAL("roomInfo01"sv, mainRefl->className);
   TEST_EQUAL(mainRefl->nTypes, 4);
-  TEST_NOT_EQUAL(mainRefl->typeAliases, nullptr);
+  TEST_EQUAL(mainRefl->typeAliases, nullptr);
   TEST_NOT_EQUAL(mainRefl->typeDescs, nullptr);
   TEST_NOT_EQUAL(mainRefl->typeNames, nullptr);
-  TEST_NOT_EQUAL(mainRefl->typeAliasHashes, nullptr);
+  TEST_EQUAL(mainRefl->typeAliasHashes, nullptr);
 
-  TEST_EQUAL(es::string_view("roomSize"), mainRefl->typeNames[0]);
-  TEST_EQUAL(es::string_view("roomDensity"), mainRefl->typeNames[1]);
-  TEST_EQUAL(es::string_view("reverb"), mainRefl->typeNames[2]);
-  TEST_EQUAL(es::string_view("reverbDelay"), mainRefl->typeNames[3]);
+  TEST_EQUAL("roomSize"sv, mainRefl->typeNames[0]);
+  TEST_EQUAL("roomDensity"sv, mainRefl->typeNames[1]);
+  TEST_EQUAL("reverb"sv, mainRefl->typeNames[2]);
+  TEST_EQUAL("reverbDelay"sv, mainRefl->typeNames[3]);
 
-  TEST_EQUAL(mainRefl->typeDescs[0].part1, "Size of room is");
-  TEST_EQUAL(mainRefl->typeDescs[0].part2, "m3");
-  TEST_EQUAL(mainRefl->typeDescs[1].part1, "Density of a room is");
-  TEST_EQUAL(mainRefl->typeDescs[1].part2, "%");
-  TEST_EQUAL(mainRefl->typeDescs[2].part1, "Reverb intensity is");
-  TEST_EQUAL(mainRefl->typeDescs[2].part2, "dB");
-  TEST_EQUAL(mainRefl->typeDescs[3].part1, "Reverb delay is");
-  TEST_EQUAL(mainRefl->typeDescs[3].part2, "seconds");
-
-  for (uint32 i = 0; i < mainRefl->nTypes; i++) {
-    TEST_EQUAL(mainRefl->typeAliases[i], nullptr);
-    TEST_EQUAL(mainRefl->typeAliasHashes[i], 0);
-  }
+  TEST_EQUAL(mainRefl->typeDescs[0].part1, "Size of room is"sv);
+  TEST_EQUAL(mainRefl->typeDescs[0].part2, "m3"sv);
+  TEST_EQUAL(mainRefl->typeDescs[1].part1, "Density of a room is"sv);
+  TEST_EQUAL(mainRefl->typeDescs[1].part2, "%"sv);
+  TEST_EQUAL(mainRefl->typeDescs[2].part1, "Reverb intensity is"sv);
+  TEST_EQUAL(mainRefl->typeDescs[2].part2, "dB"sv);
+  TEST_EQUAL(mainRefl->typeDescs[3].part1, "Reverb delay is"sv);
+  TEST_EQUAL(mainRefl->typeDescs[3].part2, "seconds"sv);
 
   return 0;
 }
@@ -176,45 +141,47 @@ struct roomInfo02 {
   int32 reverbDelay;
 };
 
-REFLECTOR_CREATE(roomInfo02, 1, EXTENDED,
-                 (AD, roomSize, "room_size", "Size of room is%m3"),
-                 (AD, roomDensity, "room_density", "Density of a room is%%"),
-                 (D, reverb, "Reverb intensity is%dB"),
-                 (AD, reverbDelay, "reverb_delay", "Reverb delay is%seconds"));
+REFLECT(CLASS(roomInfo02),
+        MEMBER(roomSize, "room_size", ReflDesc{"Size of room is", "m3"}),
+        MEMBER(roomDensity, "room_density",
+               ReflDesc{"Density of a room is", "%"}),
+        MEMBER(reverb, ReflDesc{"Reverb intensity is", "dB"}),
+        MEMBER(reverbDelay, "reverb_delay",
+               ReflDesc{"Reverb delay is", "seconds"}));
 
 int test_reflector_decl05(
     const reflectorStatic *mainRefl = GetReflectedClass<roomInfo02>()) {
   TEST_NOT_EQUAL(mainRefl->className, nullptr);
-  TEST_EQUAL(es::string_view("roomInfo02"), mainRefl->className);
+  TEST_EQUAL("roomInfo02"sv, mainRefl->className);
   TEST_EQUAL(mainRefl->nTypes, 4);
   TEST_NOT_EQUAL(mainRefl->typeAliases, nullptr);
   TEST_NOT_EQUAL(mainRefl->typeDescs, nullptr);
   TEST_NOT_EQUAL(mainRefl->typeNames, nullptr);
   TEST_NOT_EQUAL(mainRefl->typeAliasHashes, nullptr);
 
-  TEST_EQUAL(es::string_view("roomSize"), mainRefl->typeNames[0]);
-  TEST_EQUAL(es::string_view("roomDensity"), mainRefl->typeNames[1]);
-  TEST_EQUAL(es::string_view("reverb"), mainRefl->typeNames[2]);
-  TEST_EQUAL(es::string_view("reverbDelay"), mainRefl->typeNames[3]);
+  TEST_EQUAL("roomSize"sv, mainRefl->typeNames[0]);
+  TEST_EQUAL("roomDensity"sv, mainRefl->typeNames[1]);
+  TEST_EQUAL("reverb"sv, mainRefl->typeNames[2]);
+  TEST_EQUAL("reverbDelay"sv, mainRefl->typeNames[3]);
 
   TEST_EQUAL(JenHash("room_size"), mainRefl->typeAliasHashes[0]);
   TEST_EQUAL(JenHash("room_density"), mainRefl->typeAliasHashes[1]);
   TEST_EQUAL(0, mainRefl->typeAliasHashes[2]);
   TEST_EQUAL(JenHash("reverb_delay"), mainRefl->typeAliasHashes[3]);
 
-  TEST_EQUAL(mainRefl->typeDescs[0].part1, "Size of room is");
-  TEST_EQUAL(mainRefl->typeDescs[0].part2, "m3");
-  TEST_EQUAL(mainRefl->typeDescs[1].part1, "Density of a room is");
-  TEST_EQUAL(mainRefl->typeDescs[1].part2, "%");
-  TEST_EQUAL(mainRefl->typeDescs[2].part1, "Reverb intensity is");
-  TEST_EQUAL(mainRefl->typeDescs[2].part2, "dB");
-  TEST_EQUAL(mainRefl->typeDescs[3].part1, "Reverb delay is");
-  TEST_EQUAL(mainRefl->typeDescs[3].part2, "seconds");
+  TEST_EQUAL(mainRefl->typeDescs[0].part1, "Size of room is"sv);
+  TEST_EQUAL(mainRefl->typeDescs[0].part2, "m3"sv);
+  TEST_EQUAL(mainRefl->typeDescs[1].part1, "Density of a room is"sv);
+  TEST_EQUAL(mainRefl->typeDescs[1].part2, "%"sv);
+  TEST_EQUAL(mainRefl->typeDescs[2].part1, "Reverb intensity is"sv);
+  TEST_EQUAL(mainRefl->typeDescs[2].part2, "dB"sv);
+  TEST_EQUAL(mainRefl->typeDescs[3].part1, "Reverb delay is"sv);
+  TEST_EQUAL(mainRefl->typeDescs[3].part2, "seconds"sv);
 
-  TEST_EQUAL(es::string_view("room_size"), mainRefl->typeAliases[0]);
-  TEST_EQUAL(es::string_view("room_density"), mainRefl->typeAliases[1]);
+  TEST_EQUAL("room_size"sv, mainRefl->typeAliases[0]);
+  TEST_EQUAL("room_density"sv, mainRefl->typeAliases[1]);
   TEST_EQUAL(mainRefl->typeAliases[2], nullptr);
-  TEST_EQUAL(es::string_view("reverb_delay"), mainRefl->typeAliases[3]);
+  TEST_EQUAL("reverb_delay"sv, mainRefl->typeAliases[3]);
 
   return 0;
 }
@@ -224,13 +191,12 @@ template <class C1, class C2> struct templatedClass {
   C2 item1;
 };
 
-REFLECTOR_CREATE((templatedClass<int, float>), 2, TEMPLATE, VARNAMES, item0,
-                 item1);
+REFLECT(CLASS(templatedClass<int, float>), MEMBER(item0), MEMBER(item1));
 
 int test_reflector_decl06(const reflectorStatic *mainRefl =
                               GetReflectedClass<templatedClass<int, float>>()) {
   TEST_NOT_EQUAL(mainRefl->className, nullptr);
-  TEST_EQUAL(es::string_view("templatedClass<int, float>"),
+  TEST_EQUAL("templatedClass<int, float>"sv,
              mainRefl->className);
   TEST_EQUAL(mainRefl->nTypes, 2);
   TEST_EQUAL(mainRefl->typeAliases, nullptr);
@@ -238,8 +204,8 @@ int test_reflector_decl06(const reflectorStatic *mainRefl =
   TEST_NOT_EQUAL(mainRefl->typeNames, nullptr);
   TEST_EQUAL(mainRefl->typeAliasHashes, nullptr);
 
-  TEST_EQUAL(es::string_view("item0"), mainRefl->typeNames[0]);
-  TEST_EQUAL(es::string_view("item1"), mainRefl->typeNames[1]);
+  TEST_EQUAL("item0"sv, mainRefl->typeNames[0]);
+  TEST_EQUAL("item1"sv, mainRefl->typeNames[1]);
 
   return 0;
 }
@@ -253,42 +219,26 @@ using member5 = BitMemberDecl<5, 3>;
 using BitType0 =
     BitFieldType<uint16, member0, member1, member2, member3, member4, member5>;
 
-REFLECTOR_CREATE(BitType0, BITFIELD, 0, member0, member1, member2, member3,
-                 member4, member5);
+REFLECT(CLASS(BitType0), BITMEMBER(member0), BITMEMBER(member1),
+        BITMEMBER(member2), BITMEMBER(member3), BITMEMBER(member4),
+        BITMEMBER(member5));
 
 int test_reflector_decl07(
     const reflectorStatic *mainRefl = GetReflectedClass<BitType0>()) {
-  TEST_EQUAL(mainRefl->className, nullptr);
-  TEST_EQUAL(mainRefl->nTypes, 6);
-  TEST_EQUAL(mainRefl->typeAliases, nullptr);
-  TEST_EQUAL(mainRefl->typeDescs, nullptr);
-  TEST_EQUAL(mainRefl->typeNames, nullptr);
-  TEST_EQUAL(mainRefl->typeAliasHashes, nullptr);
-
-  return 0;
-}
-
-using BitType1 =
-    BitFieldType<uint16, member0, member1, member2, member3, member4>;
-
-REFLECTOR_CREATE(BitType1, BITFIELD, 1, VARNAMES, member0, member1, member2,
-                 member3, member4);
-
-int test_reflector_decl08(
-    const reflectorStatic *mainRefl = GetReflectedClass<BitType1>()) {
   TEST_NOT_EQUAL(mainRefl->className, nullptr);
-  TEST_EQUAL(es::string_view("BitType1"), mainRefl->className);
-  TEST_EQUAL(mainRefl->nTypes, 5);
+  TEST_EQUAL("BitType0"sv, mainRefl->className);
+  TEST_EQUAL(mainRefl->nTypes, 6);
   TEST_EQUAL(mainRefl->typeAliases, nullptr);
   TEST_EQUAL(mainRefl->typeDescs, nullptr);
   TEST_NOT_EQUAL(mainRefl->typeNames, nullptr);
   TEST_EQUAL(mainRefl->typeAliasHashes, nullptr);
 
-  TEST_EQUAL(es::string_view("member0"), mainRefl->typeNames[0]);
-  TEST_EQUAL(es::string_view("member1"), mainRefl->typeNames[1]);
-  TEST_EQUAL(es::string_view("member2"), mainRefl->typeNames[2]);
-  TEST_EQUAL(es::string_view("member3"), mainRefl->typeNames[3]);
-  TEST_EQUAL(es::string_view("member4"), mainRefl->typeNames[4]);
+  TEST_EQUAL("member0"sv, mainRefl->typeNames[0]);
+  TEST_EQUAL("member1"sv, mainRefl->typeNames[1]);
+  TEST_EQUAL("member2"sv, mainRefl->typeNames[2]);
+  TEST_EQUAL("member3"sv, mainRefl->typeNames[3]);
+  TEST_EQUAL("member4"sv, mainRefl->typeNames[4]);
+  TEST_EQUAL("member5"sv, mainRefl->typeNames[5]);
 
   return 0;
 }
@@ -299,27 +249,27 @@ using member51 = BitMemberDecl<5, 2>;
 using BitType2 = BitFieldType<uint16, member0, member1, member2, member3,
                               member41, member51>;
 
-REFLECTOR_CREATE(BitType2, BITFIELD, 1, EXTENDED, (, member0),
-                 (A, member1, "memAlias1"), (D, member2, "memDescr2"),
-                 (AD, member3, "memAlias3", "memDescr3"), (, member41),
-                 (, member51));
+REFLECT(CLASS(BitType2), BITMEMBER(member0), BITMEMBER(member1, "memAlias1"),
+        BITMEMBER(member2, ReflDesc{"memDescr2"}),
+        BITMEMBER(member3, "memAlias3", ReflDesc{"memDescr3"}),
+        BITMEMBER(member41), BITMEMBER(member51));
 
 int test_reflector_decl09(
     const reflectorStatic *mainRefl = GetReflectedClass<BitType2>()) {
   TEST_NOT_EQUAL(mainRefl->className, nullptr);
-  TEST_EQUAL(es::string_view("BitType2"), mainRefl->className);
+  TEST_EQUAL("BitType2"sv, mainRefl->className);
   TEST_EQUAL(mainRefl->nTypes, 6);
   TEST_NOT_EQUAL(mainRefl->typeAliases, nullptr);
   TEST_NOT_EQUAL(mainRefl->typeDescs, nullptr);
   TEST_NOT_EQUAL(mainRefl->typeNames, nullptr);
   TEST_NOT_EQUAL(mainRefl->typeAliasHashes, nullptr);
 
-  TEST_EQUAL(es::string_view("member0"), mainRefl->typeNames[0]);
-  TEST_EQUAL(es::string_view("member1"), mainRefl->typeNames[1]);
-  TEST_EQUAL(es::string_view("member2"), mainRefl->typeNames[2]);
-  TEST_EQUAL(es::string_view("member3"), mainRefl->typeNames[3]);
-  TEST_EQUAL(es::string_view("member41"), mainRefl->typeNames[4]);
-  TEST_EQUAL(es::string_view("member51"), mainRefl->typeNames[5]);
+  TEST_EQUAL("member0"sv, mainRefl->typeNames[0]);
+  TEST_EQUAL("member1"sv, mainRefl->typeNames[1]);
+  TEST_EQUAL("member2"sv, mainRefl->typeNames[2]);
+  TEST_EQUAL("member3"sv, mainRefl->typeNames[3]);
+  TEST_EQUAL("member41"sv, mainRefl->typeNames[4]);
+  TEST_EQUAL("member51"sv, mainRefl->typeNames[5]);
 
   TEST_EQUAL(0, mainRefl->typeAliasHashes[0]);
   TEST_EQUAL(JenHash("memAlias1"), mainRefl->typeAliasHashes[1]);
@@ -328,22 +278,22 @@ int test_reflector_decl09(
   TEST_EQUAL(0, mainRefl->typeAliasHashes[4]);
   TEST_EQUAL(0, mainRefl->typeAliasHashes[5]);
 
-  TEST_CHECK(mainRefl->typeDescs[0].part1.empty());
-  TEST_CHECK(mainRefl->typeDescs[1].part1.empty());
-  TEST_EQUAL(mainRefl->typeDescs[2].part1, "memDescr2");
-  TEST_EQUAL(mainRefl->typeDescs[3].part1, "memDescr3");
-  TEST_CHECK(mainRefl->typeDescs[4].part1.empty());
-  TEST_CHECK(mainRefl->typeDescs[5].part1.empty());
+  TEST_EQUAL(mainRefl->typeDescs[0].part1, nullptr);
+  TEST_EQUAL(mainRefl->typeDescs[1].part1, nullptr);
+  TEST_EQUAL(mainRefl->typeDescs[2].part1, "memDescr2"sv);
+  TEST_EQUAL(mainRefl->typeDescs[3].part1, "memDescr3"sv);
+  TEST_EQUAL(mainRefl->typeDescs[4].part1, nullptr);
+  TEST_EQUAL(mainRefl->typeDescs[5].part1, nullptr);
 
   TEST_EQUAL(mainRefl->typeAliases[0], nullptr);
-  TEST_EQUAL(es::string_view("memAlias1"), mainRefl->typeAliases[1]);
+  TEST_EQUAL("memAlias1"sv, mainRefl->typeAliases[1]);
   TEST_EQUAL(mainRefl->typeAliases[2], nullptr);
-  TEST_EQUAL(es::string_view("memAlias3"), mainRefl->typeAliases[3]);
+  TEST_EQUAL("memAlias3"sv, mainRefl->typeAliases[3]);
   TEST_EQUAL(mainRefl->typeAliases[4], nullptr);
   TEST_EQUAL(mainRefl->typeAliases[5], nullptr);
 
   for (uint32 i = 0; i < mainRefl->nTypes; i++) {
-    TEST_CHECK(mainRefl->typeDescs[i].part2.empty());
+    TEST_NOT_CHECK(mainRefl->typeDescs[i].part2);
   }
 
   return 0;

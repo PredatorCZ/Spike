@@ -7,91 +7,91 @@ static_assert(sizeof(EnumWrap03) == 2);
 static_assert(sizeof(EnumWrap04) == 4);
 
 int test_reflector_enum00() {
-  ReflectedEnum rEnum = GetReflectedEnum<EnumWrap00>();
+  auto rEnum = GetReflectedEnum<EnumWrap00>();
 
-  TEST_EQUAL(rEnum.hash, JenHash("EnumWrap00"));
-  TEST_EQUAL(rEnum.size(), 3);
-  TEST_EQUAL(rEnum.name, std::string("EnumWrap00"));
+  TEST_EQUAL(rEnum->enumHash, JenHash("EnumWrap00"));
+  TEST_EQUAL(rEnum->numMembers, 3);
+  TEST_EQUAL(rEnum->enumName, std::string("EnumWrap00"));
 
   static const char *names[] = {"E1", "E2", "E3"};
   static const uint64 ids[] = {0, 1, 7};
 
   for (int t = 0; t < 3; t++) {
-    TEST_EQUAL(rEnum[t], names[t]);
-    TEST_EQUAL(rEnum.values[t], ids[t]);
+    TEST_EQUAL(rEnum->names[t], names[t]);
+    TEST_EQUAL(rEnum->values[t], ids[t]);
   }
 
   return 0;
 }
 
 int test_reflector_enum01() {
-  ReflectedEnum rEnum = GetReflectedEnum<EnumWrap01>();
+  auto rEnum = GetReflectedEnum<EnumWrap01>();
 
-  TEST_EQUAL(rEnum.hash, JenHash("EnumWrap01"));
-  TEST_EQUAL(rEnum.size(), 3);
-  TEST_EQUAL(rEnum.name, std::string("EnumWrap01"));
+  TEST_EQUAL(rEnum->enumHash, JenHash("EnumWrap01"));
+  TEST_EQUAL(rEnum->numMembers, 3);
+  TEST_EQUAL(rEnum->enumName, std::string("EnumWrap01"));
 
   static const char *names[] = {"EnumWrap01_E1", "EnumWrap01_E2",
                                 "EnumWrap01_E3"};
   static const uint64 ids[] = {0, 1, 2};
 
   for (int t = 0; t < 3; t++) {
-    TEST_EQUAL(rEnum[t], names[t]);
-    TEST_EQUAL(rEnum.values[t], ids[t]);
+    TEST_EQUAL(rEnum->names[t], names[t]);
+    TEST_EQUAL(rEnum->values[t], ids[t]);
   }
 
   return 0;
 }
 
 int test_reflector_enum02() {
-  ReflectedEnum rEnum = GetReflectedEnum<EnumWrap02>();
+  auto rEnum = GetReflectedEnum<EnumWrap02>();
 
-  TEST_EQUAL(rEnum.hash, JenHash("EnumWrap02"));
-  TEST_EQUAL(rEnum.size(), 3);
-  TEST_EQUAL(rEnum.name, std::string("EnumWrap02"));
+  TEST_EQUAL(rEnum->enumHash, JenHash("EnumWrap02"));
+  TEST_EQUAL(rEnum->numMembers, 3);
+  TEST_EQUAL(rEnum->enumName, std::string("EnumWrap02"));
 
   static const char *names[] = {"E4", "E5", "E6"};
   static const uint64 ids[] = {0, 1, 2};
 
   for (int t = 0; t < 3; t++) {
-    TEST_EQUAL(rEnum[t], names[t]);
-    TEST_EQUAL(rEnum.values[t], ids[t]);
+    TEST_EQUAL(rEnum->names[t], names[t]);
+    TEST_EQUAL(rEnum->values[t], ids[t]);
   }
 
   return 0;
 }
 
 int test_reflector_enum03() {
-  ReflectedEnum rEnum = GetReflectedEnum<EnumWrap03>();
+  auto rEnum = GetReflectedEnum<EnumWrap03>();
 
-  TEST_EQUAL(rEnum.hash, JenHash("EnumWrap03"));
-  TEST_EQUAL(rEnum.size(), 3);
-  TEST_EQUAL(rEnum.name, std::string("EnumWrap03"));
+  TEST_EQUAL(rEnum->enumHash, JenHash("EnumWrap03"));
+  TEST_EQUAL(rEnum->numMembers, 3);
+  TEST_EQUAL(rEnum->enumName, std::string("EnumWrap03"));
 
   static const char *names[] = {"E7", "E8", "E9"};
   static const uint64 ids[] = {7, 16586, 0x8bcd};
 
   for (int t = 0; t < 3; t++) {
-    TEST_EQUAL(rEnum[t], names[t]);
-    TEST_EQUAL(rEnum.values[t], ids[t]);
+    TEST_EQUAL(rEnum->names[t], names[t]);
+    TEST_EQUAL(rEnum->values[t], ids[t]);
   }
 
   return 0;
 }
 
 int test_reflector_enum04() {
-  ReflectedEnum rEnum = GetReflectedEnum<EnumWrap04>();
+  auto rEnum = GetReflectedEnum<EnumWrap04>();
 
-  TEST_EQUAL(rEnum.hash, JenHash("EnumWrap04"));
-  TEST_EQUAL(rEnum.size(), 3);
-  TEST_EQUAL(rEnum.name, std::string("EnumWrap04"));
+  TEST_EQUAL(rEnum->enumHash, JenHash("EnumWrap04"));
+  TEST_EQUAL(rEnum->numMembers, 3);
+  TEST_EQUAL(rEnum->enumName, std::string("EnumWrap04"));
 
   static const char *names[] = {"E10", "E11", "E12"};
   static const uint64 ids[] = {0, 1, 2};
 
   for (int t = 0; t < 3; t++) {
-    TEST_EQUAL(rEnum[t], names[t]);
-    TEST_EQUAL(rEnum.values[t], ids[t]);
+    TEST_EQUAL(rEnum->names[t], names[t]);
+    TEST_EQUAL(rEnum->values[t], ids[t]);
   }
 
   return 0;
@@ -2081,7 +2081,6 @@ struct ReflectedInstanceFriend : ReflectedInstance {
 };
 
 int test_reflector(reflClass &input) {
-  TEST_CHECK(input.UseNames());
   TEST_EQUAL(input.GetClassName(), es::string_view("reflClass"));
   TEST_EQUAL(input.SetReflectedValue("pest", ""),
              Reflector::ErrorType::InvalidDestination);
