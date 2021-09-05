@@ -17,8 +17,8 @@
 
 #pragma once
 #include "fileinfo.hpp"
-#include "unicode.hpp"
 #include "settings.hpp"
+#include "unicode.hpp"
 #include <set>
 
 enum FileType_e {
@@ -39,6 +39,8 @@ FileType_e PC_EXTERN FileType(const std::string &path);
 namespace es {
 int MKDIR_EXTERN_ mkdir(const char *path, uint32 mode = 0777);
 int MKDIR_EXTERN_ mkdir(const std::string &path, uint32 mode = 0777);
+std::string GetTempFilename();
+void RemoveFile(const std::string &path);
 } // namespace es
 
 #undef MKDIR_EXTERN_
@@ -47,12 +49,30 @@ int MKDIR_EXTERN_ mkdir(const std::string &path, uint32 mode = 0777);
 #include <sys/stat.h>
 
 namespace es {
-inline int mkdir(const char *path, uint32 mode) {
-  return ::mkdir(path, mode);
-}
+inline int mkdir(const char *path, uint32 mode) { return ::mkdir(path, mode); }
 
 inline int mkdir(const std::string &path, uint32 mode) {
   return ::mkdir(path.data(), mode);
+}
+
+inline std::string GetTempFilename() { return std::tmpnam(nullptr); }
+inline void RemoveFile(const std::string &path) {
+  if (std::remove(path.data())) {
+    throw std::runtime_error("Cannot remove file: " + path);
+  }
+}
+} // namespace es
+#else
+namespace es {
+inline std::string GetTempFilename() {
+  return es::ToUTF8(_wtmpnam(nullptr));
+}
+
+inline void RemoveFile(const std::string &path) {
+  auto wpath = es::ToUTF1632(path);
+  if (_wremove(wpath.data())) {
+    throw std::runtime_error("Cannot remove file: " + path);
+  }
 }
 } // namespace es
 #endif
