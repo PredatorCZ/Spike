@@ -36,6 +36,12 @@
     es::print::FlushAll();                                                     \
   }
 
+#define printinfo(...)                                                         \
+  {                                                                            \
+    es::print::Get(es::print::MPType::INF) << __VA_ARGS__ << std::endl;        \
+    es::print::FlushAll();                                                     \
+  }
+
 namespace es::print {
 typedef void (*print_func)(const char *c);
 enum class MPType { PREV, MSG, WRN, ERR, INF };

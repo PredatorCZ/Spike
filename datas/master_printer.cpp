@@ -68,7 +68,8 @@ void AddPrinterFunction(print_func func, bool useColor) {
 }
 
 std::ostream &Get(MPType type) {
-  if (auto threadID = std::this_thread::get_id(); !(MASTER_PRINTER.lockedThread == threadID)) {
+  if (auto threadID = std::this_thread::get_id();
+      !(MASTER_PRINTER.lockedThread == threadID)) {
     MASTER_PRINTER.mutex.lock();
     MASTER_PRINTER.lockedThread = threadID;
   }
@@ -81,6 +82,16 @@ std::ostream &Get(MPType type) {
 
 void FlushAll() {
   for (auto &fc : MASTER_PRINTER.functions) {
+    if (fc.useColor) {
+      if (MASTER_PRINTER.cType == MPType::WRN) {
+        SetConsoleTextColor(255, 255, 0);
+      } else if (MASTER_PRINTER.cType == MPType::ERR) {
+        SetConsoleTextColor(255, 0, 0);
+      } else if (MASTER_PRINTER.cType == MPType::INF) {
+        SetConsoleTextColor(0, 180, 255);
+      }
+    }
+
     if (MASTER_PRINTER.printThreadID) {
       fc.func("Thread[0x");
       std::thread::id threadID = std::this_thread::get_id();
@@ -88,14 +99,6 @@ void FlushAll() {
       snprintf(buffer, 65, "%X", reinterpret_cast<uint32 &>(threadID));
       fc.func(buffer);
       fc.func("] ");
-    }
-
-    if (fc.useColor) {
-      if (MASTER_PRINTER.cType == MPType::WRN) {
-        SetConsoleTextColor(255, 255, 0);
-      } else if (MASTER_PRINTER.cType == MPType::ERR) {
-        SetConsoleTextColor(255, 0, 0);
-      }
     }
 
     if (MASTER_PRINTER.cType == MPType::WRN) {
