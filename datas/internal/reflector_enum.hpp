@@ -57,7 +57,7 @@ template <class E> const ReflectedEnum *GetReflectedEnum();
 #define DEF_EMEMBERVAL(type, ...) DEF_EMEMBER(type)
 #define DEF_ENUM(name)                                                         \
   template <> constexpr JenHash EnumHash<name>() { return #name; }             \
-  template <> const ReflectedEnum *GetReflectedEnum<name>() {                  \
+  template <> inline const ReflectedEnum *GetReflectedEnum<name>() {           \
     using enum_type = name;                                                    \
     static const ReflectedEnum reflectedEnum {                                 \
       std::add_pointer_t<enum_type>{nullptr}, #name,
