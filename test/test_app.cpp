@@ -1,19 +1,7 @@
-#include "../datas/directory_scanner.hpp"
-#include "../datas/settings_manager.hpp"
-#include "../datas/unit_testing.hpp"
-
-static struct SampleSettings : SettingsManager<SampleSettings> {
-  bool boolVal0 = false;
-  bool boolVal1 = true;
-  int intVal0 = 10;
-  float floatVal0 = 50.123f;
-} settings;
-
-REFLECT(CLASS(SampleSettings),
-        MEMBER(boolVal0, "setting1", ReflDesc{"This is a 1st setting."}),
-        MEMBER(boolVal1, "setting2", ReflDesc{"This is a 2nd setting."}),
-        MEMBER(intVal0, "number", ReflDesc{"A numerical setting."}),
-        MEMBER(floatVal0, "decimal", ReflDesc{"A decimal setting."}));
+#include "datas/directory_scanner.hpp"
+#include "datas/unit_testing.hpp"
+#include "datas/supercore.hpp"
+#include "datas/tchar.hpp"
 
 int test_dirscan() {
   DirectoryScanner sc;
@@ -53,7 +41,6 @@ int main() {
   setlocale(LC_ALL, "C.UTF-8");
   setlocale(LC_NUMERIC, "en-US");
   es::print::AddPrinterFunction(UPrintf);
-  settings.CreateLog("build/testingLog");
 
   printline("Printed some line into console and logger.");
 
