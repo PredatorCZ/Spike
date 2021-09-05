@@ -185,3 +185,14 @@ struct ZIP64CentralDirLocator {
   void Read(BinReaderRef rd);
   void Write(BinWritterRef wr) const;
 };
+
+struct ZIP64Extra {
+  uint16 id = 1;
+  uint16 size;
+  uint64 uncompressedSize = 0;
+  uint64 compressedSize = 0;
+  uint64 localHeaderOffset = 0;
+  uint32 startDiskNumber = 0;
+
+  void Write(BinWritterRef wr) const;
+};

@@ -51,3 +51,36 @@ inline void ZIP64CentralDir::Write(BinWritterRef wr) const {
 inline void ZIP64CentralDirLocator::Write(BinWritterRef wr) const {
   wr.WriteBuffer(reinterpret_cast<const char *>(this), 20);
 }
+
+inline void ZIP64Extra::Write(BinWritterRef wr) const
+{
+  wr.Write(id);
+  wr.Push();
+  uint16 size = 0;
+  wr.Write(size);
+
+  if (uncompressedSize) {
+    size += sizeof(uncompressedSize);
+    wr.Write(uncompressedSize);
+  }
+
+  if (compressedSize) {
+    size += sizeof(compressedSize);
+    wr.Write(compressedSize);
+  }
+
+  if (localHeaderOffset) {
+    size += sizeof(localHeaderOffset);
+    wr.Write(localHeaderOffset);
+  }
+
+  if (startDiskNumber) {
+    size += sizeof(startDiskNumber);
+    wr.Write(startDiskNumber);
+  }
+
+  wr.Push(wr.StackIndex1);
+  wr.Pop();
+  wr.Write(size);
+  wr.Pop(wr.StackIndex1);
+}
