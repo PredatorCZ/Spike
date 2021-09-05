@@ -85,6 +85,7 @@ if(PC_SHARED_LIB)
   add_library(
     precore SHARED
     datas/encrypt/blowfish
+    datas/crc32
     datas/directory_scanner
     datas/master_printer
     datas/matrix44
