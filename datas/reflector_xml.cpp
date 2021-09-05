@@ -298,11 +298,17 @@ pugi::xml_node ReflectorXMLUtil::LoadV2(Reflector &ri, pugi::xml_node node,
   auto MakeNode = [MakeHash](auto a) {
     es::string_view name(a.name());
     retval retVal;
-    const size_t found = name.find('-');
+    const size_t found = name.find_last_of('-');
 
     if (found != name.npos) {
-      retVal.index = atoll(name.data() + found + 1);
-      name = name.substr(0, found);
+      char *endChar = nullptr;
+      const char *startChar = name.data() + found + 1;
+      auto index = strtoll(startChar, &endChar, 10);
+
+      if (startChar != endChar) {
+        name = name.substr(0, found);
+        retVal.index = index;
+      }
     }
 
     retVal.hash = MakeHash(name);
