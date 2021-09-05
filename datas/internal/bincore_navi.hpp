@@ -19,18 +19,21 @@
 #include <cstddef>
 
 template <class _Traits> class BinStreamNavi : public _Traits {
-  size_t savePos;
-  size_t localPos;
+  size_t savePos[2]{};
+  size_t localPos = 0;
 
 protected:
-  BinStreamNavi() noexcept : savePos(0), localPos(0) {}
+  BinStreamNavi() noexcept = default;
   BinStreamNavi(typename _Traits::StreamType &stream) noexcept
-      : _Traits(stream), savePos(0), localPos(0) {}
+      : _Traits(stream) {}
 
 public:
+  enum StackIndex { StackIndex0, StackIndex1 };
   using _Traits::Skip;
-  size_t Push() { return savePos = _Traits::Tell(); }
-  void Pop() { _Traits::Seek(savePos); }
+  size_t Push(StackIndex index = StackIndex0) {
+    return savePos[index] = _Traits::Tell();
+  }
+  void Pop(StackIndex index = StackIndex0) { _Traits::Seek(savePos[index]); }
 
   size_t Tell() const { return _Traits::Tell() - localPos; }
 
