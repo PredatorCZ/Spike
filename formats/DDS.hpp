@@ -327,6 +327,9 @@ static constexpr DDS_PixelFormat DDSFormat_A2B10G10R10(
 static constexpr DDS_PixelFormat DDSFormat_A8R8G8B8(
     {DDS_PixelFormat::PFFlags_RGB, DDS_PixelFormat::PFFlags_AlphaPixels}, 32,
     0x00ff0000, 0x0000ff00, 0x000000ff, 0xff000000);
+static constexpr DDS_PixelFormat DDSFormat_A8B8G8R8(
+    {DDS_PixelFormat::PFFlags_RGB, DDS_PixelFormat::PFFlags_AlphaPixels}, 32,
+    0x000000ff, 0x0000ff00, 0x00ff0000, 0xff000000);
 static constexpr DDS_PixelFormat DDSFormat_A1R5G5B5(
     {DDS_PixelFormat::PFFlags_RGB, DDS_PixelFormat::PFFlags_AlphaPixels}, 16,
     0x00007c00, 0x000003e0, 0x0000001f, 0x00008000);
@@ -611,7 +614,7 @@ struct DDS : DDS_Header, DDS_PixelFormat, DDS_HeaderEnd, DDS_HeaderDX10 {
       if (tformat == DDSFormat_A2B10G10R10)
         dxgiFormat = DXGI_FORMAT_R10G10B10A2_UNORM;
       else if (tformat == DDSFormat_A8R8G8B8)
-        dxgiFormat = DXGI_FORMAT_R8G8B8A8_UNORM;
+        dxgiFormat = DXGI_FORMAT_B8G8R8A8_UNORM;
       else if (tformat == DDSFormat_G16R16)
         dxgiFormat = DXGI_FORMAT_R16G16_UNORM;
       else if (tformat == DDSFormat_A8)
@@ -626,24 +629,12 @@ struct DDS : DDS_Header, DDS_PixelFormat, DDS_HeaderEnd, DDS_HeaderDX10 {
         dxgiFormat = DXGI_FORMAT_R16_UNORM;
       else if (tformat == DDSFormat_L8)
         dxgiFormat = DXGI_FORMAT_R8_UNORM;
-      else if (tformat ==
-               DDS_PixelFormat({DDS_PixelFormat::PFFlags_RGB,
-                                DDS_PixelFormat::PFFlags_AlphaPixels},
-                               32, 0x000000ff, 0x0000ff00, 0x00ff0000,
-                               0xff000000))
-        dxgiFormat = DXGI_FORMAT_B8G8R8A8_UNORM;
-      else if (tformat ==
-               DDS_PixelFormat({DDS_PixelFormat::PFFlags_RGB,
-                                DDS_PixelFormat::PFFlags_AlphaPixels},
-                               32, 0x000000ff, 0x0000ff00, 0x00ff0000,
-                               0x00000000))
+      else if (tformat == DDSFormat_X8R8G8B8)
         dxgiFormat = DXGI_FORMAT_B8G8R8X8_UNORM;
-      else if (tformat ==
-               DDS_PixelFormat({DDS_PixelFormat::PFFlags_RGB,
-                                DDS_PixelFormat::PFFlags_AlphaPixels},
-                               16, 0x0000000f, 0x000000f0, 0x00000f00,
-                               0x0000f000))
+      else if (tformat == DDSFormat_A4R4G4B4)
         dxgiFormat = DXGI_FORMAT_B4G4R4A4_UNORM;
+      else if (tformat == DDSFormat_A8B8G8R8)
+        dxgiFormat = DXGI_FORMAT_R8G8B8A8_UNORM;
       else
         result = 1;
     }
@@ -670,8 +661,14 @@ struct DDS : DDS_Header, DDS_PixelFormat, DDS_HeaderEnd, DDS_HeaderDX10 {
     case DXGI_FORMAT_R10G10B10A2_UNORM:
       operator=(DDSFormat_A2B10G10R10);
       break;
-    case DXGI_FORMAT_R8G8B8A8_UNORM:
+    case DXGI_FORMAT_B8G8R8A8_UNORM:
       operator=(DDSFormat_A8R8G8B8);
+      break;
+    case DXGI_FORMAT_R8G8B8A8_UNORM:
+      operator=(DDSFormat_A8B8G8R8);
+      break;
+    case DXGI_FORMAT_B8G8R8X8_UNORM:
+      operator=(DDSFormat_X8R8G8B8);
       break;
     case DXGI_FORMAT_R16G16_UNORM:
       operator=(DDSFormat_G16R16);
@@ -693,6 +690,9 @@ struct DDS : DDS_Header, DDS_PixelFormat, DDS_HeaderEnd, DDS_HeaderDX10 {
       break;
     case DXGI_FORMAT_A8_UNORM:
       operator=(DDSFormat_A8);
+      break;
+    case DXGI_FORMAT_B4G4R4A4_UNORM:
+      operator=(DDSFormat_A4R4G4B4);
       break;
     case DXGI_FORMAT_R8G8_B8G8_UNORM:
       operator=(DDSFormat_R8G8_B8G8);
@@ -747,9 +747,6 @@ struct DDS : DDS_Header, DDS_PixelFormat, DDS_HeaderEnd, DDS_HeaderDX10 {
       result = 0;
 
       switch (dxgiFormat) {
-      case DXGI_FORMAT_R8G8B8A8_UNORM_SRGB:
-        operator=(DDSFormat_A8R8G8B8);
-        break;
       case DXGI_FORMAT_R8G8_UNORM:
         operator=(DDSFormat_A8L8);
         break;
@@ -769,25 +766,14 @@ struct DDS : DDS_Header, DDS_PixelFormat, DDS_HeaderEnd, DDS_HeaderDX10 {
       case DXGI_FORMAT_BC3_UNORM_SRGB:
         operator=(DDSFormat_DXT5);
         break;
-      case DXGI_FORMAT_B8G8R8A8_UNORM:
       case DXGI_FORMAT_B8G8R8A8_UNORM_SRGB:
-        operator=(DDS_PixelFormat({DDS_PixelFormat::PFFlags_RGB,
-                                   DDS_PixelFormat::PFFlags_AlphaPixels},
-                                  32, 0x000000ff, 0x0000ff00, 0x00ff0000,
-                                  0xff000000));
+        operator=(DDSFormat_A8R8G8B8);
         break;
-      case DXGI_FORMAT_B8G8R8X8_UNORM:
       case DXGI_FORMAT_B8G8R8X8_UNORM_SRGB:
-        operator=(DDS_PixelFormat({DDS_PixelFormat::PFFlags_RGB,
-                                   DDS_PixelFormat::PFFlags_AlphaPixels},
-                                  32, 0x000000ff, 0x0000ff00, 0x00ff0000,
-                                  0x00000000));
+        operator=(DDSFormat_X8R8G8B8);
         break;
-      case DXGI_FORMAT_B4G4R4A4_UNORM:
-        operator=(DDS_PixelFormat({DDS_PixelFormat::PFFlags_RGB,
-                                   DDS_PixelFormat::PFFlags_AlphaPixels},
-                                  16, 0x0000000f, 0x000000f0, 0x00000f00,
-                                  0x0000f000));
+      case DXGI_FORMAT_R8G8B8A8_UNORM_SRGB:
+        operator=(DDSFormat_A8B8G8R8);
         break;
       default:
         result = 1;
