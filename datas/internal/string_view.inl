@@ -294,22 +294,22 @@ namespace es {
   inline typename basic_string_view<CharT, Traits>::size_type
   basic_string_view<CharT, Traits>::find(basic_string_view v,
                                          size_type pos) const {
-    if (v.empty() || v.size() > m_size)
+    // Can't find a substring if the substring is bigger than this
+    if (pos > size()) {
       return npos;
+    }
+    if ((pos + v.size()) > size()) {
+      return npos;
+    }
 
-    const size_type max_index = m_size - v.size();
+    const auto offset = pos;
+    const auto increments = size() - v.size();
 
-    for (size_type i = pos; i < max_index; ++i) {
-      size_type j = v.size() - 1;
-
-      if (!j) {
-        j = m_str[i] == v[j] ? 0 : 1;
-      } else {
-        for (;j && v[j] == m_str[i + j]; j--);
+    for (auto i = 0u; i <= increments; ++i) {
+      const auto j = i + offset;
+      if (substr(j, v.size()) == v) {
+        return j;
       }
-
-      if (!j)
-        return i;
     }
 
     return npos;
@@ -350,16 +350,22 @@ namespace es {
                                             size_type pos )
     const
   {
-    const size_type max_index = m_size - v.size();
+    if (empty()) {
+      return v.empty() ? 0u : npos;
+    }
+    if (v.empty()) {
+      return std::min(size() - 1, pos);
+    }
+    if (v.size() > size()) {
+      return npos;
+    }
 
-    for( size_type i = std::min(max_index-1,pos); i != npos; --i ) {
-      size_type j = 0;
-      for( ; j < v.size(); ++j ) {
-        if( v[j] != m_str[i-j] ) {
-          break;
-        }
+    auto i = std::min(pos, (size() - v.size()));
+    while (i != npos) {
+      if (substr(i, v.size()) == v) {
+        return i;
       }
-      if(j==v.size()) return i;
+      --i;
     }
     return npos;
   }
@@ -393,17 +399,27 @@ namespace es {
 
   //--------------------------------------------------------------------------
 
+  template <typename CharT, typename Traits>
+  inline bool is_one_of(CharT c, basic_string_view<CharT, Traits> str)
+  {
+    for (auto s : str) {
+      if (c == s) {
+        return true;
+      }
+    }
+    return false;
+  }
+
   template<typename CharT, typename Traits>
   inline typename basic_string_view<CharT,Traits>::size_type
     basic_string_view<CharT,Traits>::find_first_of( basic_string_view v,
                                                     size_type pos )
     const
   {
-    for( size_type i = pos; i < m_size; ++i ) {
-      for( size_type j = 0; j < v.size(); ++j ) {
-        if( v[j] == m_str[i] ) {
-          return i;
-        }
+    const auto max_index = size();
+    for (auto i = pos; i < max_index;  ++i) {
+      if (is_one_of(m_str[i],v)) {
+        return i;
       }
     }
     return npos;
@@ -444,11 +460,15 @@ namespace es {
                                                    size_type pos )
     const
   {
-    for( size_type i = std::min(m_size-1,pos); i >= 0 && i != npos; --i ) {
-      for( size_type j = 0; j < v.size(); ++j ) {
-        if( v[j] == m_str[i] ) {
-          return i;
-        }
+    if (empty()) {
+      return npos;
+    }
+    const auto max_index = std::min(size() - 1, pos);
+    for (auto i = 0u; i <= max_index;  ++i) {
+      const auto j = max_index - i;
+
+      if (is_one_of(m_str[j],v)) {
+        return j;
       }
     }
 
@@ -490,14 +510,13 @@ namespace es {
                                                         size_type pos )
     const
   {
-    for( size_type i = pos; i < m_size; ++i ) {
-      for( size_type j = 0; j < v.size(); ++j ) {
-        if( v[j] == m_str[i] ) {
-          break;
-        }
+    const auto max_index = size();
+    for (auto i = pos; i < max_index;  ++i) {
+      if (!is_one_of(m_str[i],v)) {
         return i;
       }
     }
+
     return npos;
   }
 
@@ -536,14 +555,18 @@ namespace es {
                                                        size_type pos )
     const
   {
-    for( size_type i = std::min(m_size-1,pos); i != npos; --i ) {
-      for( size_type j = 0; j < v.size(); ++j ) {
-        if( v[j] == m_str[i] ) {
-          break;
-        }
-        return i;
+    if (empty()) {
+      return npos;
+    }
+    const auto max_index = std::min(size() - 1, pos);
+    for (auto i = 0u; i <= max_index;  ++i) {
+      const auto j = max_index - i;
+
+      if (!is_one_of(m_str[j],v)) {
+        return j;
       }
     }
+
     return npos;
   }
 
@@ -572,6 +595,18 @@ namespace es {
     const
   {
     return find_last_not_of( basic_string_view<CharT,Traits>(s), pos );
+  }
+
+  template<typename CharT, typename Traits>
+  inline bool basic_string_view<CharT,Traits>::begins_with( basic_string_view v ) const
+  {
+    return find(v) == 0;
+  }
+
+  template<typename CharT, typename Traits>
+  inline bool basic_string_view<CharT,Traits>::ends_with( basic_string_view v ) const
+  {
+    return size() >= v.size() && find(v) == size() - v.size();
   }
 
   //--------------------------------------------------------------------------

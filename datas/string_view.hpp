@@ -394,6 +394,9 @@ namespace es {
 
     size_type find_last_not_of( const char_type* s, size_type pos = npos ) const;
 
+    bool begins_with( basic_string_view v ) const;
+
+    bool ends_with( basic_string_view v ) const;
     //------------------------------------------------------------------------
     // Iterators
     //------------------------------------------------------------------------
