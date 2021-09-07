@@ -36,8 +36,14 @@ function(build_target)
 
   link_directories(${_arg_LINK_DIRS})
   set(_is_python_module FALSE)
+  set(_is_es_module FALSE)
   if(_arg_TYPE STREQUAL PYMODULE)
     set(_is_python_module TRUE)
+    set(_arg_TYPE SHARED)
+  endif()
+
+  if(_arg_TYPE STREQUAL ESMODULE)
+    set(_is_es_module TRUE)
     set(_arg_TYPE SHARED)
   endif()
 
@@ -147,6 +153,29 @@ function(build_target)
 
   if(NOT MSVC)
     target_compile_options(${_arg_NAME} PRIVATE -fvisibility=hidden)
+  endif()
+
+  if(${_is_es_module})
+    set(module_suffix_ .${PROJECT_VERSION_MAJOR_})
+
+    if(PROJECT_VERSION_TWEAK_ GREATER 0)
+      string(
+        APPEND
+        module_suffix_
+        .${PROJECT_VERSION_MINOR_}.${PROJECT_VERSION_PATCH_}.${PROJECT_VERSION_TWEAK_}
+      )
+    elseif(PROJECT_VERSION_PATCH_ GREATER 0)
+      string(APPEND module_suffix_
+             .${PROJECT_VERSION_MINOR_}.${PROJECT_VERSION_PATCH_})
+    elseif(PROJECT_VERSION_MINOR_ GREATER 0)
+      string(APPEND module_suffix_ .${PROJECT_VERSION_MINOR_})
+    endif()
+
+    set_target_properties(
+      ${_arg_NAME}
+      PROPERTIES SUFFIX ${module_suffix_}.esm
+                 PREFIX ""
+                 NO_SONAME TRUE)
   endif()
 
   if(${_is_python_module})
