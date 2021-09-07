@@ -3,6 +3,8 @@
 #include "datas/supercore.hpp"
 #include "datas/tchar.hpp"
 
+using namespace es::string_view_literals;
+
 int test_dirscan() {
   DirectoryScanner sc;
 
@@ -18,8 +20,8 @@ int test_dirscan() {
   TEST_NOT_CHECK(
       es::IsEnd(fnd, std::find(fnd.begin(), fnd.end(), ".gitignore")));
 
-  sc.AddFilter(".cpp");
-  sc.AddFilter(".inl");
+  sc.AddFilter(".cpp"sv);
+  sc.AddFilter(".inl"sv);
 
   sc.Clear();
   sc.Scan("");

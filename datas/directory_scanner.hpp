@@ -17,13 +17,35 @@
 */
 
 #pragma once
+#include "datas/string_view.hpp"
+#include "settings.hpp"
 #include <string>
 #include <vector>
-#include "settings.hpp"
 
-class DirectoryScanner {
-  bool IsFilteredFile(const std::string &fileName);
+class PathFilter {
+public:
+  bool PC_EXTERN IsFiltered(es::string_view name) const;
 
+  /*
+  Store only specified files with filename substring
+  format: "[ ^ | $]<substring>"
+  val begins with ^: begins with
+  val begins with $: ends with
+  otherwise: free substring search
+  */
+  void AddFilter(const std::string &val) {
+    filterHolders.push_back(val);
+    filters.push_back(filterHolders.back());
+  }
+  void AddFilter(es::string_view val) { filters.push_back(val); }
+  void ClearFilters() { filters.clear(); }
+
+private:
+  std::vector<std::string> filterHolders;
+  std::vector<es::string_view> filters;
+};
+
+class DirectoryScanner : public PathFilter {
 public:
   typedef std::vector<std::string> storage_type;
   typedef storage_type::iterator iterator;
@@ -35,12 +57,9 @@ public:
   iterator end() { return files.end(); }
   const_iterator cbegin() const { return files.cbegin(); }
   const_iterator cend() const { return files.cend(); }
-  void AddFilter(const std::string &val) { filters.push_back(val); }
   const storage_type &Files() const { return files; }
   void Clear() { files.clear(); }
-  void ClearFilters() { filters.clear(); }
 
 private:
   storage_type files;
-  storage_type filters;
 };

@@ -27,13 +27,32 @@
 
 #include <cstring>
 
-bool DirectoryScanner::IsFilteredFile(const std::string &fileName) {
-  if (!filters.size())
+bool PathFilter::IsFiltered(es::string_view fileName_) const {
+  if (!filters.size()) {
     return true;
+  }
 
-  for (auto &f : filters)
-    if (fileName.find(f) != f.npos)
+  es::string_view fileName(fileName_);
+
+  for (auto &f : filters) {
+    es::string_view kvi(f);
+
+    if (kvi[0] == '^') {
+      kvi.remove_prefix(1);
+
+      if (fileName.begins_with(kvi)) {
+        return true;
+      }
+    } else if (kvi[0] == '$') {
+      kvi.remove_prefix(1);
+
+      if (fileName.ends_with(kvi)) {
+        return true;
+      }
+    } else if (fileName.find(kvi) != f.npos) {
       return true;
+    }
+  }
 
   return false;
 }
@@ -53,7 +72,7 @@ void DirectoryScanner::Scan(std::string dir) {
 
 #ifndef USEWIN
   dir.push_back('.');
-  
+
   DIR *cDir = opendir(dir.data());
 
   if (!cDir) {
@@ -74,7 +93,7 @@ void DirectoryScanner::Scan(std::string dir) {
 
     if (cFile->d_type == DT_DIR) {
       Scan(subFile);
-    } else if (IsFilteredFile(miniFile)) {
+    } else if (IsFiltered(miniFile)) {
       files.push_back(subFile);
     }
   }
@@ -105,7 +124,7 @@ void DirectoryScanner::Scan(std::string dir) {
 
     if ((foundData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) != 0) {
       Scan(subFile);
-    } else if (IsFilteredFile(cFileName)) {
+    } else if (IsFiltered(cFileName)) {
       files.push_back(subFile);
     }
   }
