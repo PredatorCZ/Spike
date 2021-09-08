@@ -33,16 +33,20 @@ if(PUGI_STATIC_LIBS)
   add_library(pugixml-static STATIC)
   set_target_properties(pugixml-static PRIVATE PROPERTIES OUTPUT_NAME pugixml)
   target_link_libraries(pugixml-static pugixml-objects)
-  install(TARGETS pugixml-static LIBRARY DESTINATION bin)
+  install(TARGETS pugixml-static LIBRARY DESTINATION lib)
 endif()
 
 if(PUGI_SHARED_LIBS)
   add_library(pugixml SHARED pugixml_dll.rc)
   target_link_libraries(pugixml pugixml-shared)
   if(MSVC)
-    target_compile_definitions(pugixml-shared
-                               INTERFACE PUGIXML_API=__declspec\(dllimport\)
-                               PRIVATE PUGIXML_API=__declspec\(dllexport\))
+    target_compile_definitions(
+      pugixml-shared
+      INTERFACE PUGIXML_API=__declspec\(dllimport\)
+      PRIVATE PUGIXML_API=__declspec\(dllexport\))
   endif()
-  install(TARGETS pugixml LIBRARY DESTINATION bin)
+  install(
+    TARGETS pugixml
+    LIBRARY DESTINATION $<IF:$<BOOL:${MSVC}>,lib,bin>
+    RUNTIME DESTINATION bin)
 endif()

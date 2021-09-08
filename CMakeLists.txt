@@ -133,7 +133,10 @@ if(PC_SHARED_LIB)
     target_link_libraries(precore pugixml-shared)
   endif()
 
-  install(TARGETS precore LIBRARY NAMELINK_SKIP DESTINATION bin)
+  install(
+    TARGETS precore
+    LIBRARY NAMELINK_SKIP DESTINATION $<IF:$<BOOL:${MSVC}>,lib,bin>
+    RUNTIME DESTINATION bin)
 endif()
 
 add_subdirectory(3rd_party/pugixml)
