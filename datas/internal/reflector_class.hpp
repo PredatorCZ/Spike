@@ -77,33 +77,35 @@ struct reflectorStatic {
   reflectorStatic(const guard *, const char (&className_)[cs], C... members)
       : classHash(JenHash(className_)), nTypes(sizeof...(C)),
         className(className_) {
-    size_t index = 0;
-    struct reflType2 : reflType {
-      reflType2(const reflType &r, size_t index) : reflType(r) { ID = index; }
-    };
-    static const reflType types_[]{reflType2{members.type, index++}...};
-    types = types_;
-    union mutate {
-      const char *h;
-      uintptr_t i;
-    };
+    if constexpr (sizeof...(C) > 0) {
+      size_t index = 0;
+      struct reflType2 : reflType {
+        reflType2(const reflType &r, size_t index) : reflType(r) { ID = index; }
+      };
+      static const reflType types_[]{reflType2{members.type, index++}...};
+      types = types_;
+      union mutate {
+        const char *h;
+        uintptr_t i;
+      };
 
-    if ((mutate{members.typeName}.i | ...)) {
-      static const char *typeNames_[]{members.typeName...};
-      typeNames = typeNames_;
-    }
+      if ((mutate{members.typeName}.i | ...)) {
+        static const char *typeNames_[]{members.typeName...};
+        typeNames = typeNames_;
+      }
 
-    if ((mutate{members.aliasName}.i | ...)) {
-      static const char *typeAliases_[]{members.aliasName...};
-      typeAliases = typeAliases_;
-      static JenHash typeAliasHashes_[]{members.aliasHash...};
-      typeAliasHashes = typeAliasHashes_;
-    }
+      if ((mutate{members.aliasName}.i | ...)) {
+        static const char *typeAliases_[]{members.aliasName...};
+        typeAliases = typeAliases_;
+        static JenHash typeAliasHashes_[]{members.aliasHash...};
+        typeAliasHashes = typeAliasHashes_;
+      }
 
-    if ((mutate{members.description.part1}.i | ...) |
-        (mutate{members.description.part2}.i | ...)) {
-      static ReflDesc typeDescs_[]{members.description...};
-      typeDescs = typeDescs_;
+      if ((mutate{members.description.part1}.i | ...) |
+          (mutate{members.description.part2}.i | ...)) {
+        static ReflDesc typeDescs_[]{members.description...};
+        typeDescs = typeDescs_;
+      }
     }
   }
 };
