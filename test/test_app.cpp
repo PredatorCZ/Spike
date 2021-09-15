@@ -20,8 +20,8 @@ int test_dirscan() {
   TEST_NOT_CHECK(
       es::IsEnd(fnd, std::find(fnd.begin(), fnd.end(), ".gitignore")));
 
-  sc.AddFilter(".cpp"sv);
-  sc.AddFilter(".inl"sv);
+  sc.AddFilter(".cpp"_sv);
+  sc.AddFilter(".inl"_sv);
 
   sc.Clear();
   sc.Scan("");

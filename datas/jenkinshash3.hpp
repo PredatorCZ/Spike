@@ -139,9 +139,9 @@ struct JenHash3 {
   constexpr JenHash3() : value_() {}
   constexpr JenHash3(JenHash3 &&) = default;
   constexpr JenHash3(const JenHash3 &) = default;
-  constexpr JenHash3(uint32 in) : value_(in) {}
+  constexpr explicit JenHash3(uint32 in) : value_(in) {}
   template <size_t n>
-  constexpr explicit JenHash3(const char (&input)[n])
+  constexpr JenHash3(const char (&input)[n])
       : value_(JenkinsHash3_({input, n - 1})) {}
   constexpr JenHash3(es::string_view input) : value_(JenkinsHash3_(input)) {}
 
@@ -158,3 +158,9 @@ static_assert(JenHash3("ahoj") == 0xE915A979, "JenHash3 failed.");
 static_assert(JenHash3("nazdar") == 0xB5CCCEA9, "JenHash3 failed.");
 static_assert(JenHash3("seeyalater") == 0xFDFDC894, "JenHash3 failed.");
 static_assert(JenHash3("A very big thingy") == 0x6C4F45E7, "JenHash3 failed.");
+
+namespace es::jenhash_literals {
+inline constexpr JenHash3 operator""_jh3(const char *str, size_t len) noexcept {
+  return JenHash3{{str, len}};
+}
+} // namespace es::jenhash_literals

@@ -77,6 +77,17 @@ private:
 using JenHash = JenHash_t<uint64>;
 using JenHashCannon = JenHash_t<uint32>;
 
+namespace es::jenhash_literals {
+inline constexpr JenHash operator""_jh(const char *str, size_t len) noexcept {
+  return JenHash{{str, len}};
+}
+
+inline constexpr JenHashCannon operator""_jhc(const char *str,
+                                              size_t len) noexcept {
+  return JenHashCannon{{str, len}};
+}
+} // namespace es::jenhash_literals
+
 static_assert(JenHash("bug") == 0x54908567, "JenkinsHash Failed");
 static_assert(JenHashCannon("bug") == 0xF37C8567, "JOAAT Failed");
 

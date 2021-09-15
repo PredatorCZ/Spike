@@ -515,7 +515,7 @@ namespace es {
 #include "internal/string_view.inl"
 
 namespace es::string_view_literals {
-inline constexpr string_view operator""sv(const char *str,
+inline constexpr string_view operator""_sv(const char *str,
                                           size_t len) noexcept {
   return string_view{str, len};
 }

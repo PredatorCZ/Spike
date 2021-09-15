@@ -2,6 +2,9 @@
 #include "../datas/unit_testing.hpp"
 #include "reflector_def.inl"
 
+using namespace es::jenhash_literals;
+using namespace es::string_view_literals;
+
 static_assert(sizeof(EnumWrap02) == 1);
 static_assert(sizeof(EnumWrap03) == 2);
 static_assert(sizeof(EnumWrap04) == 4);
@@ -9,9 +12,9 @@ static_assert(sizeof(EnumWrap04) == 4);
 int test_reflector_enum00() {
   auto rEnum = GetReflectedEnum<EnumWrap00>();
 
-  TEST_EQUAL(rEnum->enumHash, JenHash("EnumWrap00"));
+  TEST_EQUAL(rEnum->enumHash, "EnumWrap00"_jh);
   TEST_EQUAL(rEnum->numMembers, 3);
-  TEST_EQUAL(rEnum->enumName, std::string("EnumWrap00"));
+  TEST_EQUAL(rEnum->enumName, "EnumWrap00"_sv);
 
   static const char *names[] = {"E1", "E2", "E3"};
   static const uint64 ids[] = {0, 1, 7};
@@ -27,9 +30,9 @@ int test_reflector_enum00() {
 int test_reflector_enum01() {
   auto rEnum = GetReflectedEnum<EnumWrap01>();
 
-  TEST_EQUAL(rEnum->enumHash, JenHash("EnumWrap01"));
+  TEST_EQUAL(rEnum->enumHash, "EnumWrap01"_jh);
   TEST_EQUAL(rEnum->numMembers, 3);
-  TEST_EQUAL(rEnum->enumName, std::string("EnumWrap01"));
+  TEST_EQUAL(rEnum->enumName, "EnumWrap01"_sv);
 
   static const char *names[] = {"EnumWrap01_E1", "EnumWrap01_E2",
                                 "EnumWrap01_E3"};
@@ -46,9 +49,9 @@ int test_reflector_enum01() {
 int test_reflector_enum02() {
   auto rEnum = GetReflectedEnum<EnumWrap02>();
 
-  TEST_EQUAL(rEnum->enumHash, JenHash("EnumWrap02"));
+  TEST_EQUAL(rEnum->enumHash, "EnumWrap02"_jh);
   TEST_EQUAL(rEnum->numMembers, 3);
-  TEST_EQUAL(rEnum->enumName, std::string("EnumWrap02"));
+  TEST_EQUAL(rEnum->enumName, "EnumWrap02"_sv);
 
   static const char *names[] = {"E4", "E5", "E6"};
   static const uint64 ids[] = {0, 1, 2};
@@ -64,9 +67,9 @@ int test_reflector_enum02() {
 int test_reflector_enum03() {
   auto rEnum = GetReflectedEnum<EnumWrap03>();
 
-  TEST_EQUAL(rEnum->enumHash, JenHash("EnumWrap03"));
+  TEST_EQUAL(rEnum->enumHash, "EnumWrap03"_jh);
   TEST_EQUAL(rEnum->numMembers, 3);
-  TEST_EQUAL(rEnum->enumName, std::string("EnumWrap03"));
+  TEST_EQUAL(rEnum->enumName, "EnumWrap03"_sv);
 
   static const char *names[] = {"E7", "E8", "E9"};
   static const uint64 ids[] = {7, 16586, 0x8bcd};
@@ -82,9 +85,9 @@ int test_reflector_enum03() {
 int test_reflector_enum04() {
   auto rEnum = GetReflectedEnum<EnumWrap04>();
 
-  TEST_EQUAL(rEnum->enumHash, JenHash("EnumWrap04"));
+  TEST_EQUAL(rEnum->enumHash, "EnumWrap04"_jh);
   TEST_EQUAL(rEnum->numMembers, 3);
-  TEST_EQUAL(rEnum->enumName, std::string("EnumWrap04"));
+  TEST_EQUAL(rEnum->enumName, "EnumWrap04"_sv);
 
   static const char *names[] = {"E10", "E11", "E12"};
   static const uint64 ids[] = {0, 1, 2};
@@ -258,7 +261,7 @@ int test_reflector_uint8(reflClass &input) {
   TEST_EQUAL(cPair.name, "test3");
   TEST_EQUAL(cPair.value, "128");
 
-  TEST_EQUAL(input.SetReflectedValueUInt("test3", -107),
+  TEST_EQUAL(input.SetReflectedValueUInt("test3", uint64(-107)),
              Reflector::ErrorType::None);
   TEST_EQUAL(input.test3, uint8(-107));
 
@@ -377,7 +380,7 @@ int test_reflector_uint16(reflClass &input) {
   TEST_EQUAL(cPair.name, "test5");
   TEST_EQUAL(cPair.value, "65408");
 
-  TEST_EQUAL(input.SetReflectedValueUInt("test5", -107),
+  TEST_EQUAL(input.SetReflectedValueUInt("test5", uint64(-107)),
              Reflector::ErrorType::None);
   TEST_EQUAL(input.test5, uint16(-107));
 
@@ -496,7 +499,7 @@ int test_reflector_uint32(reflClass &input) {
   TEST_EQUAL(cPair.name, "test7");
   TEST_EQUAL(cPair.value, "4294967168");
 
-  TEST_EQUAL(input.SetReflectedValueUInt("test7", -107),
+  TEST_EQUAL(input.SetReflectedValueUInt("test7", uint64(-107)),
              Reflector::ErrorType::None);
   TEST_EQUAL(input.test7, uint32(-107));
 
@@ -616,7 +619,7 @@ int test_reflector_uint64(reflClass &input) {
   TEST_EQUAL(cPair.name, "test9");
   TEST_EQUAL(cPair.value, "18446744073709551488");
 
-  TEST_EQUAL(input.SetReflectedValueUInt("test9", -107),
+  TEST_EQUAL(input.SetReflectedValueUInt("test9", uint64(-107)),
              Reflector::ErrorType::None);
   TEST_EQUAL(input.test9, uint64(-107));
 
@@ -1885,7 +1888,7 @@ int test_reflector_arrays(reflClass &input) {
   TEST_EQUAL(input.test57[0], Vector(7.1f, 11.8f, 105.1f));
   TEST_EQUAL(input.test57[1], Vector(18.1f, 3.5f, 6.1f));
   input.SetReflectedValue(39, "[12.5, 78.1, 478.85]", 1);
-  TEST_EQUAL(input.test57[0], Vector(7.1, 11.8f, 105.1f));
+  TEST_EQUAL(input.test57[0], Vector(7.1f, 11.8f, 105.1f));
   TEST_EQUAL(input.test57[1], Vector(12.5f, 78.1f, 478.85f));
   input.SetReflectedValue(39, "8.11", 0, 1);
   TEST_EQUAL(input.test57[0], Vector(7.1f, 8.11f, 105.1f));

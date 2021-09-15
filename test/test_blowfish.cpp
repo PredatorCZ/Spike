@@ -6,8 +6,8 @@
 using namespace es::string_view_literals;
 
 constexpr uint64 VECTOR = 0x6556654C704D6153; // SaMpLeVe
-constexpr es::string_view KEY = "Sample Key"sv;
-constexpr auto TEXT = "This a sample text, idk what to write, lol :)"sv;
+constexpr es::string_view KEY = "Sample Key"_sv;
+constexpr auto TEXT = "This a sample text, idk what to write, lol :)"_sv;
 
 int test_blowfish_ECB() {
   BlowfishEncoder bf;
