@@ -929,7 +929,7 @@ std::string Reflector::GetReflectedValue(size_t id, size_t subID) const {
 
     memcpy(reinterpret_cast<char *>(&eValue), objAddr, reflValue.subSize);
 
-    return (eValue & (1 << subID)) ? "true" : "false";
+    return (eValue & (1ULL << subID)) ? "true" : "false";
   }
 
   default:
@@ -978,7 +978,7 @@ std::string Reflector::GetReflectedValue(size_t id, size_t subID,
     memcpy(reinterpret_cast<char *>(&eValue),
            objAddr + reflValue.subSize * subID, reflValue.subSize);
 
-    return (eValue & (1 << element)) ? "true" : "false";
+    return (eValue & (1ULL << element)) ? "true" : "false";
   }
 
   default:

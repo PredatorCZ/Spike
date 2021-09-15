@@ -40,11 +40,12 @@ public:
     baseStream->seekg(position, vay);
   }
 
-  void Skip(int length) const {
-    if (length < 0)
+  void Skip(int64 length) const {
+    if (length < 0) {
       Seek(Tell() + length);
-    else
+    } else {
       Seek(static_cast<size_t>(length), std::ios_base::cur);
+    }
   }
 
   void Read(char *buffer, size_t size) const { baseStream->read(buffer, size); }

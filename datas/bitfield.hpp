@@ -29,14 +29,14 @@ struct BitMember {
 
   template <class type> constexpr type GetMask() const {
     static_assert(std::is_unsigned<type>::value, "Type must be unsigned!");
-    const type init = -1;
+    const type init = type(-1);
     constexpr size_t typeSize = sizeof(type) * 8;
     return (init >> (typeSize - size)) << position;
   }
 
   template <class type> constexpr type GetMirrorMask() const {
     static_assert(std::is_unsigned<type>::value, "Type must be unsigned!");
-    const type init = -1;
+    const type init = type(-1);
     constexpr size_t typeSize = sizeof(type) * 8;
     return (init >> (typeSize - size)) << (typeSize - position - size);
   }

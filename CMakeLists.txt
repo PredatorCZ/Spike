@@ -25,8 +25,9 @@ function(_set_basic_flags TARGET_NAME SCOPE)
   endif()
 
   if(NOT MSVC)
-    target_compile_options(${TARGET_NAME} ${SCOPE} -msse4 -Wno-invalid-offsetof
-                           -Wno-user-defined-literals)
+    target_compile_options(${TARGET_NAME} ${SCOPE} -msse4 -Wno-invalid-offsetof)
+  else()
+    target_compile_definitions(${TARGET_NAME} ${SCOPE} _SILENCE_CXX17_CODECVT_HEADER_DEPRECATION_WARNING)
   endif()
 endfunction()
 

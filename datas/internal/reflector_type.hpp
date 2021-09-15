@@ -38,8 +38,6 @@ static_assert(__sizeof_RelfType == 16);
 
 struct reflectorInstance;
 
-template <class C, class = void> struct refl_is_reflected_ : std::false_type {};
-
 template <class T>
 using refl_is_reflected = decltype(std::declval<T>().ReflectorTag());
 template <class C>

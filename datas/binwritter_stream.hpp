@@ -40,13 +40,14 @@ public:
     baseStream->seekp(position, vay);
   }
 
-  void Skip(int length) const {
+  void Skip(int64 length) const {
     if (length > 0) {
       static constexpr char FILLBUFFER[32] = {};
-      const int numLoops = length / 32;
+      const size_t numLoops = length / 32;
 
-      for (int t = 0; t < numLoops; t++)
+      for (size_t t = 0; t < numLoops; t++) {
         Write(FILLBUFFER, 32);
+      }
 
       Write(FILLBUFFER, length % 32);
     } else {

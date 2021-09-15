@@ -15,7 +15,7 @@ enum class AppMode_e {
   CONVERT,
 };
 
-struct ReflectorFriend;
+class ReflectorFriend;
 struct AppContextStream;
 
 struct AppInfo_s {
