@@ -27,19 +27,19 @@ using use_push_back = decltype(std::declval<T>().push_back(
 template <class C>
 constexpr static bool use_push_back_v = es::is_detected_v<use_push_back, C>;
 
-template <class C, typename B> union Pointer_t {
+template <class C> union PointerX64 {
   typedef C value_type;
 
 private:
-  char *rawPtr;
+  const char *rawPtr;
   C *pointer;
-  B varPtr;
+  uint64 varPtr;
 
 public:
   operator C *() { return pointer; }
   C &operator*() { return *pointer; }
   C *operator->() { return pointer; }
-  Pointer_t &operator=(C *input) {
+  PointerX64 &operator=(C *input) {
     pointer = input;
     return *this;
   }
@@ -48,29 +48,37 @@ public:
   const C &operator*() const { return *pointer; }
   const C *operator->() const { return pointer; }
 
+  template <class container> bool Check(container &store) const {
+    if (std::any_of(store.begin(), store.end(),
+                    [&](auto i) { return i == &varPtr; })) {
+      return true;
+    }
+
+    return false;
+  }
+
   template <class container = void>
-  bool Fixup(char *root, container *storedPtrs = nullptr) {
+  int Fixup(const char *root, container *storedPtrs = nullptr) {
     if (!pointer) {
-      return false;
+      return 0;
     }
 
     if constexpr (!std::is_void_v<container>) {
       if (storedPtrs) {
-        if (std::any_of(storedPtrs->begin(), storedPtrs->end(),
-                        [&](auto i) { return i == &varPtr; })) {
-          return false;
-        }
-
-        if constexpr (use_push_back_v<container>) {
-          storedPtrs->push_back(&varPtr);
+        if (Check(*storedPtrs)) {
+          return -1;
         } else {
-          storedPtrs->emplace(&varPtr);
+          if constexpr (use_push_back_v<container>) {
+            storedPtrs->push_back(&varPtr);
+          } else {
+            storedPtrs->emplace(&varPtr);
+          }
         }
       }
     }
 
     rawPtr = root + varPtr;
-    return true;
+    return 1;
   }
 };
 
@@ -98,30 +106,38 @@ public:
   const C &operator*() const { return *static_cast<C *>(*this); }
   const C *operator->() const { return *this; }
 
+  template <class container> bool Check(container &store) const {
+    if (std::any_of(store.begin(), store.end(),
+                    [&](auto i) { return i == &varPtr; })) {
+      return true;
+    }
+
+    return false;
+  }
+
   template <class container = void>
-  bool Fixup(char *root, container *storedPtrs = nullptr) {
+  int Fixup(const char *root, container *storedPtrs = nullptr) {
     if (!varPtr) {
-      return false;
+      return 0;
     }
 
     if constexpr (!std::is_void_v<container>) {
       if (storedPtrs) {
-        if (std::any_of(storedPtrs->begin(), storedPtrs->end(),
-                        [&](auto i) { return i == &varPtr; })) {
-          return false;
-        }
-
-        if constexpr (use_push_back_v<container>) {
-          storedPtrs->push_back(&varPtr);
+        if (Check(*storedPtrs)) {
+          return -1;
         } else {
-          storedPtrs->emplace(&varPtr);
+          if constexpr (use_push_back_v<container>) {
+            storedPtrs->push_back(&varPtr);
+          } else {
+            storedPtrs->emplace(&varPtr);
+          }
         }
       }
     }
 
-    char *rawAddr = root + varPtr;
+    char *rawAddr = const_cast<char *>(root + varPtr);
     *this = reinterpret_cast<C *>(rawAddr);
-    return true;
+    return 1;
   }
 
   PointerX86 &operator=(C *newDest) {
@@ -132,7 +148,40 @@ public:
     return *this;
   }
 };
+
+template <class... C> void FixupPointers(const char *root, C &...ptrs) {
+  (ptrs.Fixup(root), ...);
+}
+
+template <class... C, template <class F> class ptr, class container>
+bool FixupPointers(const char *root, container &store, ptr<C> &...ptrs) {
+  auto ptrArray = {reinterpret_cast<ptr<char> *>(&ptrs)...};
+  for (auto p : ptrArray) {
+    if (p->Fixup(root, &store) == -1) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
+template <class... C, template <class F> class ptr, class container, class fn>
+bool FixupPointersCB(const char *root, container &store, fn &&notFixedCB,
+                     ptr<C> &...ptrs) {
+  auto ptrArray = {reinterpret_cast<ptr<char> *>(&ptrs)...};
+  for (auto p : ptrArray) {
+    if (p->Check(store)) {
+      return false;
+    }
+  }
+
+  notFixedCB();
+  FixupPointers(root, store, ptrs...);
+
+  return true;
+}
+
 } // namespace es
 
-template <class C> using esPointerX64 = es::Pointer_t<C, uint64>;
-template <class C> using esPointerX86 = es::Pointer_t<C, uint32>;
+template <class C> using esPointerX64 = es::PointerX64<C>;
+template <class C> using esPointerX86 = es::PointerX86<C>;
