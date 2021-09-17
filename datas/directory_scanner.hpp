@@ -51,6 +51,15 @@ public:
   typedef storage_type::iterator iterator;
   typedef storage_type::const_iterator const_iterator;
 
+  DirectoryScanner() = default;
+  DirectoryScanner(const DirectoryScanner &) = default;
+  DirectoryScanner(DirectoryScanner &&) = default;
+  DirectoryScanner(const PathFilter &p) : PathFilter(p) {}
+  DirectoryScanner(PathFilter &&p) : PathFilter(std::move(p)) {}
+
+  DirectoryScanner &operator=(const DirectoryScanner &) = default;
+  DirectoryScanner &operator=(DirectoryScanner &&) = default;
+
   void PC_EXTERN Scan(std::string dir);
 
   iterator begin() { return files.begin(); }
