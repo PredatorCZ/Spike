@@ -20,9 +20,10 @@
 #include "except.hpp"
 #include "internal/bincore_file.hpp"
 
-template<BinCoreOpenMode MODE>
-class BinWritter : public BinWritterRef,
-                   public BinStreamFile<MakeOpenMode(MODE) | std::ios::out> {
+template <BinCoreOpenMode MODE>
+class BinWritter : public BinStreamFile<MakeOpenMode(MODE) | std::ios::out>,
+                   public BinWritterRef {
+  using base_file = BinStreamFile<MakeOpenMode(MODE) | std::ios::out>;
   template <class C> void OpenFile(const C filePath) {
     if (!this->Open_(filePath)) {
       throw es::FileInvalidAccessError(filePath);
@@ -37,10 +38,18 @@ public:
     OpenFile<decltype(filePath)>(filePath);
   }
   BinWritter(const char *filePath) { OpenFile(filePath); }
-
   BinWritter(const BinWritter &rd) = delete;
-  BinWritter(BinWritter &&) = default;
-  BinWritter &operator=(const BinWritter &other) = delete;
+  BinWritter(BinWritter &&o)
+      : base_file(std::move(o)), BinWritterRef(std::move(o)) {
+    this->baseStream = &this->FileStream;
+  }
+  BinWritter &operator=(const BinWritter &) = delete;
+  BinWritter &operator=(BinWritter &&o) {
+    static_cast<base_file &>(*this) = std::move(o);
+    static_cast<BinWritterRef &>(*this) = std::move(o);
+    this->baseStream = &this->FileStream;
+    return *this;
+  }
 
   void Open(const std::string &filePath) { OpenFile(filePath); }
   void Open(const char *filePath) { OpenFile(filePath); }

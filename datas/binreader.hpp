@@ -20,9 +20,10 @@
 #include "except.hpp"
 #include "internal/bincore_file.hpp"
 
-template<BinCoreOpenMode MODE>
-class BinReader : public BinReaderRef,
-                  public BinStreamFile<MakeOpenMode(MODE) | std::ios::in> {
+template <BinCoreOpenMode MODE>
+class BinReader : public BinStreamFile<MakeOpenMode(MODE) | std::ios::in>,
+                  public BinReaderRef {
+  using base_file = BinStreamFile<MakeOpenMode(MODE) | std::ios::in>;
   template <class C> void OpenFile(const C fileName) {
     if (!this->Open_(fileName)) {
       throw es::FileNotFoundError(fileName);
@@ -38,8 +39,17 @@ public:
   }
   BinReader(const char *filePath) { OpenFile(filePath); }
   BinReader(const BinReader &) = delete;
-  BinReader(BinReader &&) = default;
+  BinReader(BinReader &&o)
+      : base_file(std::move(o)), BinReaderRef(std::move(o)) {
+    this->baseStream = &this->FileStream;
+  }
   BinReader &operator=(const BinReader &other) = delete;
+  BinReader &operator=(BinReader &&o) {
+    static_cast<base_file &>(*this) = std::move(o);
+    static_cast<BinReaderRef &>(*this) = std::move(o);
+    this->baseStream = &this->FileStream;
+    return *this;
+  }
 
   void Open(const std::string &filePath) { OpenFile(filePath); }
   void Open(const char *filePath) { OpenFile(filePath); }
