@@ -25,7 +25,7 @@ class esMatrix44;
 namespace uni {
 struct RTSValue;
 
-class Bone : public Base {
+class PC_EXTERN Bone : public Base {
 public:
   virtual TransformType TMType() const = 0;
   virtual void GetTM(RTSValue &out) const;
@@ -54,5 +54,3 @@ public:
 using SkeletonsConst = Element<const List<Skeleton>>;
 using Skeletons = Element<List<Skeleton>>;
 } // namespace uni
-
-#include "internal/skeleton.inl"

@@ -1,6 +1,6 @@
-/*  uni skeleton internal module
+/*  uni module common source
     part of uni module
-    Copyright 2020 Lukas Cone
+    Copyright 2020-2021 Lukas Cone
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -15,13 +15,20 @@
     limitations under the License.
 */
 
-#include "uni/skeleton.hpp"
+#include "datas/reflector.hpp"
+#include "internal/exception.hpp"
+#include "internal/motion.inl"
+#include "internal/skeleton.inl"
+#include "model.hpp"
 
 namespace uni {
-void Bone::GetTM(RTSValue &) const {
+
+MetadataConst Base::Metadata() const { return {}; }
+
+void Skin::GetTM(RTSValue &, size_t) const {
   throw _uni_::ThrowVoidCall<TransformType, TMTYPE_RTS>(this->TMType());
 }
-void Bone::GetTM(esMatrix44 &) const {
+void Skin::GetTM(esMatrix44 &, size_t) const {
   throw _uni_::ThrowVoidCall<TransformType, TMTYPE_MATRIX>(this->TMType());
 }
 } // namespace uni

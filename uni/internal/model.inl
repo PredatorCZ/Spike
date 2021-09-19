@@ -15,16 +15,7 @@
     limitations under the License.
 */
 
-#include "exception.hpp"
-
 namespace uni {
-inline void Skin::GetTM(RTSValue &, size_t) const {
-  throw _uni_::ThrowVoidCall<TransformType, TMTYPE_RTS>(this->TMType());
-}
-inline void Skin::GetTM(esMatrix44 &, size_t) const {
-  throw _uni_::ThrowVoidCall<TransformType, TMTYPE_MATRIX>(this->TMType());
-}
-
 inline void PrimitiveDescriptor::Resample(FormatCodec::fvec &data) const {
   switch (UnpackDataType()) {
   case UnpackDataType_e::None:

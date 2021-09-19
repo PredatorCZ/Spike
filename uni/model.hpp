@@ -86,7 +86,7 @@ public:
 typedef Element<const List<Primitive>> PrimitivesConst;
 typedef Element<List<Primitive>> Primitives;
 
-class Skin : public Base {
+class PC_EXTERN Skin : public Base {
 public:
   virtual size_t NumNodes() const = 0;
   virtual TransformType TMType() const = 0;

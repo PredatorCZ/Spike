@@ -15,29 +15,29 @@
     limitations under the License.
 */
 
-#include "exception.hpp"
+#include "uni/motion.hpp"
 
 namespace uni {
-inline void MotionTrack::GetValue(RTSValue &, float) const {
+void MotionTrack::GetValue(RTSValue &, float) const {
   throw _uni_::ThrowVoidCall<MotionTrack::TrackType_e,
                              MotionTrack::PositionRotationScale>(
       this->TrackType());
 }
-inline void MotionTrack::GetValue(esMatrix44 &, float) const {
+void MotionTrack::GetValue(esMatrix44 &, float) const {
   throw _uni_::ThrowVoidCall<MotionTrack::TrackType_e, MotionTrack::Matrix>(
       this->TrackType());
 }
-inline void MotionTrack::GetValue(Vector4A16 &, float) const {
+void MotionTrack::GetValue(Vector4A16 &, float) const {
   const auto ttype = this->TrackType();
   throw _uni_::ThrowVoidCall(ttype == MotionTrack::Position ||
                              ttype == MotionTrack::Rotation ||
                              ttype == MotionTrack::Scale);
 }
-inline void MotionTrack::GetValue(float &, float) const {
+void MotionTrack::GetValue(float &, float) const {
   throw _uni_::ThrowVoidCall<MotionTrack::TrackType_e,
                              MotionTrack::SingleFloat>(this->TrackType());
 }
 
-inline void Motion::FrameRate(uint32) const { throw ModifyError("FrameRate"); }
+void Motion::FrameRate(uint32) const { throw ModifyError("FrameRate"); }
 
 } // namespace uni

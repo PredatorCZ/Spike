@@ -26,7 +26,7 @@ class esMatrix44;
 namespace uni {
 struct RTSValue;
 
-class MotionTrack : public Base {
+class PC_EXTERN MotionTrack : public Base {
 public:
   enum TrackType_e {
     Position,
@@ -48,7 +48,7 @@ public:
 using MotionTracksConst = Element<const List<MotionTrack>>;
 using MotionTracks = Element<List<MotionTrack>>;
 
-class Motion : public Base {
+class PC_EXTERN Motion : public Base {
 public:
   using iterator_type_const = MotionTracks::element_type::iterator_type_const;
   enum MotionType_e { Absolute, Relative, Additive, Delta };
@@ -68,5 +68,3 @@ using MotionsConst = Element<const List<Motion>>;
 using Motions = Element<List<Motion>>;
 
 } // namespace uni
-
-#include "internal/motion.inl"

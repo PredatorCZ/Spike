@@ -39,11 +39,11 @@ function(_set_threads TARGET_NAME)
   endif()
 endfunction()
 
-function(_set_no_rtti TARGET_NAME)
+function(_set_no_rtti TARGET_NAME SCOPE)
   if(MSVC)
-    target_compile_options(${TARGET_NAME} PRIVATE /GR-)
+    target_compile_options(${TARGET_NAME} ${SCOPE} /GR-)
   else()
-    target_compile_options(${TARGET_NAME} PRIVATE -fno-rtti)
+    target_compile_options(${TARGET_NAME} ${SCOPE} -fno-rtti)
   endif()
 endfunction()
 
@@ -63,7 +63,7 @@ function(set_precore_sources TARGET_NAME)
       _set_threads(${TARGET_NAME})
       continue()
     elseif(${cFile} STREQUAL no_rtti)
-      _set_no_rtti(${TARGET_NAME})
+      _set_no_rtti(${TARGET_NAME} PRIVATE)
       continue()
     endif()
     file(GLOB_RECURSE _fndGlob_${cFile} "${PRECORE_SOURCE_DIR}/*/${cFile}.cpp")
@@ -94,6 +94,7 @@ if(PC_SHARED_LIB)
     datas/reflector_xml
     datas/reflector
     datas/stat
+    uni/uni
     uni/uni_format)
 
   target_compile_definitions(
@@ -103,6 +104,7 @@ if(PC_SHARED_LIB)
 
   _set_basic_flags(precore PUBLIC)
   _set_threads(precore)
+  _set_no_rtti(precore PUBLIC)
 
   if(MSVC OR MINGW)
     set_target_properties(precore PROPERTIES SUFFIX ${PROJECT_VERSION_MAJOR}.dll
