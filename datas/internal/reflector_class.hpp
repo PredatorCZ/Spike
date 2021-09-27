@@ -173,8 +173,27 @@ template <class C> const reflectorStatic ES_IMPORT *GetReflectedClass();
   return &reflectedClass;                                                      \
   }
 
+#define ENUMERATION(...)                                                       \
+  template <> constexpr JenHash EnumHash<__VA_ARGS__>() {                      \
+    return #__VA_ARGS__;                                                       \
+  }                                                                            \
+  template <> inline const ReflectedEnum *GetReflectedEnum<__VA_ARGS__>() {    \
+    using enum_type = __VA_ARGS__;                                             \
+    static const ReflectedEnum reflectedEnum {                                 \
+      std::add_pointer_t<enum_type>{nullptr}, #__VA_ARGS__,
+
+#define ENUM_MEMBER(type)                                                      \
+  EnumProxy { #type, static_cast < uint64>(enum_type::type) }
+
+// internal, do not use
+#define END_ENUMERATION(...)                                                   \
+  }                                                                            \
+  ;                                                                            \
+  return &reflectedEnum;                                                       \
+  }
+
 // Create reflection definition (use only in TU)
-// what: always CLASS()
+// what: CLASS() or ENUMERATION()
 // args: MEMBER, MEMBERNAME or BITMEMBER, BITMEMBERNAME, invokes MemberProxy
 // contructor
 #define REFLECT(what, ...) what __VA_ARGS__ END_##what

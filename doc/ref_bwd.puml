@@ -21,7 +21,7 @@ package "Source Unit" <<Frame>> {
     REFLECT : .
     REFLECT : .
     REFLECT : .
-    note right of REFLECT
+    note top of REFLECT
         A macro for creating
         reflection definition
     end note
@@ -34,9 +34,22 @@ package "Source Unit" <<Frame>> {
     BITREFLECT : .
     BITREFLECT : .
     BITREFLECT : .
-    note right of BITREFLECT
+    note top of BITREFLECT
         A macro for creating
         bitfield reflection definition
+    end note
+
+    object "REFLECT(...)" as ENUREFLECT
+    ENUREFLECT : ENUMERATION(enum name)
+    ENUREFLECT : ---
+    ENUREFLECT : ENUM_MEMBER(member name)
+    ENUREFLECT : .
+    ENUREFLECT : .
+    ENUREFLECT : .
+    note bottom of ENUREFLECT
+        A macro for creating
+        reflection for already
+        defined enums
     end note
 
     node "Single call function" as SCF {
@@ -49,7 +62,8 @@ package "Source Unit" <<Frame>> {
         enums into global registry
     end note
 
-    REFLECT -[hidden]down- BITREFLECT
-    BITREFLECT -[hidden]down- SCF
+    REFLECT -[hidden]left- BITREFLECT
+    BITREFLECT -[hidden]down- ENUREFLECT
+    ENUREFLECT -[hidden]left- SCF
 }
 @enduml
