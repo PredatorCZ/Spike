@@ -198,11 +198,17 @@ APPContext::APPContext(const char *moduleName_, const std::string &appFolder_)
     throw std::runtime_error("Module context version mismatch!");
   }
 
+  func<decltype(AppInitModule)> InitModule;
+  assign(InitModule, "AppInitModule");
+  InitModule();
+
   assign(AdditionalHelp, "AppAdditionalHelp");
   assign(InitContext, "AppInitContext");
 
   if (info->mode == AppMode_e::EXTRACT) {
     assign(ExtractFile, "AppExtractFile");
+  } else if (info->mode == AppMode_e::PACK) {
+    assign(NewArchive, "AppNewArchive");
   } else {
     assign(ProcessFile, "AppProcessFile");
     extractSettings.makeZIP = false;

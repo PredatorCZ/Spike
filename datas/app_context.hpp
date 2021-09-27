@@ -13,6 +13,7 @@
 enum class AppMode_e : uint8 {
   EXTRACT,
   CONVERT,
+  PACK,
 };
 
 //Archive only (ZIP,) load only filtered entries or load all entries.
@@ -91,9 +92,22 @@ struct AppExtractContext {
   virtual void GenerateFolders() = 0;
 };
 
+struct AppPackContext {
+  virtual ~AppPackContext() = default;
+  virtual void SendFile(es::string_view path, std::istream &stream) = 0;
+  virtual void Finish() = 0;
+};
+
+struct AppPackStats {
+  size_t numFiles;
+  size_t totalSizeFileNames;
+};
+
 extern "C" {
+void AC_EXTERN AppInitModule();
 void AC_EXTERN AppAdditionalHelp(std::ostream &str, size_t indent);
 bool AC_EXTERN AppInitContext(const std::string &dataFolder);
 void AC_EXTERN AppProcessFile(std::istream &stream, AppContext *ctx);
 void AC_EXTERN AppExtractFile(std::istream &stream, AppExtractContext *ctx);
+AppPackContext AC_EXTERN *AppNewArchive(const std::string &folder, const AppPackStats &stats);
 };

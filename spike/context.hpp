@@ -53,6 +53,7 @@ struct APPContextCopyData {
   func<decltype(AppInitContext)> InitContext;
   func<decltype(AppProcessFile)> ProcessFile;
   func<decltype(AppExtractFile)> ExtractFile;
+  func<decltype(AppNewArchive)> NewArchive;
   AppInfo_s *info;
 
 protected:
