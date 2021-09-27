@@ -138,6 +138,13 @@ struct ZIPIOContext_impl : ZIPIOContext {
 
   void DisposeFile(std::istream *str) override;
 
+  ZIPIOContext_impl(const std::string &file, const PathFilter &pathFilter_,
+                    const PathFilter &moduleFilter_)
+      : rd(file), pathFilter(&pathFilter_), moduleFilter(&moduleFilter_) {
+    Read();
+    pathFilter = moduleFilter = nullptr;
+  }
+
   ZIPIOContext_impl(const std::string &file) : rd(file) { Read(); }
 
 private:
@@ -146,6 +153,8 @@ private:
 
   std::map<std::istream *, std::unique_ptr<ZIPDataHolder>> openedFiles;
   BinReader<> rd;
+  const PathFilter *pathFilter = nullptr;
+  const PathFilter *moduleFilter = nullptr;
 };
 
 struct ZIPMemoryStream : ZIPDataHolder {
@@ -302,8 +311,18 @@ void ZIPIOContext_impl::ReadEntry() {
       }
 
       rd.Skip(hdr.extraFieldSize);
-      vfs.emplace(std::move(path), std::make_pair(rd.Tell(), entrySize));
+      auto entry = std::make_pair(rd.Tell(), entrySize);
       rd.Skip(entrySize);
+
+      if (pathFilter && !pathFilter->IsFiltered(path)) {
+        return;
+      }
+
+      if (moduleFilter && !moduleFilter->IsFiltered(path)) {
+        return;
+      }
+
+      vfs.emplace(std::move(path), entry);
     }();
     break;
   }
@@ -353,6 +372,12 @@ void ZIPIOContext_impl::ReadEntry() {
     throw std::runtime_error("Invalid block " + to_string(id) + " at " +
                              to_string(rd.Tell()));
   }
+}
+
+std::unique_ptr<ZIPIOContext> MakeZIPContext(const std::string &file,
+                                             const PathFilter &pathFilter,
+                                             const PathFilter &moduleFilter) {
+  return std::make_unique<ZIPIOContext_impl>(file, pathFilter, moduleFilter);
 }
 
 std::unique_ptr<ZIPIOContext> MakeZIPContext(const std::string &file) {

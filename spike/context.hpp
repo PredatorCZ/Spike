@@ -20,7 +20,8 @@
 #include "datas/app_context.hpp"
 #include "datas/reflector.hpp"
 #include <map>
-#include <unordered_map>
+
+class PathFilter;
 
 extern struct MainAppConf : ReflectorBase<MainAppConf> {
   bool generateLog = false;
@@ -100,7 +101,6 @@ struct ZIPIOContext : AppContext {
   virtual std::istream *OpenFile(const zip_entry &entry) = 0;
 
   std::map<std::string, zip_entry> vfs;
-  //std::unordered_map<std::string, zip_entry> vfs;
 };
 
 struct ZIPIOContextInstance : AppContext {
@@ -119,4 +119,7 @@ private:
 };
 
 std::unique_ptr<AppContext> MakeIOContext();
+std::unique_ptr<ZIPIOContext> MakeZIPContext(const std::string &file,
+                                             const PathFilter &pathFilter,
+                                             const PathFilter &moduleFilter);
 std::unique_ptr<ZIPIOContext> MakeZIPContext(const std::string &file);

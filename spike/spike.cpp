@@ -181,7 +181,7 @@ int _tmain(int argc, TCHAR *argv[]) {
   }
 
   std::vector<std::string> files;
-  std::vector<std::string> zips;
+  std::map<std::string, PathFilter> zips;
 
   for (int a = 2; a < argc; a++) {
     if (!markedFiles[a]) {
@@ -205,10 +205,25 @@ int _tmain(int argc, TCHAR *argv[]) {
       break;
     }
     case FileType_e::File: {
-      es::string_view ext(std::prev(fileName.end(), 4).operator->(),
-                          fileName.end().operator->());
-      if (ext == ".zip") {
-        zips.emplace_back(std::move(fileName));
+      const size_t found = fileName.find(".zip");
+      if (found != fileName.npos) {
+        if (found + 4 == fileName.size()) {
+          zips.emplace(std::make_pair(std::move(fileName), PathFilter{}));
+        } else if (fileName[found + 4] != '/') {
+          files.emplace_back(std::move(fileName));
+        } else {
+          auto sub = fileName.substr(0, found + 5);
+          auto foundZip = zips.find(sub);
+          auto filterString = "^" + fileName.substr(found + 5);
+
+          if (es::IsEnd(zips, foundZip)) {
+            PathFilter zFilter;
+            zFilter.AddFilter(filterString);
+            zips.emplace(std::make_pair(std::move(sub), std::move(zFilter)));
+          } else {
+            foundZip->second.AddFilter(filterString);
+          }
+        }
       } else {
         files.emplace_back(std::move(fileName));
       }
@@ -287,14 +302,19 @@ int _tmain(int argc, TCHAR *argv[]) {
   }
 
   for (auto &zip : zips) {
-    printline("Loading ZIP vfs: " << zip);
-    auto fctx = MakeZIPContext(zip);
-    AFileInfo zFile(zip);
+    printline("Loading ZIP vfs: " << zip.first);
+    const bool loadFiltered =
+        ctx.info->arcLoadType == ArchiveLoadType::FILTERED;
+    auto fctx = loadFiltered ? MakeZIPContext(zip.first, zip.second, pathFilter)
+                             : MakeZIPContext(zip.first);
+    AFileInfo zFile(zip.first);
     std::vector<decltype(fctx->vfs)::value_type> filesToProcess;
 
-    for (auto &f : fctx->vfs) {
-      if (pathFilter.IsFiltered(f.first)) {
-        filesToProcess.emplace_back(f);
+    if (!loadFiltered) {
+      for (auto &f : fctx->vfs) {
+        if (pathFilter.IsFiltered(f.first) && zip.second.IsFiltered(f.first)) {
+          filesToProcess.emplace_back(f);
+        }
       }
     }
 
@@ -306,14 +326,22 @@ int _tmain(int argc, TCHAR *argv[]) {
       outPath.push_back('/');
       IOExtractContext ctx_(outPath);
 
-      for (auto &f : filesToProcess) {
-        AFileInfo cFile(f.first);
+      auto AddFolder = [&](auto &store) {
+        for (auto &f : store) {
+          AFileInfo cFile(f.first);
 
-        if (extractSettings.folderPerArc) {
-          ctx_.AddFolderPath(cFile.GetFullPathNoExt().to_string());
-        } else {
-          ctx_.AddFolderPath(cFile.GetFolder().to_string());
+          if (extractSettings.folderPerArc) {
+            ctx_.AddFolderPath(cFile.GetFullPathNoExt().to_string());
+          } else {
+            ctx_.AddFolderPath(cFile.GetFolder().to_string());
+          }
         }
+      };
+
+      if (!loadFiltered) {
+        AddFolder(filesToProcess);
+      } else {
+        AddFolder(fctx->vfs);
       }
 
       ctx_.GenerateFolders();
@@ -331,7 +359,7 @@ int _tmain(int argc, TCHAR *argv[]) {
         appCtx->workingFile = fileEntry.first;
 
         if (ctx.info->mode == AppMode_e::EXTRACT) {
-          printline("Extracting: " << zip << '/' << fileEntry.first);
+          printline("Extracting: " << zip.first << '/' << fileEntry.first);
           std::unique_ptr<AppExtractContext> ectx;
           std::string recordsFile;
 
@@ -369,7 +397,7 @@ int _tmain(int argc, TCHAR *argv[]) {
             es::RemoveFile(recordsFile);
           }
         } else {
-          printline("Processing: " << zip << '/' << fileEntry.first);
+          printline("Processing: " << zip.first << '/' << fileEntry.first);
           auto fileStream = fctx->OpenFile(fileEntry.second);
 
           appCtx->workingFile.insert(0, outPath);

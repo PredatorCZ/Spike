@@ -10,9 +10,15 @@
 #define AC_EXTERN ES_EXPORT
 #endif
 
-enum class AppMode_e {
+enum class AppMode_e : uint8 {
   EXTRACT,
   CONVERT,
+};
+
+//Archive only (ZIP,) load only filtered entries or load all entries.
+enum class ArchiveLoadType : uint8 {
+  FILTERED,
+  ALL,
 };
 
 class ReflectorFriend;
@@ -22,6 +28,7 @@ struct AppInfo_s {
   static constexpr uint32 CONTEXT_VERSION = 1;
   uint32 contextVersion;
   AppMode_e mode;
+  ArchiveLoadType arcLoadType;
   es::string_view header;
   ReflectorFriend *settings;
   es::string_view *filters;
