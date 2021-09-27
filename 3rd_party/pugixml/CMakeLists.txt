@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.4)
-project(pugixml)
+project(pugixml VERSION 1.11)
 set(CMAKE_CXX_STANDARD 11)
 
 option(PUGI_STATIC_OBJECTS "Builds pugixml-objects target." OFF)
@@ -44,9 +44,12 @@ if(PUGI_SHARED_LIBS)
       pugixml-shared
       INTERFACE PUGIXML_API=__declspec\(dllimport\)
       PRIVATE PUGIXML_API=__declspec\(dllexport\))
+  else()
+    set_target_properties(pugixml PROPERTIES VERSION ${PROJECT_VERSION}
+                                             SOVERSION ${PROJECT_VERSION_MAJOR})
   endif()
   install(
     TARGETS pugixml
-    LIBRARY DESTINATION $<IF:$<BOOL:${MSVC}>,lib,bin>
+    LIBRARY NAMELINK_SKIP DESTINATION lib
     RUNTIME DESTINATION bin)
 endif()

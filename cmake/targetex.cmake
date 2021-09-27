@@ -173,9 +173,13 @@ function(build_target)
 
     set_target_properties(
       ${_arg_NAME}
-      PROPERTIES SUFFIX ${module_suffix_}.esm
+      PROPERTIES SUFFIX ${module_suffix_}.spk
                  PREFIX ""
                  NO_SONAME TRUE)
+    install(
+      TARGETS ${_arg_NAME}
+      LIBRARY DESTINATION $<IF:$<BOOL:${MSVC}>,lib,bin>
+      RUNTIME DESTINATION bin)
   endif()
 
   if(${_is_python_module})

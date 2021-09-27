@@ -10,4 +10,4 @@ endif()
 install(
   TARGETS shared_test class
   RUNTIME DESTINATION bin
-  LIBRARY DESTINATION bin)
+  LIBRARY DESTINATION lib)

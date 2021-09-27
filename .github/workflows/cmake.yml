@@ -47,7 +47,7 @@ jobs:
         run: |
           mkdir ${{github.workspace}}/build
           cd ${{github.workspace}}/build
-          cmake -DCMAKE_BUILD_TYPE=$BUILD_TYPE -DUSE_GCOV=$USE_GCOV -DCMAKE_INSTALL_PREFIX=${{github.workspace}} -DCMAKE_INSTALL_RPATH=${{github.workspace}}/bin ..
+          cmake -DCMAKE_BUILD_TYPE=$BUILD_TYPE -DUSE_GCOV=$USE_GCOV -DCMAKE_INSTALL_PREFIX=${{github.workspace}} -DCMAKE_INSTALL_RPATH=${{github.workspace}}/lib ..
 
       - name: Build
         working-directory: ${{github.workspace}}/build
