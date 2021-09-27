@@ -47,10 +47,43 @@ inline auto &ExtractSettings() {
   return reinterpret_cast<ReflectorFriend &>(extractSettings);
 }
 
+template <class func> class APPOptionalCall {
+public:
+  using value_type = func;
+  APPOptionalCall() = default;
+  APPOptionalCall(const APPOptionalCall &) = default;
+  APPOptionalCall(APPOptionalCall &&) = default;
+  APPOptionalCall &operator=(const APPOptionalCall &) = default;
+  APPOptionalCall &operator=(APPOptionalCall &&) = default;
+  APPOptionalCall(func obj) : object(obj) {}
+  APPOptionalCall &operator=(func obj) {
+    object = obj;
+    return *this;
+  }
+
+  operator bool() { return object != nullptr; }
+  template <class... C> auto operator()(C &&...params) {
+    using return_type = decltype(object(std::forward<C>(params)...));
+
+    if constexpr (!std::is_void_v<return_type>) {
+      if (object) {
+        return object(std::forward<C>(params)...);
+      }
+      return return_type{};
+    } else {
+      if (object) {
+        object(std::forward<C>(params)...);
+      }
+    }
+  }
+
+private:
+  func object = nullptr;
+};
+
 struct APPContextCopyData {
   template <class C> using func = std::add_pointer_t<C>;
-  func<decltype(AppAdditionalHelp)> AdditionalHelp;
-  func<decltype(AppInitContext)> InitContext;
+  template <class C> using opt_func = APPOptionalCall<std::add_pointer_t<C>>;
   func<decltype(AppProcessFile)> ProcessFile;
   func<decltype(AppExtractFile)> ExtractFile;
   func<decltype(AppNewArchive)> NewArchive;
@@ -58,6 +91,8 @@ struct APPContextCopyData {
 
 protected:
   const char *moduleName;
+  opt_func<decltype(AppInitContext)> InitContext;
+  opt_func<decltype(AppAdditionalHelp)> AdditionalHelp;
 };
 
 struct APPContext : APPContextCopyData {

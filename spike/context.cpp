@@ -182,6 +182,11 @@ APPContext::APPContext(const char *moduleName_, const std::string &appFolder_)
     }
   };
 
+  auto tryAssign = [&](auto &value, auto name) {
+    using type_ = typename std::remove_reference_t<decltype(value)>::value_type;
+    return value = reinterpret_cast<type_>(dlsym(dlHandle, name));
+  };
+
 #ifdef _MSC_VER
   auto modPath = ToTSTRING(modulePath);
   dlHandle = LoadLibrary(modPath.data());
@@ -198,12 +203,13 @@ APPContext::APPContext(const char *moduleName_, const std::string &appFolder_)
     throw std::runtime_error("Module context version mismatch!");
   }
 
-  func<decltype(AppInitModule)> InitModule;
-  assign(InitModule, "AppInitModule");
-  InitModule();
+  opt_func<decltype(AppInitModule)> InitModule;
+  if (tryAssign(InitModule, "AppInitModule")) {
+    InitModule();
+  }
 
-  assign(AdditionalHelp, "AppAdditionalHelp");
-  assign(InitContext, "AppInitContext");
+  tryAssign(AdditionalHelp, "AppAdditionalHelp");
+  tryAssign(InitContext, "AppInitContext");
 
   if (info->mode == AppMode_e::EXTRACT) {
     assign(ExtractFile, "AppExtractFile");
@@ -256,7 +262,7 @@ void APPContext::SetupModule() {
     CreateLog();
   }
 
-  if (!InitContext(appFolder)) {
+  if (InitContext && !InitContext(appFolder)) {
     throw std::runtime_error("Error while initializing context.");
   }
 }
