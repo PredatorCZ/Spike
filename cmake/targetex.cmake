@@ -176,6 +176,18 @@ function(build_target)
       PROPERTIES SUFFIX ${module_suffix_}.spk
                  PREFIX ""
                  NO_SONAME TRUE)
+
+    if(MSVC)
+      get_target_property(spike_exec spike OUTPUT_NAME)
+      configure_file(${PRECORE_SOURCE_DIR}/cmake/spike.tmpl
+                     ${PROJECT_BINARY_DIR}/${_arg_NAME}_/spike.runner)
+
+      install(
+        PROGRAMS ${PROJECT_BINARY_DIR}/${_arg_NAME}_/spike.runner
+        TYPE BIN
+        RENAME ${_arg_NAME}.cmd)
+    endif()
+
     install(
       TARGETS ${_arg_NAME}
       LIBRARY DESTINATION $<IF:$<BOOL:${MSVC}>,lib,bin>

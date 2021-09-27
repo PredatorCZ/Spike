@@ -1,0 +1,4 @@
+echo off
+cd /d %~dp0
+${spike_exec} ${TARGET_NAME} %*
+if %errorlevel% NEQ 0 pause

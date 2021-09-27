@@ -6,6 +6,10 @@ set(PC_SHARED_LIB
     ON
     CACHE BOOL "" FORCE)
 
+set(PUGI_SHARED_LIBS
+    ON
+    CACHE BOOL "" FORCE)
+
 test_odr(
   PATHS
   ${PROJECT_SOURCE_DIR}/datas
@@ -95,7 +99,6 @@ build_target(
   SOURCES
   test_xml.cpp
   LINKS
-  pugixml-shared
   precore
   NO_PROJECT_H
   NO_VERINFO)
@@ -116,6 +119,8 @@ add_subdirectory(shared)
 
 install(TARGETS test_base test_app test_blowfish test_reflector test_uni
                 test_xml RUNTIME DESTINATION bin)
+
+add_subdirectory(../spike spike)
 
 if(CMAKE_CXX_COMPILER_ID MATCHES Clang)
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra")

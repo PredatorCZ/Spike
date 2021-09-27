@@ -69,7 +69,7 @@ jobs:
           sudo python3 setup.py install
           popd
           export COVERALLS_SERVICE_NAME="gitlab-ci"
-          coveralls -E ".*/build/.*.c((pp)|(c)|(xx))?$" -e MAXex -e test -e datas/unit_testing.hpp -e 3rd_party --gcov-options '\-lp' > /dev/null
+          coveralls -E ".*/build/.*.[ch]((pp)|(c)|(xx))?$" -e spike -e MAXex -e test -e datas/unit_testing.hpp -e 3rd_party -e formats --gcov-options '\-lp' > /dev/null
 
   build-widle:
     runs-on: windows-2019
