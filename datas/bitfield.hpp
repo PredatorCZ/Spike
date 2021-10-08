@@ -18,9 +18,12 @@
 #pragma once
 #include "reflector_fwd.hpp"
 
-template <size_t index_, size_t size_> struct BitMemberDecl {
+template <size_t index_, size_t size_,
+          class type = std::conditional_t<size_ == 1, bool, void>>
+struct BitMemberDecl {
   static constexpr size_t index = index_;
   static constexpr size_t size = size_;
+  using value_type = type;
 };
 
 struct BitMember {

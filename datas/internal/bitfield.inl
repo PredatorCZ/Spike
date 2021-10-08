@@ -69,5 +69,5 @@ struct _getType<BitFieldType<type, members...>> : reflTypeDefault_ {
   static constexpr JenHash Hash() {
     return ClassHash<BitFieldType<type, members...>>();
   }
-  static constexpr uint8 SUBSIZE = sizeof(type);
+  static constexpr size_t SIZE = sizeof(type);
 };

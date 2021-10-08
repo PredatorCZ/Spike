@@ -43,13 +43,12 @@ template <class C> int test_class(const reflectorStatic *input) {
   }
 
   for (uint32 i = 0; i < orig->nTypes; i++) {
-    TEST_EQUAL(input->types[i].ID, orig->types[i].ID);
-    TEST_EQUAL(input->types[i].numItems, orig->types[i].numItems);
+    TEST_EQUAL(input->types[i].index, orig->types[i].index);
+    TEST_EQUAL(input->types[i].size, orig->types[i].size);
     TEST_EQUAL(input->types[i].offset, orig->types[i].offset);
-    TEST_EQUAL(input->types[i].subSize, orig->types[i].subSize);
-    TEST_EQUAL(input->types[i].subType, orig->types[i].subType);
+    TEST_EQUAL(input->types[i].raw[0], orig->types[i].raw[0]);
+    TEST_EQUAL(input->types[i].raw[1], orig->types[i].raw[1]);
     TEST_EQUAL(input->types[i].type, orig->types[i].type);
-    TEST_EQUAL(input->types[i].typeHash, orig->types[i].typeHash);
     TEST_EQUAL(input->types[i].valueNameHash, orig->types[i].valueNameHash);
   }
 

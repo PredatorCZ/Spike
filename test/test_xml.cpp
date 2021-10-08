@@ -2,8 +2,8 @@
 #include "datas/reflector_io.hpp"
 #include "datas/reflector_xml.hpp"
 #include "datas/unit_testing.hpp"
-#include "reflector_def.inl"
 #include "pugixml.hpp"
+#include "reflector_def.inl"
 
 int test_reflector_xml_v1() {
   BinReader mrd("reflected.bin");
@@ -37,7 +37,8 @@ int main() {
   es::print::AddPrinterFunction(UPrintf);
 
   RegisterReflectedTypes<subrefl, reflClass, EnumWrap00, EnumWrap01, EnumWrap02,
-                         EnumWrap03, EnumWrap04, BitTypeRefl>();
+                         EnumWrap03, EnumWrap04, BitTypeRefl,
+                         BFVectorR10G11B10Type>();
 
   TEST_CASES(int testResult, TEST_FUNC(test_reflector_xml_v1),
              TEST_FUNC(test_reflector_xml_v2));

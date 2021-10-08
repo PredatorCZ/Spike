@@ -32,16 +32,18 @@ public:
   using Reflector::GetReflectedType;
 };
 
-static bool SaveV2(const reflType &cType, const Reflector &ri,
+static bool SaveV2(const ReflType &cType, const Reflector &ri,
                    pugi::xml_node thisNode, size_t t,
                    const std::string &varName,
                    ReflectorXMLUtil::flag_type flags) {
   switch (cType.type) {
-  case REFType::String: {
+  case REFType::String:
+  case REFType::CString: {
     if (!flags[ReflectorXMLUtil::Flags_StringAsAttribute]) {
       return false;
     }
   }
+    [[fallthrough]];
   case REFType::Bool:
   case REFType::Enum:
   case REFType::FloatingPoint:
@@ -54,11 +56,10 @@ static bool SaveV2(const reflType &cType, const Reflector &ri,
     return true;
   }
   case REFType::Vector: {
-    _DecomposedVectorHash dec{cType.typeHash};
     static const char axes[4][2]{"x", "y", "z", "w"};
     pugi::xml_node cNode = thisNode.append_child(varName.c_str());
 
-    for (size_t a = 0; a < dec.numItems; a++) {
+    for (size_t a = 0; a < cType.asVector.numItems; a++) {
       std::string str = ri.GetReflectedValue(t, a);
       cNode.append_attribute(axes[a]).set_value(str.data());
     }
@@ -67,11 +68,11 @@ static bool SaveV2(const reflType &cType, const Reflector &ri,
   }
 
   case REFType::EnumFlags: {
-    if (!REFEnumStorage.count(cType.typeHash)) {
+    if (!REFEnumStorage.count(JenHash(cType.asClass.typeHash))) {
       return false;
     }
 
-    auto cEnum = REFEnumStorage.at(cType.typeHash);
+    auto cEnum = REFEnumStorage.at(JenHash(cType.asClass.typeHash));
     pugi::xml_node cNode = thisNode.append_child(varName.c_str());
 
     for (size_t e = 0; e < cEnum->numMembers; e++) {
@@ -88,7 +89,7 @@ static bool SaveV2(const reflType &cType, const Reflector &ri,
   }
 }
 
-static pugi::xml_node MakeNode(const Reflector &ri, const reflectorStatic *stat,
+static pugi::xml_node MakeNode(const Reflector &, const reflectorStatic *stat,
                                pugi::xml_node node) {
   std::string className;
 
@@ -103,8 +104,8 @@ static pugi::xml_node MakeNode(const Reflector &ri, const reflectorStatic *stat,
   return node.append_child(className.c_str());
 }
 
-static std::string GetName(const Reflector &ri, const reflectorStatic *stat,
-                           const reflType &cType, size_t t) {
+static std::string GetName(const Reflector &, const reflectorStatic *stat,
+                           const ReflType &cType, size_t t) {
   std::string varName;
 
   if (stat->typeNames && stat->typeNames[t]) {
@@ -133,10 +134,13 @@ pugi::xml_node ReflectorXMLUtil::Save(const Reflector &ri, pugi::xml_node node,
 
     if (ri.IsReflectedSubClass(t)) {
       if (ri.IsArray(t)) {
-        const int numItems = cType.numItems;
+        const int numItems = cType.asArray.numItems;
 
         for (int s = 0; s < numItems; s++) {
           auto subRef = ri.GetReflectedSubClass(t, s);
+          if (!subRef) {
+            throw std::runtime_error("Class not registered!");
+          }
           ReflectorPureWrap subCl(subRef);
           ReflectorXMLUtil::Save(
               subCl, cNode.append_child(("i:" + std::to_string(s)).c_str()),
@@ -145,6 +149,9 @@ pugi::xml_node ReflectorXMLUtil::Save(const Reflector &ri, pugi::xml_node node,
 
       } else {
         auto subRef = ri.GetReflectedSubClass(t);
+        if (!subRef) {
+          throw std::runtime_error("Class not registered!");
+        }
         ReflectorPureWrap subCl(subRef);
         ReflectorXMLUtil::Save(subCl, cNode, false);
       }
@@ -183,10 +190,13 @@ pugi::xml_node ReflectorXMLUtil::SaveV2a(const Reflector &ri,
 
     if (ri.IsReflectedSubClass(t)) {
       if (ri.IsArray(t)) {
-        const int numItems = cType.numItems;
+        const int numItems = cType.asArray.numItems;
 
         for (int s = 0; s < numItems; s++) {
           auto subRef = ri.GetReflectedSubClass(t, s);
+          if (!subRef) {
+            throw std::runtime_error("Class not registered!");
+          }
           ReflectorPureWrap subCl(subRef);
           auto nodeName = varName + '-' + std::to_string(s);
           pugi::xml_node cNode = thisNode.append_child(nodeName.data());
@@ -198,20 +208,24 @@ pugi::xml_node ReflectorXMLUtil::SaveV2a(const Reflector &ri,
       } else {
         pugi::xml_node cNode = thisNode.append_child(varName.c_str());
         auto subRef = ri.GetReflectedSubClass(t);
+        if (!subRef) {
+          throw std::runtime_error("Class not registered!");
+        }
         ReflectorPureWrap subCl(subRef);
         auto subOpts = opts;
         subOpts -= Flags_ClassNode;
         SaveV2a(subCl, cNode, subOpts);
       }
     } else if (ri.IsArray(t)) {
-      switch (cType.subType) {
+      const auto &arr = cType.asArray;
+      const int numItems = arr.numItems;
+      switch (arr.type) {
       case REFType::Bool:
       case REFType::Enum:
       case REFType::FloatingPoint:
       case REFType::Integer:
       case REFType::UnsignedInteger:
       case REFType::BitFieldMember: {
-        const int numItems = cType.numItems;
         for (int s = 0; s < numItems; s++) {
           std::string str = ri.GetReflectedValue(t, s);
           auto nodeName = varName + '-' + std::to_string(s);
@@ -221,14 +235,12 @@ pugi::xml_node ReflectorXMLUtil::SaveV2a(const Reflector &ri,
         break;
       }
       case REFType::Vector: {
-        const int numItems = cType.numItems;
         for (int s = 0; s < numItems; s++) {
-          _DecomposedVectorHash dec{cType.typeHash};
           static const char axes[4][2]{"x", "y", "z", "w"};
           auto nodeName = varName + '-' + std::to_string(s);
           pugi::xml_node cNode = thisNode.append_child(nodeName.data());
 
-          for (size_t a = 0; a < dec.numItems; a++) {
+          for (size_t a = 0; a < arr.asVector.numItems; a++) {
             std::string str = ri.GetReflectedValue(t, s, a);
             cNode.append_attribute(axes[a]).set_value(str.data());
           }
@@ -236,12 +248,11 @@ pugi::xml_node ReflectorXMLUtil::SaveV2a(const Reflector &ri,
         break;
       }
       case REFType::EnumFlags: {
-        if (!REFEnumStorage.count(cType.typeHash)) {
+        if (!REFEnumStorage.count(JenHash(arr.asClass.typeHash))) {
           break;
         }
 
-        auto &&cEnum = REFEnumStorage.at(cType.typeHash);
-        const int numItems = cType.numItems;
+        auto &&cEnum = REFEnumStorage.at(JenHash(arr.asClass.typeHash));
 
         for (int s = 0; s < numItems; s++) {
           auto nodeName = varName + '-' + std::to_string(s);
@@ -342,6 +353,9 @@ pugi::xml_node ReflectorXMLUtil::LoadV2(Reflector &ri, pugi::xml_node node,
       }
 
       auto rfInst = ri.GetReflectedSubClass(node.hash, node.index);
+      if (!rfInst) {
+        throw std::runtime_error("Class not registered!");
+      }
       ReflectorPureWrap subRefl(rfInst);
       ReflectorXMLUtil::LoadV2(subRefl, a);
       continue;
@@ -374,9 +388,9 @@ pugi::xml_node ReflectorXMLUtil::LoadV2(Reflector &ri, pugi::xml_node node,
         }
 
         if (node.index == nan_) {
-          ri.SetReflectedValue(refType->ID, t.value(), element);
+          ri.SetReflectedValue(refType->index, t.value(), element);
         } else {
-          ri.SetReflectedValue(refType->ID, t.value(), node.index, element);
+          ri.SetReflectedValue(refType->index, t.value(), node.index, element);
         }
       }
     };
@@ -398,9 +412,9 @@ pugi::xml_node ReflectorXMLUtil::LoadV2(Reflector &ri, pugi::xml_node node,
       }
 
       if (node.index == nan_) {
-        ri.SetReflectedValue(refType->ID, cpString.data());
+        ri.SetReflectedValue(refType->index, cpString.data());
       } else {
-        ri.SetReflectedValue(refType->ID, cpString.data(), node.index);
+        ri.SetReflectedValue(refType->index, cpString.data(), node.index);
       }
     };
 
@@ -414,7 +428,7 @@ pugi::xml_node ReflectorXMLUtil::LoadV2(Reflector &ri, pugi::xml_node node,
       break;
 
     case REFType::Array: {
-      switch (refType->subType) {
+      switch (refType->asArray.type) {
       case REFType::Vector:
         DoVector();
         break;
@@ -472,12 +486,18 @@ pugi::xml_node ReflectorXMLUtil::Load(Reflector &ri, pugi::xml_node node,
         for (auto sc : a.children()) {
           auto index = atoll(sc.name() + 2);
           auto rfInst = ri.GetReflectedSubClass(hash, index);
+          if (!rfInst) {
+            throw std::runtime_error("Class not registered!");
+          }
           ReflectorPureWrap subRefl(rfInst);
           ReflectorXMLUtil::Load(subRefl, sc);
         }
 
       } else {
         auto rfInst = ri.GetReflectedSubClass(hash);
+        if (!rfInst) {
+          throw std::runtime_error("Class not registered!");
+        }
         ReflectorPureWrap subRefl(rfInst);
         ReflectorXMLUtil::Load(subRefl, a);
       }

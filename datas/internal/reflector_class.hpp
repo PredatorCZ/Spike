@@ -33,7 +33,7 @@ struct MemberProxy {
   const char *typeName;
   const char *aliasName = nullptr;
   JenHash aliasHash;
-  reflType type;
+  ReflType type;
   ReflDesc description;
 
 private:
@@ -66,7 +66,7 @@ public:
 struct reflectorStatic {
   const JenHash classHash;
   const uint32 nTypes;
-  const reflType *types;
+  const ReflType *types;
   const char *const *typeNames = nullptr;
   const char *className;
   const char *const *typeAliases = nullptr;
@@ -79,10 +79,12 @@ struct reflectorStatic {
         className(className_) {
     if constexpr (sizeof...(C) > 0) {
       size_t index = 0;
-      struct reflType2 : reflType {
-        reflType2(const reflType &r, size_t index) : reflType(r) { ID = index; }
+      struct reflType2 : ReflType {
+        reflType2(const ReflType &r, size_t index_) : ReflType(r) {
+          index = index_;
+        }
       };
-      static const reflType types_[]{reflType2{members.type, index++}...};
+      static const ReflType types_[]{reflType2{members.type, index++}...};
       types = types_;
       union mutate {
         const char *h;
@@ -127,6 +129,7 @@ public:
   ReflectedInstance() = default;
   ReflectedInstance(const reflectorStatic *rfStat, const void *inst)
       : rfStatic(rfStat), constInstance(inst) {}
+  operator bool() const { return rfStatic != nullptr; }
 };
 
 template <class C> const reflectorStatic ES_IMPORT *GetReflectedClass();

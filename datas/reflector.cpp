@@ -18,6 +18,7 @@
 
 #include "reflector.hpp"
 #include "bitfield.hpp"
+#include "float.hpp"
 #include "master_printer.hpp"
 #include "string_view.hpp"
 #include <algorithm>
@@ -25,10 +26,19 @@
 #include <cmath>
 #include <ostream>
 
-static Reflector::ErrorType
-SetReflectedMember(reflType reflValue, es::string_view value, char *objAddr);
+static bool IsArray(REFType type) {
+  return type == REFType::Array || type == REFType::ArrayClass;
+}
 
-const reflType *Reflector::GetReflectedType(const JenHash hash) const {
+static bool IsArrayVec(REFType type) {
+  return type == REFType::Array || type == REFType::ArrayClass ||
+         type == REFType::Vector;
+}
+
+static Reflector::ErrorType
+SetReflectedMember(ReflType reflValue, es::string_view value, char *objAddr);
+
+const ReflType *Reflector::GetReflectedType(const JenHash hash) const {
   const reflectorStatic *inst = GetReflectedInstance().rfStatic;
   const size_t _ntypes = GetNumReflectedValues();
 
@@ -197,8 +207,9 @@ static Reflector::ErrorType SetBoolean(std::string input, bool &output) {
 
 static uint64 GetEnumValue(es::string_view input, JenHash hash,
                            const ReflectedEnum **rEnumFallback = nullptr) {
-  const ReflectedEnum *rEnum =
-      rEnumFallback && *rEnumFallback ? *rEnumFallback : REFEnumStorage.at(hash);
+  const ReflectedEnum *rEnum = rEnumFallback && *rEnumFallback
+                                   ? *rEnumFallback
+                                   : REFEnumStorage.at(hash);
 
   if (rEnumFallback) {
     *rEnumFallback = rEnum;
@@ -316,7 +327,7 @@ static Reflector::ErrorType SetEnumFlags(es::string_view input, char *objAddr,
 static Reflector::ErrorType SetReflectedArray(char startBrace, char endBrace,
                                               char *objAddr,
                                               es::string_view value,
-                                              reflType reflValue) {
+                                              ReflType reflValue) {
   const size_t arrBegin = value.find(startBrace);
 
   if (arrBegin == value.npos) {
@@ -344,16 +355,8 @@ static Reflector::ErrorType SetReflectedArray(char startBrace, char endBrace,
 
   size_t curElement = 0;
   auto curIter = value.begin();
-  reflType subVal = reflValue;
-  subVal.type = subVal.subType;
-
-  if (subVal.type == REFType::Vector) {
-    _DecomposedVectorHash dec = {reflValue.typeHash};
-    subVal.subType = dec.type;
-    subVal.numItems = dec.numItems;
-    subVal.subSize = dec.size;
-  }
   bool localScope = false;
+  const auto &arr = reflValue.asArray;
 
   for (auto it = value.begin(); it != value.end(); it++) {
     const bool isEnding = std::next(it) == value.end();
@@ -371,20 +374,19 @@ static Reflector::ErrorType SetReflectedArray(char startBrace, char endBrace,
       es::string_view cValue(curIter, (isEnding ? value.end() : it) - curIter);
       cValue = es::SkipStartWhitespace(cValue);
 
-      if (cValue.empty() && curElement < reflValue.numItems) {
-        printerror("[Reflector] Array expected "
-                   << reflValue.numItems << " but got " << curElement << '.');
+      if (cValue.empty() && curElement < arr.numItems) {
+        printerror("[Reflector] Array expected " << arr.numItems << " but got "
+                                                 << curElement << '.');
         return Reflector::ErrorType::ShortInput;
       }
 
-      if (!cValue.empty() && curElement >= reflValue.numItems) {
-        printerror("[Reflector] Too many array elements, " << reflValue.numItems
+      if (!cValue.empty() && curElement >= arr.numItems) {
+        printerror("[Reflector] Too many array elements, " << arr.numItems
                                                            << " expected.");
         return Reflector::ErrorType::OutOfRange;
       }
 
-      SetReflectedMember(subVal, cValue,
-                         objAddr + (reflValue.subSize * curElement));
+      SetReflectedMember(arr, cValue, objAddr + (arr.stride * curElement));
       curIter = it + 1;
       curElement++;
     }
@@ -394,7 +396,7 @@ static Reflector::ErrorType SetReflectedArray(char startBrace, char endBrace,
 }
 
 static Reflector::ErrorType
-SetReflectedMember(reflType reflValue, es::string_view value, char *objAddr) {
+SetReflectedMember(ReflType reflValue, es::string_view value, char *objAddr) {
   Reflector::ErrorType errType = Reflector::ErrorType::None;
   char startBrace = 0;
   char endBrace = 0;
@@ -420,7 +422,7 @@ SetReflectedMember(reflType reflValue, es::string_view value, char *objAddr) {
   case REFType::Bool:
     return SetBoolean(std::string(value), *reinterpret_cast<bool *>(objAddr));
   case REFType::Integer: {
-    switch (reflValue.subSize) {
+    switch (reflValue.size) {
     case 1:
       return SetNumber(value, *objAddr);
     case 2:
@@ -434,7 +436,7 @@ SetReflectedMember(reflType reflValue, es::string_view value, char *objAddr) {
     }
   }
   case REFType::UnsignedInteger: {
-    switch (reflValue.subSize) {
+    switch (reflValue.size) {
     case 1:
       return SetNumber(value, *reinterpret_cast<unsigned char *>(objAddr));
     case 2:
@@ -448,40 +450,112 @@ SetReflectedMember(reflType reflValue, es::string_view value, char *objAddr) {
     }
   }
   case REFType::FloatingPoint: {
-    switch (reflValue.subSize) {
-    case 4:
-      return SetNumber(value, *reinterpret_cast<float *>(objAddr));
-    case 8:
-      return SetNumber(value, *reinterpret_cast<double *>(objAddr));
-    default:
-      return Reflector::ErrorType::InvalidDestination;
+    if (reflValue.asFloat.customFormat) {
+      const auto &flt = reflValue.asFloat;
+      double outValue;
+      auto err = SetNumber(value, outValue);
+      if (!flt.sign && outValue < 0) {
+        printwarning("[Reflector] Applying " << outValue
+                                             << " to an unsigned float");
+        err = Reflector::ErrorType::SignMismatch;
+      }
+      size_t convertedValue = esFloatDetail::FromFloat(outValue, flt.mantissa,
+                                                       flt.exponent, flt.sign);
+      memcpy(objAddr, &convertedValue, reflValue.size);
+      return err;
+    } else {
+      switch (reflValue.size) {
+      case 4:
+        return SetNumber(value, *reinterpret_cast<float *>(objAddr));
+      case 8:
+        return SetNumber(value, *reinterpret_cast<double *>(objAddr));
+      default:
+        return Reflector::ErrorType::InvalidDestination;
+      }
     }
   }
   case REFType::BitFieldMember: {
     uint64 &output = *reinterpret_cast<uint64 *>(objAddr);
     auto doStuff = [&](auto &&insertVal) {
       LimitProxy<typename std::remove_reference<decltype(insertVal)>::type>
-          proxy{reflValue.subSize};
+          proxy{reflValue.bit.size};
       auto err = SetNumber(value, insertVal, proxy);
       BitMember bfMember;
-      bfMember.size = reflValue.subSize;
-      bfMember.position = reflValue.offset;
+      bfMember.size = reflValue.bit.size;
+      bfMember.position = reflValue.bit.position;
       auto mask = bfMember.GetMask<uint64>();
       output &= ~mask;
-      output |= insertVal.value << reflValue.offset;
+      output |= insertVal.value << reflValue.bit.position;
       return err;
     };
 
-    if (reflValue.subType == REFType::UnsignedInteger) {
+    switch (reflValue.asBitfield.type) {
+    case REFType::UnsignedInteger:
       return doStuff(BFTag<uint64>{0});
-    } else {
+      break;
+    case REFType::Integer:
       return doStuff(BFTag<int64>{0});
+      break;
+    case REFType::FloatingPoint: {
+      const auto &flt = reflValue.asBitfield.asFloat;
+
+      if (flt.customFormat) {
+        double outValue;
+        auto err = SetNumber(value, outValue);
+        if (!flt.sign && outValue < 0) {
+          printwarning("[Reflector] Applying " << outValue
+                                               << " to an unsigned float");
+          err = Reflector::ErrorType::SignMismatch;
+        }
+        size_t convertedValue = esFloatDetail::FromFloat(
+            outValue, flt.mantissa, flt.exponent, flt.sign);
+        BitMember bfMember;
+        bfMember.size = reflValue.bit.size;
+        bfMember.position = reflValue.bit.position;
+        auto mask = bfMember.GetMask<uint64>();
+        output &= ~mask;
+        output |= convertedValue << reflValue.bit.position;
+        return err;
+      }
+
+      return Reflector::ErrorType::InvalidDestination;
+    }
+    case REFType::Bool: {
+      bool result;
+      auto err = SetBoolean(value, result);
+      auto mask = (1ULL << reflValue.bit.position);
+
+      if (result) {
+        output |= mask;
+      } else {
+        output &= ~mask;
+      }
+      return err;
+    }
+    case REFType::Enum: {
+      uint64 bValue;
+      auto err =
+          SetEnum(value, reinterpret_cast<char *>(&bValue),
+                  JenHash(reflValue.asBitfield.typeHash), sizeof(bValue));
+      BitMember bfMember;
+      bfMember.size = reflValue.bit.size;
+      bfMember.position = reflValue.bit.position;
+      auto mask = bfMember.GetMask<uint64>();
+      output &= ~mask;
+      output |= bValue << reflValue.bit.position;
+      return err;
+    }
+
+    default:
+      return Reflector::ErrorType::InvalidDestination;
     }
   }
   case REFType::Enum:
-    return SetEnum(value, objAddr, reflValue.typeHash, reflValue.subSize);
+    return SetEnum(value, objAddr, JenHash(reflValue.asClass.typeHash),
+                   reflValue.size);
   case REFType::EnumFlags:
-    return SetEnumFlags(value, objAddr, reflValue.typeHash, reflValue.subSize);
+    return SetEnumFlags(value, objAddr, JenHash(reflValue.asClass.typeHash),
+                        reflValue.size);
   case REFType::String:
     *reinterpret_cast<std::string *>(objAddr) = value;
     break;
@@ -496,7 +570,7 @@ SetReflectedMember(reflType reflValue, es::string_view value, char *objAddr) {
   return errType;
 }
 
-Reflector::ErrorType Reflector::SetReflectedValue(reflType type,
+Reflector::ErrorType Reflector::SetReflectedValue(ReflType type,
                                                   es::string_view value) {
   auto inst = GetReflectedInstance();
   char *thisAddr = static_cast<char *>(inst.instance);
@@ -506,31 +580,35 @@ Reflector::ErrorType Reflector::SetReflectedValue(reflType type,
   return SetReflectedMember(type, value, thisAddr);
 }
 
-Reflector::ErrorType Reflector::SetReflectedValue(reflType type,
+Reflector::ErrorType Reflector::SetReflectedValue(ReflType type,
                                                   es::string_view value,
                                                   size_t subID) {
   auto inst = GetReflectedInstance();
   char *thisAddr = static_cast<char *>(inst.instance);
-  thisAddr += type.offset + type.subSize * subID;
-  type.type = type.subType;
+  thisAddr += type.offset;
 
-  if (type.type == REFType::Vector) {
-    _DecomposedVectorHash dec = {type.typeHash};
-    type.subSize = dec.size;
-    type.numItems = dec.numItems;
-    type.subType = dec.type;
+  if (IsArrayVec(type.type)) {
+    thisAddr += type.asArray.stride * subID;
   }
 
-  return SetReflectedMember(type, value, thisAddr);
+  if (type.type == REFType::Vector) {
+    return SetReflectedMember(type.asVector, value, thisAddr);
+  }
+
+  return SetReflectedMember(type.asArray, value, thisAddr);
 }
 
-Reflector::ErrorType Reflector::SetReflectedValue(reflType type,
+Reflector::ErrorType Reflector::SetReflectedValue(ReflType type,
                                                   es::string_view value,
                                                   size_t subID,
                                                   size_t element) {
+  if (!::IsArray(type.type)) {
+    return ErrorType::InvalidDestination;
+  }
   bool enumFlags = false;
+  const auto &arr = type.asArray;
 
-  switch (type.subType) {
+  switch (arr.type) {
   /*case REFType::EnumFlags:
     enumFlags = true;*/
   case REFType::Vector:
@@ -541,113 +619,109 @@ Reflector::ErrorType Reflector::SetReflectedValue(reflType type,
 
   auto inst = GetReflectedInstance();
   char *thisAddr = static_cast<char *>(inst.instance);
-  thisAddr += type.offset + type.subSize * subID;
+  thisAddr += type.offset + arr.stride * subID;
 
   if (!enumFlags) {
-    _DecomposedVectorHash dec = {type.typeHash};
-    type.subSize = dec.size;
+    const auto &vec = arr.asVector;
 
-    if (element >= dec.size) {
-      printerror("[Reflector] Too many vector elements, " << dec.size
+    if (element >= vec.numItems) {
+      printerror("[Reflector] Too many vector elements, " << (int)vec.numItems
                                                           << " expected.");
       return ErrorType::OutOfRange;
     }
 
-    thisAddr += dec.size * element;
-    type.type = dec.type;
+    thisAddr += vec.stride * element;
+    return SetReflectedMember(arr.asVector, value, thisAddr);
   }
 
-  return SetReflectedMember(type, value, thisAddr);
+  return ErrorType::InvalidDestination;
 }
 
 Reflector::ErrorType
-Reflector::SetReflectedValueInt(reflType reflValue, int64 value, size_t subID) {
+Reflector::SetReflectedValueInt(ReflType reflValue, int64 value, size_t subID) {
   auto inst = GetReflectedInstance();
   char *thisAddr = static_cast<char *>(inst.instance);
   thisAddr = thisAddr + reflValue.offset;
+  bool isArrVec = IsArrayVec(reflValue.type);
+  REFType cType = reflValue.type;
+  size_t typeSize = reflValue.size;
 
-  if (subID) {
-    switch (reflValue.type) {
-    case REFType::Array:
-    case REFType::Vector:
-    case REFType::ArrayClass:
-      if (subID >= reflValue.numItems)
-        return Reflector::ErrorType::OutOfRange;
-      thisAddr += subID * reflValue.subSize;
-      break;
-    default:
+  if (isArrVec) {
+    const auto &arr = reflValue.asArray;
+    if (subID >= arr.numItems) {
       return Reflector::ErrorType::OutOfRange;
     }
+
+    thisAddr += subID * arr.stride;
+    cType = arr.type;
+    typeSize = arr.stride;
   }
 
-  REFType cType = subID ? reflValue.subType : reflValue.type;
-
-  if (cType != REFType::Integer)
+  if (cType != REFType::Integer) {
     return Reflector::ErrorType::InvalidDestination;
+  }
 
-  memcpy(thisAddr, &value, reflValue.subSize);
+  memcpy(thisAddr, &value, typeSize);
 
   return Reflector::ErrorType::None;
 }
 
-Reflector::ErrorType Reflector::SetReflectedValueUInt(reflType reflValue,
+Reflector::ErrorType Reflector::SetReflectedValueUInt(ReflType reflValue,
                                                       uint64 value,
                                                       size_t subID) {
   auto inst = GetReflectedInstance();
   char *thisAddr = static_cast<char *>(inst.instance);
   thisAddr = thisAddr + reflValue.offset;
+  bool isArrVec = IsArrayVec(reflValue.type);
+  REFType cType = reflValue.type;
+  size_t typeSize = reflValue.size;
 
-  if (subID) {
-    switch (reflValue.type) {
-    case REFType::Array:
-    case REFType::Vector:
-    case REFType::ArrayClass:
-      if (subID >= reflValue.numItems)
-        return Reflector::ErrorType::OutOfRange;
-      thisAddr += subID * reflValue.subSize;
-      break;
-    default:
+  if (isArrVec) {
+    const auto &arr = reflValue.asArray;
+    if (subID >= arr.numItems) {
       return Reflector::ErrorType::OutOfRange;
     }
+
+    thisAddr += subID * arr.stride;
+    cType = arr.type;
+    typeSize = arr.stride;
   }
 
-  REFType cType = subID ? reflValue.subType : reflValue.type;
-
-  if (cType != REFType::UnsignedInteger)
+  if (cType != REFType::UnsignedInteger) {
     return Reflector::ErrorType::InvalidDestination;
+  }
 
-  memcpy(thisAddr, &value, reflValue.subSize);
+  memcpy(thisAddr, &value, typeSize);
 
   return Reflector::ErrorType::None;
 }
 
-Reflector::ErrorType Reflector::SetReflectedValueFloat(reflType reflValue,
+Reflector::ErrorType Reflector::SetReflectedValueFloat(ReflType reflValue,
                                                        double value,
                                                        size_t subID) {
   auto inst = GetReflectedInstance();
   char *thisAddr = static_cast<char *>(inst.instance);
   thisAddr = thisAddr + reflValue.offset;
+  bool isArrVec = IsArrayVec(reflValue.type);
+  REFType cType = reflValue.type;
+  size_t typeSize = reflValue.size;
 
-  if (subID) {
-    switch (reflValue.type) {
-    case REFType::Array:
-    case REFType::Vector:
-    case REFType::ArrayClass:
-      if (subID >= reflValue.numItems)
-        return Reflector::ErrorType::OutOfRange;
-      thisAddr += subID * reflValue.subSize;
-      break;
-    default:
+  if (isArrVec) {
+    const auto &arr = reflValue.asArray;
+    if (subID >= arr.numItems) {
       return Reflector::ErrorType::OutOfRange;
     }
+
+    thisAddr += subID * arr.stride;
+    cType = arr.type;
+    typeSize = arr.stride;
   }
 
-  REFType cType = subID ? reflValue.subType : reflValue.type;
-
-  if (cType != REFType::FloatingPoint)
+  if (cType != REFType::FloatingPoint) {
     return Reflector::ErrorType::InvalidDestination;
-
-  switch (reflValue.subSize) {
+  }
+  // todo esfloat
+  switch (typeSize) {
   case 4:
     reinterpret_cast<float &>(*thisAddr) = static_cast<float>(value);
     return Reflector::ErrorType::None;
@@ -662,8 +736,9 @@ Reflector::ErrorType Reflector::SetReflectedValueFloat(reflType reflValue,
 static es::string_view
 PrintEnumValue(JenHash hash, uint64 value,
                const ReflectedEnum **rEnumFallback = nullptr) {
-  const ReflectedEnum *rEnum =
-      rEnumFallback && *rEnumFallback ? *rEnumFallback : REFEnumStorage.at(hash);
+  const ReflectedEnum *rEnum = rEnumFallback && *rEnumFallback
+                                   ? *rEnumFallback
+                                   : REFEnumStorage.at(hash);
 
   if (rEnumFallback)
     *rEnumFallback = rEnum;
@@ -722,7 +797,7 @@ static std::string PrintEnumFlags(const char *objAddr, JenHash hash,
   return result;
 }
 
-static std::string GetReflectedPrimitive(const char *objAddr, reflType type) {
+static std::string GetReflectedPrimitive(const char *objAddr, ReflType type) {
   char startBrace = 0;
   char endBrace = 0;
 
@@ -747,7 +822,7 @@ static std::string GetReflectedPrimitive(const char *objAddr, reflType type) {
     return *reinterpret_cast<const bool *>(objAddr) ? "true" : "false";
 
   case REFType::Integer: {
-    switch (type.subSize) {
+    switch (type.size) {
     case 1:
       return std::to_string(
           static_cast<int32>(*reinterpret_cast<const int8 *>(objAddr)));
@@ -763,7 +838,7 @@ static std::string GetReflectedPrimitive(const char *objAddr, reflType type) {
     }
   }
   case REFType::UnsignedInteger: {
-    switch (type.subSize) {
+    switch (type.size) {
     case 1:
       return std::to_string(
           static_cast<int32>(*reinterpret_cast<const uint8 *>(objAddr)));
@@ -779,38 +854,67 @@ static std::string GetReflectedPrimitive(const char *objAddr, reflType type) {
     }
   }
   case REFType::FloatingPoint: {
-    char _tmpBuffer[0x20] = {};
+    char _tmpBuffer[0x20]{};
+    if (type.asFloat.customFormat) {
+      size_t encValue = 0;
+      const auto &flt = type.asFloat;
+      memcpy(&encValue, objAddr, type.size);
 
-    switch (type.subSize) {
-    case 4:
-      snprintf(_tmpBuffer, sizeof(_tmpBuffer), "%.6g",
-               *reinterpret_cast<const float *>(objAddr));
-      break;
-    case 8:
-      snprintf(_tmpBuffer, sizeof(_tmpBuffer), "%.13g",
-               *reinterpret_cast<const double *>(objAddr));
-      break;
+      auto retVal = esFloatDetail::ToFloat(encValue, flt.mantissa, flt.exponent,
+                                           flt.sign);
+      snprintf(_tmpBuffer, sizeof(_tmpBuffer), "%.6g", retVal);
+    } else {
 
-    default:
-      break;
+      switch (type.size) {
+      case 4:
+        snprintf(_tmpBuffer, sizeof(_tmpBuffer), "%.6g",
+                 *reinterpret_cast<const float *>(objAddr));
+        break;
+      case 8:
+        snprintf(_tmpBuffer, sizeof(_tmpBuffer), "%.13g",
+                 *reinterpret_cast<const double *>(objAddr));
+        break;
+
+      default:
+        break;
+      }
     }
-
     return _tmpBuffer;
   }
   case REFType::BitFieldMember: {
     uint64 output = *reinterpret_cast<const uint64 *>(objAddr);
     BitMember bfMember;
-    bfMember.size = type.subSize;
-    bfMember.position = type.offset;
+    bfMember.size = type.bit.size;
+    bfMember.position = type.bit.position;
     auto mask = bfMember.GetMask<uint64>();
     output = (output & mask) >> bfMember.position;
 
-    if (type.subType == REFType::UnsignedInteger) {
+    switch (type.asBitfield.type) {
+    case REFType::UnsignedInteger:
       return std::to_string(output);
+    case REFType::Bool:
+      return output ? "true" : "false";
+    case REFType::Enum:
+      return PrintEnumValue(JenHash(type.asBitfield.typeHash), output);
+    case REFType::FloatingPoint: {
+      const auto &flt = type.asBitfield.asFloat;
+
+      if (flt.customFormat) {
+        char _tmpBuffer[0x20]{};
+        auto retVal = esFloatDetail::ToFloat(output, flt.mantissa, flt.exponent,
+                                             flt.sign);
+        snprintf(_tmpBuffer, sizeof(_tmpBuffer), "%.6g", retVal);
+        return _tmpBuffer;
+      }
+
+      return "NaN";
+    }
+    default:
+      break;
     }
 
     int64 signedOutput = output;
-    LimitProxy<BFTag<int64>> limit{type.subSize};
+    LimitProxy<BFTag<int64>> limit{type.size};
 
     if (signedOutput & limit.iMin) {
       signedOutput |= ~limit.uMax;
@@ -820,13 +924,14 @@ static std::string GetReflectedPrimitive(const char *objAddr, reflType type) {
   }
 
   case REFType::EnumFlags:
-    return PrintEnumFlags(objAddr, type.typeHash, type.subSize);
+    return PrintEnumFlags(objAddr, JenHash(type.asClass.typeHash), type.size);
 
   case REFType::Enum: {
     try {
-      return PrintEnum(objAddr, type.typeHash, type.subSize);
+      return PrintEnum(objAddr, JenHash(type.asClass.typeHash), type.size);
     } catch (const std::out_of_range &) {
-      printerror("[Reflector] Unregistered enum hash: " << type.typeHash.raw());
+      printerror(
+          "[Reflector] Unregistered enum hash: " << type.asClass.typeHash);
     } catch (const std::range_error &e) {
       printerror(e.what());
     } catch (...) {
@@ -837,7 +942,7 @@ static std::string GetReflectedPrimitive(const char *objAddr, reflType type) {
   }
 
   case REFType::CString:
-    return objAddr;
+    return *reinterpret_cast<const char *const *>(objAddr);
 
   case REFType::String:
     return *reinterpret_cast<const std::string *>(objAddr);
@@ -850,21 +955,13 @@ static std::string GetReflectedPrimitive(const char *objAddr, reflType type) {
   }
 
   if (startBrace && endBrace) {
-    const auto numItems = type.numItems;
+    const auto &arr = type.asArray;
+    const auto numItems = arr.numItems;
     std::string outVal;
     outVal.push_back(startBrace);
-    reflType subType = type;
-    subType.type = type.subType;
-
-    if (subType.type == REFType::Vector) {
-      _DecomposedVectorHash dec = {subType.typeHash};
-      subType.subType = dec.type;
-      subType.numItems = dec.numItems;
-      subType.subSize = dec.size;
-    }
 
     for (int i = 0; i < numItems; i++) {
-      outVal += GetReflectedPrimitive(objAddr + (type.subSize * i), subType);
+      outVal += GetReflectedPrimitive(objAddr + (arr.stride * i), arr);
       outVal += ", ";
     }
 
@@ -884,7 +981,7 @@ std::string Reflector::GetReflectedValue(size_t id) const {
 
   auto inst = GetReflectedInstance();
   const char *thisAddr = static_cast<const char *>(inst.constInstance);
-  const reflType &reflValue = inst.rfStatic->types[id];
+  const ReflType &reflValue = inst.rfStatic->types[id];
   const int valueOffset =
       reflValue.type == REFType::BitFieldMember ? 0 : reflValue.offset;
 
@@ -897,37 +994,28 @@ std::string Reflector::GetReflectedValue(size_t id, size_t subID) const {
 
   auto inst = GetReflectedInstance();
   const char *thisAddr = static_cast<const char *>(inst.constInstance);
-  const reflType &reflValue = inst.rfStatic->types[id];
+  const ReflType &reflValue = inst.rfStatic->types[id];
   const char *objAddr = thisAddr + reflValue.offset;
 
   switch (reflValue.type) {
   case REFType::Array:
   case REFType::Vector:
   case REFType::ArrayClass: {
-    if (reflValue.numItems <= subID) {
+    const auto &arr = reflValue.asArray;
+    if (arr.numItems <= subID) {
       return "";
     }
 
-    reflType subType = reflValue;
-    subType.type = reflValue.subType;
-
-    if (subType.type == REFType::Vector) {
-      _DecomposedVectorHash dec{subType.typeHash};
-      subType.subType = dec.type;
-      subType.numItems = dec.numItems;
-      subType.subSize = dec.size;
-    }
-
-    return GetReflectedPrimitive(objAddr + reflValue.subSize * subID, subType);
+    return GetReflectedPrimitive(objAddr + arr.stride * subID, arr);
   }
   case REFType::EnumFlags: {
-    if (reflValue.subSize * 8 <= subID) {
+    if (reflValue.size * 8 <= subID) {
       return "";
     }
 
     uint64 eValue;
 
-    memcpy(reinterpret_cast<char *>(&eValue), objAddr, reflValue.subSize);
+    memcpy(reinterpret_cast<char *>(&eValue), objAddr, reflValue.size);
 
     return (eValue & (1ULL << subID)) ? "true" : "false";
   }
@@ -944,39 +1032,30 @@ std::string Reflector::GetReflectedValue(size_t id, size_t subID,
 
   auto inst = GetReflectedInstance();
   const char *thisAddr = static_cast<const char *>(inst.constInstance);
-  const reflType &reflValue = inst.rfStatic->types[id];
+  const ReflType &reflValue = inst.rfStatic->types[id];
   const char *objAddr = thisAddr + reflValue.offset;
+  const auto &arr = reflValue.asArray;
 
-  switch (reflValue.subType) {
+  switch (arr.type) {
   case REFType::Vector: {
-    if (reflValue.numItems <= subID) {
+    if (arr.numItems <= subID || arr.asVector.numItems <= element) {
       return "";
     }
 
-    reflType subType = reflValue;
-    subType.type = reflValue.subType;
-    _DecomposedVectorHash dec{subType.typeHash};
-    subType.type = dec.type;
-    subType.numItems = dec.numItems;
-    subType.subSize = dec.size;
+    ReflType subType = arr.asVector;
 
-    if (subType.numItems <= element) {
-      return "";
-    }
-
-    return GetReflectedPrimitive(objAddr + reflValue.subSize * subID +
-                                     subType.subSize * element,
-                                 subType);
+    return GetReflectedPrimitive(
+        objAddr + arr.stride * subID + subType.size * element, subType);
   }
   case REFType::EnumFlags: {
-    if (reflValue.subSize * 8 <= element || reflValue.numItems <= subID) {
+    if (arr.stride * 8 <= element || arr.numItems <= subID) {
       return "";
     }
 
     uint64 eValue;
 
-    memcpy(reinterpret_cast<char *>(&eValue),
-           objAddr + reflValue.subSize * subID, reflValue.subSize);
+    memcpy(reinterpret_cast<char *>(&eValue), objAddr + arr.stride * subID,
+           arr.stride);
 
     return (eValue & (1ULL << element)) ? "true" : "false";
   }
@@ -992,58 +1071,33 @@ ReflectedInstance Reflector::GetReflectedSubClass(size_t id,
     return {};
 
   auto inst = GetReflectedInstance();
-  const reflType &reflValue = inst.rfStatic->types[id];
+  const ReflType &reflValue = inst.rfStatic->types[id];
   const char *thisAddr =
       static_cast<const char *>(inst.constInstance) + reflValue.offset;
   REFType cType = reflValue.type;
+  const bool isArray = IsArray(id);
+  ReflTypeClass classType = reflValue.asClass;
 
-  if (subID && subID >= reflValue.numItems)
-    return {};
+  if (isArray) {
+    const auto &arr = reflValue.asArray;
+    if (subID >= reflValue.asArray.numItems) {
+      return {};
+    }
 
-  switch (reflValue.type) {
-  case REFType::Array:
-  case REFType::Vector:
-  case REFType::ArrayClass:
-    thisAddr += subID * reflValue.subSize;
-    cType = reflValue.subType;
-  default:
-    break;
+    thisAddr += subID * arr.stride;
+    cType = arr.type;
+    classType = arr.asClass;
   }
 
   if ((cType != REFType::Class && cType != REFType::BitFieldClass) ||
-      !REFSubClassStorage.count(reflValue.typeHash))
+      !REFSubClassStorage.count(JenHash(classType.typeHash)))
     return {};
 
-  return {REFSubClassStorage.at(reflValue.typeHash), thisAddr};
+  return {REFSubClassStorage.at(JenHash(classType.typeHash)), thisAddr};
 }
 
 ReflectedInstance Reflector::GetReflectedSubClass(size_t id, size_t subID) {
-  if (id >= GetNumReflectedValues())
-    return {};
-
-  auto inst = GetReflectedInstance();
-  const reflType &reflValue = inst.rfStatic->types[id];
-  char *thisAddr = static_cast<char *>(inst.instance) + reflValue.offset;
-  REFType cType = reflValue.type;
-
-  if (subID && subID >= reflValue.numItems)
-    return {};
-
-  switch (reflValue.type) {
-  case REFType::Array:
-  case REFType::Vector:
-  case REFType::ArrayClass:
-    thisAddr += subID * reflValue.subSize;
-    cType = reflValue.subType;
-  default:
-    break;
-  }
-
-  if ((cType != REFType::Class && cType != REFType::BitFieldClass) ||
-      !REFSubClassStorage.count(reflValue.typeHash))
-    return {};
-
-  return {REFSubClassStorage.at(reflValue.typeHash), thisAddr};
+  return const_cast<const Reflector *>(this)->GetReflectedSubClass(id, subID);
 }
 
 RefEnumMapper REFEnumStorage;

@@ -3,7 +3,7 @@ inline ReflectedInstance Reflector::GetReflectedInstance() {
   return const_cast<const Reflector *>(this)->GetReflectedInstance();
 }
 
-inline const reflType *Reflector::GetReflectedType(size_t ID) const {
+inline const ReflType *Reflector::GetReflectedType(size_t ID) const {
   const reflectorStatic *inst = GetReflectedInstance().rfStatic;
 
   if (ID >= inst->nTypes)
@@ -14,7 +14,7 @@ inline const reflType *Reflector::GetReflectedType(size_t ID) const {
 
 inline Reflector::ErrorType
 Reflector::SetReflectedValue(JenHash hash, es::string_view value) {
-  const reflType *reflValue = GetReflectedType(hash);
+  const ReflType *reflValue = GetReflectedType(hash);
 
   if (!reflValue)
     return Reflector::ErrorType::InvalidDestination;
@@ -24,7 +24,7 @@ Reflector::SetReflectedValue(JenHash hash, es::string_view value) {
 
 inline Reflector::ErrorType
 Reflector::SetReflectedValue(size_t id, es::string_view value) {
-  const reflType *reflValue = GetReflectedType(id);
+  const ReflType *reflValue = GetReflectedType(id);
 
   if (!reflValue)
     return Reflector::ErrorType::InvalidDestination;
@@ -35,7 +35,7 @@ Reflector::SetReflectedValue(size_t id, es::string_view value) {
 inline Reflector::ErrorType Reflector::SetReflectedValue(JenHash hash,
                                                          es::string_view value,
                                                          size_t subID) {
-  const reflType *reflValue = GetReflectedType(hash);
+  const ReflType *reflValue = GetReflectedType(hash);
 
   if (!reflValue)
     return Reflector::ErrorType::InvalidDestination;
@@ -53,7 +53,7 @@ inline Reflector::ErrorType Reflector::SetReflectedValue(JenHash hash,
 
 inline Reflector::ErrorType
 Reflector::SetReflectedValue(size_t id, es::string_view value, size_t subID) {
-  const reflType *reflValue = GetReflectedType(id);
+  const ReflType *reflValue = GetReflectedType(id);
 
   if (!reflValue)
     return Reflector::ErrorType::InvalidDestination;
@@ -73,7 +73,7 @@ inline Reflector::ErrorType Reflector::SetReflectedValue(JenHash hash,
                                                          es::string_view value,
                                                          size_t subID,
                                                          size_t element) {
-  const reflType *reflValue = GetReflectedType(hash);
+  const ReflType *reflValue = GetReflectedType(hash);
 
   if (!reflValue || !IsArray(hash))
     return Reflector::ErrorType::InvalidDestination;
@@ -85,7 +85,7 @@ inline Reflector::ErrorType Reflector::SetReflectedValue(size_t id,
                                                          es::string_view value,
                                                          size_t subID,
                                                          size_t element) {
-  const reflType *reflValue = GetReflectedType(id);
+  const ReflType *reflValue = GetReflectedType(id);
 
   if (!reflValue || !IsArray(id))
     return Reflector::ErrorType::InvalidDestination;
@@ -95,7 +95,7 @@ inline Reflector::ErrorType Reflector::SetReflectedValue(size_t id,
 
 inline Reflector::ErrorType
 Reflector::SetReflectedValueInt(JenHash hash, int64 value, size_t subID) {
-  const reflType *reflValue = GetReflectedType(hash);
+  const ReflType *reflValue = GetReflectedType(hash);
 
   if (!reflValue)
     return Reflector::ErrorType::InvalidDestination;
@@ -105,7 +105,7 @@ Reflector::SetReflectedValueInt(JenHash hash, int64 value, size_t subID) {
 
 inline Reflector::ErrorType
 Reflector::SetReflectedValueInt(size_t id, int64 value, size_t subID) {
-  const reflType *reflValue = GetReflectedType(id);
+  const ReflType *reflValue = GetReflectedType(id);
 
   if (!reflValue)
     return Reflector::ErrorType::InvalidDestination;
@@ -115,7 +115,7 @@ Reflector::SetReflectedValueInt(size_t id, int64 value, size_t subID) {
 
 inline Reflector::ErrorType
 Reflector::SetReflectedValueUInt(JenHash hash, uint64 value, size_t subID) {
-  const reflType *reflValue = GetReflectedType(hash);
+  const ReflType *reflValue = GetReflectedType(hash);
 
   if (!reflValue)
     return Reflector::ErrorType::InvalidDestination;
@@ -125,7 +125,7 @@ Reflector::SetReflectedValueUInt(JenHash hash, uint64 value, size_t subID) {
 
 inline Reflector::ErrorType
 Reflector::SetReflectedValueUInt(size_t id, uint64 value, size_t subID) {
-  const reflType *reflValue = GetReflectedType(id);
+  const ReflType *reflValue = GetReflectedType(id);
 
   if (!reflValue)
     return Reflector::ErrorType::InvalidDestination;
@@ -135,7 +135,7 @@ Reflector::SetReflectedValueUInt(size_t id, uint64 value, size_t subID) {
 
 inline Reflector::ErrorType
 Reflector::SetReflectedValueFloat(JenHash hash, double value, size_t subID) {
-  const reflType *reflValue = GetReflectedType(hash);
+  const ReflType *reflValue = GetReflectedType(hash);
 
   if (!reflValue)
     return Reflector::ErrorType::InvalidDestination;
@@ -145,7 +145,7 @@ Reflector::SetReflectedValueFloat(JenHash hash, double value, size_t subID) {
 
 inline Reflector::ErrorType
 Reflector::SetReflectedValueFloat(size_t id, double value, size_t subID) {
-  const reflType *reflValue = GetReflectedType(id);
+  const ReflType *reflValue = GetReflectedType(id);
 
   if (!reflValue)
     return Reflector::ErrorType::InvalidDestination;
@@ -158,42 +158,42 @@ inline size_t Reflector::GetNumReflectedValues() const {
 }
 
 inline std::string Reflector::GetReflectedValue(JenHash hash) const {
-  const reflType *found = GetReflectedType(hash);
+  const ReflType *found = GetReflectedType(hash);
 
   if (!found)
     return "";
 
-  return GetReflectedValue(found->ID);
+  return GetReflectedValue(found->index);
 }
 
 inline std::string Reflector::GetReflectedValue(JenHash hash,
                                                 size_t subID) const {
-  const reflType *found = GetReflectedType(hash);
+  const ReflType *found = GetReflectedType(hash);
 
   if (!found)
     return "";
 
-  return GetReflectedValue(found->ID, subID);
+  return GetReflectedValue(found->index, subID);
 }
 
 inline std::string Reflector::GetReflectedValue(JenHash hash, size_t subID,
                                                 size_t element) const {
-  const reflType *found = GetReflectedType(hash);
+  const ReflType *found = GetReflectedType(hash);
 
   if (!found)
     return "";
 
-  return GetReflectedValue(found->ID, subID, element);
+  return GetReflectedValue(found->index, subID, element);
 }
 
 inline ReflectedInstance Reflector::GetReflectedSubClass(JenHash hash,
                                                          size_t subID) const {
-  const reflType *found = GetReflectedType(hash);
+  const ReflType *found = GetReflectedType(hash);
 
   if (!found)
     return {};
 
-  return GetReflectedSubClass(found->ID, subID);
+  return GetReflectedSubClass(found->index, subID);
 }
 
 inline ReflectedInstance Reflector::GetReflectedSubClass(JenHash hash,
@@ -231,12 +231,12 @@ Reflector::GetReflectedPair(size_t id, const KVPairFormat &settings) const {
 
 inline Reflector::KVPair
 Reflector::GetReflectedPair(JenHash hash, const KVPairFormat &settings) const {
-  const reflType *found = GetReflectedType(hash);
+  const ReflType *found = GetReflectedType(hash);
 
   if (!found)
     return {};
 
-  return GetReflectedPair(found->ID, settings);
+  return GetReflectedPair(found->index, settings);
 }
 
 inline es::string_view Reflector::GetClassName() const {
@@ -244,39 +244,39 @@ inline es::string_view Reflector::GetClassName() const {
 }
 
 inline bool Reflector::IsReflectedSubClass(JenHash hash) const {
-  const reflType *found = GetReflectedType(hash);
+  const ReflType *found = GetReflectedType(hash);
 
   if (!found)
     return false;
 
-  return IsReflectedSubClass(found->ID);
+  return IsReflectedSubClass(found->index);
 }
 
 inline bool Reflector::IsReflectedSubClass(size_t id) const {
   if (id >= GetNumReflectedValues())
     return false;
 
-  const reflType fl = GetReflectedInstance().rfStatic->types[id];
+  const ReflType fl = GetReflectedInstance().rfStatic->types[id];
 
   return fl.type == REFType::Class || fl.type == REFType::BitFieldClass ||
-         (IsArray(fl.ID) && (fl.subType == REFType::Class ||
-                             fl.subType == REFType::BitFieldClass));
+         (IsArray(fl.index) && (fl.asArray.type == REFType::Class ||
+                             fl.asArray.type == REFType::BitFieldClass));
 }
 
 inline bool Reflector::IsArray(JenHash hash) const {
-  const reflType *found = GetReflectedType(hash);
+  const ReflType *found = GetReflectedType(hash);
 
   if (!found)
     return false;
 
-  return IsArray(found->ID);
+  return IsArray(found->index);
 }
 
 inline bool Reflector::IsArray(size_t id) const {
   if (id >= GetNumReflectedValues())
     return false;
 
-  const reflType fl = GetReflectedInstance().rfStatic->types[id];
+  const ReflType fl = GetReflectedInstance().rfStatic->types[id];
 
   return fl.type == REFType::Array || fl.type == REFType::ArrayClass;
 }

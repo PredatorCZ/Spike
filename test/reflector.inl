@@ -2077,6 +2077,66 @@ int test_reflector_bitfield(reflClass &input) {
   return 0;
 }
 
+int test_custom_float(reflClass &input) {
+  TEST_EQUAL(input.SetReflectedValue("test24", "851.5"),
+             Reflector::ErrorType::None);
+  TEST_EQUAL(input.test24, 851.5f);
+  input.test24 = -851.5f;
+  Reflector::KVPair cPair = input.GetReflectedPair(47);
+  TEST_EQUAL(cPair.name, "test24");
+  TEST_EQUAL(cPair.value, "-851.5");
+
+  return 0;
+}
+
+int test_reflector_bitfield_custom_float(reflClass &input) {
+  Reflector::KVPair cPair = input.GetReflectedPair(49);
+  TEST_EQUAL(cPair.name, "test25");
+  TEST_EQUAL(cPair.value, "SUBCLASS_TYPE");
+  TEST_CHECK(input.IsReflectedSubClass(49));
+
+  auto rClass = input.GetReflectedSubClass("test25");
+  ReflectorPureWrap sClass(rClass);
+  auto &lClass = input.test25;
+  using X = BFVectorR10G11B10::x;
+  using Y = BFVectorR10G11B10::y;
+  using Z = BFVectorR10G11B10::z;
+
+  TEST_EQUAL(lClass.Get<X>(), 0);
+  TEST_EQUAL(sClass.SetReflectedValue("x", "12.75"),
+             Reflector::ErrorType::None);
+  TEST_EQUAL(X::value_type::ToFloat(lClass.Get<X>()), 12.75f);
+  cPair = sClass.GetReflectedPair(0);
+  TEST_EQUAL(cPair.name, "x");
+  TEST_EQUAL(cPair.value, "12.75");
+
+  TEST_EQUAL(sClass.SetReflectedValue("x", "-104"),
+             Reflector::ErrorType::SignMismatch);
+  TEST_EQUAL(X::value_type::ToFloat(lClass.Get<X>()), 104.f);
+  cPair = sClass.GetReflectedPair(0);
+  TEST_EQUAL(cPair.name, "x");
+  TEST_EQUAL(cPair.value, "104");
+
+  TEST_EQUAL(sClass.SetReflectedValue("y", "5.125"), Reflector::ErrorType::None);
+  TEST_EQUAL(Y::value_type::ToFloat(lClass.Get<Y>()), 5.125f);
+  cPair = sClass.GetReflectedPair(1);
+  TEST_EQUAL(cPair.name, "y");
+  TEST_EQUAL(cPair.value, "5.125");
+
+  TEST_EQUAL(lClass.Get<Z>(), 0);
+  TEST_EQUAL(sClass.SetReflectedValue("z", "25"), Reflector::ErrorType::None);
+  TEST_EQUAL(Z::value_type::ToFloat(lClass.Get<Z>()), 25);
+  cPair = sClass.GetReflectedPair(2);
+  TEST_EQUAL(cPair.name, "z");
+  TEST_EQUAL(cPair.value, "25");
+
+  cPair = sClass.GetReflectedPair(0);
+  TEST_EQUAL(cPair.name, "x");
+  TEST_EQUAL(cPair.value, "104");
+
+  return 0;
+}
+
 struct ReflectedInstanceFriend : ReflectedInstance {
   void *Instance() { return instance; }
   const void *Instance() const { return constInstance; }

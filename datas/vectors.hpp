@@ -450,36 +450,24 @@ t_Vector<T>::operator t_Vector4_<R>() const {
   return t_Vector4_<R>(this->X, this->Y, this->Z, 0.0f);
 }
 
-constexpr JenHash CompileVectorHash_(REFType type, uint8 size,
-                                     uint16 numItems) {
-  return JenHash(static_cast<uint32>(type) | static_cast<uint32>(size) << 8 |
-                 static_cast<uint32>(numItems) << 16);
-}
-
 template <class C> struct _getType<t_Vector2<C>> {
   static constexpr REFType TYPE = REFType::Vector;
   static constexpr REFType SUBTYPE = _getType<C>::TYPE;
-  static constexpr uint8 SUBSIZE = sizeof(C);
+  static constexpr size_t SIZE = sizeof(C) * 2;
+  static constexpr size_t SUBSIZE = sizeof(C);
   static constexpr uint16 NUMITEMS = 2;
-  static constexpr JenHash Hash() {
-    return CompileVectorHash_(SUBTYPE, SUBSIZE, NUMITEMS);
-  }
 };
 template <class C> struct _getType<t_Vector<C>> {
   static constexpr REFType TYPE = REFType::Vector;
   static constexpr REFType SUBTYPE = _getType<C>::TYPE;
-  static constexpr uint8 SUBSIZE = sizeof(C);
+  static constexpr size_t SIZE = sizeof(C) * 3;
+  static constexpr size_t SUBSIZE = sizeof(C);
   static constexpr uint16 NUMITEMS = 3;
-  static constexpr JenHash Hash() {
-    return CompileVectorHash_(SUBTYPE, SUBSIZE, NUMITEMS);
-  }
 };
 template <class C> struct _getType<t_Vector4_<C>> {
   static constexpr REFType TYPE = REFType::Vector;
   static constexpr REFType SUBTYPE = _getType<typename C::value_type>::TYPE;
-  static constexpr uint8 SUBSIZE = sizeof(typename C::value_type);
+  static constexpr size_t SIZE = sizeof(typename C::value_type) * 4;
+  static constexpr size_t SUBSIZE = sizeof(typename C::value_type);
   static constexpr uint16 NUMITEMS = 4;
-  static constexpr JenHash Hash() {
-    return CompileVectorHash_(SUBTYPE, SUBSIZE, NUMITEMS);
-  }
 };

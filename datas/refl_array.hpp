@@ -23,7 +23,9 @@ template <class C, size_t _Size>
 struct _getType<std::array<C, _Size>> : reflTypeDefault_ {
   static constexpr REFType TYPE = REFType::Array;
   static constexpr JenHash Hash() { return _getType<C>::Hash(); }
-  static constexpr uint8 SUBSIZE = sizeof(C);
+  static constexpr size_t SIZE = sizeof(std::array<C, _Size>);
+  static constexpr size_t SUBSIZE = sizeof(C);
   static constexpr REFType SUBTYPE = _getType<C>::TYPE;
   static constexpr uint16 NUMITEMS = _Size;
+  using child_type = C;
 };

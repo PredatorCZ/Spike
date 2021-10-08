@@ -101,14 +101,14 @@ public:
   KVPair GetReflectedPair(JenHash hashName, const KVPairFormat &settings = {}) const;
 
 protected:
-  const reflType PC_EXTERN *GetReflectedType(JenHash hashName) const;
-  const reflType *GetReflectedType(size_t ID) const;
-  ErrorType PC_EXTERN SetReflectedValue(reflType type, es::string_view value);
-  ErrorType PC_EXTERN SetReflectedValue(reflType type, es::string_view value, size_t subID);
-  ErrorType PC_EXTERN SetReflectedValue(reflType type, es::string_view value, size_t subID, size_t element);
-  ErrorType PC_EXTERN SetReflectedValueUInt(reflType type, uint64 value, size_t subID = 0);
-  ErrorType PC_EXTERN SetReflectedValueInt(reflType type, int64 value, size_t subID = 0);
-  ErrorType PC_EXTERN SetReflectedValueFloat(reflType type, double value, size_t subID = 0);
+  const ReflType PC_EXTERN *GetReflectedType(JenHash hashName) const;
+  const ReflType *GetReflectedType(size_t ID) const;
+  ErrorType PC_EXTERN SetReflectedValue(ReflType type, es::string_view value);
+  ErrorType PC_EXTERN SetReflectedValue(ReflType type, es::string_view value, size_t subID);
+  ErrorType PC_EXTERN SetReflectedValue(ReflType type, es::string_view value, size_t subID, size_t element);
+  ErrorType PC_EXTERN SetReflectedValueUInt(ReflType type, uint64 value, size_t subID = 0);
+  ErrorType PC_EXTERN SetReflectedValueInt(ReflType type, int64 value, size_t subID = 0);
+  ErrorType PC_EXTERN SetReflectedValueFloat(ReflType type, double value, size_t subID = 0);
   // clang-format on
 private:
   virtual ReflectedInstance GetReflectedInstance() const = 0;

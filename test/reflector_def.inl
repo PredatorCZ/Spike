@@ -2,6 +2,7 @@
 #include "datas/bitfield.hpp"
 #include "datas/endian.hpp"
 #include "datas/flags.hpp"
+#include "datas/float.hpp"
 #include "datas/reflector.hpp"
 #include "datas/unit_testing.hpp"
 #include "datas/vectors_simd.hpp"
@@ -46,6 +47,21 @@ using BitTypeRefl =
 REFLECT(CLASS(BitTypeRefl), BITMEMBER(member0), BITMEMBER(member1),
         BITMEMBER(member2), BITMEMBER(member3), BITMEMBER(member42));
 
+struct BFVectorR10G11B10 {
+  using X10 = esFloat<5, 5, false>;
+  using X11 = esFloat<6, 5, false>;
+  using x = BitMemberDecl<0, 10, X10>;
+  using y = BitMemberDecl<1, 11, X11>;
+  using z = BitMemberDecl<2, 10, X10>;
+  using Type = BitFieldType<uint32, x, y, z>;
+};
+
+using BFVectorR10G11B10Type = BFVectorR10G11B10::Type;
+
+REFLECT(CLASS(BFVectorR10G11B10Type), BITMEMBERNAME(BFVectorR10G11B10::x, "x"),
+        BITMEMBERNAME(BFVectorR10G11B10::y, "y"),
+        BITMEMBERNAME(BFVectorR10G11B10::z, "z"));
+
 struct _ReflClassData {
   bool test1;
   int8 test2;
@@ -74,6 +90,8 @@ struct _ReflClassData {
 
   subrefl test22;
   BitTypeRefl test23;
+  float16 test24;
+  BFVectorR10G11B10Type test25;
 
   bool test40[4];
   int8 test41[2];
@@ -102,6 +120,7 @@ struct _ReflClassData {
 
   subrefl test61[2];
   BitTypeRefl test62[2];
+  float16 test63[2];
 
   // Need to enclose padding because of RPO,
   // otherwise cast write will corrupt test80
@@ -127,7 +146,8 @@ REFLECT(CLASS(reflClass), MEMBER(test1), MEMBER(test2), MEMBER(test3),
         MEMBER(test49), MEMBER(test50), MEMBER(test51), MEMBER(test52),
         MEMBER(test53), MEMBER(test54), MEMBER(test55), MEMBER(test56),
         MEMBER(test57), MEMBER(test58), MEMBER(test59), MEMBER(test60),
-        MEMBER(test61), MEMBER(test80), MEMBER(test23), MEMBER(test62))
+        MEMBER(test61), MEMBER(test80), MEMBER(test23), MEMBER(test62),
+        MEMBER(test24), MEMBER(test63), MEMBER(test25), )
 
 int compare_classes(const reflClass &rClass, const reflClass &rClass2) {
   TEST_EQUAL(rClass.test1, rClass2.test1);
@@ -225,6 +245,10 @@ int compare_classes(const reflClass &rClass, const reflClass &rClass2) {
   TEST_EQUAL(rClass.test23.value, rClass2.test23.value);
   TEST_EQUAL(rClass.test62[0].value, rClass2.test62[0].value);
   TEST_EQUAL(rClass.test62[1].value, rClass2.test62[1].value);
+  TEST_EQUAL(rClass.test24.value, rClass2.test24.value);
+  TEST_EQUAL(rClass.test63[0].value, rClass2.test63[0].value);
+  TEST_EQUAL(rClass.test63[1].value, rClass2.test63[1].value);
+  TEST_EQUAL(rClass.test25.value, rClass2.test25.value);
 
   return 0;
 }

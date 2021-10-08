@@ -44,7 +44,7 @@ public:
 
 class ReflectorBinUtil {
   friend class ReflectorBinUtilFriend;
-  static const reflType *Find(Reflector &ri, JenHash hash);
+  static const ReflType *Find(Reflector &ri, JenHash hash);
 
 public:
   static int PC_EXTERN Save(const Reflector &ri, BinWritterRef wr);

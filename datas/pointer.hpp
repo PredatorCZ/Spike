@@ -58,7 +58,8 @@ public:
   }
 
   template <class container = void>
-  int Fixup(const char *root, container *storedPtrs = nullptr) {
+  int Fixup(const char *root,
+            [[maybe_unused]] container *storedPtrs = nullptr) {
     if (!pointer) {
       return 0;
     }
@@ -116,7 +117,8 @@ public:
   }
 
   template <class container = void>
-  int Fixup(const char *root, container *storedPtrs = nullptr) {
+  int Fixup(const char *root,
+            [[maybe_unused]] container *storedPtrs = nullptr) {
     if (!varPtr) {
       return 0;
     }

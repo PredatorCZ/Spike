@@ -9,7 +9,7 @@ int main() {
 
   RegisterReflectedTypes<subrefl, reflClass, roomInfo, roomInfo01, EnumWrap00,
                          EnumWrap01, EnumWrap02, EnumWrap03, EnumWrap04,
-                         BitTypeRefl>();
+                         BitTypeRefl, BFVectorR10G11B10Type>();
 
   reflClass rClass = {};
 
@@ -47,6 +47,8 @@ int main() {
       TEST_FUNC(test_reflector_subclass, rClass),
       TEST_FUNC(test_reflector_array_subclass, rClass),
       TEST_FUNC(test_reflector_bitfield, rClass),
+      TEST_FUNC(test_custom_float, rClass),
+      TEST_FUNC(test_reflector_bitfield_custom_float, rClass),
       TEST_FUNC(test_reflector_string, rClass), TEST_FUNC(test_reflector_alias),
       TEST_FUNC(test_reflector_desc), TEST_FUNC(test_reflector_io, rClass),
       TEST_FUNC(test_binwritter, rClass), TEST_FUNC(test_binreader, rClass));

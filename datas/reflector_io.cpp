@@ -415,54 +415,43 @@ static int SaveClass(const Reflector &ri, ReflectedInstanceFriend inst,
                      BinWritterRef wr);
 
 static int WriteDataItem(const Reflector &ri, BinWritterRef wr,
-                         const char *objAddr, reflType type) {
+                         const char *objAddr, ReflType type, size_t index,
+                         size_t element = 0) {
   switch (type.type) {
-
   case REFType::Integer:
   case REFType::Enum:
-    if (type.subSize > 1) {
+    if (type.size > 1) {
       bint128 tvar;
-      memcpy(&tvar, objAddr, type.subSize);
-      const size_t shValue = 64 - (type.subSize * 8);
+      memcpy(&tvar, objAddr, type.size);
+      const size_t shValue = 64 - (type.size * 8);
       tvar.value = (tvar.value << shValue) >> shValue;
       wr.Write(tvar);
       return 0;
     }
 
+    [[fallthrough]];
   case REFType::UnsignedInteger:
   case REFType::EnumFlags:
   case REFType::BitFieldClass:
-    if (type.subSize > 1) {
+    if (type.size > 1) {
       buint128 tvar;
-      memcpy(&tvar, objAddr, type.subSize);
+      memcpy(&tvar, objAddr, type.size);
       wr.Write(tvar);
       return 0;
     }
 
+    [[fallthrough]];
   case REFType::Bool:
   case REFType::FloatingPoint:
-    wr.WriteBuffer(objAddr, type.subSize);
+    wr.WriteBuffer(objAddr, type.size);
     return 0;
 
   case REFType::Array:
   case REFType::ArrayClass:
   case REFType::Vector: {
-    reflType subType = type;
-    subType.type = type.subType;
-    subType.subType = type.type;
-
-    if (subType.type == REFType::Vector) {
-      _DecomposedVectorHash dec = {subType.typeHash};
-      subType.subType = dec.type;
-      subType.numItems = dec.numItems;
-      subType.subSize = dec.size;
-    }
-
-    for (uint32 i = 0; i < type.numItems; i++) {
-      if (subType.type != REFType::Vector)
-        subType.numItems = static_cast<uint16>(i);
-
-      if (WriteDataItem(ri, wr, objAddr + (type.subSize * i), subType))
+    for (uint32 i = 0; i < type.asArray.numItems; i++) {
+      if (WriteDataItem(ri, wr, objAddr + (type.asArray.stride * i),
+                        type.asArray, type.index, i))
         return 2;
     }
     return 0;
@@ -476,7 +465,7 @@ static int WriteDataItem(const Reflector &ri, BinWritterRef wr,
 
   case REFType::Class: {
     auto sri = static_cast<ReflectedInstanceFriend &&>(
-        ri.GetReflectedSubClass(type.ID, type.numItems));
+        ri.GetReflectedSubClass(index, element));
     return SaveClass(ri, sri, wr);
   }
   default:
@@ -501,7 +490,7 @@ static int SaveClass(const Reflector &ri, ReflectedInstanceFriend inst,
     BinWritterRef wrTmp(tmpValueBuffer);
 
     int rVal = WriteDataItem(ri, wrTmp, thisAddr + refData->types[i].offset,
-                             refData->types[i]);
+                             refData->types[i], refData->types[i].index);
 
     if (rVal)
       return rVal;
@@ -530,51 +519,40 @@ int ReflectorBinUtil::Save(const Reflector &ri, BinWritterRef wr) {
 static int LoadClass(ReflectedInstanceFriend inst, BinReaderRef rd);
 
 static int LoadDataItem(Reflector &ri, BinReaderRef rd, char *objAddr,
-                        reflType type) {
+                        ReflType type, size_t index, size_t element = 0) {
   switch (type.type) {
   case REFType::Integer:
   case REFType::Enum:
-    if (type.subSize > 1) {
+    if (type.size > 1) {
       bint128 tvar;
       rd.Read(tvar);
-      memcpy(objAddr, &tvar, type.subSize);
+      memcpy(objAddr, &tvar, type.size);
       return 0;
     }
 
+    [[fallthrough]];
   case REFType::UnsignedInteger:
   case REFType::EnumFlags:
   case REFType::BitFieldClass:
-    if (type.subSize > 1) {
+    if (type.size > 1) {
       buint128 tvar;
       rd.Read(tvar);
-      memcpy(objAddr, &tvar, type.subSize);
+      memcpy(objAddr, &tvar, type.size);
       return 0;
     }
 
+    [[fallthrough]];
   case REFType::Bool:
   case REFType::FloatingPoint:
-    rd.ReadBuffer(objAddr, type.subSize);
+    rd.ReadBuffer(objAddr, type.size);
     return 0;
 
   case REFType::Array:
   case REFType::ArrayClass:
   case REFType::Vector: {
-    reflType subType = type;
-    subType.type = type.subType;
-    subType.subType = type.type;
-
-    if (subType.type == REFType::Vector) {
-      _DecomposedVectorHash dec = {subType.typeHash};
-      subType.subType = dec.type;
-      subType.numItems = dec.numItems;
-      subType.subSize = dec.size;
-    }
-
-    for (uint32 i = 0; i < type.numItems; i++) {
-      if (subType.type != REFType::Vector)
-        subType.numItems = static_cast<uint16>(i);
-
-      if (LoadDataItem(ri, rd, objAddr + (type.subSize * i), subType))
+    for (uint32 i = 0; i < type.asArray.numItems; i++) {
+      if (LoadDataItem(ri, rd, objAddr + (type.asArray.stride * i),
+                       type.asArray, type.index, i))
         return 2;
     }
     return 0;
@@ -588,7 +566,7 @@ static int LoadDataItem(Reflector &ri, BinReaderRef rd, char *objAddr,
 
   case REFType::Class: {
     auto sri = static_cast<ReflectedInstanceFriend &&>(
-        ri.GetReflectedSubClass(type.ID, type.numItems));
+        ri.GetReflectedSubClass(index, element));
     return LoadClass(sri, rd);
   }
   default:
@@ -625,7 +603,7 @@ static int LoadClass(ReflectedInstanceFriend inst, BinReaderRef rd) {
 
     ReflectorPureWrap ri(inst);
     auto &&rif = static_cast<ReflectorFriend &>(static_cast<Reflector &>(ri));
-    const reflType *cType = rif.GetReflectedType(valueNameHash);
+    const ReflType *cType = rif.GetReflectedType(valueNameHash);
 
     if (!cType) {
       rd.Pop();
@@ -633,7 +611,8 @@ static int LoadClass(ReflectedInstanceFriend inst, BinReaderRef rd) {
       continue;
     }
 
-    errType = LoadDataItem(ri, rf, thisAddr + cType->offset, *cType);
+    errType =
+        LoadDataItem(ri, rf, thisAddr + cType->offset, *cType, cType->index);
 
     if (errType) {
       rd.Pop();
