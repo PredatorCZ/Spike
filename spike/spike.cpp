@@ -28,6 +28,10 @@
 #include "out_context.hpp"
 #include "project.h"
 
+#ifndef SPIKE_USE_THREADS
+#define SPIKE_USE_THREADS NDEBUG
+#endif
+
 struct BinReaderEx : BinReader<> {
   using BinReader::baseStream;
   using BinReader::BinReader;
@@ -123,8 +127,12 @@ void ExtractConvertMode(int argc, TCHAR *argv[], APPContext &ctx,
 
   es::print::PrintThreadID(true);
 
+#if SPIKE_USE_THREADS
   RunThreadedQueue(files.size(), [&](size_t index) {
     try {
+#else
+  for (size_t index = 0; index < files.size(); index++) {
+#endif
       BinReaderEx cRead(files[index]);
       AFileInfo cFile(files[index]);
       auto appCtx = MakeIOContext();
@@ -164,10 +172,14 @@ void ExtractConvertMode(int argc, TCHAR *argv[], APPContext &ctx,
         printline("Processing: " << files[index]);
         ctx.ProcessFile(*cRead.baseStream, appCtx.get());
       }
+#if NDEBUG
     } catch (const std::exception &e) {
       printerror(e.what());
     }
   });
+#else
+  }
+#endif
 
   if (zips.empty()) {
     return;
@@ -227,9 +239,12 @@ void ExtractConvertMode(int argc, TCHAR *argv[], APPContext &ctx,
     auto vfsIter = fctx->vfs.begin();
     std::mutex vfsMutex;
 
+#if SPIKE_USE_THREADS
     RunThreadedQueue(numFiles, [&](size_t index) {
-      // for (size_t index = 0; index < numFiles; index++) {
       try {
+#else
+    for (size_t index = 0; index < numFiles; index++) {
+#endif
         auto &&fileEntry = [&] {
           if (!loadFiltered) {
             return filesToProcess[index];
@@ -288,10 +303,14 @@ void ExtractConvertMode(int argc, TCHAR *argv[], APPContext &ctx,
           ctx.ProcessFile(*fileStream, appCtx.get());
           fctx->DisposeFile(fileStream);
         }
+#if SPIKE_USE_THREADS
       } catch (const std::exception &e) {
         printerror(e.what());
       }
     });
+#else
+    }
+#endif
 
     if (extractSettings.makeZIP) {
       mainZip.FinishMerge();
@@ -315,15 +334,20 @@ void PackMode(int argc, TCHAR *argv[], APPContext &ctx,
   std::map<std::string, paths> zips;
   std::mutex zipsMutex;
 
+#if SPIKE_USE_THREADS
   RunThreadedQueue(argc, [&](size_t index) {
+#else
+  for (size_t index = 0; index < argc; index++) {
+#endif
     if (!markedFiles[index]) {
       return;
     }
 
     auto fileName = std::to_string(argv[index]);
     auto type = FileType(fileName);
-
+#if SPIKE_USE_THREADS
     try {
+#endif
       switch (type) {
       case FileType_e::Directory: {
         printline("Scanning: " << fileName);
@@ -375,10 +399,14 @@ void PackMode(int argc, TCHAR *argv[], APPContext &ctx,
         printerror("Invalid path: " << fileName);
       }
       }
+#if SPIKE_USE_THREADS
     } catch (const std::exception &e) {
       printerror(e.what());
     }
   });
+#else
+  }
+#endif
 
   es::Dispose(markedFiles);
 
@@ -403,8 +431,12 @@ void PackMode(int argc, TCHAR *argv[], APPContext &ctx,
       return MakeZIPContext(zip.first);
     }();
 
+#if SPIKE_USE_THREADS
     RunThreadedQueue(zip.second.size(), [&](size_t index) {
       try {
+#else
+    for (size_t index = 0; index < zip.second.size(); index++) {
+#endif
         PathFilter zFilter;
         auto zipPath = zip.first.substr(0, zip.first.size() - 4);
         auto &zFolder = zip.second[index];
@@ -442,10 +474,14 @@ void PackMode(int argc, TCHAR *argv[], APPContext &ctx,
         }
 
         archiveContext->Finish();
+#if SPIKE_USE_THREADS
       } catch (const std::exception &e) {
         printerror(e.what());
       }
     });
+#else
+    }
+#endif
   }
 }
 
