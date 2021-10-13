@@ -368,6 +368,10 @@ pugi::xml_node ReflectorXMLUtil::LoadV2(Reflector &ri, pugi::xml_node node,
 
     auto refType = rif.GetReflectedType(node.hash);
 
+    if (!refType) {
+      continue;
+    }
+
     auto DoVector = [&] {
       for (auto t : a.attributes()) {
         size_t element = -1;
