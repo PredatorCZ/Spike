@@ -28,6 +28,7 @@ public:
   using ValueType = store_override_type;
 
   constexpr Flags() noexcept : value() {}
+  explicit constexpr Flags(ValueType input) : value(input) {}
 
   template <typename... args>
   constexpr Flags(args... inputs) noexcept : value((... | MakeMask_(inputs))) {}
