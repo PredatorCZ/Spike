@@ -36,15 +36,44 @@ bool PathFilter::IsFiltered(es::string_view fileName_) const {
 
   for (auto &f : filters) {
     es::string_view kvi(f);
+    bool clampBegin = kvi.front() == '^';
+    bool clampEnd = kvi.back() == '$';
 
-    if (kvi[0] == '^') {
+    auto wildcharPos = kvi.find_first_of('*');
+    bool useWildchar = wildcharPos != kvi.npos;
+
+    if (useWildchar) {
+      auto part1 = kvi.substr(0, wildcharPos);
+      auto part2 = kvi.substr(wildcharPos + 1);
+
+      // cases ^foo*bar or ^foo*bar$
+      if (clampBegin) {
+        if (fileName.begins_with(part1)) {
+          if ((clampEnd && fileName.ends_with(part2)) || !clampEnd) {
+            return true;
+          }
+        }
+      }
+      // cases foo*bar$ only
+      else if (clampEnd) {
+        if (fileName.ends_with(part2) &&
+            fileName.find(part1) != fileName.npos) {
+          return true;
+        }
+      }
+      // cases foo*bar only
+      else if (fileName.find(part1) != fileName.npos &&
+               fileName.find(part2) != fileName.npos) {
+        return true;
+      }
+    } else if (clampBegin) {
       kvi.remove_prefix(1);
 
       if (fileName.begins_with(kvi)) {
         return true;
       }
-    } else if (kvi[0] == '$') {
-      kvi.remove_prefix(1);
+    } else if (clampEnd) {
+      kvi.remove_suffix(1);
 
       if (fileName.ends_with(kvi)) {
         return true;

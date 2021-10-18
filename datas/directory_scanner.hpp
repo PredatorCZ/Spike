@@ -28,9 +28,10 @@ public:
 
   /*
   Store only specified files with filename substring
-  format: "[ ^ | $]<substring>"
-  val begins with ^: begins with
-  val begins with $: ends with
+  format: "[^]<substring>[*<substring>][$]"
+  val begins with ^: clamp beginning
+  val ends with $: clamp ending
+  val contains *: wildchar handling
   otherwise: free substring search
   */
   void AddFilter(const std::string &val) {
