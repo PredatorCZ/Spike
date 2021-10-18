@@ -41,8 +41,8 @@ struct SimpleIOContext : AppContext {
 
   AppContextStream RequestFile(const std::string &path) override;
 
-  AppContextStream FindFile(const std::string &rootFolder,
-                            const std::string &pattern) override;
+  AppContextFoundStream FindFile(const std::string &rootFolder,
+                                 const std::string &pattern) override;
 
   void DisposeFile(std::istream *str) override;
 
@@ -54,8 +54,8 @@ private:
 struct ZIPContext : AppContext {
   AppContextStream RequestFile(const std::string &path) override;
 
-  AppContextStream FindFile(const std::string &rootFolder,
-                            const std::string &pattern) override;
+  AppContextFoundStream FindFile(const std::string &rootFolder,
+                                 const std::string &pattern) override;
 
   void DisposeFile(std::istream *str) override;
 };
@@ -81,8 +81,8 @@ AppContextStream SimpleIOContext::RequestFile(const std::string &path) {
   return {OpenFile(catchedFile), this};
 }
 
-AppContextStream SimpleIOContext::FindFile(const std::string &rootFolder,
-                                           const std::string &pattern) {
+AppContextFoundStream SimpleIOContext::FindFile(const std::string &rootFolder,
+                                                const std::string &pattern) {
   DirectoryScanner sc;
   sc.AddFilter(pattern);
   sc.Scan(rootFolder);
@@ -93,7 +93,7 @@ AppContextStream SimpleIOContext::FindFile(const std::string &rootFolder,
     throw std::runtime_error("Too many files found.");
   }
 
-  return {OpenFile(sc.Files().front()), this};
+  return {OpenFile(sc.Files().front()), this, sc.Files().front()};
 }
 
 void SimpleIOContext::DisposeFile(std::istream *str) {
@@ -128,33 +128,14 @@ struct ZIPDataHolder {
   virtual ~ZIPDataHolder() = default;
 };
 
-struct ZIPIOContext_impl : ZIPIOContext {
-  std::istream *OpenFile(const zip_entry &entry) override;
-
-  AppContextStream RequestFile(const std::string &path) override;
-
-  AppContextStream FindFile(const std::string &rootFolder,
-                            const std::string &pattern) override;
-
+struct ZIPIOContext_implbase : ZIPIOContext {
+  ZIPIOContext_implbase(const std::string &file) : rd(file) {}
+  std::istream *OpenFile(const ZipEntry &entry) override;
   void DisposeFile(std::istream *str) override;
 
-  ZIPIOContext_impl(const std::string &file, const PathFilter &pathFilter_,
-                    const PathFilter &moduleFilter_)
-      : rd(file), pathFilter(&pathFilter_), moduleFilter(&moduleFilter_) {
-    Read();
-    pathFilter = moduleFilter = nullptr;
-  }
-
-  ZIPIOContext_impl(const std::string &file) : rd(file) { Read(); }
-
-private:
-  void ReadEntry();
-  void Read();
-
+protected:
   std::map<std::istream *, std::unique_ptr<ZIPDataHolder>> openedFiles;
   BinReader<> rd;
-  const PathFilter *pathFilter = nullptr;
-  const PathFilter *moduleFilter = nullptr;
 };
 
 struct ZIPMemoryStream : ZIPDataHolder {
@@ -178,18 +159,18 @@ struct ZIPFileStream : ZIPDataHolder {
   }
 };
 
-std::istream *ZIPIOContext_impl::OpenFile(const zip_entry &entry) {
+std::istream *ZIPIOContext_implbase::OpenFile(const ZipEntry &entry) {
   std::lock_guard<std::mutex> guard(ZIPLock);
-  rd.Seek(entry.first);
+  rd.Seek(entry.offset);
   constexpr size_t memoryLimit = 16777216;
 
-  if (entry.second > memoryLimit) {
+  if (entry.size > memoryLimit) {
     std::string path = es::GetTempFilename();
     {
       std::string semi;
       semi.resize(memoryLimit);
-      const size_t numBlocks = entry.second / memoryLimit;
-      const size_t restBytes = entry.second % memoryLimit;
+      const size_t numBlocks = entry.size / memoryLimit;
+      const size_t restBytes = entry.size % memoryLimit;
       BinWritter wr(path);
 
       for (size_t b = 0; b < numBlocks; b++) {
@@ -209,7 +190,7 @@ std::istream *ZIPIOContext_impl::OpenFile(const zip_entry &entry) {
     return ptr;
   } else {
     std::string semi;
-    rd.ReadContainer(semi, entry.second);
+    rd.ReadContainer(semi, entry.size);
     auto stoff = std::make_unique<ZIPMemoryStream>(std::move(semi));
     std::istream *ptr = &stoff->stream;
     openedFiles.emplace(ptr, std::move(stoff));
@@ -217,10 +198,68 @@ std::istream *ZIPIOContext_impl::OpenFile(const zip_entry &entry) {
   }
 }
 
-void ZIPIOContext_impl::DisposeFile(std::istream *str) {
+void ZIPIOContext_implbase::DisposeFile(std::istream *str) {
   std::lock_guard<std::mutex> guard(ZIPLock);
   openedFiles.erase(str);
 }
+
+struct ZIPIOContextIter_impl : ZIPIOEntryRawIterator {
+  using map_type = std::map<std::string, ZipEntry>;
+  ZIPIOContextIter_impl(const map_type &map)
+      : base(&map), current(map.begin()), end(map.end()) {}
+  ZIPIOEntry Fist() const override {
+    if (current == end) {
+      return {};
+    }
+    return {current->second, current->first};
+  }
+  ZIPIOEntry Next() const override {
+    if (current == end) {
+      return {};
+    }
+    current++;
+    if (current == end) {
+      return {};
+    }
+
+    return {current->second, current->first};
+  }
+  size_t Count() const override { return base->size(); }
+
+  const map_type *base;
+  mutable map_type::const_iterator current;
+  map_type::const_iterator end;
+};
+
+struct ZIPIOContext_impl : ZIPIOContext_implbase {
+  AppContextStream RequestFile(const std::string &path) override;
+
+  AppContextFoundStream FindFile(const std::string &rootFolder,
+                                 const std::string &pattern) override;
+
+  ZIPIOContextIterator Iter(ZIPIOEntryType) const override {
+    return {std::make_unique<ZIPIOContextIter_impl>(vfs)};
+  }
+
+  ZIPIOContext_impl(const std::string &file, const PathFilter &pathFilter_,
+                    const PathFilter &moduleFilter_)
+      : ZIPIOContext_implbase(file), pathFilter(&pathFilter_),
+        moduleFilter(&moduleFilter_) {
+    Read();
+    pathFilter = moduleFilter = nullptr;
+  }
+
+  ZIPIOContext_impl(const std::string &file) : ZIPIOContext_implbase(file) {
+    Read();
+  }
+
+private:
+  void ReadEntry();
+  void Read();
+  const PathFilter *pathFilter = nullptr;
+  const PathFilter *moduleFilter = nullptr;
+  std::map<std::string, ZipEntry> vfs;
+};
 
 AppContextStream ZIPIOContext_impl::RequestFile(const std::string &path) {
   auto found = vfs.find(path);
@@ -232,8 +271,8 @@ AppContextStream ZIPIOContext_impl::RequestFile(const std::string &path) {
   return {OpenFile(found->second), this};
 }
 
-AppContextStream ZIPIOContext_impl::FindFile(const std::string &,
-                                             const std::string &pattern) {
+AppContextFoundStream ZIPIOContext_impl::FindFile(const std::string &,
+                                                  const std::string &pattern) {
   PathFilter filter;
   filter.AddFilter(pattern);
 
@@ -243,7 +282,7 @@ AppContextStream ZIPIOContext_impl::FindFile(const std::string &,
     kvi.remove_prefix(lastSlash + 1);
 
     if (filter.IsFiltered(kvi)) {
-      return {OpenFile(f.second), this};
+      return {OpenFile(f.second), this, f.first};
     }
   }
 
@@ -311,7 +350,7 @@ void ZIPIOContext_impl::ReadEntry() {
       }
 
       rd.Skip(hdr.extraFieldSize);
-      auto entry = std::make_pair(rd.Tell(), entrySize);
+      ZipEntry entry{rd.Tell(), entrySize};
       rd.Skip(entrySize);
 
       if (pathFilter && !pathFilter->IsFiltered(path)) {
@@ -374,6 +413,71 @@ void ZIPIOContext_impl::ReadEntry() {
   }
 }
 
+ZIPIOEntry::operator bool() const {
+  return std::visit([](auto &name) { return !name.empty(); }, name);
+}
+
+struct ZIPIOContextCached : ZIPIOContext_implbase {
+  AppContextStream RequestFile(const std::string &path) override {
+
+    auto found = cache.RequestFile(path);
+
+    if (!found.size) {
+      throw es::FileNotFoundError(path);
+    }
+
+    return {OpenFile(found), this};
+  }
+
+  AppContextFoundStream FindFile(const std::string &,
+                                 const std::string &pattern) override {
+    auto found = cache.FindFile(pattern);
+
+    if (!found.size) {
+      throw es::FileNotFoundError(pattern);
+    }
+
+    return std::visit(
+        [&](auto &item) -> AppContextFoundStream {
+          return {OpenFile(found), this, item};
+        },
+        found.name);
+  }
+
+  ZIPIOContextIterator Iter(ZIPIOEntryType type) const override {
+    return {cache.Iter(type)};
+  }
+
+  ZIPIOContextCached(const std::string &file, BinReaderRef cacheFile)
+      : ZIPIOContext_implbase(file) {
+
+    ZIPLocalFile zFile;
+    rd.Read(zFile);
+    std::string name;
+    rd.ReadContainer(name, zFile.fileNameSize);
+    if (name != "__cache_checkup__") {
+      throw std::runtime_error(
+          "Cache checkup was not found in zip root entry.");
+    }
+
+    CacheBaseHeader hdr;
+    rd.Read(hdr);
+    CacheBaseHeader cacheHdr;
+    cacheFile.Push();
+    cacheFile.Read(cacheHdr);
+    cacheFile.Pop();
+
+    if (memcmp(&hdr, &cacheHdr, sizeof(hdr))) {
+      throw std::runtime_error("Cache header and zip checkup are different.");
+    }
+
+    cache.Load(cacheFile);
+  }
+
+private:
+  Cache cache;
+};
+
 std::unique_ptr<ZIPIOContext> MakeZIPContext(const std::string &file,
                                              const PathFilter &pathFilter,
                                              const PathFilter &moduleFilter) {
@@ -381,5 +485,19 @@ std::unique_ptr<ZIPIOContext> MakeZIPContext(const std::string &file,
 }
 
 std::unique_ptr<ZIPIOContext> MakeZIPContext(const std::string &file) {
-  return std::make_unique<ZIPIOContext_impl>(file);
+  std::string cacheFile = file + ".cache";
+  BinReader<> rd;
+  try {
+    rd.Open(cacheFile);
+  } catch (const std::exception &e) {
+    printwarning("Failed loading cache: " << e.what());
+    return std::make_unique<ZIPIOContext_impl>(file);
+  }
+  try {
+    printinfo("Found zip cache: " << cacheFile);
+    return std::make_unique<ZIPIOContextCached>(file, rd);
+  } catch (const std::exception &e) {
+    printwarning("Failed loading cache: " << e.what());
+    return std::make_unique<ZIPIOContext_impl>(file);
+  }
 }

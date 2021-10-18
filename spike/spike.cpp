@@ -166,7 +166,9 @@ void ExtractConvertMode(int argc, TCHAR *argv[], APPContext &ctx,
         ctx.ExtractFile(*cRead.baseStream, ectx.get());
 
         if (extractSettings.makeZIP) {
-          static_cast<ZIPExtactContext *>(ectx.get())->FinishZIP();
+          static_cast<ZIPExtactContext *>(ectx.get())->FinishZIP([] {
+            printinfo("Generating cache.");
+          });
         }
       } else {
         printline("Processing: " << files[index]);
@@ -192,12 +194,16 @@ void ExtractConvertMode(int argc, TCHAR *argv[], APPContext &ctx,
     auto fctx = loadFiltered ? MakeZIPContext(zip.first, zip.second, pathFilter)
                              : MakeZIPContext(zip.first);
     AFileInfo zFile(zip.first);
-    std::vector<decltype(fctx->vfs)::value_type> filesToProcess;
+    std::vector<ZIPIOEntry> filesToProcess;
 
     if (!loadFiltered) {
-      for (auto &f : fctx->vfs) {
-        if (pathFilter.IsFiltered(f.first) && zip.second.IsFiltered(f.first)) {
-          filesToProcess.emplace_back(f);
+      auto vfsIter = fctx->Iter();
+
+      for (auto f : vfsIter) {
+        auto item = f.AsView();
+
+        if (pathFilter.IsFiltered(item) && zip.second.IsFiltered(item)) {
+          filesToProcess.push_back(f);
         }
       }
     }
@@ -211,8 +217,8 @@ void ExtractConvertMode(int argc, TCHAR *argv[], APPContext &ctx,
       IOExtractContext ctx_(outPath);
 
       auto AddFolder = [&](auto &store) {
-        for (auto &f : store) {
-          AFileInfo cFile(f.first);
+        for (decltype(auto) f : store) {
+          AFileInfo cFile(f.AsView());
 
           if (extractSettings.folderPerArc) {
             ctx_.AddFolderPath(cFile.GetFullPathNoExt().to_string());
@@ -225,7 +231,8 @@ void ExtractConvertMode(int argc, TCHAR *argv[], APPContext &ctx,
       if (!loadFiltered) {
         AddFolder(filesToProcess);
       } else {
-        AddFolder(fctx->vfs);
+        auto vfsIter = fctx->Iter();
+        AddFolder(vfsIter);
       }
 
       ctx_.GenerateFolders();
@@ -234,9 +241,10 @@ void ExtractConvertMode(int argc, TCHAR *argv[], APPContext &ctx,
       new (&mainZip) ZIPMerger(outZip, es::GetTempFilename());
     }
 
+    auto vfsIter = fctx->Iter();
+    auto vfsIterBegin = vfsIter.begin();
     const size_t numFiles =
-        loadFiltered ? fctx->vfs.size() : filesToProcess.size();
-    auto vfsIter = fctx->vfs.begin();
+        loadFiltered ? vfsIter.base->Count() : filesToProcess.size();
     std::mutex vfsMutex;
 
 #if SPIKE_USE_THREADS
@@ -250,21 +258,21 @@ void ExtractConvertMode(int argc, TCHAR *argv[], APPContext &ctx,
             return filesToProcess[index];
           } else {
             std::lock_guard<std::mutex> guard(vfsMutex);
-            return *vfsIter++;
+            return vfsIterBegin++;
           }
         }();
-        AFileInfo cFile(fileEntry.first);
+        AFileInfo cFile(fileEntry.AsView());
         auto appCtx = std::make_unique<ZIPIOContextInstance>(fctx.get());
-        appCtx->workingFile = fileEntry.first;
+        appCtx->workingFile = fileEntry.AsView();
 
         if (ctx.info->mode == AppMode_e::EXTRACT) {
-          printline("Extracting: " << zip.first << '/' << fileEntry.first);
+          printline("Extracting: " << zip.first << '/' << fileEntry.AsView());
           std::unique_ptr<AppExtractContext> ectx;
           std::string recordsFile;
 
           if (extractSettings.makeZIP) {
             recordsFile = es::GetTempFilename();
-            auto zCtx = std::make_unique<ZIPExtactContext>(recordsFile);
+            auto zCtx = std::make_unique<ZIPExtactContext>(recordsFile, false);
 
             if (extractSettings.folderPerArc) {
               zCtx->prefixPath = cFile.GetFullPathNoExt().to_string();
@@ -285,7 +293,7 @@ void ExtractConvertMode(int argc, TCHAR *argv[], APPContext &ctx,
           }
 
           ectx->ctx = appCtx.get();
-          auto fileStream = fctx->OpenFile(fileEntry.second);
+          auto fileStream = fctx->OpenFile(fileEntry);
           ctx.ExtractFile(*fileStream, ectx.get());
           fctx->DisposeFile(fileStream);
 
@@ -296,8 +304,8 @@ void ExtractConvertMode(int argc, TCHAR *argv[], APPContext &ctx,
             es::RemoveFile(recordsFile);
           }
         } else {
-          printline("Processing: " << zip.first << '/' << fileEntry.first);
-          auto fileStream = fctx->OpenFile(fileEntry.second);
+          printline("Processing: " << zip.first << '/' << fileEntry.AsView());
+          auto fileStream = fctx->OpenFile(fileEntry);
 
           appCtx->workingFile.insert(0, outPath);
           ctx.ProcessFile(*fileStream, appCtx.get());
@@ -313,7 +321,7 @@ void ExtractConvertMode(int argc, TCHAR *argv[], APPContext &ctx,
 #endif
 
     if (extractSettings.makeZIP) {
-      mainZip.FinishMerge();
+      mainZip.FinishMerge([] { printinfo("Generating cache."); });
     }
   }
 }
@@ -447,14 +455,16 @@ void PackMode(int argc, TCHAR *argv[], APPContext &ctx,
         }
 
         AppPackStats stats;
-        std::vector<bool> markedFiles(fctx->vfs.size(), false);
+        auto vfsIter = fctx->Iter(ZIPIOEntryType::View);
+        std::vector<bool> markedFiles(vfsIter.base->Count(), false);
         size_t curIndex = 0;
 
-        for (auto &f : fctx->vfs) {
-          if (moduleFilter.IsFiltered(f.first) && zFilter.IsFiltered(f.first)) {
+        for (auto f : vfsIter) {
+          auto item = f.AsView();
+          if (moduleFilter.IsFiltered(item) && zFilter.IsFiltered(item)) {
             markedFiles[curIndex] = true;
             stats.numFiles++;
-            stats.totalSizeFileNames += f.first.size() + 1;
+            stats.totalSizeFileNames += item.size() + 1;
           }
 
           curIndex++;
@@ -462,13 +472,14 @@ void PackMode(int argc, TCHAR *argv[], APPContext &ctx,
 
         curIndex = 0;
         auto archiveContext = ctx.NewArchive(zipPath, stats);
+        vfsIter = fctx->Iter();
 
-        for (auto &f : fctx->vfs) {
+        for (auto f : vfsIter) {
           if (markedFiles[curIndex++]) {
-            auto fileStream = fctx->OpenFile(f.second);
-            es::string_view zFile(f.first);
+            auto fileStream = fctx->OpenFile(f);
+            es::string_view zFile(f.AsView());
             zFile.remove_prefix(zFolder.size());
-            archiveContext->SendFile(zFile, *fileStream);
+            archiveContext->SendFile(f.AsView(), *fileStream);
             fctx->DisposeFile(fileStream);
           }
         }

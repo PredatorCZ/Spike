@@ -27,7 +27,9 @@
 #include <chrono>
 #include <mutex>
 
-void ZIPExtactContext::FinishZIP() {
+static constexpr es::string_view cacheFileName = "__cache_checkup__";
+
+void ZIPExtactContext::FinishZIP(cache_begin_cb cacheBeginCB) {
   FinishFile();
 
   auto entriesStr = entriesStream.str();
@@ -78,6 +80,31 @@ void ZIPExtactContext::FinishZIP() {
   }
 
   records.Write(zCentral);
+
+  if (cache) {
+    cacheBeginCB();
+    cache->meta.zipSize = records.Tell();
+    BinWritter cacheWr(outputFile + ".cache");
+    cache->Write(cacheWr);
+
+    records.Seek(0);
+    ZIPLocalFile file{ZIPLocalFile::ID, 10};
+    file.compressedSize = sizeof(CacheBaseHeader);
+    file.uncompressedSize = sizeof(CacheBaseHeader);
+    file.fileNameSize = cacheFileName.size();
+    file.crc = crc32b(0, reinterpret_cast<const char *>(&cache->meta),
+                      sizeof(CacheBaseHeader));
+    records.Write(file);
+    records.WriteContainer(cacheFileName);
+    records.Write(cache->meta);
+  }
+}
+
+void ZIPExtactContext::ReserveCache() {
+  ZIPLocalFile file;
+  records.Write(file);
+  records.WriteContainer(cacheFileName);
+  records.Write(cache->meta);
 }
 
 void ZIPExtactContext::FinishFile() {
@@ -112,6 +139,17 @@ void ZIPExtactContext::FinishFile() {
   records.Push();
   records.Seek(curLocalFileOffset);
   records.Write(zLocalFile);
+  const size_t fileDataBegin =
+      records.Tell() + zLocalFile.extraFieldSize + zLocalFile.fileNameSize;
+
+  if (cache) {
+    cache->AddFile(curFileName, fileDataBegin, curFileSize);
+    cache->meta.zipCRC = crc32b(
+        cache->meta.zipCRC, reinterpret_cast<const char *>(&zLocalFile.crc), 4);
+  } else {
+    fileOffsets.push_back(fileDataBegin);
+  }
+
   records.Pop();
 
   ZIPFile zFile{};
@@ -239,12 +277,18 @@ void IOExtractContext::GenerateFolders() {
 
 static std::mutex ZIPLock;
 
+void ZIPMerger::ReserveCache() {
+  ZIPLocalFile file;
+  records.Write(file);
+  records.WriteContainer(cacheFileName);
+  records.Write(cache.meta);
+}
+
 void ZIPMerger::Merge(ZIPExtactContext &other, const std::string &recordsFile) {
   if (!other.curFileName.empty()) {
     other.FinishFile();
   }
 
-  const size_t entriesSize = other.entries.Tell();
   BinReaderRef localEntries(other.entriesStream);
   char buffer[0x80000];
   std::lock_guard<std::mutex> guard(ZIPLock);
@@ -252,7 +296,7 @@ void ZIPMerger::Merge(ZIPExtactContext &other, const std::string &recordsFile) {
 
   numEntries += other.numEntries;
 
-  while (localEntries.Tell() < entriesSize) {
+  for (auto o : other.fileOffsets) {
     ZIPFile zFile;
     localEntries.Read(zFile);
 
@@ -278,6 +322,10 @@ void ZIPMerger::Merge(ZIPExtactContext &other, const std::string &recordsFile) {
 
     entries.Write(zFile);
     localEntries.ReadBuffer(buffer, zFile.fileNameSize);
+    cache.AddFile({buffer, zFile.fileNameSize}, o + filesSize,
+                  zFile.uncompressedSize);
+    cache.meta.zipCRC = crc32b(cache.meta.zipCRC,
+                               reinterpret_cast<const char *>(&zFile.crc), 4);
     entries.WriteBuffer(buffer, zFile.fileNameSize);
 
     if (newExtra) {
@@ -326,7 +374,7 @@ void ZIPMerger::Merge(ZIPExtactContext &other, const std::string &recordsFile) {
   }
 }
 
-void ZIPMerger::FinishMerge() {
+void ZIPMerger::FinishMerge(cache_begin_cb cacheBeginCB) {
   const size_t entriesSize = entries.Tell();
   es::Dispose(entries);
   char buffer[0x80000];
@@ -387,4 +435,20 @@ void ZIPMerger::FinishMerge() {
 
   es::Dispose(rd);
   es::RemoveFile(entriesFile);
+
+  cacheBeginCB();
+  cache.meta.zipSize = records.Tell();
+  BinWritter cacheWr(outFile + ".cache");
+  cache.Write(cacheWr);
+
+  records.Seek(0);
+  ZIPLocalFile file{ZIPLocalFile::ID, 10};
+  file.compressedSize = sizeof(CacheBaseHeader);
+  file.uncompressedSize = sizeof(CacheBaseHeader);
+  file.fileNameSize = cacheFileName.size();
+  file.crc = crc32b(0, reinterpret_cast<const char *>(&cache.meta),
+                    sizeof(CacheBaseHeader));
+  records.Write(file);
+  records.WriteContainer(cacheFileName);
+  records.Write(cache.meta);
 }

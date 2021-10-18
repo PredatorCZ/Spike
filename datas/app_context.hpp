@@ -16,7 +16,7 @@ enum class AppMode_e : uint8 {
   PACK,
 };
 
-//Archive only (ZIP,) load only filtered entries or load all entries.
+// Archive only (ZIP,) load only filtered entries or load all entries.
 enum class ArchiveLoadType : uint8 {
   FILTERED,
   ALL,
@@ -24,6 +24,7 @@ enum class ArchiveLoadType : uint8 {
 
 class ReflectorFriend;
 struct AppContextStream;
+struct AppContextFoundStream;
 
 struct AppInfo_s {
   static constexpr uint32 CONTEXT_VERSION = 1;
@@ -40,8 +41,8 @@ struct AppContext {
   virtual ~AppContext() = default;
   virtual AppContextStream RequestFile(const std::string &path) = 0;
   virtual void DisposeFile(std::istream *file) = 0;
-  virtual AppContextStream FindFile(const std::string &rootFolder,
-                                    const std::string &pattern) = 0;
+  virtual AppContextFoundStream FindFile(const std::string &rootFolder,
+                                         const std::string &pattern) = 0;
 };
 
 struct AppContextStream {
@@ -82,6 +83,14 @@ private:
   AppContext *ctx = nullptr;
 };
 
+struct AppContextFoundStream : AppContextStream {
+  std::string workingFile;
+  using AppContextStream::AppContextStream;
+  AppContextFoundStream(std::istream *str, AppContext *ctx_,
+                        const std::string &workFile)
+      : AppContextStream(str, ctx_), workingFile(workFile) {}
+};
+
 struct AppExtractContext {
   AppContext *ctx = nullptr;
   virtual ~AppExtractContext() = default;
@@ -109,5 +118,6 @@ void AC_EXTERN AppAdditionalHelp(std::ostream &str, size_t indent);
 bool AC_EXTERN AppInitContext(const std::string &dataFolder);
 void AC_EXTERN AppProcessFile(std::istream &stream, AppContext *ctx);
 void AC_EXTERN AppExtractFile(std::istream &stream, AppExtractContext *ctx);
-AppPackContext AC_EXTERN *AppNewArchive(const std::string &folder, const AppPackStats &stats);
+AppPackContext AC_EXTERN *AppNewArchive(const std::string &folder,
+                                        const AppPackStats &stats);
 };

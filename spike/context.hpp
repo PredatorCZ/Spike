@@ -17,6 +17,7 @@
 */
 
 #pragma once
+#include "cache.hpp"
 #include "datas/app_context.hpp"
 #include "datas/reflector.hpp"
 #include <map>
@@ -131,12 +132,29 @@ private:
   void GetHelp(std::ostream &str);
 };
 
+struct ZIPIOEntryIterator {
+  ZIPIOEntryRawIterator &base;
+  mutable ZIPIOEntry current;
+
+  ZIPIOEntry operator++() const {
+    auto retVal = current;
+    current = base.Next();
+    return retVal;
+  }
+  ZIPIOEntry operator++(int) const { return operator++(); }
+  ZIPIOEntry operator*() const { return current; }
+  bool operator!=(const ZIPIOEntry &) { return current; }
+};
+
+struct ZIPIOContextIterator {
+  std::unique_ptr<ZIPIOEntryRawIterator> base;
+  ZIPIOEntryIterator begin() const { return {*base.get(), base->Fist()}; }
+  ZIPIOEntry end() const { return {}; }
+};
+
 struct ZIPIOContext : AppContext {
-  using zip_entry = std::pair<size_t, size_t>;
-
-  virtual std::istream *OpenFile(const zip_entry &entry) = 0;
-
-  std::map<std::string, zip_entry> vfs;
+  virtual std::istream *OpenFile(const ZipEntry &entry) = 0;
+  virtual ZIPIOContextIterator Iter(ZIPIOEntryType = ZIPIOEntryType::String) const = 0;
 };
 
 struct ZIPIOContextInstance : AppContext {
@@ -145,8 +163,8 @@ struct ZIPIOContextInstance : AppContext {
     return base->RequestFile(path);
   }
   void DisposeFile(std::istream *file) { base->DisposeFile(file); }
-  AppContextStream FindFile(const std::string &rootFolder,
-                            const std::string &pattern) {
+  AppContextFoundStream FindFile(const std::string &rootFolder,
+                                 const std::string &pattern) {
     return base->FindFile(rootFolder, pattern);
   }
 

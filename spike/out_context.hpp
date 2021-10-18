@@ -17,14 +17,22 @@
 */
 
 #pragma once
+#include "cache.hpp"
 #include "datas/app_context.hpp"
 #include "datas/binwritter.hpp"
 #include "formats/ZIP.hpp"
+#include <optional>
 #include <set>
 #include <sstream>
+#include <vector>
 
 struct ZIPExtactContext : AppExtractContext {
   ZIPExtactContext(const std::string &outFile)
+      : records(outFile), outputFile(outFile), entries(entriesStream),
+        cache(std::in_place) {
+    ReserveCache();
+  }
+  ZIPExtactContext(const std::string &outFile, bool)
       : records(outFile), entries(entriesStream) {}
   ZIPExtactContext(const ZIPExtactContext &) = delete;
   ZIPExtactContext(ZIPExtactContext &&) = delete;
@@ -34,13 +42,15 @@ struct ZIPExtactContext : AppExtractContext {
   bool RequiresFolders() const override;
   void AddFolderPath(const std::string &path) override;
   void GenerateFolders() override;
-  void FinishZIP();
+  using cache_begin_cb = void (*)();
+  void FinishZIP(cache_begin_cb cacheBeginCB);
 
   std::string prefixPath;
 
 private:
   friend struct ZIPMerger;
   BinWritter<> records;
+  std::string outputFile;
   std::stringstream entriesStream;
   BinWritterRef entries;
   ZIPLocalFile zLocalFile{ZIPLocalFile::ID, 10};
@@ -48,22 +58,31 @@ private:
   size_t numEntries = 0;
   size_t curFileSize = 0;
   std::string curFileName;
+  std::optional<CacheGenerator> cache;
+  std::vector<uint64> fileOffsets;
   void FinishFile();
+  void ReserveCache();
 };
 
 struct ZIPMerger {
   ZIPMerger(const std::string &outFiles, const std::string &outEntries)
-      : entries(outEntries), records(outFiles), entriesFile(outEntries) {}
+      : entries(outEntries), records(outFiles), entriesFile(outEntries),
+        outFile(outFiles) {
+    ReserveCache();
+  }
   ZIPMerger() = default;
-
+  using cache_begin_cb = void (*)();
   void Merge(ZIPExtactContext &other, const std::string &recordsFile);
-  void FinishMerge();
+  void FinishMerge(cache_begin_cb cacheBeginCB);
 
 private:
+  void ReserveCache();
   BinWritter<> entries;
   BinWritter<> records;
   std::string entriesFile;
+  std::string outFile;
   size_t numEntries = 0;
+  CacheGenerator cache;
 };
 
 struct IOExtractContext : AppExtractContext, BinWritter<> {
