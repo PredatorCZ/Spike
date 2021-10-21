@@ -54,7 +54,8 @@ public:
       type = BuildBFReflType<std::remove_pointer_t<decltype(offset)>,
                              std::remove_pointer_t<decltype(rtfn)>>(hash);
     } else {
-      type = BuildReflType<decltype(*rtfn)>(hash, 0, offset);
+      type =
+          BuildReflType<std::remove_pointer_t<decltype(rtfn)>>(hash, 0, offset);
     }
 
     typeName = name;
