@@ -16,7 +16,7 @@ add_test(shared_test shared_test)
 
 add_dependencies(test_xml test_reflector)
 
-if(NOT MINGW)
+if(NOT (MINGW OR MSVC))
   find_package(Python3 COMPONENTS Interpreter)
   add_test(NAME test_unipy COMMAND ${Python3_EXECUTABLE} test_uni.py)
 endif()
