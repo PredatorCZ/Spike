@@ -161,3 +161,75 @@ void DirectoryScanner::Scan(std::string dir) {
   FindClose(fleHandle);
 #endif
 }
+
+void DirectoryScanner::ScanFolders(std::string dir) {
+  if (!dir.empty()) {
+    char lastWord = *std::prev(dir.end());
+
+    if (lastWord == '"') {
+      dir.pop_back();
+    }
+
+    if (lastWord != '\\' && lastWord != '/') {
+      dir.push_back('/');
+    }
+  }
+
+#ifndef USEWIN
+  dir.push_back('.');
+
+  DIR *cDir = opendir(dir.data());
+
+  if (!cDir) {
+    return;
+  }
+
+  dirent *cFile = nullptr;
+
+  while ((cFile = readdir(cDir)) != nullptr) {
+    if (!strcmp(cFile->d_name, ".") || !strcmp(cFile->d_name, "..")) {
+      continue;
+    }
+
+    std::string miniFile(cFile->d_name);
+    std::string subFile = dir;
+    subFile.pop_back();
+    subFile += miniFile;
+
+    if (cFile->d_type == DT_DIR) {
+      files.push_back(subFile);
+    }
+  }
+
+  closedir(cDir);
+#else
+  dir.push_back('*');
+  const auto wdir = ToTSTRING(dir);
+
+  WIN32_FIND_DATA foundData = {};
+  HANDLE fleHandle = FindFirstFile(wdir.data(), &foundData);
+
+  if (fleHandle == INVALID_HANDLE_VALUE) {
+    return;
+  }
+
+  while (FindNextFile(fleHandle, &foundData)) {
+    if (!_tcscmp(foundData.cFileName, _T(".")) ||
+        !_tcscmp(foundData.cFileName, _T("..")) ||
+        (foundData.dwFileAttributes & FILE_ATTRIBUTE_DEVICE) != 0) {
+      continue;
+    }
+
+    std::string subFile = dir;
+    subFile.pop_back();
+    std::string cFileName = std::to_string(foundData.cFileName);
+    subFile += cFileName;
+
+    if ((foundData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) != 0) {
+      files.push_back(subFile);
+    }
+  }
+
+  FindClose(fleHandle);
+#endif
+}

@@ -62,6 +62,7 @@ public:
   DirectoryScanner &operator=(DirectoryScanner &&) = default;
 
   void PC_EXTERN Scan(std::string dir);
+  void PC_EXTERN ScanFolders(std::string dir);
 
   iterator begin() { return files.begin(); }
   iterator end() { return files.end(); }
