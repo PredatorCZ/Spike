@@ -27,6 +27,7 @@
 #include "formats/ZIP_istream.inl"
 #include <mutex>
 #include <sstream>
+#include "tmp_storage.hpp"
 
 static std::mutex simpleIOLock;
 
@@ -165,7 +166,7 @@ std::istream *ZIPIOContext_implbase::OpenFile(const ZipEntry &entry) {
   constexpr size_t memoryLimit = 16777216;
 
   if (entry.size > memoryLimit) {
-    std::string path = es::GetTempFilename();
+    std::string path = RequestTempFile();
     {
       std::string semi;
       semi.resize(memoryLimit);

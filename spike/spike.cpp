@@ -27,6 +27,7 @@
 #include "datas/tchar.hpp"
 #include "out_context.hpp"
 #include "project.h"
+#include "tmp_storage.hpp"
 
 #ifndef SPIKE_USE_THREADS
 #define SPIKE_USE_THREADS NDEBUG
@@ -238,7 +239,7 @@ void ExtractConvertMode(int argc, TCHAR *argv[], APPContext &ctx,
       ctx_.GenerateFolders();
     } else {
       auto outZip = outPath + "_out.zip";
-      new (&mainZip) ZIPMerger(outZip, es::GetTempFilename());
+      new (&mainZip) ZIPMerger(outZip, RequestTempFile());
     }
 
     auto vfsIter = fctx->Iter();
@@ -271,7 +272,7 @@ void ExtractConvertMode(int argc, TCHAR *argv[], APPContext &ctx,
           std::string recordsFile;
 
           if (extractSettings.makeZIP) {
-            recordsFile = es::GetTempFilename();
+            recordsFile = RequestTempFile();
             auto zCtx = std::make_unique<ZIPExtactContext>(recordsFile, false);
 
             if (extractSettings.folderPerArc) {
@@ -499,6 +500,7 @@ void PackMode(int argc, TCHAR *argv[], APPContext &ctx,
 int _tmain(int argc, TCHAR *argv[]) {
   setlocale(LC_ALL, "");
   es::print::AddPrinterFunction(UPrintf);
+  CleanTempStorages();
 
   if (argc < 2) {
     printerror("Insufficient argument count, expected module name.");
@@ -611,6 +613,7 @@ int _tmain(int argc, TCHAR *argv[]) {
     ctx.FromConfig();
   }
 
+  InitTempStorage();
   ctx.SetupModule();
 
   if (ctx.info->mode == AppMode_e::PACK) {
@@ -622,4 +625,6 @@ int _tmain(int argc, TCHAR *argv[]) {
   if (ctx.FinishContext) {
     ctx.FinishContext();
   }
+
+  CleanCurrentTempStorage();
 }
