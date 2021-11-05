@@ -193,6 +193,16 @@ void ZIPExtactContext::FinishFile() {
   }
 }
 
+inline std::tm localtime(std::time_t t) {
+#ifdef _MSC_VER
+  return *std::localtime(&t);
+#else  
+  std::tm temp;
+  localtime_r(&t, &temp);
+  return temp;
+#endif 
+}
+
 void ZIPExtactContext::NewFile(const std::string &path) {
   if (!curFileName.empty()) {
     FinishFile();
@@ -200,7 +210,7 @@ void ZIPExtactContext::NewFile(const std::string &path) {
 
   time_t curTime =
       std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
-  std::tm ts = *localtime(&curTime);
+  std::tm ts = localtime(curTime);
 
   struct {
     uint16 day : 5, month : 4, year : 7;
