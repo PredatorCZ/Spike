@@ -120,4 +120,5 @@ void AC_EXTERN AppProcessFile(std::istream &stream, AppContext *ctx);
 void AC_EXTERN AppExtractFile(std::istream &stream, AppExtractContext *ctx);
 AppPackContext AC_EXTERN *AppNewArchive(const std::string &folder,
                                         const AppPackStats &stats);
+void AC_EXTERN AppFinishContext();
 };

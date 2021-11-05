@@ -210,6 +210,7 @@ APPContext::APPContext(const char *moduleName_, const std::string &appFolder_)
 
   tryAssign(AdditionalHelp, "AppAdditionalHelp");
   tryAssign(InitContext, "AppInitContext");
+  tryAssign(FinishContext, "AppFinishContext");
 
   if (info->mode == AppMode_e::EXTRACT) {
     assign(ExtractFile, "AppExtractFile");

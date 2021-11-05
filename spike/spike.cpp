@@ -618,4 +618,8 @@ int _tmain(int argc, TCHAR *argv[]) {
   } else {
     ExtractConvertMode(argc, argv, ctx, markedFiles);
   }
+
+  if (ctx.FinishContext) {
+    ctx.FinishContext();
+  }
 }
