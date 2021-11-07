@@ -1,1 +1,5 @@
 main/
+glm/*
+!glm/CMakeLists.txt
+!glm/glm/
+!glm/cmake/

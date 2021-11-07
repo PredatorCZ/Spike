@@ -21,7 +21,7 @@ namespace uni {
 void Bone::GetTM(RTSValue &) const {
   throw _uni_::ThrowVoidCall<TransformType, TMTYPE_RTS>(this->TMType());
 }
-void Bone::GetTM(esMatrix44 &) const {
+void Bone::GetTM(es::Matrix44 &) const {
   throw _uni_::ThrowVoidCall<TransformType, TMTYPE_MATRIX>(this->TMType());
 }
 } // namespace uni

@@ -1,4 +1,4 @@
-/*  esMatrix44 class is a simple affine matrix 4x4
+/*  Matrix44 class is a simple affine matrix 4x4
     more info in README for PreCore Project
 
     Copyright 2018-2021 Lukas Cone
@@ -17,28 +17,28 @@
 */
 
 #pragma once
-#include "vectors_simd.hpp"
 #include "settings.hpp"
+#include "vectors_simd.hpp"
 
-class esMatrix44 {
+namespace es {
+class Matrix44 {
 public:
   Vector4A16 v[4];
-  PC_EXTERN esMatrix44();
-  esMatrix44(const Vector4A16 &row1, const Vector4A16 &row2,
+  PC_EXTERN Matrix44();
+  Matrix44(const Vector4A16 &row1, const Vector4A16 &row2,
              const Vector4A16 &row3)
       : v{row1, row2, row3, {}} {}
-  esMatrix44(const Vector4A16 &row1, const Vector4A16 &row2,
+  Matrix44(const Vector4A16 &row1, const Vector4A16 &row2,
              const Vector4A16 &row3, const Vector4A16 &row4)
       : v{row1, row2, row3, row4} {}
-  PC_EXTERN esMatrix44(const Vector4A16 &quat);
-  esMatrix44(const Vector4A16 *rows) : v{rows[0], rows[1], rows[2], rows[3]} {}
+  PC_EXTERN Matrix44(const Vector4A16 &quat);
+  Matrix44(const Vector4A16 *rows) : v{rows[0], rows[1], rows[2], rows[3]} {}
 
   void PC_EXTERN MakeIdentity();
   void PC_EXTERN Decompose(Vector4A16 &position, Vector4A16 &rotation,
-                 Vector4A16 &scale) const;
+                           Vector4A16 &scale) const;
   void PC_EXTERN Compose(const Vector4A16 &position, const Vector4A16 &rotation,
-               const Vector4A16 &scale);
-  Vector4A16 PC_EXTERN RotatePoint(const Vector4A16 &input) const;
+                         const Vector4A16 &scale);
   void PC_EXTERN FromQuat(const Vector4A16 &q);
   Vector4A16 PC_EXTERN ToQuat() const;
   // Transpose 3x3
@@ -46,8 +46,8 @@ public:
   // Transpose 4x4
   void PC_EXTERN TransposeFull();
 
-  esMatrix44 operator*(const esMatrix44 &right) const {
-    return esMatrix44(*this) *= right;
+  Matrix44 &operator*=(const Matrix44 &right) {
+    return *this = *this * right;
   }
 
   const Vector4A16 &operator[](size_t index) const { return v[index]; }
@@ -62,8 +62,10 @@ public:
   Vector4A16 &r3() { return v[2]; }
   Vector4A16 &r4() { return v[3]; }
 
-  esMatrix44 PC_EXTERN &operator*=(const esMatrix44 &right);
-  esMatrix44 PC_EXTERN operator-() const;
+  Matrix44 PC_EXTERN operator*(const Matrix44 &right) const;
+  friend Vector4A16 PC_EXTERN operator*(const Vector4A16 &point, const Matrix44 &mtx);
+  Matrix44 PC_EXTERN operator-() const;
 
   void SwapEndian() { FByteswapper(v); }
 };
+} // namespace es

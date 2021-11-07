@@ -91,7 +91,7 @@ public:
   virtual size_t NumNodes() const = 0;
   virtual TransformType TMType() const = 0;
   virtual void GetTM(RTSValue &out, size_t index) const;
-  virtual void GetTM(esMatrix44 &out, size_t index) const;
+  virtual void GetTM(es::Matrix44 &out, size_t index) const;
   virtual size_t NodeIndex(size_t index) const = 0;
 };
 

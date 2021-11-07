@@ -1,4 +1,4 @@
-/*  esMatrix44 Python binding
+/*  Matrix44 Python binding
     Copyright 2021 Lukas Cone
 
     Licensed under the Apache License, Version 2.0 (the "License");
@@ -18,7 +18,7 @@
 #include "datas/matrix44.hpp"
 #include <Python.h>
 
-inline PyObject *Py_BuildValue(const esMatrix44 &mtx) {
+inline PyObject *Py_BuildValue(const es::Matrix44 &mtx) {
   return Py_BuildValue("((ffff)(ffff)(ffff)(ffff))", /**********************/
                        mtx.r1().X, mtx.r1().Y, mtx.r1().Z, mtx.r1().W, /************/
                        mtx.r2().X, mtx.r2().Y, mtx.r2().Z, mtx.r2().W, /************/

@@ -123,7 +123,7 @@ PyObject *Bone::GetTMType(Bone *self) {
 PyObject *Bone::GetTM(Bone *self) {
   switch (self->item->TMType()) {
   case uni::TransformType::TMTYPE_MATRIX: {
-    esMatrix44 mtx;
+    es::Matrix44 mtx;
     self->item->GetTM(mtx);
     return Py_BuildValue(mtx);
   }

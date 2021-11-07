@@ -12,11 +12,11 @@ public:
   uni::TransformType tmType;
   BoneMock *parent;
   uni::RTSValue rval;
-  esMatrix44 mval;
+  es::Matrix44 mval;
 
   uni::TransformType TMType() const override { return tmType; }
   void GetTM(uni::RTSValue &out) const override { out = rval; }
-  void GetTM(esMatrix44 &out) const override { out = mval; }
+  void GetTM(es::Matrix44 &out) const override { out = mval; }
   const Bone *Parent() const override { return parent; }
   size_t Index() const override { return ID; }
   std::string Name() const override { return name; }
@@ -140,7 +140,7 @@ PyObject *GetMotion() {
                             Vector4A16(17, 18, 19, 20),
                             Vector4A16(21, 22, 23, 24));
 
-  auto tck1 = new MotionTrackMock<esMatrix44>;
+  auto tck1 = new MotionTrackMock<es::Matrix44>;
   tck1->boneIndex = 2;
   tck1->ttype = uni::MotionTrack::Matrix;
   tck1->frames.emplace_back(Vector4A16(1, 2, 3, 4), Vector4A16(5, 6, 7, 8),

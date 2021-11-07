@@ -1,4 +1,4 @@
-/*  a source for esMatrix44 class
+/*  a source for Matrix44 class
     more info in README for PreCore Project
 
     Copyright 2018-2021 Lukas Cone
@@ -16,10 +16,52 @@
     limitations under the License.
 */
 
+// FIXME: This is very dangerous, move to cmake
+#define GLM_FORCE_DEFAULT_ALIGNED_GENTYPES
+#define GLM_FORCE_INTRINSICS
+#define GLM_FORCE_QUAT_DATA_XYZW
+#define GLM_FORCE_EXPLICIT_CTOR
 #include "matrix44.hpp"
+#include "glm/ext.hpp"
+#include "glm/glm.hpp"
 
-void esMatrix44::Decompose(Vector4A16 &position, Vector4A16 &rotation,
-                           Vector4A16 &scale) const {
+using namespace es;
+
+static const Vector4A16 &AsVec(const glm::vec4 &in) {
+  return reinterpret_cast<const Vector4A16 &>(in);
+}
+
+static const Vector4A16 &AsVec(const glm::quat &in) {
+  return reinterpret_cast<const Vector4A16 &>(in);
+}
+
+static const glm::quat &AsQuat(const Vector4A16 &in) {
+  return reinterpret_cast<const glm::quat &>(in);
+}
+
+static const glm::vec4 &AsVec(const Vector4A16 &in) {
+  return reinterpret_cast<const glm::vec4 &>(in);
+}
+
+static const Matrix44 &AsMat4(const glm::mat4 &in) {
+  return reinterpret_cast<const Matrix44 &>(in);
+}
+
+static const glm::mat4 &AsMat4(const Matrix44 &in) {
+  return reinterpret_cast<const glm::mat4 &>(in);
+}
+
+static glm::mat4 &AsMat4(Matrix44 &in) {
+  return reinterpret_cast<glm::mat4 &>(in);
+}
+
+static_assert(sizeof(glm::mat4) == sizeof(Matrix44));
+static_assert(alignof(glm::mat4) == alignof(Matrix44));
+static_assert(sizeof(glm::vec4) == sizeof(Vector4A16));
+static_assert(alignof(glm::vec4) == alignof(Vector4A16));
+
+void Matrix44::Decompose(Vector4A16 &position, Vector4A16 &rotation,
+                         Vector4A16 &scale) const {
   position = r4();
   scale.X = r1().Length();
   scale.Y = r2().Length();
@@ -28,15 +70,15 @@ void esMatrix44::Decompose(Vector4A16 &position, Vector4A16 &rotation,
   if (r1().Dot(Vector4A16(Vector(r2()).Cross(r3()), 0.0f)) < 0)
     scale *= -1;
 
-  esMatrix44 tmp(*this);
+  Matrix44 tmp(*this);
   tmp.r1() /= scale.X;
   tmp.r2() /= scale.Y;
   tmp.r3() /= scale.Z;
   rotation = tmp.ToQuat();
 }
 
-void esMatrix44::Compose(const Vector4A16 &position, const Vector4A16 &rotation,
-                         const Vector4A16 &scale) {
+void Matrix44::Compose(const Vector4A16 &position, const Vector4A16 &rotation,
+                       const Vector4A16 &scale) {
   FromQuat(rotation);
   r4() = position;
   r1() *= scale.X;
@@ -44,137 +86,31 @@ void esMatrix44::Compose(const Vector4A16 &position, const Vector4A16 &rotation,
   r3() *= scale.Z;
 }
 
-void esMatrix44::MakeIdentity() {
+void Matrix44::MakeIdentity() {
   r1() = Vector4A16(1.0f, 0.0f, 0.0f, 0.0f);
   r2() = Vector4A16(0.0f, 1.0f, 0.0f, 0.0f);
   r3() = Vector4A16(0.0f, 0.0f, 1.0f, 0.0f);
   r4() = Vector4A16(0.0f, 0.0f, 0.0f, 1.0f);
 }
 
-esMatrix44::esMatrix44() { MakeIdentity(); }
+Matrix44::Matrix44() { MakeIdentity(); }
 
-esMatrix44::esMatrix44(const Vector4A16 &quat) {
+Matrix44::Matrix44(const Vector4A16 &quat) {
   MakeIdentity();
   FromQuat(quat);
 }
 
-Vector4A16 esMatrix44::RotatePoint(const Vector4A16 &point) const {
-  auto mtxCopy = *this;
-  mtxCopy.Transpose();
-
-  const float v0 = mtxCopy.r1().Dot(point);
-  const float v1 = mtxCopy.r2().Dot(point);
-  const float v2 = mtxCopy.r3().Dot(point);
-
-  return Vector4A16(v0, v1, v2, 1.0f);
+void Matrix44::FromQuat(const Vector4A16 &q) {
+  *this = AsMat4(glm::mat4_cast(glm::quat(AsQuat(q))));
 }
 
-void esMatrix44::FromQuat(const Vector4A16 &q) {
-  Vector4A16 xo(q.X);
-  xo *= q;
-
-  Vector4A16 yo(q.Y);
-  yo *= q;
-
-  Vector4A16 zo(q.Z);
-  zo *= q;
-
-  // yo.z, yo.y, xo.z, xo.w
-  const auto tmp00 =
-      _mm_shuffle_ps(yo._data, xo._data, _MM_SHUFFLE(3, 2, 1, 2));
-  // xo.y, xo.x, yo.z, yo.y
-  const Vector4A16 r20(
-      _mm_shuffle_ps(xo._data, yo._data, _MM_SHUFFLE(1, 2, 0, 1)));
-  // yo.y, xo.y, xo.z, xo.z
-  const Vector4A16 r10(
-      _mm_shuffle_ps(r20._data, xo._data, _MM_SHUFFLE(2, 2, 0, 3)));
-  // xo.z, yo.z, xo.x, xo.x
-  const Vector4A16 r30(
-      _mm_shuffle_ps(tmp00, xo._data, _MM_SHUFFLE(0, 0, 0, 2)));
-
-  // zo.z, zo.w, yo.w, yo.w
-  const Vector4A16 r11 =
-      Vector4A16(_mm_shuffle_ps(zo._data, yo._data, _MM_SHUFFLE(3, 3, 3, 2))) *
-      Vector4A16(1.f, -1.f, 1.f, 0.f);
-  // zo.w, zo.z, xo.w, xo.w
-  const Vector4A16 r21 =
-      Vector4A16(_mm_shuffle_ps(zo._data, xo._data, _MM_SHUFFLE(3, 3, 2, 3))) *
-      Vector4A16(1.f, 1.f, -1.f, 0.f);
-  // xo.w, yo.y, yo.w, yo.w
-  const auto tmp06 = _mm_shuffle_ps(tmp00, yo._data, _MM_SHUFFLE(3, 3, 1, 3));
-  // yo.w, xo.w, yo.y, yo.y
-  const Vector4A16 r31 =
-      Vector4A16(_mm_shuffle_ps(tmp06, tmp06, _MM_SHUFFLE(1, 1, 0, 3))) *
-      Vector4A16(-1.f, 1.f, 1.f, 0.f);
-
-  r1() = Vector4A16(1.0f, 0.0f, 0.0f, 0.0f) +
-         (r10 + r11) * Vector4A16(-2.f, 2.0f, 2.0f, 0.0f);
-  r2() = Vector4A16(0.0f, 1.0f, 0.0f, 0.0f) +
-         (r20 + r21) * Vector4A16(2.f, -2.0f, 2.0f, 0.0f);
-  r3() = Vector4A16(0.0f, 0.0f, 1.0f, 0.0f) +
-         (r30 + r31) * Vector4A16(2.f, 2.0f, -2.0f, 0.0f);
+Vector4A16 Matrix44::ToQuat() const {
+  // BUG: https://github.com/g-truc/glm/pull/1084
+  auto asQuat = glm::quat_cast(AsMat4(*this));
+  return {asQuat.y, asQuat.z, asQuat.w, asQuat.x};
 }
 
-Vector4A16 esMatrix44::ToQuat() const {
-  const bool traceType0 = r3().Z < 0.f;
-  const bool traceType1 = traceType0 ? r1().X > r2().Y : r1().X < -r2().Y;
-  // r1().x, r1().z, r2().x, r2().z
-  const auto tmp10 =
-      _mm_shuffle_ps(r1()._data, r2()._data, _MM_SHUFFLE(2, 0, 2, 0));
-  // r3().x, r1().y, r1().z, r1().w
-  const auto tmp11 = _mm_move_ss(r1()._data, r3()._data);
-
-  // r1().x, r2().z, r2().x, r1().z
-  Vector4A16 tmp00(_mm_shuffle_ps(tmp10, tmp10, _MM_SHUFFLE(1, 2, 3, 0)));
-  // r3().z, r3().y, r1().y, r3().x
-  Vector4A16 tmp01(_mm_shuffle_ps(r3()._data, tmp11, _MM_SHUFFLE(0, 1, 1, 2)));
-  // r2().y, 0, 0, 0
-  Vector4A16 tmp03(
-      _mm_shuffle_ps(r2()._data, r2()._data, _MM_SHUFFLE(3, 3, 3, 1)));
-
-  if (traceType0) {
-    if (traceType1) {
-      tmp00 *= Vector4A16(1.f, -1.f, 1.f, 1.f);
-      tmp01 *= Vector4A16(-1.f, 1.f, 1.f, 1.f);
-      tmp03 *= -1.f;
-      tmp00 = Vector4A16(1.f, 0, 0, 0) + tmp00 + tmp01 + tmp03;
-      tmp00 *= 0.5f / sqrtf(tmp00.X);
-
-      return Vector4A16(
-          _mm_shuffle_ps(tmp00._data, tmp00._data, _MM_SHUFFLE(1, 3, 2, 0)));
-    } else {
-      tmp00 *= Vector4A16(-1.f, 1.f, 1.f, 1.f);
-      tmp01 *= Vector4A16(-1.f, 1.f, 1.f, -1.f);
-      tmp00 = Vector4A16(1.f, 0, 0, 0) + tmp00 + tmp01 + tmp03;
-      tmp00 *= 0.5f / sqrtf(tmp00.X);
-      tmp00 *= -1.0f;
-
-      return Vector4A16(
-          _mm_shuffle_ps(tmp00._data, tmp00._data, _MM_SHUFFLE(3, 1, 0, 2)));
-    }
-  } else {
-    if (traceType1) {
-      tmp00 *= Vector4A16(-1.f, 1.f, 1.f, 1.f);
-      tmp01 *= Vector4A16(1.f, 1.f, -1.f, 1.f);
-      tmp03 *= -1.f;
-      tmp00 = Vector4A16(1.f, 0, 0, 0) + tmp00 + tmp01 + tmp03;
-      tmp00 *= 0.5f / sqrtf(tmp00.X);
-
-      return Vector4A16(
-          _mm_shuffle_ps(tmp00._data, tmp00._data, _MM_SHUFFLE(2, 0, 1, 3)));
-    } else {
-      tmp00 *= Vector4A16(1.f, -1.f, 1.f, 1.f);
-      tmp01 *= Vector4A16(1.f, 1.f, -1.f, -1.f);
-      tmp00 = Vector4A16(1.f, 0, 0, 0) + tmp00 + tmp01 + tmp03;
-      tmp00 *= 0.5f / sqrtf(tmp00.X);
-
-      return Vector4A16(
-          _mm_shuffle_ps(tmp00._data, tmp00._data, _MM_SHUFFLE(0, 2, 3, 1)));
-    }
-  }
-}
-
-void esMatrix44::Transpose() {
+void Matrix44::Transpose() {
   __m128 tmp00 =
       _mm_shuffle_ps(r1()._data, r2()._data, _MM_SHUFFLE(1, 0, 1, 0));
   __m128 tmp01 =
@@ -185,66 +121,22 @@ void esMatrix44::Transpose() {
   r3()._data = _mm_shuffle_ps(tmp01, r3()._data, _MM_SHUFFLE(3, 2, 3, 1));
 }
 
-void esMatrix44::TransposeFull() {
+void Matrix44::TransposeFull() {
   _MM_TRANSPOSE4_PS(r1()._data, r2()._data, r3()._data, r4()._data);
 }
 
-esMatrix44 &esMatrix44::operator*=(const esMatrix44 &right) {
-  esMatrix44 rCopy(right);
-  rCopy.TransposeFull();
-
-  const float v00 = r1().Dot(rCopy.r1());
-  const float v01 = r1().Dot(rCopy.r2());
-  const float v02 = r1().Dot(rCopy.r3());
-  const float v03 = r1().Dot(rCopy.r4());
-
-  const float v10 = r2().Dot(rCopy.r1());
-  const float v11 = r2().Dot(rCopy.r2());
-  const float v12 = r2().Dot(rCopy.r3());
-  const float v13 = r2().Dot(rCopy.r4());
-
-  const float v20 = r3().Dot(rCopy.r1());
-  const float v21 = r3().Dot(rCopy.r2());
-  const float v22 = r3().Dot(rCopy.r3());
-  const float v23 = r3().Dot(rCopy.r4());
-
-  const float v30 = r4().Dot(rCopy.r1());
-  const float v31 = r4().Dot(rCopy.r2());
-  const float v32 = r4().Dot(rCopy.r3());
-  const float v33 = r4().Dot(rCopy.r4());
-
-  r1() = Vector4A16(v00, v01, v02, v03);
-  r2() = Vector4A16(v10, v11, v12, v13);
-  r3() = Vector4A16(v20, v21, v22, v23);
-  r4() = Vector4A16(v30, v31, v32, v33);
-
-  return *this;
+Vector4A16 es::operator*(const Vector4A16 &point, const es::Matrix44 &mtx) {
+  auto result = AsVec(point) * AsMat4(mtx);
+  return AsVec(result);
 }
 
-// https://lxjk.github.io/2017/09/03/Fast-4x4-Matrix-Inverse-with-SSE-SIMD-Explained.html#_transform_matrix_inverse
-esMatrix44 esMatrix44::operator-() const {
-  esMatrix44 retVal(*this);
-  retVal.Transpose();
+Matrix44 Matrix44::operator*(const Matrix44 &right) const {
+  auto &thisMat = AsMat4(*this);
+  auto &rightMat = AsMat4(right);
+  return AsMat4(thisMat * rightMat);
+}
 
-  Vector4A16 sizeSqr = retVal.r1() * retVal.r1();
-  sizeSqr += retVal.r2() * retVal.r2();
-  sizeSqr += retVal.r3() * retVal.r3();
-
-  const Vector4A16 vEps(0.000001f);
-  const Vector4A16 oneVal(1.0f);
-  const Vector4A16 ltMask(_mm_cmplt_ps(sizeSqr._data, vEps._data));
-
-  sizeSqr = oneVal / ((ltMask & oneVal) + (~ltMask & sizeSqr));
-
-  retVal.r1() *= sizeSqr;
-  retVal.r2() *= sizeSqr;
-  retVal.r3() *= sizeSqr;
-
-  const float v30 = retVal.r1().Dot(r4());
-  const float v31 = retVal.r2().Dot(r4());
-  const float v32 = retVal.r3().Dot(r4());
-
-  retVal.r4() = Vector4A16(v30, v31, v32, 1.0f).QConjugate();
-
-  return retVal;
+Matrix44 Matrix44::operator-() const {
+  auto thisMat = glm::inverse(AsMat4(*this));
+  return AsMat4(thisMat);
 }

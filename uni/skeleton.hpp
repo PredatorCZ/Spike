@@ -20,7 +20,9 @@
 #include "list.hpp"
 #include <string>
 
-class esMatrix44;
+namespace es {
+class Matrix44;
+}
 
 namespace uni {
 struct RTSValue;
@@ -29,7 +31,7 @@ class PC_EXTERN Bone : public Base {
 public:
   virtual TransformType TMType() const = 0;
   virtual void GetTM(RTSValue &out) const;
-  virtual void GetTM(esMatrix44 &out) const;
+  virtual void GetTM(es::Matrix44 &out) const;
   virtual const Bone *Parent() const = 0;
   // A special bone identifier, this is not a bone index within skeleton
   virtual size_t Index() const = 0;

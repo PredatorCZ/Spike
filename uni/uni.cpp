@@ -28,7 +28,7 @@ MetadataConst Base::Metadata() const { return {}; }
 void Skin::GetTM(RTSValue &, size_t) const {
   throw _uni_::ThrowVoidCall<TransformType, TMTYPE_RTS>(this->TMType());
 }
-void Skin::GetTM(esMatrix44 &, size_t) const {
+void Skin::GetTM(es::Matrix44 &, size_t) const {
   throw _uni_::ThrowVoidCall<TransformType, TMTYPE_MATRIX>(this->TMType());
 }
 } // namespace uni

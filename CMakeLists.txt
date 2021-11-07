@@ -17,6 +17,8 @@ if(CMAKE_COMPILER_IS_GNUCXX AND USE_GCOV)
   message("Compiling with GCOV.")
 endif()
 
+add_subdirectory(3rd_party/glm)
+
 function(_set_basic_flags TARGET_NAME SCOPE)
   if(CMAKE_COMPILER_IS_GNUCXX AND USE_GCOV)
     target_compile_options(${TARGET_NAME} ${SCOPE} -fprofile-arcs
@@ -135,6 +137,8 @@ if(PC_SHARED_LIB)
         CACHE BOOL "")
     target_link_libraries(precore pugixml-shared)
   endif()
+
+  target_link_libraries(precore glm::glm)
 
   install(
     TARGETS precore

@@ -23,7 +23,7 @@ void MotionTrack::GetValue(RTSValue &, float) const {
                              MotionTrack::PositionRotationScale>(
       this->TrackType());
 }
-void MotionTrack::GetValue(esMatrix44 &, float) const {
+void MotionTrack::GetValue(es::Matrix44 &, float) const {
   throw _uni_::ThrowVoidCall<MotionTrack::TrackType_e, MotionTrack::Matrix>(
       this->TrackType());
 }

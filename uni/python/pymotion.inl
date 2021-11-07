@@ -207,7 +207,7 @@ PyObject *MotionTrack::GetValues(MotionTrack *self, PyObject *index) {
     break;
   }
   case uni::MotionTrack::Matrix: {
-    esMatrix44 mtx;
+    es::Matrix44 mtx;
     for (auto &t : times) {
       self->item->GetValue(mtx, t);
       PyList_SetItem(retList, curItem++, Py_BuildValue(mtx));

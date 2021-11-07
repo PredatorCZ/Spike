@@ -21,7 +21,9 @@
 #include "list.hpp"
 #include <string>
 
-class esMatrix44;
+namespace es {
+class Matrix44;
+}
 
 namespace uni {
 struct RTSValue;
@@ -40,7 +42,7 @@ public:
   virtual TrackType_e TrackType() const = 0;
   virtual size_t BoneIndex() const = 0;
   virtual void GetValue(RTSValue &output, float time) const;
-  virtual void GetValue(esMatrix44 &output, float time) const;
+  virtual void GetValue(es::Matrix44 &output, float time) const;
   virtual void GetValue(Vector4A16 &output, float time) const;
   virtual void GetValue(float &output, float time) const;
 };
