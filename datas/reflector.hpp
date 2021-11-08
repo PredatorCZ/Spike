@@ -116,9 +116,8 @@ private:
 };
 
 template <class C> class ReflectorWrap : public Reflector {
-  using pure_type = typename std::remove_const<C>::type;
   ReflectedInstance GetReflectedInstance() const override {
-    return {GetReflectedClass<pure_type>(), &data};
+    return {GetReflectedClass<std::decay_t<C>>(), &data};
   }
 
 public:

@@ -477,7 +477,7 @@ SetReflectedMember(ReflType reflValue, es::string_view value, char *objAddr) {
   case REFType::BitFieldMember: {
     uint64 &output = *reinterpret_cast<uint64 *>(objAddr);
     auto doStuff = [&](auto &&insertVal) {
-      LimitProxy<typename std::remove_reference<decltype(insertVal)>::type>
+      LimitProxy<std::decay_t<decltype(insertVal)>>
           proxy{reflValue.bit.size};
       auto err = SetNumber(value, insertVal, proxy);
       BitMember bfMember;

@@ -16,28 +16,23 @@
 */
 
 #pragma once
+#include "supercore.hpp"
 #include "macroLoop.hpp"
 #include "master_printer.hpp"
-#include <type_traits>
 #include <ostream>
+#include <type_traits>
 
 #define _CHECK_FAILED_TMP(...)                                                 \
   printerror("Check failed " << __FILE__ << '(' << __LINE__                    \
                              << "): " __VA_ARGS__)
 
 namespace es {
-template <class C, class D>
-auto append_scan(const D &input, const char *, int)
-    -> decltype(std::declval<std::ostream>() << std::declval<C>(), void()) {
-  es::print::Get() << input;
-}
-
-template <class C, class D>
-void append_scan(const D &, const char *varName, ...) {
-  es::print::Get() << varName;
-}
+template <class C>
+using is_printable =
+    decltype(std::declval<std::ostream>() << std::declval<C>());
 
 template <class C> struct ValuePrinter {
+  using value_type = C;
   const C &value;
   const char *valName;
 
@@ -45,7 +40,11 @@ template <class C> struct ValuePrinter {
       : value(input), valName(vlName) {}
 
   friend std::ostream &operator<<(std::ostream &str, const ValuePrinter &val) {
-    append_scan<C, C>(val.value, val.valName, 0);
+    if constexpr (es::is_detected_v<is_printable, C>) {
+      str << val.value;
+    } else {
+      str << val.valName;
+    }
     return str;
   }
 };

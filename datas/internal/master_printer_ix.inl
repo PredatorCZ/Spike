@@ -22,25 +22,23 @@ void SetConsoleTextColor(_Func fc, int red, int green, int blue) {
   fc(buffer);
 }
 
-template <class _Func> void RestoreConsoleTextColor(_Func fc) {
-  fc("\033[0m");
-}
+template <class _Func> void RestoreConsoleTextColor(_Func fc) { fc("\033[0m"); }
 
 void SetConsoleTextColor(int red, int green, int blue) {
-  for (auto &f : MASTER_PRINTER.functions) {
-    if (!f.useColor)
+  for (auto &[func, useColor] : MASTER_PRINTER.functions) {
+    if (!useColor)
       continue;
 
-    SetConsoleTextColor(f.func, red, green, blue);
+    SetConsoleTextColor(func, red, green, blue);
   }
 }
 
 void RestoreConsoleTextColor() {
-  for (auto &f : MASTER_PRINTER.functions) {
-    if (!f.useColor)
+  for (auto &[func, useColor] : MASTER_PRINTER.functions) {
+    if (!useColor)
       continue;
 
-    RestoreConsoleTextColor(f.func);
+    RestoreConsoleTextColor(func);
   }
 }
 

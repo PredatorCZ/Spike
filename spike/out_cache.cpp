@@ -100,8 +100,8 @@ struct HybridLeafGen {
   size_t Write(BinWritterRef wr, const std::vector<size_t> &childrenOffsets,
                std::set<size_t> &fixups) {
     wr.ApplyPadding(8);
-    for (auto &c : childrenIds) {
-      const int64 childOffset = childrenOffsets.at(c.second);
+    for (auto &[_, id] : childrenIds) {
+      const int64 childOffset = childrenOffsets.at(id);
       const int64 thisOffset = wr.Tell();
       fixups.emplace(thisOffset);
       wr.Write(childOffset - thisOffset);
@@ -111,8 +111,8 @@ struct HybridLeafGen {
 
     // fixup parent offset for children
     wr.Push();
-    for (auto &c : childrenIds) {
-      const int64 childOffset = childrenOffsets.at(c.second);
+    for (auto &[_, id] : childrenIds) {
+      const int64 childOffset = childrenOffsets.at(id);
       wr.Seek(childOffset + HYBRIDLEAF_PARENTPTR);
       const int64 thisOffset = retVal;
       const int64 memberOffset = wr.Tell();
@@ -143,16 +143,16 @@ struct HybridLeafGen {
     wr.Write<uint16>(partName.size);
     wr.Write<uint32>(finals.size());
 
-    for (auto &f : finals) {
-      const int64 finalOffset = f.second->wrOffset;
+    for (auto &[_, entry] : finals) {
+      const int64 finalOffset = entry->wrOffset;
       const int64 thisOffset = wr.Tell();
       fixups.emplace(thisOffset);
       wr.Write(finalOffset - thisOffset);
     }
 
     wr.Push();
-    for (auto &f : finals) {
-      const int64 finalOffset = f.second->wrOffset;
+    for (auto &[_, entry] : finals) {
+      const int64 finalOffset = entry->wrOffset;
       wr.Seek(finalOffset + FINAL_PARENTPTR);
       const int64 thisOffset = retVal;
       const int64 memberOffset = wr.Tell();
@@ -189,7 +189,7 @@ struct CacheGeneratorImpl {
         const size_t position = sliderRef.InsertString(p);
         parts.emplace_back(SliderString{position, p.size(), &sliderRef});
       }
-      
+
       finalKey.size = finalPart.size();
 
       if (finalPart.size() < 13) {

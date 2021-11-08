@@ -61,9 +61,11 @@ static struct MasterPrinter {
 namespace es::print {
 
 void AddPrinterFunction(print_func func, bool useColor) {
-  for (auto &c : MASTER_PRINTER.functions)
-    if (c.func == func)
+  for (auto &[func_, _] : MASTER_PRINTER.functions) {
+    if (func_ == func) {
       return;
+    }
+  }
   MASTER_PRINTER.functions.emplace_back(func, useColor);
 }
 
@@ -81,8 +83,8 @@ std::ostream &Get(MPType type) {
 }
 
 void FlushAll() {
-  for (auto &fc : MASTER_PRINTER.functions) {
-    if (fc.useColor) {
+  for (auto &[func, useColor] : MASTER_PRINTER.functions) {
+    if (useColor) {
       if (MASTER_PRINTER.cType == MPType::WRN) {
         SetConsoleTextColor(255, 255, 0);
       } else if (MASTER_PRINTER.cType == MPType::ERR) {
@@ -93,25 +95,25 @@ void FlushAll() {
     }
 
     if (MASTER_PRINTER.printThreadID) {
-      fc.func("Thread[0x");
+      func("Thread[0x");
       std::thread::id threadID = std::this_thread::get_id();
       char buffer[65];
       snprintf(buffer, 65, "%X", reinterpret_cast<uint32 &>(threadID));
-      fc.func(buffer);
-      fc.func("] ");
+      func(buffer);
+      func("] ");
     }
 
     if (MASTER_PRINTER.cType == MPType::WRN) {
-      fc.func("WARNING: ");
+      func("WARNING: ");
     } else if (MASTER_PRINTER.cType == MPType::ERR) {
-      fc.func("ERROR: ");
+      func("ERROR: ");
     }
 
     auto &&tmpData = MASTER_PRINTER.buffer.str();
 
-    fc.func(tmpData.data());
+    func(tmpData.data());
 
-    if (fc.useColor && MASTER_PRINTER.cType != MPType::MSG) {
+    if (useColor && MASTER_PRINTER.cType != MPType::MSG) {
       RestoreConsoleTextColor();
     }
   }

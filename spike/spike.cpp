@@ -188,13 +188,13 @@ void ExtractConvertMode(int argc, TCHAR *argv[], APPContext &ctx,
     return;
   }
 
-  for (auto &zip : zips) {
-    printline("Loading ZIP vfs: " << zip.first);
+  for (auto &[path, filter] : zips) {
+    printline("Loading ZIP vfs: " << path);
     const bool loadFiltered =
         ctx.info->arcLoadType == ArchiveLoadType::FILTERED;
-    auto fctx = loadFiltered ? MakeZIPContext(zip.first, zip.second, pathFilter)
-                             : MakeZIPContext(zip.first);
-    AFileInfo zFile(zip.first);
+    auto fctx = loadFiltered ? MakeZIPContext(path,filter, pathFilter)
+                             : MakeZIPContext(path);
+    AFileInfo zFile(path);
     std::vector<ZIPIOEntry> filesToProcess;
 
     if (!loadFiltered) {
@@ -203,7 +203,7 @@ void ExtractConvertMode(int argc, TCHAR *argv[], APPContext &ctx,
       for (auto f : vfsIter) {
         auto item = f.AsView();
 
-        if (pathFilter.IsFiltered(item) && zip.second.IsFiltered(item)) {
+        if (pathFilter.IsFiltered(item) && filter.IsFiltered(item)) {
           filesToProcess.push_back(f);
         }
       }
@@ -249,7 +249,7 @@ void ExtractConvertMode(int argc, TCHAR *argv[], APPContext &ctx,
     std::mutex vfsMutex;
 
 #if SPIKE_USE_THREADS
-    RunThreadedQueue(numFiles, [&](size_t index) {
+    RunThreadedQueue(numFiles, [&, &path = path](size_t index) {
       try {
 #else
     for (size_t index = 0; index < numFiles; index++) {
@@ -267,7 +267,7 @@ void ExtractConvertMode(int argc, TCHAR *argv[], APPContext &ctx,
         appCtx->workingFile = fileEntry.AsView();
 
         if (ctx.info->mode == AppMode_e::EXTRACT) {
-          printline("Extracting: " << zip.first << '/' << fileEntry.AsView());
+          printline("Extracting: " << path << '/' << fileEntry.AsView());
           std::unique_ptr<AppExtractContext> ectx;
           std::string recordsFile;
 
@@ -305,7 +305,7 @@ void ExtractConvertMode(int argc, TCHAR *argv[], APPContext &ctx,
             es::RemoveFile(recordsFile);
           }
         } else {
-          printline("Processing: " << zip.first << '/' << fileEntry.AsView());
+          printline("Processing: " << path << '/' << fileEntry.AsView());
           auto fileStream = fctx->OpenFile(fileEntry);
 
           appCtx->workingFile.insert(0, outPath);
@@ -423,32 +423,32 @@ void PackMode(int argc, TCHAR *argv[], APPContext &ctx,
     return;
   }
 
-  for (auto &zip : zips) {
-    printline("Loading ZIP vfs: " << zip.first);
+  for (auto &[path, paths] : zips) {
+    printline("Loading ZIP vfs: " << path);
     const bool loadFiltered =
         ctx.info->arcLoadType == ArchiveLoadType::FILTERED;
-    auto fctx = [&] {
+    auto fctx = [&, &paths_ = paths, &path_ = path] {
       if (loadFiltered) {
         PathFilter mainFilter;
-        for (auto &z : zip.second) {
+        for (auto &z : paths_) {
           mainFilter.AddFilter(z);
         }
 
-        return MakeZIPContext(zip.first, mainFilter, moduleFilter);
+        return MakeZIPContext(path_, mainFilter, moduleFilter);
       }
 
-      return MakeZIPContext(zip.first);
+      return MakeZIPContext(path_);
     }();
 
 #if SPIKE_USE_THREADS
-    RunThreadedQueue(zip.second.size(), [&](size_t index) {
+    RunThreadedQueue(paths.size(), [&, &path = path, &paths = paths](size_t index) {
       try {
 #else
-    for (size_t index = 0; index < zip.second.size(); index++) {
+    for (size_t index = 0; index < paths.size(); index++) {
 #endif
         PathFilter zFilter;
-        auto zipPath = zip.first.substr(0, zip.first.size() - 4);
-        auto &zFolder = zip.second[index];
+        auto zipPath = path.substr(0, path.size() - 4);
+        auto &zFolder = paths[index];
 
         if (!zFolder.empty()) {
           zFilter.AddFilter(zFolder);

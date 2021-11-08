@@ -40,7 +40,7 @@ void ZIPExtactContext::FinishZIP(cache_begin_cb cacheBeginCB) {
 
   auto SafeCast = [&](auto &where, auto &&what) {
     const uint64 limit =
-        std::numeric_limits<std::remove_reference_t<decltype(where)>>::max();
+        std::numeric_limits<std::decay_t<decltype(where)>>::max();
     if (what >= limit) {
       forcex64 = true;
       where = limit;
@@ -110,7 +110,7 @@ void ZIPExtactContext::ReserveCache() {
 void ZIPExtactContext::FinishFile() {
   auto SafeCast = [&](auto &where, auto &&what) {
     const uint64 limit =
-        std::numeric_limits<std::remove_reference_t<decltype(where)>>::max();
+        std::numeric_limits<std::decay_t<decltype(where)>>::max();
     bool forcex64 = false;
 
     if (what >= limit) {
@@ -396,7 +396,7 @@ void ZIPMerger::FinishMerge(cache_begin_cb cacheBeginCB) {
 
   auto SafeCast = [&](auto &where, auto &&what) {
     const uint64 limit =
-        std::numeric_limits<std::remove_reference_t<decltype(where)>>::max();
+        std::numeric_limits<std::decay_t<decltype(where)>>::max();
     if (what >= limit) {
       forcex64 = true;
       where = limit;

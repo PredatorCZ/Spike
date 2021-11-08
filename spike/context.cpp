@@ -174,7 +174,7 @@ APPContext::APPContext(const char *moduleName_, const std::string &appFolder_)
   };
 
   auto assign = [&](auto &value, auto name) {
-    using type_ = std::remove_reference_t<decltype(value)>;
+    using type_ = std::decay_t<decltype(value)>;
     value = reinterpret_cast<type_>(dlsym(dlHandle, name));
 
     if (!value) {
@@ -183,7 +183,7 @@ APPContext::APPContext(const char *moduleName_, const std::string &appFolder_)
   };
 
   auto tryAssign = [&](auto &value, auto name) {
-    using type_ = typename std::remove_reference_t<decltype(value)>::value_type;
+    using type_ = typename std::decay_t<decltype(value)>::value_type;
     return value = reinterpret_cast<type_>(dlsym(dlHandle, name));
   };
 
