@@ -113,7 +113,7 @@ struct AppPackStats {
 };
 
 extern "C" {
-void AC_EXTERN AppInitModule();
+const AppInfo_s AC_EXTERN *AppInitModule();
 void AC_EXTERN AppAdditionalHelp(std::ostream &str, size_t indent);
 bool AC_EXTERN AppInitContext(const std::string &dataFolder);
 void AC_EXTERN AppProcessFile(std::istream &stream, AppContext *ctx);

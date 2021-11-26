@@ -89,7 +89,7 @@ struct APPContextCopyData {
   func<decltype(AppExtractFile)> ExtractFile;
   func<decltype(AppNewArchive)> NewArchive;
   opt_func<decltype(AppFinishContext)> FinishContext;
-  AppInfo_s *info;
+  const AppInfo_s *info;
 
 protected:
   const char *moduleName;

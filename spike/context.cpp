@@ -197,15 +197,12 @@ APPContext::APPContext(const char *moduleName_, const std::string &appFolder_)
     postError();
   }
 
-  assign(info, "appInfo");
+  func<decltype(AppInitModule)> InitModule;
+  assign(InitModule, "AppInitModule");
+  info = InitModule();
 
   if (info->contextVersion > AppInfo_s::CONTEXT_VERSION) {
     throw std::runtime_error("Module context version mismatch!");
-  }
-
-  opt_func<decltype(AppInitModule)> InitModule;
-  if (tryAssign(InitModule, "AppInitModule")) {
-    InitModule();
   }
 
   tryAssign(AdditionalHelp, "AppAdditionalHelp");
