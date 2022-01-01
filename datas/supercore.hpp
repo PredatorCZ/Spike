@@ -76,7 +76,7 @@ bool IsEnd(const cnt &container, const iterType &iter) {
 template <class sview>
 sview SkipStartWhitespace(sview input, bool inclNewLine = false) noexcept {
   while ((input[0] == ' ' || input[0] == '\t' ||
-          (inclNewLine && input[0] == '\n')) &&
+          (inclNewLine && (input[0] == '\n' || input[0] == '\r'))) &&
          !input.empty())
     input.remove_prefix(1);
 
@@ -86,16 +86,17 @@ sview SkipStartWhitespace(sview input, bool inclNewLine = false) noexcept {
 template <class sview>
 sview SkipEndWhitespace(sview input, bool inclNewLine = false) noexcept {
   while ((input.back() == ' ' || input.back() == '\t' ||
-          (inclNewLine && input.back() == '\n')) &&
+          (inclNewLine && (input.back() == '\n' || input.back() == '\r'))) &&
          !input.empty())
     input.remove_suffix(1);
 
   return input;
 }
 
-template <class sview> sview TrimWhitespace(sview input) noexcept {
-  input = SkipStartWhitespace(input);
-  return SkipEndWhitespace(input);
+template <class sview>
+sview TrimWhitespace(sview input, bool inclNewLine = false) noexcept {
+  input = SkipStartWhitespace(input, inclNewLine);
+  return SkipEndWhitespace(input, inclNewLine);
 }
 
 template <class C> void Dispose(C &item) { auto removed = std::move(item); }
