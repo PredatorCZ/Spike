@@ -37,7 +37,12 @@ struct AppInfo_s {
 };
 
 struct AppContext {
+  // Used with ZIP to separate zip and system filesystem
+  // Used only for locating additional files (RequestFile, FindFile)
   std::string workingFile;
+  // Used only in CONVERT mode, represents presumed file location within system
+  // filesystem
+  std::string outFile;
   virtual ~AppContext() = default;
   virtual AppContextStream RequestFile(const std::string &path) = 0;
   virtual void DisposeFile(std::istream *file) = 0;
