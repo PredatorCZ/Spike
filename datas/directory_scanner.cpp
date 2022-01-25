@@ -39,6 +39,14 @@ bool PathFilter::IsFiltered(es::string_view fileName_) const {
     bool clampBegin = kvi.front() == '^';
     bool clampEnd = kvi.back() == '$';
 
+    if (clampBegin) {
+      kvi.remove_prefix(1);
+    }
+
+    if (clampEnd) {
+      kvi.remove_suffix(1);
+    }
+
     auto wildcharPos = kvi.find_first_of('*');
     bool useWildchar = wildcharPos != kvi.npos;
 
@@ -67,14 +75,10 @@ bool PathFilter::IsFiltered(es::string_view fileName_) const {
         return true;
       }
     } else if (clampBegin) {
-      kvi.remove_prefix(1);
-
       if (fileName.begins_with(kvi)) {
         return true;
       }
     } else if (clampEnd) {
-      kvi.remove_suffix(1);
-
       if (fileName.ends_with(kvi)) {
         return true;
       }
