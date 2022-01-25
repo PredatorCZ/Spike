@@ -15,6 +15,8 @@ Library is made for C++17 standard and it's compilable under Clang 5+, GCC 7+, M
 
 * pugixml (Copyright (C) 2006-2020, by Arseny Kapoulkine)
 * glm (Copyright (c) 2005 - G-Truc Creation)
+* nlohmann::json (Copyright (c) 2013-2022 Niels Lohmann)
+* gltf is a derivative work of fx-gltf (Copyright(c) 2018-2021 Jesse Yurkovich)
 
 ## Main modules
 
