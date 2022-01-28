@@ -2,6 +2,7 @@
 #include "datas/reflector_io.hpp"
 #include "datas/reflector_xml.hpp"
 #include "datas/unit_testing.hpp"
+#include "datas/stat.hpp"
 #include "pugixml.hpp"
 #include "reflector_def.inl"
 
@@ -34,7 +35,8 @@ int test_reflector_xml_v2() {
 }
 
 int main() {
-  es::print::AddPrinterFunction(UPrintf);
+  es::SetupWinApiConsole();
+  es::print::AddPrinterFunction(es::Print);
 
   RegisterReflectedTypes<subrefl, reflClass, EnumWrap00, EnumWrap01, EnumWrap02,
                          EnumWrap03, EnumWrap04, BitTypeRefl,

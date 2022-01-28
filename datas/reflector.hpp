@@ -19,7 +19,6 @@
 #pragma once
 #include "macroLoop.hpp"
 #include "supercore.hpp"
-#include "tchar.hpp"
 
 #include "internal/reflector_class.hpp"
 #include "internal/reflector_enum.hpp"

@@ -1,8 +1,8 @@
 #include "datas/vectors_stream.hpp"
+#include "datas/stat.hpp"
 
 #include "allocator_hybrid.inl"
 #include "bitfield.inl"
-#include "datas/tchar.hpp"
 #include "endian.inl"
 #include "fileinfo.inl"
 #include "flags.inl"
@@ -15,7 +15,8 @@
 #include "bincore.inl"
 
 int main() {
-  es::print::AddPrinterFunction(UPrintf);
+  es::SetupWinApiConsole();
+  es::print::AddPrinterFunction(es::Print);
 
   printline("Compiler info:\n\tLittle Endian: "
             << LittleEndian()
@@ -23,9 +24,7 @@ int main() {
 
   printerror("I am error and I'm red.");
   printwarning("I am warning and I'm yellow.");
-  SetConsoleTextColor(127, 127, 255);
-  printline("I'm blue, da ri di danu da.");
-  RestoreConsoleTextColor();
+  printinfo("I'm blue, da ri di danu da.");
 
   TEST_CASES(int testResult, TEST_FUNC(test_bf_00), TEST_FUNC(test_bf_01),
              TEST_FUNC(test_alloc_hybrid), TEST_FUNC(test_fileinfo),

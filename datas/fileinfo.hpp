@@ -103,10 +103,3 @@ public:
 };
 
 typedef FileInfo<char> AFileInfo;
-typedef FileInfo<wchar_t> WFileInfo;
-
-#ifdef UNICODE
-typedef WFileInfo TFileInfo;
-#else
-typedef AFileInfo TFileInfo;
-#endif

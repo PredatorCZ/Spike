@@ -29,7 +29,7 @@ build_target(
 
 install(TARGETS spike RUNTIME DESTINATION bin)
 
-if(NOT MSVC)
+if(NOT WIN32)
   target_link_libraries(spike dl)
 endif()
 

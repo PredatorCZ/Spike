@@ -16,10 +16,10 @@
 */
 
 #include "directory_scanner.hpp"
-#include "tchar.hpp"
 
 #if defined(_MSC_VER) || defined(__MINGW64__)
 #define USEWIN
+#include "tchar.hpp"
 #include <windows.h>
 #elif defined(__GNUC__) || defined(__GNUG__)
 #include <dirent.h>

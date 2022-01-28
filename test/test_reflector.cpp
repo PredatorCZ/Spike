@@ -1,11 +1,12 @@
-#include "../datas/tchar.hpp"
+#include "datas/stat.hpp"
 #include "reflector.inl"
 #include "reflector_bindump.inl"
 #include "reflector_extended.inl"
 #include "reflector_io.inl"
 
 int main() {
-  es::print::AddPrinterFunction(UPrintf);
+  es::SetupWinApiConsole();
+  es::print::AddPrinterFunction(es::Print);
 
   RegisterReflectedTypes<subrefl, reflClass, roomInfo, roomInfo01, EnumWrap00,
                          EnumWrap01, EnumWrap02, EnumWrap03, EnumWrap04,

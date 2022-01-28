@@ -1,5 +1,5 @@
 #include "datas/reflector.hpp"
-#include "datas/tchar.hpp"
+#include "datas/stat.hpp"
 #include "datas/unit_testing.hpp"
 
 struct SimpleStruct;
@@ -11,7 +11,8 @@ struct SimpleStruct2 {
 REFLECT(CLASS(SimpleStruct2), MEMBER(field))
 
 int main() {
-  es::print::AddPrinterFunction(UPrintf);
+  es::SetupWinApiConsole();
+  es::print::AddPrinterFunction(es::Print);
   auto rf0 = GetReflectedClass<SimpleStruct>();
 
   TEST_EQUAL(rf0->nTypes, 2);

@@ -36,11 +36,16 @@ enum FileType_e {
 #endif
 
 FileType_e PC_EXTERN FileType(const std::string &path);
+
 namespace es {
 int MKDIR_EXTERN_ mkdir(const char *path, uint32 mode = 0777);
 int MKDIR_EXTERN_ mkdir(const std::string &path, uint32 mode = 0777);
 std::string GetTempFilename();
 void RemoveFile(const std::string &path);
+
+// Setup stdout handle to support utf8 and virtual env
+// Win only
+void MKDIR_EXTERN_ SetupWinApiConsole();
 } // namespace es
 
 #undef MKDIR_EXTERN_
@@ -61,12 +66,12 @@ inline void RemoveFile(const std::string &path) {
     throw std::runtime_error("Cannot remove file: " + path);
   }
 }
+
+inline void SetupWinApiConsole() {}
 } // namespace es
 #else
 namespace es {
-inline std::string GetTempFilename() {
-  return es::ToUTF8(_wtmpnam(nullptr));
-}
+inline std::string GetTempFilename() { return es::ToUTF8(_wtmpnam(nullptr)); }
 
 inline void RemoveFile(const std::string &path) {
   auto wpath = es::ToUTF1632(path);

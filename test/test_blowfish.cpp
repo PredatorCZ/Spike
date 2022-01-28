@@ -1,5 +1,5 @@
 #include "datas/encrypt/blowfish2.h"
-#include "datas/tchar.hpp"
+#include "datas/stat.hpp"
 #include "datas/unit_testing.hpp"
 #include <cstring>
 
@@ -143,7 +143,8 @@ int test_blowfish2() {
 }
 
 int main() {
-  es::print::AddPrinterFunction(UPrintf);
+  es::SetupWinApiConsole();
+  es::print::AddPrinterFunction(es::Print);
 
   TEST_CASES(int testResult, TEST_FUNC(test_blowfish_ECB),
              TEST_FUNC(test_blowfish_CBC), TEST_FUNC(test_blowfish_CFB),

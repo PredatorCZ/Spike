@@ -22,6 +22,7 @@
 #include "datas/master_printer.hpp"
 #include "datas/pugiex.hpp"
 #include "datas/reflector_xml.hpp"
+#include "datas/tchar.hpp"
 #include <algorithm>
 #include <chrono>
 #include <sstream>

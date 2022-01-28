@@ -11,6 +11,10 @@ if(MINGW)
   enable_language(RC)
 endif()
 
+if(WIN32)
+  add_definitions(-D_UNICODE -DUNICODE)
+endif()
+
 # ~~~
 # build_target(
 #   NAME <name of target>
@@ -137,7 +141,7 @@ function(build_target)
 
   string(APPEND TARGET_COPYRIGHT "${_TARGET_DATE_YYYY} ")
 
-  if(NOT _arg_NO_VERINFO AND (MSVC OR MINGW))
+  if(NOT _arg_NO_VERINFO AND CMAKE_RC_COMPILER)
     configure_file(${PRECORE_SOURCE_DIR}/cmake/verinfo.rc.tmpl
                    ${PROJECT_BINARY_DIR}/${_arg_NAME}_/verinfo.rc)
     target_sources(${_arg_NAME}
@@ -177,7 +181,7 @@ function(build_target)
                  PREFIX ""
                  NO_SONAME TRUE)
 
-    if(MSVC)
+    if(WIN32)
       get_target_property(spike_exec spike OUTPUT_NAME)
       configure_file(${PRECORE_SOURCE_DIR}/cmake/spike.tmpl
                      ${PROJECT_BINARY_DIR}/${_arg_NAME}_/spike.runner)
@@ -195,7 +199,7 @@ function(build_target)
   endif()
 
   if(${_is_python_module})
-    if(MSVC OR MINGW)
+    if(WIN32)
       set_target_properties(${_arg_NAME} PROPERTIES SUFFIX .pyd)
     endif()
 

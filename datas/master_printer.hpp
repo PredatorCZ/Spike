@@ -53,6 +53,3 @@ void PC_EXTERN AddPrinterFunction(print_func func, bool useColor = true);
 void PC_EXTERN FlushAll();
 void PC_EXTERN PrintThreadID(bool yn);
 } // namespace es::print
-
-void PC_EXTERN SetConsoleTextColor(int red, int green, int blue);
-void PC_EXTERN RestoreConsoleTextColor();

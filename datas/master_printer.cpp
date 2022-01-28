@@ -24,15 +24,6 @@
 
 using namespace es::print;
 
-enum MSVC_Console_Flags {
-  MSC_Text_Blue,
-  MSC_Text_Green,
-  MSC_Text_Red,
-  MSC_Text_Intensify,
-};
-
-typedef es::Flags<MSVC_Console_Flags> consoleColorAttrFlags;
-
 static struct MasterPrinter {
   struct FuncType {
     print_func func;
@@ -41,22 +32,13 @@ static struct MasterPrinter {
     FuncType(print_func fp, bool cl) : func(fp), useColor(cl) {}
   };
 
-  MasterPrinter();
-
   std::vector<FuncType> functions;
   std::stringstream buffer;
   std::mutex mutex;
   std::thread::id lockedThread;
   bool printThreadID = false;
   MPType cType = MPType::MSG;
-  consoleColorAttrFlags consoleColorAttr;
 } MASTER_PRINTER;
-
-#if defined(_MSC_VER) or defined(__MINGW64__)
-#include "internal/master_printer_win.inl"
-#else
-#include "internal/master_printer_ix.inl"
-#endif
 
 namespace es::print {
 
@@ -86,11 +68,11 @@ void FlushAll() {
   for (auto &[func, useColor] : MASTER_PRINTER.functions) {
     if (useColor) {
       if (MASTER_PRINTER.cType == MPType::WRN) {
-        SetConsoleTextColor(255, 255, 0);
+        func("\033[38;2;255;255;0m");
       } else if (MASTER_PRINTER.cType == MPType::ERR) {
-        SetConsoleTextColor(255, 0, 0);
+        func("\033[38;2;255;0;0m");
       } else if (MASTER_PRINTER.cType == MPType::INF) {
-        SetConsoleTextColor(0, 180, 255);
+        func("\033[38;2;0;180;255m");
       }
     }
 
@@ -114,7 +96,7 @@ void FlushAll() {
     func(tmpData.data());
 
     if (useColor && MASTER_PRINTER.cType != MPType::MSG) {
-      RestoreConsoleTextColor();
+      func("\033[0m");
     }
   }
 

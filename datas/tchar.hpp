@@ -62,14 +62,10 @@ inline wstring to_wstring(const wchar_t *type) { return type; }
 template <typename T> TSTRING ToTSTRING(const T &type) {
   return std::to_wstring(type);
 }
-static inline void UPrintf(const char *data) {
-  wprintf(es::ToUTF1632(data).c_str());
-}
 #else
 template <typename T> TSTRING ToTSTRING(const T &type) {
   return std::to_string(type);
 }
-static inline void UPrintf(const char *data) { printf("%s", data); }
 #endif
 
 inline bool IsHelp(es::basic_string_view<TCHAR> data) {

@@ -36,6 +36,37 @@ int mkdir(const std::string &path, uint32) {
   return ::_mkdir(path.data());
 #endif
 }
+
+void SetupWinApiConsole() {
+  auto checkApi = [](auto what) {
+    if (!what) {
+      auto errCode = GetLastError();
+      throw std::runtime_error("WinApi call error " + std::to_string(errCode));
+    }
+  };
+
+  auto consoleHandle = GetStdHandle(STD_OUTPUT_HANDLE);
+
+  if (!consoleHandle || consoleHandle == INVALID_HANDLE_VALUE) {
+    return;
+  }
+
+  // Force utf8 codepage
+  SetConsoleOutputCP(CP_UTF8);
+  // Enable virtual terminal
+  DWORD mode{};
+  GetConsoleMode(consoleHandle, &mode);
+  SetConsoleMode(consoleHandle, mode | ENABLE_VIRTUAL_TERMINAL_PROCESSING);
+
+  // Setup only capable font for advanced unicode characters
+  CONSOLE_FONT_INFOEX infoEx{};
+  infoEx.cbSize = sizeof(infoEx);
+  GetCurrentConsoleFontEx(consoleHandle, false, &infoEx);
+  static const wchar_t buffer[] = L"NSimSun";
+  wcsncpy(infoEx.FaceName, buffer, sizeof(buffer) / sizeof(wchar_t));
+  SetCurrentConsoleFontEx(consoleHandle, false, &infoEx);
+}
+
 }; // namespace es
 
 FileType_e FileType(const std::string &path) {

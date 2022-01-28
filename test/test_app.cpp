@@ -1,7 +1,7 @@
 #include "datas/directory_scanner.hpp"
 #include "datas/unit_testing.hpp"
 #include "datas/supercore.hpp"
-#include "datas/tchar.hpp"
+#include "datas/stat.hpp"
 
 using namespace es::string_view_literals;
 
@@ -42,7 +42,8 @@ int test_dirscan() {
 int main() {
   setlocale(LC_ALL, "C.UTF-8");
   setlocale(LC_NUMERIC, "en-US");
-  es::print::AddPrinterFunction(UPrintf);
+  es::SetupWinApiConsole();
+  es::print::AddPrinterFunction(es::Print);
 
   printline("Printed some line into console and logger.");
 

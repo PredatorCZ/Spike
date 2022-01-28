@@ -1,5 +1,4 @@
-﻿include(targetex)
-include(chartype)
+include(targetex)
 include(odr_test)
 
 set(PC_SHARED_LIB
@@ -121,16 +120,3 @@ install(TARGETS test_base test_app test_blowfish test_reflector test_uni
                 test_xml RUNTIME DESTINATION bin)
 
 add_subdirectory(../spike spike)
-
-if(CMAKE_CXX_COMPILER_ID MATCHES Clang)
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra")
-  message("Compiler is Clang")
-elseif(CMAKE_COMPILER_IS_GNUCXX)
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra")
-  message("Compiler is GNU")
-elseif(CMAKE_CXX_COMPILER_ID MATCHES MSVC)
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -W4")
-  message("Compiler is MSVC")
-else()
-  message("Unknown compiler: ${CMAKE_CXX_COMPILER_ID}")
-endif()

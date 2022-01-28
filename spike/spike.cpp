@@ -507,7 +507,7 @@ void PackMode(int argc, TCHAR *argv[], APPContext &ctx,
 
 int _tmain(int argc, TCHAR *argv[]) {
   setlocale(LC_ALL, "");
-  es::print::AddPrinterFunction(UPrintf);
+  es::print::AddPrinterFunction(es::Print);
   CleanTempStorages();
 
   if (argc < 2) {
