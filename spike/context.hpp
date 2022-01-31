@@ -1,7 +1,7 @@
 /*  Spike is universal dedicated module handler
     Part of PreCore project
 
-    Copyright 2021 Lukas Cone
+    Copyright 2021-2022 Lukas Cone
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -87,6 +87,7 @@ struct APPContextCopyData {
   template <class C> using opt_func = APPOptionalCall<std::add_pointer_t<C>>;
   func<decltype(AppProcessFile)> ProcessFile;
   func<decltype(AppExtractFile)> ExtractFile;
+  opt_func<decltype(AppExtractStat)> ExtractStat;
   func<decltype(AppNewArchive)> NewArchive;
   opt_func<decltype(AppFinishContext)> FinishContext;
   const AppInfo_s *info;
@@ -155,7 +156,10 @@ struct ZIPIOContextIterator {
 
 struct ZIPIOContext : AppContext {
   virtual std::istream *OpenFile(const ZipEntry &entry) = 0;
-  virtual ZIPIOContextIterator Iter(ZIPIOEntryType = ZIPIOEntryType::String) const = 0;
+  virtual ZIPIOContextIterator
+      Iter(ZIPIOEntryType = ZIPIOEntryType::String) const = 0;
+  virtual std::string GetChunk(const ZipEntry &entry, size_t offset,
+                               size_t size) const = 0;
 };
 
 struct ZIPIOContextInstance : AppContext {

@@ -2,7 +2,7 @@
     This source contains context for input data
     Part of PreCore project
 
-    Copyright 2021 Lukas Cone
+    Copyright 2021-2022 Lukas Cone
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -25,9 +25,9 @@
 #include "datas/master_printer.hpp"
 #include "datas/stat.hpp"
 #include "formats/ZIP_istream.inl"
+#include "tmp_storage.hpp"
 #include <mutex>
 #include <sstream>
-#include "tmp_storage.hpp"
 
 static std::mutex simpleIOLock;
 
@@ -132,6 +132,8 @@ struct ZIPDataHolder {
 struct ZIPIOContext_implbase : ZIPIOContext {
   ZIPIOContext_implbase(const std::string &file) : rd(file) {}
   std::istream *OpenFile(const ZipEntry &entry) override;
+  std::string GetChunk(const ZipEntry &entry, size_t offset,
+                       size_t size) const override;
   void DisposeFile(std::istream *str) override;
 
 protected:
@@ -197,6 +199,15 @@ std::istream *ZIPIOContext_implbase::OpenFile(const ZipEntry &entry) {
     openedFiles.emplace(ptr, std::move(stoff));
     return ptr;
   }
+}
+
+std::string ZIPIOContext_implbase::GetChunk(const ZipEntry &entry,
+                                            size_t offset, size_t size) const {
+  std::lock_guard<std::mutex> guard(ZIPLock);
+  rd.Seek(entry.offset + offset);
+  std::string retVal;
+  rd.ReadContainer(retVal, size);
+  return retVal;
 }
 
 void ZIPIOContext_implbase::DisposeFile(std::istream *str) {

@@ -1,7 +1,7 @@
 /*  Spike is universal dedicated module handler
     Part of PreCore project
 
-    Copyright 2021 Lukas Cone
+    Copyright 2021-2022 Lukas Cone
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -212,6 +212,7 @@ APPContext::APPContext(const char *moduleName_, const std::string &appFolder_)
 
   if (info->mode == AppMode_e::EXTRACT) {
     assign(ExtractFile, "AppExtractFile");
+    tryAssign(ExtractStat, "AppExtractStat");
   } else if (info->mode == AppMode_e::PACK) {
     assign(NewArchive, "AppNewArchive");
   } else {
@@ -333,7 +334,7 @@ void APPContext::CreateLog() {
               << std::thread::hardware_concurrency() << std::endl;
   GetLogger() << "Configuration:" << std::endl;
 
-  auto PrintStuff = [this](auto &what) {
+  auto PrintStuff = [](auto &what) {
     const size_t numSettings = what.GetNumReflectedValues();
     auto rtti = ::RTTI(what);
 

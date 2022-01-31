@@ -1,3 +1,21 @@
+/*  App context classes for spike modules
+    Part of PreCore project
+
+    Copyright 2021-2022 Lukas Cone
+
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
+
+        http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+*/
+
 #pragma once
 #include "datas/string_view.hpp"
 #include "datas/supercore.hpp"
@@ -32,8 +50,8 @@ struct AppInfo_s {
   AppMode_e mode;
   ArchiveLoadType arcLoadType;
   es::string_view header;
-  ReflectorFriend *settings;
-  es::string_view *filters;
+  ReflectorFriend *settings = nullptr;
+  es::string_view *filters = nullptr;
 };
 
 struct AppContext {
@@ -117,12 +135,15 @@ struct AppPackStats {
   size_t totalSizeFileNames;
 };
 
+using request_chunk = std::string (*)(void *handle, size_t offset, size_t size);
+
 extern "C" {
 const AppInfo_s AC_EXTERN *AppInitModule();
 void AC_EXTERN AppAdditionalHelp(std::ostream &str, size_t indent);
 bool AC_EXTERN AppInitContext(const std::string &dataFolder);
 void AC_EXTERN AppProcessFile(std::istream &stream, AppContext *ctx);
 void AC_EXTERN AppExtractFile(std::istream &stream, AppExtractContext *ctx);
+size_t AC_EXTERN AppExtractStat(void *handle, request_chunk requester);
 AppPackContext AC_EXTERN *AppNewArchive(const std::string &folder,
                                         const AppPackStats &stats);
 void AC_EXTERN AppFinishContext();
