@@ -1,7 +1,7 @@
 /*  Spike is universal dedicated module handler
     Part of PreCore project
 
-    Copyright 2021 Lukas Cone
+    Copyright 2021-2022 Lukas Cone
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -26,6 +26,8 @@
 #include <sstream>
 #include <vector>
 
+struct CounterLine;
+
 struct ZIPExtactContext : AppExtractContext {
   ZIPExtactContext(const std::string &outFile)
       : records(outFile), outputFile(outFile), entries(entriesStream),
@@ -46,6 +48,8 @@ struct ZIPExtactContext : AppExtractContext {
   void FinishZIP(cache_begin_cb cacheBeginCB);
 
   std::string prefixPath;
+  CounterLine *totalBar = nullptr;
+  CounterLine *progBar = nullptr;
 
 private:
   friend struct ZIPMerger;
@@ -88,6 +92,8 @@ private:
 struct IOExtractContext : AppExtractContext, BinWritter<> {
   std::string outDir;
   std::set<std::string> folderTree;
+  CounterLine *totalBar = nullptr;
+  CounterLine *progBar = nullptr;
 
   IOExtractContext(const std::string &outDir_) : outDir(outDir_) {}
 

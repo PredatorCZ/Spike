@@ -2,7 +2,7 @@
     This souce contains data output context
     Part of PreCore project
 
-    Copyright 2021 Lukas Cone
+    Copyright 2021-2022 Lukas Cone
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@
 */
 
 #include "out_context.hpp"
+#include "console.hpp"
 #include "datas/binreader.hpp"
 #include "datas/crc32.hpp"
 #include "datas/fileinfo.hpp"
@@ -196,11 +197,11 @@ void ZIPExtactContext::FinishFile() {
 inline std::tm localtime(std::time_t t) {
 #ifdef _MSC_VER
   return *std::localtime(&t);
-#else  
+#else
   std::tm temp;
   localtime_r(&t, &temp);
   return temp;
-#endif 
+#endif
 }
 
 void ZIPExtactContext::NewFile(const std::string &path) {
@@ -232,6 +233,14 @@ void ZIPExtactContext::NewFile(const std::string &path) {
   records.Write(zLocalFile);
   records.WriteContainer(prefixPath);
   records.WriteContainer(path);
+
+  if (progBar) {
+    (*progBar)++;
+  }
+
+  if (totalBar) {
+    (*totalBar)++;
+  }
 }
 
 void ZIPExtactContext::SendData(es::string_view data) {
@@ -257,6 +266,13 @@ void IOExtractContext::NewFile(const std::string &path) {
   AFileInfo cfleWrap(path);
   auto cfle = cfleWrap.GetFullPath();
   Open(outDir + cfle.to_string());
+
+  if (progBar) {
+    (*progBar)++;
+  }
+  if (totalBar) {
+    (*totalBar)++;
+  }
 }
 
 void IOExtractContext::SendData(es::string_view data) { WriteContainer(data); }

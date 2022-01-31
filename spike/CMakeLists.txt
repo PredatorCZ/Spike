@@ -20,6 +20,7 @@ build_target(
   out_cache
   in_cache
   tmp_storage
+  console
   AUTHOR
   "Lukas Cone"
   DESCR

@@ -2,7 +2,7 @@
     This source contains code for CLI master app
     Part of PreCore project
 
-    Copyright 2021 Lukas Cone
+    Copyright 2021-2022 Lukas Cone
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@
     limitations under the License.
 */
 
+#include "console.hpp"
 #include "context.hpp"
 #include "datas/binreader.hpp"
 #include "datas/directory_scanner.hpp"
@@ -45,13 +46,303 @@ static const char appHeader1[] =
     " [options] path1 path2 ...\nTool can detect and scan folders and "
     "uncompressed zip archives.";
 
+struct ScanningFoldersBar : LoadingBar {
+  char buffer[512]{};
+  size_t modifyPos = 0;
+
+  ScanningFoldersBar(es::string_view folder)
+      : LoadingBar({buffer, sizeof(buffer)}) {
+    static constexpr es::string_view part1("Scanning folder: ");
+    strncpy(buffer, part1.data(), part1.size());
+    modifyPos = part1.size();
+    strncpy(buffer + modifyPos, folder.data(), folder.size());
+    modifyPos += folder.size();
+  }
+
+  void Update(size_t numFolders, size_t numFiles, size_t foundFiles) {
+    snprintf(buffer + modifyPos, sizeof(buffer) - modifyPos,
+             " %4" PRIuMAX " folders, %4" PRIuMAX " files, %4" PRIuMAX
+             " found.",
+             numFolders, numFiles, foundFiles);
+  }
+};
+
+struct ProcessedFiles : LoadingBar, CounterLine {
+  char buffer[128]{};
+
+  ProcessedFiles() : LoadingBar({buffer, sizeof(buffer)}) {}
+  void PrintLine() override {
+    snprintf(buffer, sizeof(buffer), "Extracted %4" PRIuMAX " files.",
+             curitem.load(std::memory_order_relaxed));
+    LoadingBar::PrintLine();
+  }
+};
+
+struct UILines {
+  size_t numFiles;
+  ProgressBar *totalProgress;
+  CounterLine *totalCount;
+  std::map<uint32, ProgressBar *> bars;
+  std::mutex barsMutex;
+
+  auto ChooseBar() {
+    if (bars.empty()) {
+      return (ProgressBar *)(nullptr);
+    }
+
+    auto threadId = std::this_thread::get_id();
+    auto id = reinterpret_cast<const uint32 &>(threadId);
+    auto found = bars.find(id);
+
+    if (es::IsEnd(bars, found)) {
+      std::lock_guard<std::mutex> lg(barsMutex);
+      auto retVal = bars.begin()->second;
+      bars.emplace(id, retVal);
+      bars.erase(bars.begin());
+
+      return retVal;
+    }
+
+    return found->second;
+  };
+};
+
+void ProcessZIPsExtractConvertMode(std::map<std::string, PathFilter> &zips,
+                                   PathFilter &pathFilter, APPContext &ctx,
+                                   UILines &lines) {
+  size_t processedSoFar = lines.numFiles;
+  size_t remainingZips = zips.size();
+
+  for (auto &[path, filter] : zips) {
+    remainingZips--;
+    auto labelData = "Loading ZIP vfs: " + path;
+    auto loadBar = AppendNewLogLine<LoadingBar>(labelData);
+    const bool loadFiltered =
+        ctx.info->arcLoadType == ArchiveLoadType::FILTERED;
+    auto fctx = loadFiltered ? MakeZIPContext(path, filter, pathFilter)
+                             : MakeZIPContext(path);
+    AFileInfo zFile(path);
+    std::vector<ZIPIOEntry> filesToProcess;
+
+    if (!loadFiltered) {
+      auto vfsIter = fctx->Iter();
+
+      for (auto f : vfsIter) {
+        auto item = f.AsView();
+        if (size_t lastSlash = item.find_last_of("/\\");
+            lastSlash != item.npos) {
+          item.remove_prefix(lastSlash + 1);
+        }
+
+        if (pathFilter.IsFiltered(item) && filter.IsFiltered(item)) {
+          filesToProcess.push_back(f);
+        }
+      }
+    }
+
+    std::string outPath = zFile.GetFullPathNoExt();
+    ZIPMerger mainZip;
+
+    if (!extractSettings.makeZIP) {
+      es::mkdir(outPath);
+      outPath.push_back('/');
+      IOExtractContext ctx_(outPath);
+
+      auto AddFolder = [&](auto &store) {
+        for (decltype(auto) f : store) {
+          AFileInfo cFile(f.AsView());
+
+          if (extractSettings.folderPerArc) {
+            ctx_.AddFolderPath(cFile.GetFullPathNoExt().to_string());
+          } else {
+            ctx_.AddFolderPath(cFile.GetFolder().to_string());
+          }
+        }
+      };
+
+      if (!loadFiltered) {
+        AddFolder(filesToProcess);
+      } else {
+        auto vfsIter = fctx->Iter();
+        AddFolder(vfsIter);
+      }
+
+      ctx_.GenerateFolders();
+    } else {
+      auto outZip = outPath + "_out.zip";
+      new (&mainZip) ZIPMerger(outZip, RequestTempFile());
+    }
+
+    loadBar->Finish();
+    ReleaseLogLine(loadBar);
+
+    auto vfsIter = fctx->Iter();
+    auto vfsIterBegin = vfsIter.begin();
+    const size_t numFiles =
+        loadFiltered ? vfsIter.base->Count() : filesToProcess.size();
+    std::mutex vfsMutex;
+    std::vector<size_t> archiveFiles;
+    std::atomic_size_t numFilesToProcess{0};
+
+    if (ctx.info->mode == AppMode_e::EXTRACT && ctx.ExtractStat) {
+      auto scanBar = AppendNewLogLine<LoadingBar>("Processing extract stats.");
+      archiveFiles.resize(numFiles);
+      auto vfsInternalIter = fctx->Iter();
+      auto vfsInternalIterBegin = vfsInternalIter.begin();
+      RunThreadedQueue(numFiles, [&](size_t index) {
+        auto &&fileEntry = [&] {
+          if (!loadFiltered) {
+            return filesToProcess[index];
+          } else {
+            std::lock_guard<std::mutex> guard(vfsMutex);
+            return vfsInternalIterBegin++;
+          }
+        }();
+
+        auto payload = std::make_tuple(std::ref(fileEntry), fctx.get());
+
+        auto numFiles = ctx.ExtractStat(
+            &payload, [](void *handle, size_t offset, size_t size) {
+              auto [entry, hdl] = *static_cast<decltype(payload) *>(handle);
+              return hdl->GetChunk(entry, offset, size);
+            });
+        archiveFiles[index] = numFiles;
+        numFilesToProcess.fetch_add(numFiles, std::memory_order_relaxed);
+      });
+
+      auto payload =
+          std::make_tuple(scanBar, numFilesToProcess.load(), std::ref(lines));
+
+      ModifyElements(&payload, [](void *data, ElementAPI &api) {
+        auto [lineToRemove, numFiles, lines] =
+            *static_cast<decltype(payload) *>(data);
+        api.Remove(lineToRemove);
+
+        const size_t minThreads =
+            std::min(size_t(std::thread::hardware_concurrency()), numFiles);
+
+        if (minThreads <= lines.bars.size()) {
+          return;
+        }
+
+        for (size_t t = 0; t < minThreads; t++) {
+          auto progBar = std::make_unique<ProgressBar>("Thread:");
+          auto progBarRaw = progBar.get();
+          lines.bars.emplace(t, progBarRaw);
+          api.Insert(std::move(progBar), lines.totalProgress, false);
+        }
+      });
+    }
+
+    if (lines.totalProgress) {
+      lines.totalProgress->ItemCount(processedSoFar + numFilesToProcess +
+                                         (remainingZips * lines.numFiles),
+                                     processedSoFar);
+    }
+    processedSoFar += numFilesToProcess;
+
+#if SPIKE_USE_THREADS
+    RunThreadedQueue(numFiles, [&, &path = path](size_t index) {
+      try {
+#else
+    for (size_t index = 0; index < numFiles; index++) {
+#endif
+        auto &&fileEntry = [&] {
+          if (!loadFiltered) {
+            return filesToProcess[index];
+          } else {
+            std::lock_guard<std::mutex> guard(vfsMutex);
+            return vfsIterBegin++;
+          }
+        }();
+        AFileInfo cFile(fileEntry.AsView());
+        auto appCtx = std::make_unique<ZIPIOContextInstance>(fctx.get());
+        appCtx->workingFile = fileEntry.AsView();
+        auto currentBar = lines.ChooseBar();
+
+        if (currentBar) {
+          currentBar->ItemCount(archiveFiles.at(index));
+        }
+
+        if (ctx.info->mode == AppMode_e::EXTRACT) {
+          printline("Extracting: " << path << '/' << fileEntry.AsView());
+          std::unique_ptr<AppExtractContext> ectx;
+          std::string recordsFile;
+
+          if (extractSettings.makeZIP) {
+            recordsFile = RequestTempFile();
+            auto zCtx = std::make_unique<ZIPExtactContext>(recordsFile, false);
+
+            if (extractSettings.folderPerArc) {
+              zCtx->prefixPath = cFile.GetFullPathNoExt().to_string();
+              zCtx->prefixPath.push_back('/');
+            }
+
+            zCtx->totalBar = lines.totalCount;
+            zCtx->progBar = currentBar;
+
+            ectx = std::move(zCtx);
+          } else {
+            auto outPath_ = outPath;
+
+            if (extractSettings.folderPerArc) {
+              outPath_ += cFile.GetFullPathNoExt().to_string();
+              outPath_.push_back('/');
+            } else {
+              outPath_ += cFile.GetFolder().to_string();
+            }
+
+            auto uniq = std::make_unique<IOExtractContext>(outPath_);
+            uniq->totalBar = lines.totalCount;
+            uniq->progBar = currentBar;
+            ectx = std::move(uniq);
+          }
+
+          ectx->ctx = appCtx.get();
+          auto fileStream = fctx->OpenFile(fileEntry);
+          ctx.ExtractFile(*fileStream, ectx.get());
+          fctx->DisposeFile(fileStream);
+
+          if (extractSettings.makeZIP) {
+            auto zCtx = static_cast<ZIPExtactContext *>(ectx.get());
+            mainZip.Merge(*zCtx, recordsFile);
+            es::Dispose(ectx);
+            es::RemoveFile(recordsFile);
+          }
+        } else {
+          printline("Processing: " << path << '/' << fileEntry.AsView());
+          auto fileStream = fctx->OpenFile(fileEntry);
+
+          appCtx->outFile = outPath + appCtx->workingFile;
+          ctx.ProcessFile(*fileStream, appCtx.get());
+          (*lines.totalProgress)++;
+          fctx->DisposeFile(fileStream);
+        }
+#if SPIKE_USE_THREADS
+      } catch (const std::exception &e) {
+        printerror(e.what());
+      }
+    });
+#else
+    }
+#endif
+
+    if (extractSettings.makeZIP) {
+      ModifyElements(nullptr, [](void *, ElementAPI &api) {
+        api.Clean();
+        api.Append(std::make_unique<LoadingBar>("Generating final ZIP."));
+      });
+      mainZip.FinishMerge([] { printinfo("Generating cache."); });
+    }
+  }
+}
+
 void ExtractConvertMode(int argc, TCHAR *argv[], APPContext &ctx,
                         const std::vector<bool> &markedFiles) {
   DirectoryScanner sc;
-  {
-    es::string_view *curFilter = ctx.info->filters;
 
-    while (!curFilter->empty()) {
+  if (es::string_view *curFilter = ctx.info->filters) {
+    while (curFilter && !curFilter->empty()) {
       sc.AddFilter(*curFilter);
       curFilter++;
     }
@@ -70,9 +361,17 @@ void ExtractConvertMode(int argc, TCHAR *argv[], APPContext &ctx,
 
     switch (type) {
     case FileType_e::Directory: {
-      printline("Scanning: " << fileName);
+      auto scanBar = AppendNewLogLine<ScanningFoldersBar>(fileName);
       sc.Clear();
+      sc.scanCbData = scanBar;
+      sc.scanCb = [](void *data, size_t numFolders, size_t numFiles,
+                     size_t foundFiles) {
+        auto barData = static_cast<ScanningFoldersBar *>(data);
+        barData->Update(numFolders, numFiles, foundFiles);
+      };
       sc.Scan(fileName);
+      scanBar->Finish();
+      ReleaseLogLine(scanBar);
 
       std::transform(std::make_move_iterator(sc.begin()),
                      std::make_move_iterator(sc.end()),
@@ -126,7 +425,70 @@ void ExtractConvertMode(int argc, TCHAR *argv[], APPContext &ctx,
     printline("Total ZIP files to process: " << zips.size());
   }
 
-  es::print::PrintThreadID(true);
+  ConsolePrintDetail(3);
+  std::atomic_size_t numFilesToProcess{0};
+  std::vector<size_t> archiveFiles;
+  UILines uiLines;
+  uiLines.totalProgress = nullptr;
+  uiLines.totalCount = nullptr;
+  uiLines.numFiles = files.size();
+
+  if (ctx.info->mode == AppMode_e::EXTRACT) {
+    if (ctx.ExtractStat) {
+      auto scanBar = AppendNewLogLine<LoadingBar>("Processing extract stats.");
+      archiveFiles.resize(files.size());
+      RunThreadedQueue(files.size(), [&](size_t index) {
+        BinReader cRead(files[index]);
+        auto numFiles = ctx.ExtractStat(
+            &cRead, [](void *handle, size_t offset, size_t size) {
+              auto hdl = static_cast<decltype(cRead) *>(handle);
+              hdl->Seek(offset);
+              std::string data;
+              hdl->ReadContainer(data, size);
+              return data;
+            });
+        archiveFiles[index] = numFiles;
+        numFilesToProcess.fetch_add(numFiles, std::memory_order_relaxed);
+      });
+
+      auto payload =
+          std::make_tuple(scanBar, files.size(), std::ref(uiLines.bars));
+
+      ModifyElements(&payload, [](void *data, ElementAPI &api) {
+        auto [lineToRemove, numFiles, barsMap] =
+            *static_cast<decltype(payload) *>(data);
+        api.Remove(lineToRemove);
+
+        const size_t minThreads =
+            std::min(size_t(std::thread::hardware_concurrency()), numFiles);
+
+        if (minThreads < 2) {
+          return;
+        }
+
+        for (size_t t = 0; t < minThreads; t++) {
+          auto progBar = std::make_unique<ProgressBar>("Thread:");
+          auto progBarRaw = progBar.get();
+          barsMap.emplace(t, progBarRaw);
+          api.Append(std::move(progBar));
+        }
+      });
+
+      auto prog = AppendNewLogLine<DetailedProgressBar>("Total: ");
+      prog->ItemCount(std::max(numFilesToProcess.load(), size_t(1)) *
+                      (zips.size() + 1));
+      uiLines.totalCount = prog;
+      uiLines.totalProgress = prog;
+    } else {
+      uiLines.totalCount = AppendNewLogLine<ProcessedFiles>();
+    }
+  } else {
+    auto prog = AppendNewLogLine<DetailedProgressBar>("Total: ");
+    prog->ItemCount(std::max(files.size(), size_t(1)) *
+                    std::max(zips.size(), size_t(1)));
+    uiLines.totalCount = prog;
+    uiLines.totalProgress = prog;
+  }
 
 #if SPIKE_USE_THREADS
   RunThreadedQueue(files.size(), [&](size_t index) {
@@ -134,6 +496,10 @@ void ExtractConvertMode(int argc, TCHAR *argv[], APPContext &ctx,
 #else
   for (size_t index = 0; index < files.size(); index++) {
 #endif
+      auto currentBar = uiLines.ChooseBar();
+      if (currentBar) {
+        currentBar->ItemCount(archiveFiles.at(index));
+      }
       BinReaderEx cRead(files[index]);
       AFileInfo cFile(files[index]);
       auto appCtx = MakeIOContext();
@@ -151,7 +517,10 @@ void ExtractConvertMode(int argc, TCHAR *argv[], APPContext &ctx,
 
           outPath.append(".zip");
 
-          ectx = std::make_unique<ZIPExtactContext>(outPath);
+          auto uniq = std::make_unique<ZIPExtactContext>(outPath);
+          uniq->totalBar = uiLines.totalCount;
+          uniq->progBar = currentBar;
+          ectx = std::move(uniq);
         } else {
           if (!extractSettings.folderPerArc) {
             outPath = cFile.GetFolder();
@@ -160,7 +529,10 @@ void ExtractConvertMode(int argc, TCHAR *argv[], APPContext &ctx,
             outPath.push_back('/');
           }
 
-          ectx = std::make_unique<IOExtractContext>(outPath);
+          auto uniq = std::make_unique<IOExtractContext>(outPath);
+          uniq->totalBar = uiLines.totalCount;
+          uniq->progBar = currentBar;
+          ectx = std::move(uniq);
         }
 
         ectx->ctx = appCtx.get();
@@ -175,8 +547,9 @@ void ExtractConvertMode(int argc, TCHAR *argv[], APPContext &ctx,
         appCtx->outFile = files[index];
         printline("Processing: " << files[index]);
         ctx.ProcessFile(*cRead.baseStream, appCtx.get());
+        (*uiLines.totalProgress)++;
       }
-#if NDEBUG
+#if SPIKE_USE_THREADS
     } catch (const std::exception &e) {
       printerror(e.what());
     }
@@ -185,159 +558,33 @@ void ExtractConvertMode(int argc, TCHAR *argv[], APPContext &ctx,
   }
 #endif
 
-  if (zips.empty()) {
-    return;
+  if (!zips.empty()) {
+    size_t curBar = 0;
+    decltype(uiLines.bars) newBars;
+
+    for (auto &[_, bar] : uiLines.bars) {
+      if (bar) {
+        newBars.emplace(curBar++, bar);
+      }
+    }
+
+    std::swap(uiLines.bars, newBars);
+    ProcessZIPsExtractConvertMode(zips, pathFilter, ctx, uiLines);
   }
 
-  for (auto &[path, filter] : zips) {
-    printline("Loading ZIP vfs: " << path);
-    const bool loadFiltered =
-        ctx.info->arcLoadType == ArchiveLoadType::FILTERED;
-    auto fctx = loadFiltered ? MakeZIPContext(path, filter, pathFilter)
-                             : MakeZIPContext(path);
-    AFileInfo zFile(path);
-    std::vector<ZIPIOEntry> filesToProcess;
-
-    if (!loadFiltered) {
-      auto vfsIter = fctx->Iter();
-
-      for (auto f : vfsIter) {
-        auto item = f.AsView();
-        if (size_t lastSlash = item.find_last_of("/\\"); lastSlash != item.npos) {
-          item.remove_prefix(lastSlash + 1);
-        }
-
-        if (pathFilter.IsFiltered(item) && filter.IsFiltered(item)) {
-          filesToProcess.push_back(f);
-        }
-      }
-    }
-
-    std::string outPath = zFile.GetFullPathNoExt();
-    ZIPMerger mainZip;
-
-    if (!extractSettings.makeZIP) {
-      es::mkdir(outPath);
-      outPath.push_back('/');
-      IOExtractContext ctx_(outPath);
-
-      auto AddFolder = [&](auto &store) {
-        for (decltype(auto) f : store) {
-          AFileInfo cFile(f.AsView());
-
-          if (extractSettings.folderPerArc) {
-            ctx_.AddFolderPath(cFile.GetFullPathNoExt().to_string());
-          } else {
-            ctx_.AddFolderPath(cFile.GetFolder().to_string());
-          }
-        }
-      };
-
-      if (!loadFiltered) {
-        AddFolder(filesToProcess);
-      } else {
-        auto vfsIter = fctx->Iter();
-        AddFolder(vfsIter);
-      }
-
-      ctx_.GenerateFolders();
-    } else {
-      auto outZip = outPath + "_out.zip";
-      new (&mainZip) ZIPMerger(outZip, RequestTempFile());
-    }
-
-    auto vfsIter = fctx->Iter();
-    auto vfsIterBegin = vfsIter.begin();
-    const size_t numFiles =
-        loadFiltered ? vfsIter.base->Count() : filesToProcess.size();
-    std::mutex vfsMutex;
-
-#if SPIKE_USE_THREADS
-    RunThreadedQueue(numFiles, [&, &path = path](size_t index) {
-      try {
-#else
-    for (size_t index = 0; index < numFiles; index++) {
-#endif
-        auto &&fileEntry = [&] {
-          if (!loadFiltered) {
-            return filesToProcess[index];
-          } else {
-            std::lock_guard<std::mutex> guard(vfsMutex);
-            return vfsIterBegin++;
-          }
-        }();
-        AFileInfo cFile(fileEntry.AsView());
-        auto appCtx = std::make_unique<ZIPIOContextInstance>(fctx.get());
-        appCtx->workingFile = fileEntry.AsView();
-
-        if (ctx.info->mode == AppMode_e::EXTRACT) {
-          printline("Extracting: " << path << '/' << fileEntry.AsView());
-          std::unique_ptr<AppExtractContext> ectx;
-          std::string recordsFile;
-
-          if (extractSettings.makeZIP) {
-            recordsFile = RequestTempFile();
-            auto zCtx = std::make_unique<ZIPExtactContext>(recordsFile, false);
-
-            if (extractSettings.folderPerArc) {
-              zCtx->prefixPath = cFile.GetFullPathNoExt().to_string();
-              zCtx->prefixPath.push_back('/');
-            }
-
-            ectx = std::move(zCtx);
-          } else {
-            auto outPath_ = outPath;
-
-            if (extractSettings.folderPerArc) {
-              outPath_ += cFile.GetFullPathNoExt().to_string();
-              outPath_.push_back('/');
-            } else {
-              outPath_ += cFile.GetFolder().to_string();
-            }
-            ectx = std::make_unique<IOExtractContext>(outPath_);
-          }
-
-          ectx->ctx = appCtx.get();
-          auto fileStream = fctx->OpenFile(fileEntry);
-          ctx.ExtractFile(*fileStream, ectx.get());
-          fctx->DisposeFile(fileStream);
-
-          if (extractSettings.makeZIP) {
-            auto zCtx = static_cast<ZIPExtactContext *>(ectx.get());
-            mainZip.Merge(*zCtx, recordsFile);
-            es::Dispose(ectx);
-            es::RemoveFile(recordsFile);
-          }
-        } else {
-          printline("Processing: " << path << '/' << fileEntry.AsView());
-          auto fileStream = fctx->OpenFile(fileEntry);
-
-          appCtx->outFile = outPath + appCtx->workingFile;
-          ctx.ProcessFile(*fileStream, appCtx.get());
-          fctx->DisposeFile(fileStream);
-        }
-#if SPIKE_USE_THREADS
-      } catch (const std::exception &e) {
-        printerror(e.what());
-      }
-    });
-#else
-    }
-#endif
-
-    if (extractSettings.makeZIP) {
-      mainZip.FinishMerge([] { printinfo("Generating cache."); });
-    }
+  if (ctx.info->mode == AppMode_e::EXTRACT && !ctx.ExtractStat) {
+    auto data = static_cast<ProcessedFiles *>(uiLines.totalCount);
+    data->Finish();
+    ReleaseLogLine(data);
   }
 }
 
 void PackMode(int argc, TCHAR *argv[], APPContext &ctx,
               const std::vector<bool> &markedFiles) {
   PathFilter moduleFilter;
-  {
-    es::string_view *curFilter = ctx.info->filters;
 
-    while (!curFilter->empty()) {
+  if (es::string_view *curFilter = ctx.info->filters) {
+    while (curFilter && !curFilter->empty()) {
       moduleFilter.AddFilter(*curFilter);
       curFilter++;
     }
@@ -507,7 +754,8 @@ void PackMode(int argc, TCHAR *argv[], APPContext &ctx,
 
 int _tmain(int argc, TCHAR *argv[]) {
   setlocale(LC_ALL, "");
-  es::print::AddPrinterFunction(es::Print);
+  es::SetupWinApiConsole();
+  InitConsole();
   CleanTempStorages();
 
   if (argc < 2) {
@@ -635,4 +883,6 @@ int _tmain(int argc, TCHAR *argv[]) {
   }
 
   CleanCurrentTempStorage();
+  TerminateConsole();
+  return 0;
 }
