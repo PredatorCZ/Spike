@@ -78,7 +78,7 @@ struct reflectorStatic_io {
       }
     };
 
-    auto fixupmore = [base, fixup](auto &...items) { (fixup(items), ...); };
+    auto fixupmore = [fixup](auto &...items) { (fixup(items), ...); };
 
     fixupmore(types, className, typeAliasHashes, typeDescs, typeNames,
               typeAliases);
@@ -135,7 +135,7 @@ struct ReflectedEnum_io {
       }
     };
 
-    auto fixupmore = [base, fixup](auto &...items) { (fixup(items), ...); };
+    auto fixupmore = [fixup](auto &...items) { (fixup(items), ...); };
 
     fixupmore(enumName, names, values);
 

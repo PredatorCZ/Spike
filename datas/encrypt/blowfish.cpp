@@ -216,6 +216,7 @@ public:
 
   virtual void EncodeBlock(uint64 &block) const;
   virtual void DecodeBlock(uint64 &block) const;
+  virtual ~BlowfishContext() = default;
   void CreateVector();
 };
 

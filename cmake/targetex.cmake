@@ -5,9 +5,12 @@ else()
 endif()
 
 if(MINGW)
-  set(CMAKE_RC_COMPILER "x86_64-w64-mingw32-windres")
+  set(CMAKE_RC_COMPILER
+      "x86_64-w64-mingw32-windres"
+      CACHE STRING "" FORCE)
   set(CMAKE_RC_COMPILE_OBJECT
-      "<CMAKE_RC_COMPILER> <FLAGS> -O coff <DEFINES> -i <SOURCE> -o <OBJECT>")
+      "<CMAKE_RC_COMPILER> <FLAGS> -O coff <DEFINES> -i <SOURCE> -o <OBJECT>"
+      CACHE STRING "" FORCE)
   enable_language(RC)
 endif()
 

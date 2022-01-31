@@ -97,7 +97,7 @@ struct Cache {
   std::unique_ptr<ZIPIOEntryRawIterator> Iter(ZIPIOEntryType type) const;
 
 private:
-  friend class ZIPIOEntryRawIterator_impl;
+  friend struct ZIPIOEntryRawIterator_impl;
   void Load(BinReaderRef rd, size_t size);
   const CacheHeader &Header() const {
     return *reinterpret_cast<const CacheHeader *>(buffer.data());
