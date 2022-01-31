@@ -125,9 +125,17 @@ void DirectoryScanner::Scan(std::string dir) {
     subFile += miniFile;
 
     if (cFile->d_type == DT_DIR) {
+      numFolders++;
       Scan(subFile);
-    } else if (IsFiltered(miniFile)) {
-      files.push_back(subFile);
+    } else {
+      numFiles++;
+      if (IsFiltered(miniFile)) {
+        files.push_back(subFile);
+      }
+    }
+
+    if (scanCb) {
+      scanCb(scanCbData, numFolders, numFiles, files.size());
     }
   }
 
@@ -156,9 +164,17 @@ void DirectoryScanner::Scan(std::string dir) {
     subFile += cFileName;
 
     if ((foundData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) != 0) {
+      numFolders++;
       Scan(subFile);
-    } else if (IsFiltered(cFileName)) {
-      files.push_back(subFile);
+    } else {
+      numFiles++;
+      if (IsFiltered(cFileName)) {
+        files.push_back(subFile);
+      }
+    }
+
+    if (scanCb) {
+      scanCb(scanCbData, numFolders, numFiles, files.size());
     }
   }
 

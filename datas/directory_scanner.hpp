@@ -71,6 +71,13 @@ public:
   const storage_type &Files() const { return files; }
   void Clear() { files.clear(); }
 
+  using scan_callback = void (*)(void *cbData, size_t numFolders,
+                                 size_t numFiles, size_t foundFiles);
+  scan_callback scanCb = nullptr;
+  void *scanCbData = nullptr;
+
 private:
+  size_t numFiles = 0;
+  size_t numFolders = 0;
   storage_type files;
 };
