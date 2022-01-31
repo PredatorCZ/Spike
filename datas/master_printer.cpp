@@ -33,6 +33,7 @@ static struct MasterPrinter {
   };
 
   std::vector<FuncType> functions;
+  std::vector<queue_func> queues;
   std::stringstream buffer;
   std::mutex mutex;
   std::thread::id lockedThread;
@@ -51,6 +52,8 @@ void AddPrinterFunction(print_func func, bool useColor) {
   MASTER_PRINTER.functions.emplace_back(func, useColor);
 }
 
+void AddQueuer(queue_func func) { MASTER_PRINTER.queues.push_back(func); }
+
 std::ostream &Get(MPType type) {
   if (auto threadID = std::this_thread::get_id();
       !(MASTER_PRINTER.lockedThread == threadID)) {
@@ -65,39 +68,46 @@ std::ostream &Get(MPType type) {
 }
 
 void FlushAll() {
+  Queuer que;
+  que.payload = MASTER_PRINTER.buffer.str();
+  std::thread::id threadID = std::this_thread::get_id();
+  que.threadId = reinterpret_cast<uint32 &>(threadID);
+  que.type = MASTER_PRINTER.cType;
+
   for (auto &[func, useColor] : MASTER_PRINTER.functions) {
     if (useColor) {
-      if (MASTER_PRINTER.cType == MPType::WRN) {
+      if (que.type == MPType::WRN) {
         func("\033[38;2;255;255;0m");
-      } else if (MASTER_PRINTER.cType == MPType::ERR) {
+      } else if (que.type == MPType::ERR) {
         func("\033[38;2;255;0;0m");
-      } else if (MASTER_PRINTER.cType == MPType::INF) {
+      } else if (que.type == MPType::INF) {
         func("\033[38;2;0;180;255m");
       }
     }
 
     if (MASTER_PRINTER.printThreadID) {
       func("Thread[0x");
-      std::thread::id threadID = std::this_thread::get_id();
       char buffer[65];
-      snprintf(buffer, 65, "%X", reinterpret_cast<uint32 &>(threadID));
+      snprintf(buffer, 65, "%X", que.threadId);
       func(buffer);
       func("] ");
     }
 
-    if (MASTER_PRINTER.cType == MPType::WRN) {
+    if (que.type == MPType::WRN) {
       func("WARNING: ");
-    } else if (MASTER_PRINTER.cType == MPType::ERR) {
+    } else if (que.type == MPType::ERR) {
       func("ERROR: ");
     }
 
-    auto &&tmpData = MASTER_PRINTER.buffer.str();
+    func(que.payload.data());
 
-    func(tmpData.data());
-
-    if (useColor && MASTER_PRINTER.cType != MPType::MSG) {
+    if (useColor && que.type != MPType::MSG) {
       func("\033[0m");
     }
+  }
+
+  for (auto &q : MASTER_PRINTER.queues) {
+    q(que);
   }
 
   MASTER_PRINTER.buffer.str("");

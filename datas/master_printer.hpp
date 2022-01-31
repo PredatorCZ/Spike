@@ -19,6 +19,7 @@
 #pragma once
 #include "settings.hpp"
 #include <iosfwd>
+#include <string>
 
 #define printerror(...)                                                        \
   {                                                                            \
@@ -43,12 +44,21 @@
   }
 
 namespace es::print {
-typedef void (*print_func)(const char *c);
+using print_func = void (*)(const char *);
 enum class MPType { PREV, MSG, WRN, ERR, INF };
+struct Queuer {
+  std::string payload;
+  MPType type;
+  uint32 threadId;
+};
 
-// Calling this will lock other threads that will try to access stream until FlushAll is called!
+using queue_func = void (*)(const Queuer &);
+
+// Calling this will lock other threads that will try to access stream until
+// FlushAll is called!
 std::ostream PC_EXTERN &Get(MPType type = MPType::PREV);
 void PC_EXTERN AddPrinterFunction(print_func func, bool useColor = true);
+void PC_EXTERN AddQueuer(queue_func func);
 // Unlocks other threads access to Get
 void PC_EXTERN FlushAll();
 void PC_EXTERN PrintThreadID(bool yn);
