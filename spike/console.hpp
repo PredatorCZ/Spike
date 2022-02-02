@@ -57,6 +57,9 @@ protected:
 struct DetailedProgressBar : ProgressBar {
   using ProgressBar::ProgressBar;
   void PrintLine() override;
+
+private:
+  float lastItem = 0;
 };
 
 struct LoadingBar : LogLine {

@@ -23,7 +23,7 @@
 #include <thread>
 #include <vector>
 
-const size_t nextTickMS = 500;
+const size_t nextTickMS = 100;
 
 const char *loopchars[] = {
     u8"\u2807", u8"\u280B", u8"\u2819", u8"\u2838", u8"\u2834", u8"\u2826",
@@ -56,11 +56,22 @@ void ProgressBar::PrintLine() {
 }
 
 void DetailedProgressBar::PrintLine() {
+  const size_t goal = curitem;
   const size_t width = 50;
   const size_t parts = 8;
-  const float normState = std::min(curitem * itemDelta, 1.f);
+  const float normStateGoal = std::min(goal * itemDelta, 1.f);
+  float normState = normStateGoal;
+
+  if (lastItem < normStateGoal) {
+    lastItem += (normStateGoal - lastItem) / 5;
+    normState = lastItem;
+  } else {
+    lastItem = normStateGoal;
+  }
+
   const size_t stateMacro = normState * width;
   const size_t state = size_t(normState * width * parts) % parts;
+
   es::Print(label.data());
   es::Print("\033[38;2;168;204;140m");
 
