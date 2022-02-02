@@ -239,8 +239,8 @@ void ElementAPI::Insert(std::unique_ptr<LogLine> &&item, LogLine *where,
   lineQueue.insert(std::next(found, after), std::move(item));
 }
 
-void ModifyElements(void *userData, element_callback cb) {
+void ModifyElements_(element_callback cb) {
   pauseLogger = true;
-  cb(userData, EAPI);
+  cb(EAPI);
   pauseLogger = false;
 }

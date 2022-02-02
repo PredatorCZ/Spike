@@ -18,6 +18,7 @@
 
 #include "datas/string_view.hpp"
 #include <atomic>
+#include <functional>
 #include <memory>
 
 struct LogLine {
@@ -99,39 +100,27 @@ struct ElementAPI {
   void Clean();
 };
 
-using element_callback = void (*)(void *userData, ElementAPI &api);
+using element_callback = std::function<void(ElementAPI &)>;
 
-void ModifyElements(void *userData, element_callback cb);
+void ModifyElements_(element_callback cb);
+
+template <class fn> void ModifyElements(fn cb) {
+  ModifyElements_(std::bind(cb, std::placeholders::_1));
+};
 
 template <class C, class... Args> C *AppendNewLogLine(Args &&...args) {
   auto newLine = std::make_unique<C>(std::forward<Args>(args)...);
   auto newLineRaw = newLine.get();
 
-  ModifyElements(&newLine, [](void *data, ElementAPI &api) {
-    auto scanData = reinterpret_cast<decltype(newLine) *>(data);
-    api.Append(std::move(*scanData));
-  });
+  ModifyElements([&](ElementAPI &api) { api.Append(std::move(newLine)); });
 
   return newLineRaw;
 }
 
-inline void ReleaseLogLine(LogLine *item) {
-  ModifyElements(item, [](void *data, ElementAPI &api) {
-    api.Release(static_cast<LogLine *>(data));
-  });
+template <class... Lines> void ReleaseLogLines(Lines *...item) {
+  ModifyElements([&](ElementAPI &api) { (api.Release(item), ...); });
 }
 
 template <class... Lines> void RemoveLogLines(Lines *...item) {
-  auto payload = std::array<LogLine *, sizeof...(item)>{item...};
-  ModifyElements(&payload, [](void *data, ElementAPI &api) {
-    for (auto d : *static_cast<decltype(payload) *>(data)) {
-      api.Remove(d);
-    }
-  });
-}
-
-inline void RemoveLogLine(LogLine *item) {
-  ModifyElements(item, [](void *data, ElementAPI &api) {
-    api.Remove(static_cast<LogLine *>(data));
-  });
+  ModifyElements([&](ElementAPI &api) { (api.Remove(item), ...); });
 }

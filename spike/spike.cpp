@@ -174,7 +174,7 @@ void ProcessZIPsExtractConvertMode(std::map<std::string, PathFilter> &zips,
     }
 
     loadBar->Finish();
-    ReleaseLogLine(loadBar);
+    ReleaseLogLines(loadBar);
 
     auto vfsIter = fctx->Iter();
     auto vfsIterBegin = vfsIter.begin();
@@ -197,27 +197,22 @@ void ProcessZIPsExtractConvertMode(std::map<std::string, PathFilter> &zips,
           }
         }();
 
-        auto payload = std::make_tuple(std::ref(fileEntry), fctx.get());
+        auto numFiles = ctx.ExtractStat(std::bind(
+            [&](size_t offset, size_t size) {
+              return fctx->GetChunk(fileEntry, offset, size);
+            },
+            std::placeholders::_1, std::placeholders::_2));
 
-        auto numFiles = ctx.ExtractStat(
-            &payload, [](void *handle, size_t offset, size_t size) {
-              auto [entry, hdl] = *static_cast<decltype(payload) *>(handle);
-              return hdl->GetChunk(entry, offset, size);
-            });
         archiveFiles[index] = numFiles;
         numFilesToProcess.fetch_add(numFiles, std::memory_order_relaxed);
       });
 
-      auto payload =
-          std::make_tuple(scanBar, numFilesToProcess.load(), std::ref(lines));
-
-      ModifyElements(&payload, [](void *data, ElementAPI &api) {
-        auto [lineToRemove, numFiles, lines] =
-            *static_cast<decltype(payload) *>(data);
-        api.Remove(lineToRemove);
+      ModifyElements([&](ElementAPI &api) {
+        api.Remove(scanBar);
 
         const size_t minThreads =
-            std::min(size_t(std::thread::hardware_concurrency()), numFiles);
+            std::min(size_t(std::thread::hardware_concurrency()),
+                     numFilesToProcess.load());
 
         if (minThreads <= lines.bars.size()) {
           return;
@@ -325,7 +320,7 @@ void ProcessZIPsExtractConvertMode(std::map<std::string, PathFilter> &zips,
 #endif
 
     if (extractSettings.makeZIP) {
-      ModifyElements(nullptr, [](void *, ElementAPI &api) {
+      ModifyElements([](ElementAPI &api) {
         api.Clean();
         api.Append(std::make_unique<LoadingBar>("Generating final ZIP."));
       });
@@ -368,7 +363,7 @@ void ExtractConvertMode(int argc, TCHAR *argv[], APPContext &ctx,
       };
       sc.Scan(fileName);
       scanBar->Finish();
-      ReleaseLogLine(scanBar);
+      ReleaseLogLines(scanBar);
 
       std::transform(std::make_move_iterator(sc.begin()),
                      std::make_move_iterator(sc.end()),
@@ -436,15 +431,16 @@ void ExtractConvertMode(int argc, TCHAR *argv[], APPContext &ctx,
       archiveFiles.resize(files.size());
       RunThreadedQueue(files.size(), [&](size_t index) {
         try {
-          BinReader cRead(files[index]);
-          auto numFiles = ctx.ExtractStat(
-              &cRead, [](void *handle, size_t offset, size_t size) {
-                auto hdl = static_cast<decltype(cRead) *>(handle);
-                hdl->Seek(offset);
+          BinReader<> cRead(files[index]);
+          auto numFiles = ctx.ExtractStat(std::bind(
+              [&](size_t offset, size_t size) {
+                cRead.Seek(offset);
                 std::string data;
-                hdl->ReadContainer(data, size);
+                cRead.ReadContainer(data, size);
                 return data;
-              });
+              },
+              std::placeholders::_1, std::placeholders::_2));
+
           archiveFiles[index] = numFiles;
           numFilesToProcess.fetch_add(numFiles, std::memory_order_relaxed);
         } catch (const std::exception &e) {
@@ -452,16 +448,11 @@ void ExtractConvertMode(int argc, TCHAR *argv[], APPContext &ctx,
         }
       });
 
-      auto payload =
-          std::make_tuple(scanBar, files.size(), std::ref(uiLines.bars));
-
-      ModifyElements(&payload, [](void *data, ElementAPI &api) {
-        auto [lineToRemove, numFiles, barsMap] =
-            *static_cast<decltype(payload) *>(data);
-        api.Remove(lineToRemove);
+      ModifyElements([&](ElementAPI &api) {
+        api.Remove(scanBar);
 
         const size_t minThreads =
-            std::min(size_t(std::thread::hardware_concurrency()), numFiles);
+            std::min(size_t(std::thread::hardware_concurrency()), files.size());
 
         if (minThreads < 2) {
           return;
@@ -470,7 +461,7 @@ void ExtractConvertMode(int argc, TCHAR *argv[], APPContext &ctx,
         for (size_t t = 0; t < minThreads; t++) {
           auto progBar = std::make_unique<ProgressBar>("Thread:");
           auto progBarRaw = progBar.get();
-          barsMap.emplace(t, progBarRaw);
+          uiLines.bars.emplace(t, progBarRaw);
           api.Append(std::move(progBar));
         }
       });
@@ -576,7 +567,7 @@ void ExtractConvertMode(int argc, TCHAR *argv[], APPContext &ctx,
   if (ctx.info->mode == AppMode_e::EXTRACT && !ctx.ExtractStat) {
     auto data = static_cast<ProcessedFiles *>(uiLines.totalCount);
     data->Finish();
-    ReleaseLogLine(data);
+    ReleaseLogLines(data);
   }
 }
 
@@ -614,7 +605,7 @@ void PackMode(int argc, TCHAR *argv[], APPContext &ctx,
       };
       sc.Scan(fileName);
       scanBar->Finish();
-      ReleaseLogLine(scanBar);
+      ReleaseLogLines(scanBar);
 
       AppPackStats stats{};
       stats.numFiles = sc.Files().size();
@@ -643,7 +634,7 @@ void PackMode(int argc, TCHAR *argv[], APPContext &ctx,
 
       ConsolePrintDetail(1);
       archiveContext->Finish();
-      RemoveLogLine(statBar);
+      RemoveLogLines(statBar);
       break;
     }
     default:
@@ -700,7 +691,7 @@ void PackMode(int argc, TCHAR *argv[], APPContext &ctx,
     }();
 
     loadBar->Finish();
-    ReleaseLogLine(loadBar);
+    ReleaseLogLines(loadBar);
 
     for (size_t index = 0; index < paths.size(); index++) {
       PathFilter zFilter;
@@ -758,7 +749,7 @@ void PackMode(int argc, TCHAR *argv[], APPContext &ctx,
 
       ConsolePrintDetail(1);
       archiveContext->Finish();
-      RemoveLogLine(statBar);
+      RemoveLogLines(statBar);
     }
   }
 }
@@ -794,6 +785,7 @@ int _tmain(int argc, TCHAR *argv[]) {
 
   bool dontLoadConfig = false;
   std::vector<bool> markedFiles(size_t(argc), false);
+  ConsolePrintDetail(0);
 
   printline(ctx.info->header);
   printline(appHeader0 << appLocation.GetFilename() << ' ' << moduleName
@@ -803,6 +795,8 @@ int _tmain(int argc, TCHAR *argv[]) {
     ctx.PrintCLIHelp();
     return 0;
   }
+
+  ConsolePrintDetail(1);
 
   // Handle cli options and switches
   for (int a = 2; a < argc; a++) {

@@ -19,6 +19,7 @@
 #pragma once
 #include "datas/string_view.hpp"
 #include "datas/supercore.hpp"
+#include <functional>
 #include <iosfwd>
 #include <string>
 
@@ -124,6 +125,7 @@ struct AppExtractContext {
   virtual void GenerateFolders() = 0;
 };
 
+// Every call is multi-threaded
 struct AppPackContext {
   virtual ~AppPackContext() = default;
   virtual void SendFile(es::string_view path, std::istream &stream) = 0;
@@ -135,7 +137,7 @@ struct AppPackStats {
   size_t totalSizeFileNames;
 };
 
-using request_chunk = std::string (*)(void *handle, size_t offset, size_t size);
+using request_chunk = std::function<std::string(size_t offset, size_t size)>;
 
 extern "C" {
 const AppInfo_s AC_EXTERN *AppInitModule();
@@ -143,7 +145,8 @@ void AC_EXTERN AppAdditionalHelp(std::ostream &str, size_t indent);
 bool AC_EXTERN AppInitContext(const std::string &dataFolder);
 void AC_EXTERN AppProcessFile(std::istream &stream, AppContext *ctx);
 void AC_EXTERN AppExtractFile(std::istream &stream, AppExtractContext *ctx);
-size_t AC_EXTERN AppExtractStat(void *handle, request_chunk requester);
+// Returns total number of files within archive
+size_t AC_EXTERN AppExtractStat(request_chunk requester);
 AppPackContext AC_EXTERN *AppNewArchive(const std::string &folder,
                                         const AppPackStats &stats);
 void AC_EXTERN AppFinishContext();
