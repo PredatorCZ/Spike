@@ -21,6 +21,7 @@
 #include "datas/app_context.hpp"
 #include "datas/reflector.hpp"
 #include <map>
+#include <mutex>
 
 class PathFilter;
 
@@ -136,14 +137,16 @@ private:
 
 struct ZIPIOEntryIterator {
   ZIPIOEntryRawIterator &base;
-  mutable ZIPIOEntry current;
+  ZIPIOEntry current;
+  std::mutex iterMtx;
 
-  ZIPIOEntry operator++() const {
+  ZIPIOEntry operator++() {
+    std::lock_guard<std::mutex> lg(iterMtx);
     auto retVal = current;
     current = base.Next();
     return retVal;
   }
-  ZIPIOEntry operator++(int) const { return operator++(); }
+  ZIPIOEntry operator++(int) { return operator++(); }
   ZIPIOEntry operator*() const { return current; }
   bool operator!=(const ZIPIOEntry &) { return current; }
 };

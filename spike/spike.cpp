@@ -180,7 +180,6 @@ void ProcessZIPsExtractConvertMode(std::map<std::string, PathFilter> &zips,
     auto vfsIterBegin = vfsIter.begin();
     const size_t numFiles =
         loadFiltered ? vfsIter.base->Count() : filesToProcess.size();
-    std::mutex vfsMutex;
     std::vector<size_t> archiveFiles;
     std::atomic_size_t numFilesToProcess{0};
 
@@ -194,7 +193,6 @@ void ProcessZIPsExtractConvertMode(std::map<std::string, PathFilter> &zips,
           if (!loadFiltered) {
             return filesToProcess[index];
           } else {
-            std::lock_guard<std::mutex> guard(vfsMutex);
             return vfsInternalIterBegin++;
           }
         }();
@@ -251,7 +249,6 @@ void ProcessZIPsExtractConvertMode(std::map<std::string, PathFilter> &zips,
           if (!loadFiltered) {
             return filesToProcess[index];
           } else {
-            std::lock_guard<std::mutex> guard(vfsMutex);
             return vfsIterBegin++;
           }
         }();
@@ -342,7 +339,7 @@ void ExtractConvertMode(int argc, TCHAR *argv[], APPContext &ctx,
   DirectoryScanner sc;
 
   if (es::string_view *curFilter = ctx.info->filters) {
-    while (curFilter && !curFilter->empty()) {
+    while (!curFilter->empty()) {
       sc.AddFilter(*curFilter);
       curFilter++;
     }
@@ -438,17 +435,21 @@ void ExtractConvertMode(int argc, TCHAR *argv[], APPContext &ctx,
       auto scanBar = AppendNewLogLine<LoadingBar>("Processing extract stats.");
       archiveFiles.resize(files.size());
       RunThreadedQueue(files.size(), [&](size_t index) {
-        BinReader cRead(files[index]);
-        auto numFiles = ctx.ExtractStat(
-            &cRead, [](void *handle, size_t offset, size_t size) {
-              auto hdl = static_cast<decltype(cRead) *>(handle);
-              hdl->Seek(offset);
-              std::string data;
-              hdl->ReadContainer(data, size);
-              return data;
-            });
-        archiveFiles[index] = numFiles;
-        numFilesToProcess.fetch_add(numFiles, std::memory_order_relaxed);
+        try {
+          BinReader cRead(files[index]);
+          auto numFiles = ctx.ExtractStat(
+              &cRead, [](void *handle, size_t offset, size_t size) {
+                auto hdl = static_cast<decltype(cRead) *>(handle);
+                hdl->Seek(offset);
+                std::string data;
+                hdl->ReadContainer(data, size);
+                return data;
+              });
+          archiveFiles[index] = numFiles;
+          numFilesToProcess.fetch_add(numFiles, std::memory_order_relaxed);
+        } catch (const std::exception &e) {
+          printerror(e.what());
+        }
       });
 
       auto payload =
@@ -584,7 +585,7 @@ void PackMode(int argc, TCHAR *argv[], APPContext &ctx,
   PathFilter moduleFilter;
 
   if (es::string_view *curFilter = ctx.info->filters) {
-    while (curFilter && !curFilter->empty()) {
+    while (!curFilter->empty()) {
       moduleFilter.AddFilter(*curFilter);
       curFilter++;
     }
@@ -594,82 +595,85 @@ void PackMode(int argc, TCHAR *argv[], APPContext &ctx,
   std::map<std::string, paths> zips;
   std::mutex zipsMutex;
 
-#if SPIKE_USE_THREADS
-  RunThreadedQueue(argc, [&](size_t index) {
-    if (!markedFiles[index]) {
-      return;
-    }
-#else
   for (size_t index = 0; index < argc; index++) {
     if (!markedFiles[index]) {
       continue;
     }
-#endif
 
     auto fileName = std::to_string(argv[index]);
     auto type = FileType(fileName);
-#if SPIKE_USE_THREADS
-    try {
-#endif
-      switch (type) {
-      case FileType_e::Directory: {
-        printline("Scanning: " << fileName);
-        DirectoryScanner sc(moduleFilter);
-        sc.Scan(fileName);
-        AppPackStats stats;
-        stats.numFiles = sc.Files().size();
+    switch (type) {
+    case FileType_e::Directory: {
+      auto scanBar = AppendNewLogLine<ScanningFoldersBar>(fileName);
+      DirectoryScanner sc(moduleFilter);
+      sc.scanCbData = scanBar;
+      sc.scanCb = [](void *data, size_t numFolders, size_t numFiles,
+                     size_t foundFiles) {
+        auto barData = static_cast<ScanningFoldersBar *>(data);
+        barData->Update(numFolders, numFiles, foundFiles);
+      };
+      sc.Scan(fileName);
+      scanBar->Finish();
+      ReleaseLogLine(scanBar);
 
-        for (auto &f : sc) {
-          stats.totalSizeFileNames += f.size() + 1;
-        }
+      AppPackStats stats{};
+      stats.numFiles = sc.Files().size();
 
-        auto archiveContext = ctx.NewArchive(fileName, stats);
+      for (auto &f : sc) {
+        stats.totalSizeFileNames += f.size() + 1;
+      }
 
-        for (auto &f : sc) {
-          BinReaderEx cRead(f);
-          es::string_view relativeFilepath(f);
+      auto archiveContext = ctx.NewArchive(fileName, stats);
+      auto folderIndex = "Folder id " + std::to_string(index);
+      auto statBar = AppendNewLogLine<DetailedProgressBar>(folderIndex);
+      statBar->ItemCount(sc.Files().size());
+      ConsolePrintDetail(3);
+
+      RunThreadedQueue(sc.Files().size(), [&](size_t index) {
+        try {
+          BinReaderEx cRead(sc.Files().at(index));
+          es::string_view relativeFilepath(sc.Files().at(index));
           relativeFilepath.remove_prefix(fileName.size());
           archiveContext->SendFile(relativeFilepath, *cRead.baseStream);
+          (*statBar)++;
+        } catch (const std::exception &e) {
+          printerror(e.what());
         }
+      });
 
-        archiveContext->Finish();
-        break;
-      }
-      default:
-      case FileType_e::File: {
-        const size_t found = fileName.find(".zip");
-        if (found != fileName.npos) {
-          std::lock_guard<std::mutex> zipGuard(zipsMutex);
-          if (found + 4 == fileName.size()) {
-            zips.emplace(std::make_pair(std::move(fileName), paths{""}));
-            break;
-          } else if (fileName[found + 4] == '/') {
-            auto sub = fileName.substr(0, found + 4);
-            auto foundZip = zips.find(sub);
-            auto filterString = "^" + fileName.substr(found + 5);
-
-            if (es::IsEnd(zips, foundZip)) {
-              paths pVec;
-              pVec.push_back(std::move(filterString));
-              zips.emplace(std::make_pair(std::move(sub), std::move(pVec)));
-            } else {
-              foundZip->second.push_back(std::move(filterString));
-            }
-
-            break;
-          }
-        }
-        printerror("Invalid path: " << fileName);
-      }
-      }
-#if SPIKE_USE_THREADS
-    } catch (const std::exception &e) {
-      printerror(e.what());
+      ConsolePrintDetail(1);
+      archiveContext->Finish();
+      RemoveLogLine(statBar);
+      break;
     }
-  });
-#else
+    default:
+    case FileType_e::File: {
+      const size_t found = fileName.find(".zip");
+      if (found != fileName.npos) {
+        std::lock_guard<std::mutex> zipGuard(zipsMutex);
+        if (found + 4 == fileName.size()) {
+          zips.emplace(std::make_pair(std::move(fileName), paths{""}));
+          break;
+        } else if (fileName[found + 4] == '/') {
+          auto sub = fileName.substr(0, found + 4);
+          auto foundZip = zips.find(sub);
+          auto filterString = "^" + fileName.substr(found + 5);
+
+          if (es::IsEnd(zips, foundZip)) {
+            paths pVec;
+            pVec.push_back(std::move(filterString));
+            zips.emplace(std::make_pair(std::move(sub), std::move(pVec)));
+          } else {
+            foundZip->second.push_back(std::move(filterString));
+          }
+
+          break;
+        }
+      }
+      printerror("Invalid path: " << fileName);
+    }
+    }
   }
-#endif
 
   es::Dispose(markedFiles);
 
@@ -678,7 +682,8 @@ void PackMode(int argc, TCHAR *argv[], APPContext &ctx,
   }
 
   for (auto &[path, paths] : zips) {
-    printline("Loading ZIP vfs: " << path);
+    auto labelData = "Loading ZIP vfs: " + path;
+    auto loadBar = AppendNewLogLine<LoadingBar>(labelData);
     const bool loadFiltered =
         ctx.info->arcLoadType == ArchiveLoadType::FILTERED;
     auto fctx = [&, &paths_ = paths, &path_ = path] {
@@ -694,61 +699,67 @@ void PackMode(int argc, TCHAR *argv[], APPContext &ctx,
       return MakeZIPContext(path_);
     }();
 
-#if SPIKE_USE_THREADS
-    RunThreadedQueue(
-        paths.size(), [&, &path = path, &paths = paths](size_t index) {
-          try {
-#else
+    loadBar->Finish();
+    ReleaseLogLine(loadBar);
+
     for (size_t index = 0; index < paths.size(); index++) {
-#endif
-            PathFilter zFilter;
-            auto zipPath = path.substr(0, path.size() - 4);
-            auto &zFolder = paths[index];
+      PathFilter zFilter;
+      auto zipPath = path.substr(0, path.size() - 4);
+      auto &zFolder = paths[index];
 
-            if (!zFolder.empty()) {
-              zFilter.AddFilter(zFolder);
-              zipPath += '/' + zFolder.substr(1);
-            }
+      if (!zFolder.empty()) {
+        zFilter.AddFilter(zFolder);
+        zipPath += '/' + zFolder.substr(1);
+      }
 
-            AppPackStats stats;
-            auto vfsIter = fctx->Iter(ZIPIOEntryType::View);
-            std::vector<bool> markedFiles(vfsIter.base->Count(), false);
-            size_t curIndex = 0;
+      AppPackStats stats{};
+      auto vfsIter = fctx->Iter(ZIPIOEntryType::View);
+      std::vector<bool> markedFiles(vfsIter.base->Count(), false);
+      size_t curIndex = 0;
 
-            for (auto f : vfsIter) {
-              auto item = f.AsView();
-              if (moduleFilter.IsFiltered(item) && zFilter.IsFiltered(item)) {
-                markedFiles[curIndex] = true;
-                stats.numFiles++;
-                stats.totalSizeFileNames += item.size() + 1;
-              }
+      for (auto f : vfsIter) {
+        auto item = f.AsView();
+        if (moduleFilter.IsFiltered(item) && zFilter.IsFiltered(item)) {
+          markedFiles[curIndex] = true;
+          stats.numFiles++;
+          stats.totalSizeFileNames += item.size() + 1;
+        }
 
-              curIndex++;
-            }
+        curIndex++;
+      }
 
-            curIndex = 0;
-            auto archiveContext = ctx.NewArchive(zipPath, stats);
-            vfsIter = fctx->Iter();
+      curIndex = 0;
+      auto archiveContext = ctx.NewArchive(zipPath, stats);
+      vfsIter = fctx->Iter();
+      auto vfsIterBegin = vfsIter.begin();
+      auto folderIndex = "Zip id " + std::to_string(index);
+      auto statBar = AppendNewLogLine<DetailedProgressBar>(folderIndex);
+      statBar->ItemCount(stats.numFiles);
+      ConsolePrintDetail(3);
 
-            for (auto f : vfsIter) {
-              if (markedFiles[curIndex++]) {
-                auto fileStream = fctx->OpenFile(f);
-                es::string_view zFile(f.AsView());
-                zFile.remove_prefix(zFolder.size());
-                archiveContext->SendFile(f.AsView(), *fileStream);
-                fctx->DisposeFile(fileStream);
-              }
-            }
+      RunThreadedQueueEx(markedFiles.size(), [&](size_t index) {
+        auto f = vfsIterBegin++;
 
-            archiveContext->Finish();
-#if SPIKE_USE_THREADS
-          } catch (const std::exception &e) {
-            printerror(e.what());
-          }
-        });
-#else
+        if (!markedFiles[index]) {
+          return;
+        }
+
+        auto fileStream = fctx->OpenFile(f);
+        es::string_view zFile(f.AsView());
+        zFile.remove_prefix(zFolder.size());
+        try {
+          archiveContext->SendFile(f.AsView(), *fileStream);
+        } catch (const std::exception &e) {
+          printerror(e.what());
+        }
+        fctx->DisposeFile(fileStream);
+        (*statBar)++;
+      });
+
+      ConsolePrintDetail(1);
+      archiveContext->Finish();
+      RemoveLogLine(statBar);
     }
-#endif
   }
 }
 
@@ -757,6 +768,7 @@ int _tmain(int argc, TCHAR *argv[]) {
   es::SetupWinApiConsole();
   InitConsole();
   CleanTempStorages();
+  ConsolePrintDetail(1);
 
   if (argc < 2) {
     printerror("Insufficient argument count, expected module name.");
