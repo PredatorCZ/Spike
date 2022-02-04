@@ -1,6 +1,6 @@
 /*  Base class for Binary writter/reader
 
-    Copyright 2018-2021 Lukas Cone
+    Copyright 2018-2022 Lukas Cone
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -24,25 +24,3 @@
 #define getBlockSize(classname, startval, endval)                              \
   offsetof(classname, endval) - offsetof(classname, startval) +                \
       sizeof(classname::endval)
-
-constexpr std::ios_base::openmode MakeOpenMode(BinCoreOpenMode mode) {
-  std::ios_base::openmode retVal{};
-
-  if (mode & BinCoreOpenMode::Binary) {
-    retVal = retVal | std::ios_base::binary;
-  }
-
-  if (mode & BinCoreOpenMode::Append) {
-    retVal = retVal | std::ios_base::app;
-  }
-
-  if (mode & BinCoreOpenMode::Ate) {
-    retVal = retVal | std::ios_base::ate;
-  }
-
-  if (mode & BinCoreOpenMode::Truncate) {
-    retVal = retVal | std::ios_base::trunc;
-  }
-
-  return retVal;
-}

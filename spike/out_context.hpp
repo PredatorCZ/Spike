@@ -53,7 +53,7 @@ struct ZIPExtactContext : AppExtractContext {
 
 private:
   friend struct ZIPMerger;
-  BinWritter<> records;
+  BinWritter records;
   std::string outputFile;
   std::stringstream entriesStream;
   BinWritterRef entries;
@@ -81,15 +81,15 @@ struct ZIPMerger {
 
 private:
   void ReserveCache();
-  BinWritter<> entries;
-  BinWritter<> records;
+  BinWritter entries;
+  BinWritter records;
   std::string entriesFile;
   std::string outFile;
   size_t numEntries = 0;
   CacheGenerator cache;
 };
 
-struct IOExtractContext : AppExtractContext, BinWritter<> {
+struct IOExtractContext : AppExtractContext, BinWritter {
   std::string outDir;
   std::set<std::string> folderTree;
   CounterLine *totalBar = nullptr;

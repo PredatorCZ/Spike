@@ -1,6 +1,6 @@
 /*  class for writing data to a file
 
-    Copyright 2018-2021 Lukas Cone
+    Copyright 2018-2022 Lukas Cone
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -21,33 +21,33 @@
 #include "internal/bincore_file.hpp"
 
 template <BinCoreOpenMode MODE>
-class BinWritter : public BinStreamFile<MakeOpenMode(MODE) | std::ios::out>,
+class BinWritter_t : public BinStreamFile<MODE | BinCoreOpenMode::Out>,
                    public BinWritterRef {
-  using base_file = BinStreamFile<MakeOpenMode(MODE) | std::ios::out>;
+  using base_file = BinStreamFile<MODE | BinCoreOpenMode::Out>;
   template <class C> void OpenFile(const C filePath) {
     if (!this->Open_(filePath)) {
       throw es::FileInvalidAccessError(filePath);
     }
 
-    this->baseStream = &this->FileStream;
+    this->baseStream = &this->fileStream;
   }
 
 public:
-  BinWritter() = default;
-  BinWritter(const std::string &filePath) {
+  BinWritter_t() = default;
+  BinWritter_t(const std::string &filePath) {
     OpenFile<decltype(filePath)>(filePath);
   }
-  BinWritter(const char *filePath) { OpenFile(filePath); }
-  BinWritter(const BinWritter &rd) = delete;
-  BinWritter(BinWritter &&o)
+  BinWritter_t(const char *filePath) { OpenFile(filePath); }
+  BinWritter_t(const BinWritter &rd) = delete;
+  BinWritter_t(BinWritter_t &&o)
       : base_file(std::move(o)), BinWritterRef(std::move(o)) {
-    this->baseStream = &this->FileStream;
+    this->baseStream = &this->fileStream;
   }
-  BinWritter &operator=(const BinWritter &) = delete;
-  BinWritter &operator=(BinWritter &&o) {
+  BinWritter_t &operator=(const BinWritter_t &) = delete;
+  BinWritter_t &operator=(BinWritter_t &&o) {
     static_cast<base_file &>(*this) = std::move(o);
     static_cast<BinWritterRef &>(*this) = std::move(o);
-    this->baseStream = &this->FileStream;
+    this->baseStream = &this->fileStream;
     return *this;
   }
 

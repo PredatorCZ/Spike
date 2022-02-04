@@ -1,6 +1,6 @@
 /*  fwd decl for bincore classes
 
-    Copyright 2020-2021 Lukas Cone
+    Copyright 2020-2022 Lukas Cone
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -18,11 +18,13 @@
 #pragma once
 
 enum class BinCoreOpenMode {
-  Text = 0,
+  Default = 0,
   Append = 1,
   Ate = 2,
-  Binary = 4,
+  Text = 4,
   Truncate = 8,
+  NoBuffer = 0x10,
+  Out = 0x20, // internal use only
 };
 
 constexpr BinCoreOpenMode operator|(BinCoreOpenMode o1, BinCoreOpenMode o2) {
@@ -34,11 +36,13 @@ constexpr bool operator&(BinCoreOpenMode o1, BinCoreOpenMode o2) {
   return static_cast<long>(o1) & static_cast<long>(o2);
 }
 
-template <BinCoreOpenMode MODE = BinCoreOpenMode::Binary> class BinReader;
+template <BinCoreOpenMode MODE = BinCoreOpenMode::Default> class BinReader_t;
+using BinReader = BinReader_t<>;
 class BinStreamInTraits;
 template <class _Traits> class BinReaderRef_t;
 typedef BinReaderRef_t<BinStreamInTraits> BinReaderRef;
-template <BinCoreOpenMode MODE = BinCoreOpenMode::Binary> class BinWritter;
+template <BinCoreOpenMode MODE = BinCoreOpenMode::Default> class BinWritter_t;
+using BinWritter = BinWritter_t<>;
 class BinStreamOutTraits;
 template <class _Traits> class BinWritterRef_t;
 typedef BinWritterRef_t<BinStreamOutTraits> BinWritterRef;

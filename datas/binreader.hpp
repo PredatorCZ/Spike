@@ -1,6 +1,6 @@
 /*  class for reading data from a file
 
-    Copyright 2018-2021 Lukas Cone
+    Copyright 2018-2022 Lukas Cone
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -21,33 +21,32 @@
 #include "internal/bincore_file.hpp"
 
 template <BinCoreOpenMode MODE>
-class BinReader : public BinStreamFile<MakeOpenMode(MODE) | std::ios::in>,
-                  public BinReaderRef {
-  using base_file = BinStreamFile<MakeOpenMode(MODE) | std::ios::in>;
+class BinReader_t : public BinStreamFile<MODE>, public BinReaderRef {
+  using base_file = BinStreamFile<MODE>;
   template <class C> void OpenFile(const C fileName) {
     if (!this->Open_(fileName)) {
       throw es::FileNotFoundError(fileName);
     }
 
-    this->baseStream = &this->FileStream;
+    this->baseStream = &this->fileStream;
   }
 
 public:
-  BinReader() = default;
-  BinReader(const std::string &filePath) {
+  BinReader_t() = default;
+  BinReader_t(const std::string &filePath) {
     OpenFile<decltype(filePath)>(filePath);
   }
-  BinReader(const char *filePath) { OpenFile(filePath); }
-  BinReader(const BinReader &) = delete;
-  BinReader(BinReader &&o)
+  BinReader_t(const char *filePath) { OpenFile(filePath); }
+  BinReader_t(const BinReader_t &) = delete;
+  BinReader_t(BinReader_t &&o)
       : base_file(std::move(o)), BinReaderRef(std::move(o)) {
-    this->baseStream = &this->FileStream;
+    this->baseStream = &this->fileStream;
   }
-  BinReader &operator=(const BinReader &other) = delete;
-  BinReader &operator=(BinReader &&o) {
+  BinReader_t &operator=(const BinReader_t &other) = delete;
+  BinReader_t &operator=(BinReader_t &&o) {
     static_cast<base_file &>(*this) = std::move(o);
     static_cast<BinReaderRef &>(*this) = std::move(o);
-    this->baseStream = &this->FileStream;
+    this->baseStream = &this->fileStream;
     return *this;
   }
 

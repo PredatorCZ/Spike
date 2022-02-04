@@ -34,11 +34,6 @@
 #define SPIKE_USE_THREADS NDEBUG
 #endif
 
-struct BinReaderEx : BinReader<> {
-  using BinReader::baseStream;
-  using BinReader::BinReader;
-};
-
 static const char appHeader0[] =
     "Simply drag'n'drop files/folders onto application or "
     "use as ";
@@ -431,7 +426,7 @@ void ExtractConvertMode(int argc, TCHAR *argv[], APPContext &ctx,
       archiveFiles.resize(files.size());
       RunThreadedQueue(files.size(), [&](size_t index) {
         try {
-          BinReader<> cRead(files[index]);
+          BinReader cRead(files[index]);
           auto numFiles = ctx.ExtractStat(std::bind(
               [&](size_t offset, size_t size) {
                 cRead.Seek(offset);
@@ -492,7 +487,7 @@ void ExtractConvertMode(int argc, TCHAR *argv[], APPContext &ctx,
       if (currentBar) {
         currentBar->ItemCount(archiveFiles.at(index));
       }
-      BinReaderEx cRead(files[index]);
+      BinReader cRead(files[index]);
       AFileInfo cFile(files[index]);
       auto appCtx = MakeIOContext();
       appCtx->workingFile = files[index];
@@ -528,7 +523,7 @@ void ExtractConvertMode(int argc, TCHAR *argv[], APPContext &ctx,
         }
 
         ectx->ctx = appCtx.get();
-        ctx.ExtractFile(*cRead.baseStream, ectx.get());
+        ctx.ExtractFile(cRead.BaseStream(), ectx.get());
 
         if (extractSettings.makeZIP) {
           static_cast<ZIPExtactContext *>(ectx.get())->FinishZIP([] {
@@ -538,7 +533,7 @@ void ExtractConvertMode(int argc, TCHAR *argv[], APPContext &ctx,
       } else {
         appCtx->outFile = files[index];
         printline("Processing: " << files[index]);
-        ctx.ProcessFile(*cRead.baseStream, appCtx.get());
+        ctx.ProcessFile(cRead.BaseStream(), appCtx.get());
         (*uiLines.totalProgress)++;
       }
 #if SPIKE_USE_THREADS
@@ -622,10 +617,10 @@ void PackMode(int argc, TCHAR *argv[], APPContext &ctx,
 
       RunThreadedQueue(sc.Files().size(), [&](size_t index) {
         try {
-          BinReaderEx cRead(sc.Files().at(index));
+          BinReader cRead(sc.Files().at(index));
           es::string_view relativeFilepath(sc.Files().at(index));
           relativeFilepath.remove_prefix(fileName.size());
-          archiveContext->SendFile(relativeFilepath, *cRead.baseStream);
+          archiveContext->SendFile(relativeFilepath, cRead.BaseStream());
           (*statBar)++;
         } catch (const std::exception &e) {
           printerror(e.what());

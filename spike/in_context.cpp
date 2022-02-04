@@ -31,12 +31,6 @@
 
 static std::mutex simpleIOLock;
 
-struct BinReaderEx : BinReader<> {
-  using BinReader::baseStream;
-  using BinReader::BinReader;
-  using BinReader::Close_;
-};
-
 struct SimpleIOContext : AppContext {
   std::istream *OpenFile(const std::string &path);
 
@@ -48,7 +42,7 @@ struct SimpleIOContext : AppContext {
   void DisposeFile(std::istream *str) override;
 
 private:
-  BinReaderEx streamedFiles[32];
+  BinReader streamedFiles[32];
   uint32 usedFiles = 0;
 };
 
@@ -68,7 +62,7 @@ std::istream *SimpleIOContext::OpenFile(const std::string &path) {
     if (!(usedFiles & bit)) {
       streamedFiles[b].Open(path);
       usedFiles ^= bit;
-      return streamedFiles[b].baseStream;
+      return &streamedFiles[b].BaseStream();
     }
   }
 
@@ -101,14 +95,14 @@ void SimpleIOContext::DisposeFile(std::istream *str) {
   size_t index = 0;
 
   for (auto &f : streamedFiles) {
-    if (f.baseStream == str) {
+    if (&f.BaseStream() == str) {
       uint32 bit = 1 << index;
 
       if (!(usedFiles & bit)) {
         throw std::runtime_error("Stream already freed.");
       }
 
-      f.Close_();
+      es::Dispose(f);
       usedFiles ^= bit;
       return;
     }
@@ -138,7 +132,7 @@ struct ZIPIOContext_implbase : ZIPIOContext {
 
 protected:
   std::map<std::istream *, std::unique_ptr<ZIPDataHolder>> openedFiles;
-  BinReader<> rd;
+  BinReader rd;
 };
 
 struct ZIPMemoryStream : ZIPDataHolder {
@@ -149,7 +143,7 @@ struct ZIPMemoryStream : ZIPDataHolder {
 };
 
 struct ZIPFileStream : ZIPDataHolder {
-  BinReaderEx rd;
+  BinReader rd;
   std::string path;
   ZIPFileStream(const std::string &path_) : rd(path_), path(path_) {}
   ~ZIPFileStream() {
@@ -188,7 +182,7 @@ std::istream *ZIPIOContext_implbase::OpenFile(const ZipEntry &entry) {
     }
 
     auto stoff = std::make_unique<ZIPFileStream>(path);
-    std::istream *ptr = stoff->rd.baseStream;
+    std::istream *ptr = &stoff->rd.BaseStream();
     openedFiles.emplace(ptr, std::move(stoff));
     return ptr;
   } else {
@@ -498,7 +492,7 @@ std::unique_ptr<ZIPIOContext> MakeZIPContext(const std::string &file,
 
 std::unique_ptr<ZIPIOContext> MakeZIPContext(const std::string &file) {
   std::string cacheFile = file + ".cache";
-  BinReader<> rd;
+  BinReader rd;
   try {
     rd.Open(cacheFile);
   } catch (const std::exception &e) {

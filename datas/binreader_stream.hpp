@@ -1,6 +1,6 @@
 /*  traits class for reading data from istream
 
-    Copyright 2018-2021 Lukas Cone
+    Copyright 2018-2022 Lukas Cone
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -51,6 +51,8 @@ public:
   void Read(char *buffer, size_t size) const { baseStream->read(buffer, size); }
 
   bool IsEOF() const { return baseStream->eof(); }
+
+  StreamType &BaseStream() { return *baseStream; }
 };
 
 typedef BinReaderRef_t<BinStreamInTraits> BinReaderRef;

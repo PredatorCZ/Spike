@@ -1,6 +1,6 @@
 /*  Binary writter/reader file handle
 
-    Copyright 2018-2021 Lukas Cone
+    Copyright 2018-2022 Lukas Cone
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -16,44 +16,101 @@
 */
 
 #pragma once
+#include "../bincore_fwd.hpp"
 #include "../unicode.hpp"
+
+constexpr std::ios_base::openmode MakeOpenMode(BinCoreOpenMode mode) {
+  std::ios_base::openmode retVal{};
+
+  if (!(mode & BinCoreOpenMode::Text)) {
+    retVal = retVal | std::ios_base::binary;
+  }
+
+  if (mode & BinCoreOpenMode::Append) {
+    retVal = retVal | std::ios_base::app;
+  }
+
+  if (mode & BinCoreOpenMode::Ate) {
+    retVal = retVal | std::ios_base::ate;
+  }
+
+  if (mode & BinCoreOpenMode::Truncate) {
+    retVal = retVal | std::ios_base::trunc;
+  }
+
+  if (mode & BinCoreOpenMode::Out) {
+    retVal = retVal | std::ios_base::out;
+  } else {
+    retVal = retVal | std::ios_base::in;
+  }
+
+  return retVal;
+}
 
 #ifdef __MINGW64__
 #include <ext/stdio_filebuf.h>
 #include <iostream>
 
-template <std::ios_base::openmode MODE> class BinStreamFile {
+struct MGWFileStreamBase {
   using filebuf = __gnu_cxx::stdio_filebuf<char>;
   filebuf underLying;
 
+  MGWFileStreamBase(filebuf &&file) : underLying(std::move(file)) {}
+  MGWFileStreamBase() = default;
+  MGWFileStreamBase(MGWFileStreamBase&&) = default;
+
+  MGWFileStreamBase &operator=(MGWFileStreamBase &&other) = default;
+};
+
+struct MGWFileStream : MGWFileStreamBase, std::iostream {
+  using parent = std::iostream;
+
+  MGWFileStream(filebuf &&file)
+      : MGWFileStreamBase(std::move(file)), parent(&underLying) {}
+
+  MGWFileStream() : parent(&underLying) {}
+
+  MGWFileStream(MGWFileStream &&other)
+      : MGWFileStreamBase(std::move(other)), parent(&underLying) {}
+
+  MGWFileStream &operator=(MGWFileStream &&other) = default;
+
+  void close() {
+    fclose(underLying.file());
+    underLying.close();
+    clear();
+  }
+};
+
+template <BinCoreOpenMode MODE> class BinStreamFile {
+  static constexpr std::ios::openmode OMODE = MakeOpenMode(MODE);
+
 protected:
-  std::iostream FileStream{
-      static_cast<std::basic_streambuf<char> *>(&underLying)};
+  MGWFileStream fileStream;
   void Close_() {
-    if (!FileStream.fail()) {
-      fclose(underLying.file());
-      underLying.close();
+    if (!fileStream.fail()) {
+      fileStream.close();
     }
   }
 
   bool WOpen(const std::wstring &fileName) {
-    constexpr wchar_t mode[]{(MODE & std::ios_base::in) != 0 ? 'r' : 'w',
-                             (MODE & std::ios_base::binary) != 0 ? 'b' : 't',
+    constexpr wchar_t mode[]{(OMODE & std::ios_base::in) != 0 ? 'r' : 'w',
+                             (OMODE & std::ios_base::binary) != 0 ? 'b' : 't',
                              0};
 
     FILE *cFile = _wfopen(fileName.data(), mode);
 
     if (!cFile) {
-      FileStream.setstate(std::ios_base::badbit);
+      fileStream.setstate(std::ios_base::badbit);
       return false;
     }
 
-    // TODO tweak buffer size?
-    underLying = filebuf(cFile, MODE);
-    new (&FileStream)
-        std::iostream{static_cast<std::basic_streambuf<char> *>(&underLying)};
+    const size_t bufSize =
+        MODE & BinCoreOpenMode::NoBuffer ? 0 : static_cast<size_t>(BUFSIZ);
 
-    return !FileStream.fail();
+    fileStream = std::move(MGWFileStreamBase::filebuf(cFile, OMODE, bufSize));
+
+    return !fileStream.fail();
   }
 
   bool Open_(const char *_fileName) { return WOpen(es::ToUTF1632(_fileName)); }
@@ -63,40 +120,48 @@ protected:
   }
 
 public:
-  bool IsValid() const { return !FileStream.fail(); }
+  bool IsValid() const { return !fileStream.fail(); }
 };
 #else
 #include <fstream>
-template <std::ios_base::openmode MODE> class BinStreamFile {
+template <BinCoreOpenMode MODE> class BinStreamFile {
+  static constexpr std::ios::openmode OMODE = MakeOpenMode(MODE);
+
 protected:
-  std::fstream FileStream;
+  std::fstream fileStream;
 
   void Close_() {
-    if (!FileStream.fail())
-      FileStream.close();
+    if (IsValid())
+      fileStream.close();
   }
 
-  bool Open_(const char *_fileName) {
+  bool Open_(const char *fileName) {
+    if (MODE & BinCoreOpenMode::NoBuffer) {
+      fileStream.rdbuf()->pubsetbuf(0, 0);
+    }
 #if defined(UNICODE) && defined(_MSC_VER)
-    FileStream.open(es::ToUTF1632(_fileName), MODE);
+    fileStream.open(es::ToUTF1632(fileName), OMODE);
 #else
-    FileStream.open(_fileName, MODE);
+    fileStream.open(fileName, OMODE);
 #endif
 
-    return !FileStream.fail();
+    return IsValid();
   }
 
-  bool Open_(const std::string &_fileName) {
+  bool Open_(const std::string &fileName) {
+    if (MODE & BinCoreOpenMode::NoBuffer) {
+      fileStream.rdbuf()->pubsetbuf(0, 0);
+    }
 #if defined(UNICODE) && defined(_MSC_VER)
-    FileStream.open(es::ToUTF1632(_fileName), MODE);
+    fileStream.open(es::ToUTF1632(fileName), OMODE);
 #else
-    FileStream.open(_fileName, MODE);
+    fileStream.open(fileName, OMODE);
 #endif
 
-    return !FileStream.fail();
+    return IsValid();
   }
 
 public:
-  bool IsValid() const { return !FileStream.fail(); }
+  bool IsValid() const { return fileStream.rdbuf()->is_open(); }
 };
 #endif

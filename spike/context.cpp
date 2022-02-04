@@ -28,7 +28,7 @@
 #include <sstream>
 #include <thread>
 
-#ifdef _MSC_VER
+#if defined(_MSC_VER) || defined(__MINGW64__)
 #include "datas/tchar.hpp"
 #include <windows.h>
 auto dlsym(void *handle, const char *name) {
@@ -188,7 +188,7 @@ APPContext::APPContext(const char *moduleName_, const std::string &appFolder_)
     return value = reinterpret_cast<type_>(dlsym(dlHandle, name));
   };
 
-#ifdef _MSC_VER
+#if defined(_MSC_VER) || defined(__MINGW64__)
   auto modPath = ToTSTRING(modulePath);
   dlHandle = LoadLibrary(modPath.data());
 #else
@@ -303,7 +303,7 @@ void APPContext::FromConfig() {
   }
 }
 
-using stream_type = BinWritter<BinCoreOpenMode::Text>;
+using stream_type = BinWritter_t<BinCoreOpenMode::Text>;
 static stream_type &GetStream() {
   static stream_type outStream;
   return outStream;
