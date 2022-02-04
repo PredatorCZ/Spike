@@ -39,17 +39,23 @@ endif()
 if(PUGI_SHARED_LIBS)
   add_library(pugixml SHARED pugixml_dll.rc)
   target_link_libraries(pugixml pugixml-shared)
+
+  if(MSVC OR MINGW)
+    set_target_properties(pugixml PROPERTIES SUFFIX ${PROJECT_VERSION_MAJOR}.dll
+                                             PREFIX "")
+  else()
+    set_target_properties(pugixml PROPERTIES VERSION ${PROJECT_VERSION}
+                                             SOVERSION ${PROJECT_VERSION_MAJOR})
+  endif()
+
   if(MSVC)
     target_compile_definitions(
       pugixml-shared
       INTERFACE PUGIXML_API=__declspec\(dllimport\)
       PRIVATE PUGIXML_API=__declspec\(dllexport\))
-  else()
-    set_target_properties(pugixml PROPERTIES VERSION ${PROJECT_VERSION}
-                                             SOVERSION ${PROJECT_VERSION_MAJOR})
   endif()
   install(
     TARGETS pugixml
-    LIBRARY NAMELINK_SKIP DESTINATION lib
+    LIBRARY NAMELINK_SKIP DESTINATION $<IF:$<BOOL:${MINGW}>,bin,lib>
     RUNTIME DESTINATION bin)
 endif()

@@ -30,8 +30,12 @@ build_target(
 
 install(TARGETS spike RUNTIME DESTINATION bin)
 
-if(NOT WIN32)
+if(NOT (WIN32 OR MINGW))
   target_link_libraries(spike dl)
+endif()
+
+if (MINGW)
+  target_link_options(spike PRIVATE -municode)
 endif()
 
 function(add_spike_subdir name_)

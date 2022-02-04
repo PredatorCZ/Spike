@@ -15,7 +15,7 @@
     limitations under the License.
 */
 
-#include <Windows.h>
+#include <windows.h>
 #include <direct.h>
 
 namespace es {
@@ -36,6 +36,10 @@ int mkdir(const std::string &path, uint32) {
   return ::_mkdir(path.data());
 #endif
 }
+
+#ifndef ENABLE_VIRTUAL_TERMINAL_PROCESSING
+#define ENABLE_VIRTUAL_TERMINAL_PROCESSING 4
+#endif
 
 void SetupWinApiConsole() {
   auto checkApi = [](auto what) {

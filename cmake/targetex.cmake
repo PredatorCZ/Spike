@@ -184,7 +184,7 @@ function(build_target)
                  PREFIX ""
                  NO_SONAME TRUE)
 
-    if(WIN32)
+    if(WIN32 OR MINGW)
       get_target_property(spike_exec spike OUTPUT_NAME)
       configure_file(${PRECORE_SOURCE_DIR}/cmake/spike.tmpl
                      ${PROJECT_BINARY_DIR}/${_arg_NAME}_/spike.runner)
@@ -197,12 +197,12 @@ function(build_target)
 
     install(
       TARGETS ${_arg_NAME}
-      LIBRARY DESTINATION $<IF:$<BOOL:${MSVC}>,lib,bin>
+      LIBRARY DESTINATION $<IF:$<BOOL:${MINGW}>,bin,lib>
       RUNTIME DESTINATION bin)
   endif()
 
   if(${_is_python_module})
-    if(WIN32)
+    if(WIN32 OR MINGW)
       set_target_properties(${_arg_NAME} PROPERTIES SUFFIX .pyd)
     endif()
 
