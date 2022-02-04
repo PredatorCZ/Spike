@@ -20,6 +20,7 @@
 #include "datas/master_printer.hpp"
 #include "datas/tchar.hpp"
 #include <algorithm>
+#include <csignal>
 #include <thread>
 #include <vector>
 
@@ -123,8 +124,14 @@ void ReceiveQueue(const es::print::Queuer &que) {
 void MakeLogger() {
   size_t innerTick = 0;
   messageQueueOrder = false;
+  bool mustClear = false;
 
   while (true) {
+    if (mustClear) {
+      es::Print("\033[J");
+      mustClear = false;
+    }
+
     if (bool mqo = messageQueueOrder; !messageQueues[mqo].empty()) {
       messageQueueOrder = !mqo;
       uint8 fullDetail = printDetail;
@@ -155,7 +162,7 @@ void MakeLogger() {
 
         if (detail & 2) {
           char threadBuffer[16]{};
-          snprintf(threadBuffer, sizeof(threadBuffer), "[0x%8X] ", l.threadId);
+          snprintf(threadBuffer, sizeof(threadBuffer), "[0x%.8X] ", l.threadId);
           es::Print(threadBuffer);
         }
 
@@ -188,10 +195,17 @@ void MakeLogger() {
       es::Print("\033[F");
     }
 
-    es::Print("\033[J");
+    mustClear = true;
 
     std::this_thread::sleep_for(std::chrono::milliseconds(nextTickMS));
     innerTick += nextTickMS;
+  }
+}
+
+void TerminateConsoleDontWait() {
+  pauseLogger = 2;
+  if (logger.joinable()) {
+    logger.join();
   }
 }
 
@@ -199,11 +213,21 @@ void InitConsole() {
   setlocale(LC_ALL, "");
   es::print::AddQueuer(ReceiveQueue);
   logger = std::thread{MakeLogger};
+  auto terminate = [](int sig) {
+    TerminateConsoleDontWait();
+    std::exit(sig);
+  };
+
+  std::signal(SIGTERM, terminate);
+  std::signal(SIGABRT, terminate);
+  std::signal(SIGINT, terminate);
 }
 
 void TerminateConsole() {
-  pauseLogger = 2;
-  logger.join();
+  while (messageQueues[0].empty() && messageQueues[1].empty()) {
+  }
+
+  TerminateConsoleDontWait();
 }
 
 void ConsolePrintDetail(uint8 detail) {

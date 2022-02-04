@@ -754,11 +754,7 @@ void PackMode(int argc, TCHAR *argv[], APPContext &ctx,
   }
 }
 
-int _tmain(int argc, TCHAR *argv[]) {
-  setlocale(LC_ALL, "");
-  es::SetupWinApiConsole();
-  InitConsole();
-  CleanTempStorages();
+int Main(int argc, TCHAR *argv[]) {
   ConsolePrintDetail(1);
 
   if (argc < 2) {
@@ -888,7 +884,18 @@ int _tmain(int argc, TCHAR *argv[]) {
     ctx.FinishContext();
   }
 
+  return 0;
+}
+
+int _tmain(int argc, TCHAR *argv[]) {
+  setlocale(LC_ALL, "");
+  es::SetupWinApiConsole();
+  InitConsole();
+  CleanTempStorages();
+
+  int retVal = Main(argc, argv);
+
   CleanCurrentTempStorage();
   TerminateConsole();
-  return 0;
+  return retVal;
 }
