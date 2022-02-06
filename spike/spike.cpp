@@ -699,7 +699,7 @@ void PackMode(int argc, TCHAR *argv[], APPContext &ctx,
       }
 
       AppPackStats stats{};
-      auto vfsIter = fctx->Iter(ZIPIOEntryType::View);
+      auto vfsIter = fctx->Iter();
       std::vector<bool> markedFiles(vfsIter.base->Count(), false);
       size_t curIndex = 0;
 

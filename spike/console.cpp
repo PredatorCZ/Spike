@@ -224,7 +224,7 @@ void InitConsole() {
 }
 
 void TerminateConsole() {
-  while (messageQueues[0].empty() && messageQueues[1].empty()) {
+  while (!messageQueues[0].empty() && !messageQueues[1].empty()) {
   }
 
   TerminateConsoleDontWait();
