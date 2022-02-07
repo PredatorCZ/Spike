@@ -220,6 +220,8 @@ void ProcessZIPsExtractConvertMode(std::map<std::string, PathFilter> &zips,
           api.Insert(std::move(progBar), lines.totalProgress, false);
         }
       });
+    } else {
+      numFilesToProcess = numFiles;
     }
 
     if (lines.totalProgress) {
