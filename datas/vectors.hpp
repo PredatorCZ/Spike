@@ -50,12 +50,24 @@ public:
   t_Vector2(T sc) : X(sc), Y(sc) {}
   t_Vector2(T inx, T iny) : X(inx), Y(iny) {}
 
-  vector operator+(vec_cref input) const { return {X + input.X, Y + input.Y}; }
-  vector operator-(vec_cref input) const { return {X - input.X, Y - input.Y}; }
-  vector operator*(vec_cref input) const { return {X * input.X, Y * input.Y}; }
-  vector operator/(vec_cref input) const { return {X / input.X, Y / input.Y}; }
-  vector operator&(vec_cref input) const { return {X & input.X, Y & input.Y}; }
-  vector operator|(vec_cref input) const { return {X | input.X, Y | input.Y}; }
+  vector operator+(vec_cref input) const {
+    return {T(X + input.X), T(Y + input.Y)};
+  }
+  vector operator-(vec_cref input) const {
+    return {T(X - input.X), T(Y - input.Y)};
+  }
+  vector operator*(vec_cref input) const {
+    return {T(X * input.X), T(Y * input.Y)};
+  }
+  vector operator/(vec_cref input) const {
+    return {T(X / input.X), T(Y / input.Y)};
+  }
+  vector operator&(vec_cref input) const {
+    return {T(X & input.X), T(Y & input.Y)};
+  }
+  vector operator|(vec_cref input) const {
+    return {T(X | input.X), T(Y | input.Y)};
+  }
   vector operator>>(shift_vec input) const {
     return {X >> input.X, Y >> input.Y};
   }
@@ -165,22 +177,22 @@ public:
   t_Vector(T inx, T iny, T inz) : X(inx), Y(iny), Z(inz) {}
 
   vector operator+(vec_cref input) const {
-    return {X + input.X, Y + input.Y, Z + input.Z};
+    return {T(X + input.X), T(Y + input.Y), T(Z + input.Z)};
   }
   vector operator-(vec_cref input) const {
-    return {X - input.X, Y - input.Y, Z - input.Z};
+    return {T(X - input.X), T(Y - input.Y), T(Z - input.Z)};
   }
   vector operator*(vec_cref input) const {
-    return {X * input.X, Y * input.Y, Z * input.Z};
+    return {T(X * input.X), T(Y * input.Y), T(Z * input.Z)};
   }
   vector operator/(vec_cref input) const {
-    return {X / input.X, Y / input.Y, Z / input.Z};
+    return {T(X / input.X), T(Y / input.Y), T(Z / input.Z)};
   }
   vector operator&(vec_cref input) const {
-    return {X & input.X, Y & input.Y, Z & input.Z};
+    return {T(X & input.X), T(Y & input.Y), T(Z & input.Z)};
   }
   vector operator|(vec_cref input) const {
-    return {X | input.X, Y | input.Y, Z | input.Z};
+    return {T(X | input.X), T(Y | input.Y), T(Z | input.Z)};
   }
   vector operator>>(shift_vec input) const {
     return {X >> input.X, Y >> input.Y, Z >> input.Z};
@@ -298,22 +310,22 @@ public:
   V4ScalarType(T x, T y, T z, T w) : X(x), Y(y), Z(z), W(w) {}
 
   vector operator+(vec_cref input) const {
-    return {X + input.X, Y + input.Y, Z + input.Z, W + input.W};
+    return {T(X + input.X), T(Y + input.Y), T(Z + input.Z), T(W + input.W)};
   }
   vector operator-(vec_cref input) const {
-    return {X - input.X, Y - input.Y, Z - input.Z, W - input.W};
+    return {T(X - input.X), T(Y - input.Y), T(Z - input.Z), T(W - input.W)};
   }
   vector operator*(vec_cref input) const {
-    return {X * input.X, Y * input.Y, Z * input.Z, W * input.W};
+    return {T(X * input.X), T(Y * input.Y), T(Z * input.Z), T(W * input.W)};
   }
   vector operator/(vec_cref input) const {
-    return {X / input.X, Y / input.Y, Z / input.Z, W / input.W};
+    return {T(X / input.X), T(Y / input.Y), T(Z / input.Z), T(W / input.W)};
   }
   vector operator&(vec_cref input) const {
-    return {X & input.X, Y & input.Y, Z & input.Z, W & input.W};
+    return {T(X & input.X), T(Y & input.Y), T(Z & input.Z), T(W & input.W)};
   }
   vector operator|(vec_cref input) const {
-    return {X | input.X, Y | input.Y, Z | input.Z, W | input.W};
+    return {T(X | input.X), T(Y | input.Y), T(Z | input.Z), T(W | input.W)};
   }
   vector operator>>(shift_vec input) const {
     return {X >> input.X, Y >> input.Y, Z >> input.Z, W >> input.W};
