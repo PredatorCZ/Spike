@@ -290,7 +290,7 @@ void Cache::Load(BinReaderRef rd) {
     throw es::InvalidHeaderError(hdr.id);
   }
 
-  if (hdr.version != 1) {
+  if (hdr.version != 2) {
     throw es::InvalidVersionError(hdr.version);
   }
 

@@ -32,7 +32,6 @@ struct ZIPExtactContext : AppExtractContext {
   ZIPExtactContext(const std::string &outFile)
       : records(outFile), outputFile(outFile), entries(entriesStream),
         cache(std::in_place) {
-    ReserveCache();
   }
   ZIPExtactContext(const std::string &outFile, bool)
       : records(outFile), entries(entriesStream) {}
@@ -64,15 +63,13 @@ private:
   std::string curFileName;
   std::optional<CacheGenerator> cache;
   std::vector<uint64> fileOffsets;
-  void FinishFile();
-  void ReserveCache();
+  void FinishFile(bool final = false);
 };
 
 struct ZIPMerger {
   ZIPMerger(const std::string &outFiles, const std::string &outEntries)
       : entries(outEntries), records(outFiles), entriesFile(outEntries),
         outFile(outFiles) {
-    ReserveCache();
   }
   ZIPMerger() = default;
   using cache_begin_cb = void (*)();
@@ -80,7 +77,6 @@ struct ZIPMerger {
   void FinishMerge(cache_begin_cb cacheBeginCB);
 
 private:
-  void ReserveCache();
   BinWritter entries;
   BinWritter records;
   std::string entriesFile;

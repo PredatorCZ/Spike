@@ -28,10 +28,8 @@
 #include <chrono>
 #include <mutex>
 
-static constexpr es::string_view cacheFileName = "__cache_checkup__";
-
 void ZIPExtactContext::FinishZIP(cache_begin_cb cacheBeginCB) {
-  FinishFile();
+  FinishFile(true);
 
   auto entriesStr = entriesStream.str();
   es::Dispose(entriesStream);
@@ -60,6 +58,13 @@ void ZIPExtactContext::FinishZIP(cache_begin_cb cacheBeginCB) {
   records.WriteContainer(entriesStr);
   es::Dispose(entriesStr);
 
+  if (cache) {
+    records.Write<uint16>(0x4353);
+    records.Write<uint16>(sizeof(CacheBaseHeader));
+    cache->meta.zipCheckupOffset = records.Tell();
+    records.Write(cache->meta);
+  }
+
   if (forcex64) {
     ZIP64CentralDir zCentral64{};
     zCentral64.id = ZIP64CentralDir::ID;
@@ -87,28 +92,12 @@ void ZIPExtactContext::FinishZIP(cache_begin_cb cacheBeginCB) {
     cache->meta.zipSize = records.Tell();
     BinWritter cacheWr(outputFile + ".cache");
     cache->Write(cacheWr);
-
-    records.Seek(0);
-    ZIPLocalFile file{ZIPLocalFile::ID, 10};
-    file.compressedSize = sizeof(CacheBaseHeader);
-    file.uncompressedSize = sizeof(CacheBaseHeader);
-    file.fileNameSize = cacheFileName.size();
-    file.crc = crc32b(0, reinterpret_cast<const char *>(&cache->meta),
-                      sizeof(CacheBaseHeader));
-    records.Write(file);
-    records.WriteContainer(cacheFileName);
+    records.Seek(cache->meta.zipCheckupOffset);
     records.Write(cache->meta);
   }
 }
 
-void ZIPExtactContext::ReserveCache() {
-  ZIPLocalFile file;
-  records.Write(file);
-  records.WriteContainer(cacheFileName);
-  records.Write(cache->meta);
-}
-
-void ZIPExtactContext::FinishFile() {
+void ZIPExtactContext::FinishFile(bool final) {
   auto SafeCast = [&](auto &where, auto &&what) {
     const uint64 limit =
         std::numeric_limits<std::decay_t<decltype(where)>>::max();
@@ -185,6 +174,10 @@ void ZIPExtactContext::FinishFile() {
     }
   }
 
+  if (final && cache) {
+    zFile.extraFieldSize += sizeof(CacheBaseHeader) + 4;
+  }
+
   entries.Write(zFile);
   entries.WriteContainer(prefixPath);
   entries.WriteContainer(curFileName);
@@ -219,7 +212,7 @@ void ZIPExtactContext::NewFile(const std::string &path) {
 
   struct {
     uint16 second : 5, minute : 6, hour : 5;
-  } dosTime{uint16(ts.tm_sec), uint16(ts.tm_min), uint16(ts.tm_hour)};
+  } dosTime{uint16(ts.tm_sec / 2), uint16(ts.tm_min), uint16(ts.tm_hour)};
 
   zLocalFile.lastModFileDate = reinterpret_cast<uint16 &>(dosDate);
   zLocalFile.lastModFileTime = reinterpret_cast<uint16 &>(dosTime);
@@ -302,13 +295,6 @@ void IOExtractContext::GenerateFolders() {
 }
 
 static std::mutex ZIPLock;
-
-void ZIPMerger::ReserveCache() {
-  ZIPLocalFile file;
-  records.Write(file);
-  records.WriteContainer(cacheFileName);
-  records.Write(cache.meta);
-}
 
 void ZIPMerger::Merge(ZIPExtactContext &other, const std::string &recordsFile) {
   if (!other.curFileName.empty()) {
@@ -438,6 +424,33 @@ void ZIPMerger::FinishMerge(cache_begin_cb cacheBeginCB) {
     records.WriteBuffer(buffer, restBytes);
   }
 
+  bool validCacheEntry = false;
+
+  {
+    // Find last zipfile entry and modify extraFieldSize
+    const size_t skipValue = std::min(entriesSize, size_t(0x11000));
+    rd.Skip(-skipValue);
+    rd.ReadBuffer(buffer, skipValue);
+    std::string_view sv(buffer, skipValue);
+    size_t foundLastEntry = sv.find_last_of("PK\x01\x02");
+    validCacheEntry = foundLastEntry != sv.npos;
+
+    if (validCacheEntry) {
+      foundLastEntry += offsetof(ZIPFile, extraFieldSize);
+      uint16 extraFieldSize =
+          *reinterpret_cast<uint16 *>(buffer + foundLastEntry);
+      records.Push();
+      records.Skip(-(skipValue - foundLastEntry + 3));
+      records.Write<uint16>(extraFieldSize + 4 + sizeof(CacheBaseHeader));
+      records.Pop();
+
+      records.Write<uint16>(0x4353);
+      records.Write<uint16>(sizeof(CacheBaseHeader));
+      cache.meta.zipCheckupOffset = records.Tell();
+      records.Write(cache.meta);
+    }
+  }
+
   if (forcex64) {
     ZIP64CentralDir zCentral64{};
     zCentral64.id = ZIP64CentralDir::ID;
@@ -462,19 +475,12 @@ void ZIPMerger::FinishMerge(cache_begin_cb cacheBeginCB) {
   es::Dispose(rd);
   es::RemoveFile(entriesFile);
 
-  cacheBeginCB();
-  cache.meta.zipSize = records.Tell();
-  BinWritter cacheWr(outFile + ".cache");
-  cache.Write(cacheWr);
-
-  records.Seek(0);
-  ZIPLocalFile file{ZIPLocalFile::ID, 10};
-  file.compressedSize = sizeof(CacheBaseHeader);
-  file.uncompressedSize = sizeof(CacheBaseHeader);
-  file.fileNameSize = cacheFileName.size();
-  file.crc = crc32b(0, reinterpret_cast<const char *>(&cache.meta),
-                    sizeof(CacheBaseHeader));
-  records.Write(file);
-  records.WriteContainer(cacheFileName);
-  records.Write(cache.meta);
+  if (validCacheEntry) {
+    cacheBeginCB();
+    cache.meta.zipSize = records.Tell();
+    BinWritter cacheWr(outFile + ".cache");
+    cache.Write(cacheWr);
+    records.Seek(cache.meta.zipCheckupOffset);
+    records.Write(cache.meta);
+  }
 }

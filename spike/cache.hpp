@@ -30,12 +30,13 @@ struct ZipEntryLeaf;
 struct CacheBaseHeader {
   static constexpr uint32 ID = CompileFourCC("SPCH");
   uint32 id = ID;
-  uint8 version = 1;
+  uint8 version = 2;
   uint8 numLevels;
   uint16 maxPathSize;
   uint32 numFiles;
   uint32 zipCRC;
   uint64 zipSize;
+  uint64 zipCheckupOffset;
 };
 
 struct CacheGenerator {

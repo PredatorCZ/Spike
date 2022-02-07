@@ -456,22 +456,14 @@ struct ZIPIOContextCached : ZIPIOContext_implbase {
 
   ZIPIOContextCached(const std::string &file, BinReaderRef cacheFile)
       : ZIPIOContext_implbase(file) {
-
-    ZIPLocalFile zFile;
-    rd.Read(zFile);
-    std::string name;
-    rd.ReadContainer(name, zFile.fileNameSize);
-    if (name != "__cache_checkup__") {
-      throw std::runtime_error(
-          "Cache checkup was not found in zip root entry.");
-    }
-
-    CacheBaseHeader hdr;
-    rd.Read(hdr);
     CacheBaseHeader cacheHdr;
     cacheFile.Push();
     cacheFile.Read(cacheHdr);
     cacheFile.Pop();
+
+    rd.Seek(cacheHdr.zipCheckupOffset);
+    CacheBaseHeader hdr;
+    rd.Read(hdr);
 
     if (memcmp(&hdr, &cacheHdr, sizeof(hdr))) {
       throw std::runtime_error("Cache header and zip checkup are different.");
