@@ -45,6 +45,27 @@ class ReflectorFriend;
 struct AppContextStream;
 struct AppContextFoundStream;
 
+struct ExtractConf {
+  bool makeZIP = true;
+  bool folderPerArc = true;
+  void ReflectorTag();
+};
+
+struct CompressConf {
+  uint32 ratioThreshold = 90;
+  uint32 minFileSize = 0x80;
+  void ReflectorTag();
+};
+
+struct MainAppConf {
+  CompressConf compressSettings;
+  uint8 verbosity = 0;
+
+protected:
+  bool generateLog = false;
+  ExtractConf extractSettings;
+};
+
 struct AppInfo_s {
   static constexpr uint32 CONTEXT_VERSION = 1;
   uint32 contextVersion;
@@ -53,6 +74,7 @@ struct AppInfo_s {
   es::string_view header;
   ReflectorFriend *settings = nullptr;
   es::string_view *filters = nullptr;
+  const MainAppConf *internalSettings = nullptr;
 };
 
 struct AppContext {

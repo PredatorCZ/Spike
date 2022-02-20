@@ -138,7 +138,7 @@ void ProcessZIPsExtractConvertMode(std::map<std::string, PathFilter> &zips,
     std::string outPath = zFile.GetFullPathNoExt();
     ZIPMerger mainZip;
 
-    if (!extractSettings.makeZIP) {
+    if (!mainSettings.extractSettings.makeZIP) {
       es::mkdir(outPath);
       outPath.push_back('/');
       IOExtractContext ctx_(outPath);
@@ -147,7 +147,7 @@ void ProcessZIPsExtractConvertMode(std::map<std::string, PathFilter> &zips,
         for (decltype(auto) f : store) {
           AFileInfo cFile(f.AsView());
 
-          if (extractSettings.folderPerArc) {
+          if (mainSettings.extractSettings.folderPerArc) {
             ctx_.AddFolderPath(cFile.GetFullPathNoExt().to_string());
           } else {
             ctx_.AddFolderPath(cFile.GetFolder().to_string());
@@ -258,11 +258,11 @@ void ProcessZIPsExtractConvertMode(std::map<std::string, PathFilter> &zips,
           std::unique_ptr<AppExtractContext> ectx;
           std::string recordsFile;
 
-          if (extractSettings.makeZIP) {
+          if (mainSettings.extractSettings.makeZIP) {
             recordsFile = RequestTempFile();
             auto zCtx = std::make_unique<ZIPExtactContext>(recordsFile, false);
 
-            if (extractSettings.folderPerArc) {
+            if (mainSettings.extractSettings.folderPerArc) {
               zCtx->prefixPath = cFile.GetFullPathNoExt().to_string();
               zCtx->prefixPath.push_back('/');
             }
@@ -274,7 +274,7 @@ void ProcessZIPsExtractConvertMode(std::map<std::string, PathFilter> &zips,
           } else {
             auto outPath_ = outPath;
 
-            if (extractSettings.folderPerArc) {
+            if (mainSettings.extractSettings.folderPerArc) {
               outPath_ += cFile.GetFullPathNoExt().to_string();
               outPath_.push_back('/');
             } else {
@@ -292,7 +292,7 @@ void ProcessZIPsExtractConvertMode(std::map<std::string, PathFilter> &zips,
           ctx.ExtractFile(*fileStream, ectx.get());
           fctx->DisposeFile(fileStream);
 
-          if (extractSettings.makeZIP) {
+          if (mainSettings.extractSettings.makeZIP) {
             auto zCtx = static_cast<ZIPExtactContext *>(ectx.get());
             mainZip.Merge(*zCtx, recordsFile);
             es::Dispose(ectx);
@@ -316,7 +316,7 @@ void ProcessZIPsExtractConvertMode(std::map<std::string, PathFilter> &zips,
     }
 #endif
 
-    if (extractSettings.makeZIP) {
+    if (mainSettings.extractSettings.makeZIP) {
       ModifyElements([](ElementAPI &api) {
         api.Clean();
         api.Append(std::make_unique<LoadingBar>("Generating final ZIP."));
@@ -499,7 +499,7 @@ void ExtractConvertMode(int argc, TCHAR *argv[], APPContext &ctx,
         std::unique_ptr<AppExtractContext> ectx;
         std::string outPath = cFile.GetFullPathNoExt().to_string();
 
-        if (extractSettings.makeZIP) {
+        if (mainSettings.extractSettings.makeZIP) {
           if (cFile.GetExtension() == ".zip") {
             outPath.append("_out");
           }
@@ -511,7 +511,7 @@ void ExtractConvertMode(int argc, TCHAR *argv[], APPContext &ctx,
           uniq->progBar = currentBar;
           ectx = std::move(uniq);
         } else {
-          if (!extractSettings.folderPerArc) {
+          if (!mainSettings.extractSettings.folderPerArc) {
             outPath = cFile.GetFolder();
           } else {
             es::mkdir(outPath);
@@ -527,7 +527,7 @@ void ExtractConvertMode(int argc, TCHAR *argv[], APPContext &ctx,
         ectx->ctx = appCtx.get();
         ctx.ExtractFile(cRead.BaseStream(), ectx.get());
 
-        if (extractSettings.makeZIP) {
+        if (mainSettings.extractSettings.makeZIP) {
           static_cast<ZIPExtactContext *>(ectx.get())->FinishZIP([] {
             printinfo("Generating cache.");
           });
@@ -751,12 +751,36 @@ void PackMode(int argc, TCHAR *argv[], APPContext &ctx,
   }
 }
 
+void ScanModules(const std::string &appFolder, const std::string &appName) {
+  DirectoryScanner sc;
+  sc.AddFilter(es::string_view(".spk$"));
+  sc.Scan(appFolder);
+
+  for (auto &m : sc) {
+    try {
+      AFileInfo modulePath(m);
+      auto moduleName = modulePath.GetFilename();
+      const size_t firstDotPos = moduleName.find_first_of('.');
+      auto moduleNameStr = moduleName.substr(0, firstDotPos).to_string();
+      APPContext ctx(moduleNameStr.data(), appFolder, appName);
+      ctx.FromConfig();
+    } catch (const std::runtime_error &e) {
+      printerror(e.what());
+    }
+  }
+}
+
 int Main(int argc, TCHAR *argv[]) {
   ConsolePrintDetail(1);
+  AFileInfo appLocation(std::to_string(*argv));
+  auto appFolder = appLocation.GetFolder().to_string();
+  auto appName = appLocation.GetFilename().to_string();
 
   if (argc < 2) {
-    printerror("Insufficient argument count, expected module name.");
-    return 1;
+    printwarning(
+        "No parameters provided, entring scan mode and generating config.");
+    ScanModules(appFolder, appName);
+    return 0;
   }
 
   if (argc < 3) {
@@ -764,13 +788,11 @@ int Main(int argc, TCHAR *argv[]) {
     return 1;
   }
 
-  AFileInfo appLocation(std::to_string(*argv));
-  auto appFolder = appLocation.GetFolder().to_string();
   auto moduleName = std::to_string(argv[1]);
   APPContext ctx;
 
   try {
-    ctx = APPContext(moduleName.data(), appFolder);
+    ctx = APPContext(moduleName.data(), appFolder, appName);
   } catch (const std::exception &e) {
     printerror(e.what());
     return 2;
@@ -805,16 +827,7 @@ int Main(int argc, TCHAR *argv[]) {
 
         printinfo("CLI option detected, config won't be loaded, all booleans "
                   "set to false!");
-
-        const size_t numValues = ctx.Settings().GetNumReflectedValues();
-        for (size_t i = 0; i < numValues; i++) {
-          auto rType = ctx.Settings().GetReflectedType(i);
-          if (rType->type == REFType::Bool) {
-            ctx.Settings().SetReflectedValue(i, "false");
-          }
-        }
-
-        extractSettings.folderPerArc = extractSettings.makeZIP = false;
+        ctx.ResetSwitchSettings();
       }();
 
       dontLoadConfig = true;
@@ -825,38 +838,10 @@ int Main(int argc, TCHAR *argv[]) {
       }
 
       auto optStr = std::to_string(opt);
-      JenHash optHash(optStr);
+      auto valStr = std::to_string(argv[a + 1]);
 
-      ReflectorFriend *refl = nullptr;
-      auto rType = ctx.Settings().GetReflectedType(optHash);
-
-      if (rType) {
-        refl = &ctx.Settings();
-      } else {
-        rType = MainSettings().GetReflectedType(optHash);
-
-        if (rType) {
-          refl = &MainSettings();
-        } else if (ctx.info->mode == AppMode_e::EXTRACT) {
-          rType = ExtractSettings().GetReflectedType(optHash);
-
-          if (rType) {
-            refl = &ExtractSettings();
-          }
-        }
-      }
-
-      if (rType) {
-        if (rType->type == REFType::Bool) {
-          refl->SetReflectedValue(*rType, "true");
-        } else {
-          auto valStr = std::to_string(argv[++a]);
-          refl->SetReflectedValue(*rType, valStr);
-        }
-      } else {
-        printerror("Invalid option: " << (optStr.size() > 1 ? "--" : "-")
-                                      << optStr);
-        continue;
+      if (auto retVal = ctx.ApplySetting(optStr, valStr); retVal > 0) {
+        a++;
       }
 
     } else {

@@ -54,16 +54,18 @@ auto dlerror() {
 #include <dlfcn.h>
 #endif
 
-MainAppConf mainSettings;
-MainAppExtractConf extractSettings;
+MainAppConfFriend mainSettings{};
 
-REFLECT(CLASS(MainAppConf),
+REFLECT(CLASS(MainAppConfFriend),
         MEMBERNAME(generateLog, "generate-log", "L",
                    ReflDesc{"Will generate text log of console output inside "
-                            "application location."}), )
+                            "application location."}),
+        MEMBER(verbosity, "v", ReflDesc{"Prints more information per level."}),
+        MEMBERNAME(extractSettings, "extract-settings"),
+        MEMBERNAME(compressSettings, "compress-settings"))
 
 REFLECT(
-    CLASS(MainAppExtractConf),
+    CLASS(ExtractConf),
     MEMBERNAME(
         folderPerArc, "folder-per-archive", "F",
         ReflDesc{
@@ -72,6 +74,16 @@ REFLECT(
     MEMBERNAME(makeZIP, "create-zip", "Z",
                ReflDesc{"Pack extracted files inside ZIP file named after "
                         "input archive. Your HDD will thank you."}), )
+
+REFLECT(
+    CLASS(CompressConf),
+    MEMBERNAME(ratioThreshold, "ratio-threshold", "c",
+               ReflDesc{
+                   "Writes compressed data only when compression ratio is less "
+                   "than specified threshold [0 - 100]%"}),
+    MEMBERNAME(minFileSize, "min-file-size", "m",
+               ReflDesc{"Files that are smaller than specified size won't be "
+                        "compressed."}), );
 
 struct ReflectedInstanceFriend : ReflectedInstance {
   const reflectorStatic *Refl() const { return rfStatic; }
@@ -98,13 +110,20 @@ struct VersionHandler {
   }
 };
 
-APPContext::APPContext(const char *moduleName_, const std::string &appFolder_)
-    : appFolder(appFolder_) {
+APPContext::APPContext(const char *moduleName_, const std::string &appFolder_,
+                       const std::string &appName_)
+    : appFolder(appFolder_), appName(appName_) {
   moduleName = moduleName_;
+
+  static bool registeredClasses = false;
+  if (!registeredClasses) {
+    registeredClasses = true;
+    RegisterReflectedTypes<ExtractConf, CompressConf>();
+  }
 
   auto modulePath = [&] {
     DirectoryScanner esmScan;
-    esmScan.AddFilter((std::string(1, '^') + moduleName) + '.');
+    esmScan.AddFilter((std::string(1, '^') + moduleName) + "*.spk$");
     esmScan.Scan(appFolder);
     std::vector<VersionHandler> versionedFiles;
 
@@ -113,11 +132,6 @@ APPContext::APPContext(const char *moduleName_, const std::string &appFolder_)
       const size_t slashPos = f.find_last_of('/');
       es::string_view extension(f.data() + lastDotPos);
       es::string_view fileName(f.data() + slashPos, lastDotPos - slashPos);
-
-      if (extension != ".spk") {
-        continue;
-      }
-
       char *nextDot = nullptr;
       const size_t versionDotPos = fileName.find_first_of('.');
 
@@ -206,6 +220,8 @@ APPContext::APPContext(const char *moduleName_, const std::string &appFolder_)
     throw std::runtime_error("Module context version mismatch!");
   }
 
+  const_cast<MainAppConf *&>(info->internalSettings) = &mainSettings;
+
   tryAssign(AdditionalHelp, "AppAdditionalHelp");
   tryAssign(InitContext, "AppInitContext");
   tryAssign(FinishContext, "AppFinishContext");
@@ -217,8 +233,8 @@ APPContext::APPContext(const char *moduleName_, const std::string &appFolder_)
     assign(NewArchive, "AppNewArchive");
   } else {
     assign(ProcessFile, "AppProcessFile");
-    extractSettings.makeZIP = false;
-    extractSettings.folderPerArc = false;
+    mainSettings.extractSettings.makeZIP = false;
+    mainSettings.extractSettings.folderPerArc = false;
   }
 }
 
@@ -228,9 +244,91 @@ APPContext::~APPContext() {
   }
 }
 
+class ReflectorFriend : public Reflector {
+public:
+  using Reflector::GetReflectedInstance;
+  using Reflector::GetReflectedType;
+  using Reflector::SetReflectedValue;
+};
+
+static auto &MainSettings() {
+  static ReflectorWrap<MainAppConfFriend> wrap(mainSettings);
+  return reinterpret_cast<ReflectorFriend &>(wrap);
+}
+
+static auto &ExtractSettings() {
+  static ReflectorWrap<ExtractConf> wrap(mainSettings.extractSettings);
+  return reinterpret_cast<ReflectorFriend &>(wrap);
+}
+
+static auto &CompressSettings() {
+  static ReflectorWrap<CompressConf> wrap(mainSettings.compressSettings);
+  return reinterpret_cast<ReflectorFriend &>(wrap);
+}
+
 static const reflectorStatic *RTTI(const ReflectorFriend &ref) {
   auto rawRTTI = ref.GetReflectedInstance();
   return static_cast<const ReflectedInstanceFriend &>(rawRTTI).Refl();
+}
+
+void APPContext::ResetSwitchSettings() {
+  if (info->settings) {
+    const size_t numValues = Settings().GetNumReflectedValues();
+    for (size_t i = 0; i < numValues; i++) {
+      auto rType = Settings().GetReflectedType(i);
+
+      if (rType->type == REFType::Bool) {
+        Settings().SetReflectedValue(i, "false");
+      }
+    }
+  }
+
+  mainSettings.generateLog = mainSettings.extractSettings.folderPerArc =
+      mainSettings.extractSettings.makeZIP = false;
+}
+
+int APPContext::ApplySetting(es::string_view key, es::string_view value) {
+  JenHash keyHash(key);
+  ReflectorFriend *refl = nullptr;
+  const ReflType *rType = nullptr;
+  if (info->settings) {
+    rType = Settings().GetReflectedType(keyHash);
+  }
+
+  if (rType) {
+    refl = &Settings();
+  } else {
+    rType = MainSettings().GetReflectedType(keyHash);
+
+    if (rType) {
+      refl = &MainSettings();
+    } else if (info->mode == AppMode_e::EXTRACT) {
+      rType = ExtractSettings().GetReflectedType(keyHash);
+
+      if (rType) {
+        refl = &ExtractSettings();
+      }
+    } else if (info->mode == AppMode_e::PACK) {
+      rType = CompressSettings().GetReflectedType(keyHash);
+
+      if (rType) {
+        refl = &CompressSettings();
+      }
+    }
+  }
+
+  if (rType) {
+    if (rType->type == REFType::Bool) {
+      refl->SetReflectedValue(*rType, "true");
+      return 0;
+    } else {
+      refl->SetReflectedValue(*rType, value);
+      return 1;
+    }
+  } else {
+    printerror("Invalid option: " << (key.size() > 1 ? "--" : "-") << key);
+    return -1;
+  }
 }
 
 void APPContext::PrintCLIHelp() const {
@@ -251,9 +349,13 @@ void APPContext::PrintCLIHelp() const {
 
   if (info->mode == AppMode_e::EXTRACT) {
     printStuff(::RTTI(ExtractSettings()));
+  } else if (info->mode == AppMode_e::PACK) {
+    printStuff(::RTTI(CompressSettings()));
   }
 
-  printStuff(RTTI());
+  if (info->settings) {
+    printStuff(RTTI());
+  }
   printline("");
 }
 
@@ -264,42 +366,6 @@ void APPContext::SetupModule() {
 
   if (InitContext && !InitContext(appFolder)) {
     throw std::runtime_error("Error while initializing context.");
-  }
-}
-
-void APPContext::FromConfig() {
-  auto configName = (appFolder + moduleName) + ".config";
-  try {
-    auto doc = XMLFromFile(configName);
-    auto node = ReflectorXMLUtil::LoadV2(Settings(), doc, true);
-    ReflectorXMLUtil::LoadV2(mainSettings, node);
-
-    if (info->mode == AppMode_e::EXTRACT) {
-      ReflectorXMLUtil::LoadV2(extractSettings, node);
-    }
-  } catch (const es::FileNotFoundError &) {
-  }
-  {
-    pugi::xml_document doc = {};
-    std::stringstream str;
-    GetHelp(str);
-    AdditionalHelp(str, 1);
-    auto buff = str.str();
-    doc.append_child(pugi::node_comment).set_value(buff.data());
-
-    auto node =
-        ReflectorXMLUtil::SaveV2a(Settings(), doc,
-                                  {ReflectorXMLUtil::Flags_ClassNode,
-                                   ReflectorXMLUtil::Flags_StringAsAttribute});
-    ReflectorXMLUtil::SaveV2a(mainSettings, node,
-                              ReflectorXMLUtil::Flags_StringAsAttribute);
-
-    if (info->mode == AppMode_e::EXTRACT) {
-      ReflectorXMLUtil::SaveV2a(extractSettings, node,
-                                ReflectorXMLUtil::Flags_StringAsAttribute);
-    }
-    XMLToFile(configName, doc,
-              {XMLFormatFlag::WriteBOM, XMLFormatFlag::IndentAttributes});
   }
 }
 
@@ -362,8 +428,13 @@ void APPContext::CreateLog() {
   PrintStuff(MainSettings());
   if (info->mode == AppMode_e::EXTRACT) {
     PrintStuff(ExtractSettings());
+  } else if (info->mode == AppMode_e::PACK) {
+    PrintStuff(CompressSettings());
   }
-  PrintStuff(Settings());
+
+  if (info->settings) {
+    PrintStuff(Settings());
+  }
 
   GetLogger() << std::endl;
 }
@@ -412,12 +483,84 @@ void GetHelp(std::ostream &str, const reflectorStatic *ref, size_t level = 1) {
 }
 
 void APPContext::GetHelp(std::ostream &str) {
-  auto ref = RTTI();
-  str << ref->className << " settings." << std::endl;
-  ::GetHelp(str, ref);
-  ::GetHelp(str, ::RTTI(MainSettings()));
+  str << moduleName << " settings." << std::endl;
+  ::GetHelp(str, RTTI());
+}
 
-  if (info->mode == AppMode_e::EXTRACT) {
-    ::GetHelp(str, ::RTTI(ExtractSettings()));
+void APPContext::FromConfig() {
+  auto configName = (appFolder + appName) + ".config";
+  pugi::xml_document doc = {};
+
+  auto TryFile = [](auto cb) {
+    constexpr size_t numTries = 10;
+    size_t curTry = 0;
+
+    for (; curTry < numTries; curTry++) {
+      try {
+        cb();
+      } catch (const es::FileNotFoundError &) {
+      } catch (const es::FileInvalidAccessError &) {
+        std::this_thread::sleep_for(std::chrono::milliseconds(5));
+        continue;
+      }
+
+      break;
+    }
+
+    if (curTry == numTries) {
+      throw std::runtime_error("Cannot access config. File is locked.");
+    }
+  };
+
+  TryFile([&] {
+    doc = XMLFromFile(configName);
+    ReflectorXMLUtil::LoadV2(MainSettings(), doc.child("common"));
+
+    if (info->settings) {
+      ReflectorXMLUtil::LoadV2(Settings(), doc.child(moduleName));
+    }
+  });
+
+  {
+    {
+      std::stringstream str;
+      str << "common settings." << std::endl;
+      ::GetHelp(str, ::RTTI(MainSettings()));
+      AdditionalHelp(str, 1);
+      auto buff = str.str();
+      pugi::xml_node commonNode;
+      auto commentNode = doc.append_child(pugi::node_comment);
+      commentNode.set_value(buff.data());
+
+      if (commonNode = doc.child("common"); commonNode) {
+        doc.insert_move_after(commonNode, commentNode);
+      } else {
+        commonNode = doc.append_child("common");
+      }
+      ReflectorXMLUtil::SaveV2a(MainSettings(), commonNode,
+                                ReflectorXMLUtil::Flags_StringAsAttribute);
+    }
+
+    if (info->settings) {
+      std::stringstream str;
+      GetHelp(str);
+      auto buff = str.str();
+      pugi::xml_node node;
+      auto commentNode = doc.append_child(pugi::node_comment);
+      commentNode.set_value(buff.data());
+
+      if (node = doc.child(moduleName); node) {
+        doc.insert_move_after(node, commentNode);
+      } else {
+        node = doc.append_child(moduleName);
+      }
+      ReflectorXMLUtil::SaveV2a(Settings(), node,
+                                {ReflectorXMLUtil::Flags_StringAsAttribute});
+    }
+
+    TryFile([&] {
+      XMLToFile(configName, doc,
+                {XMLFormatFlag::WriteBOM, XMLFormatFlag::IndentAttributes});
+    });
   }
 }

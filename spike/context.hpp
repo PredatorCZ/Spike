@@ -19,35 +19,19 @@
 #pragma once
 #include "cache.hpp"
 #include "datas/app_context.hpp"
-#include "datas/reflector.hpp"
 #include <map>
 #include <mutex>
 
 class PathFilter;
+struct reflectorStatic;
+class ReflectorFriend;
 
-extern struct MainAppConf : ReflectorBase<MainAppConf> {
-  bool generateLog = false;
-} mainSettings;
-
-extern struct MainAppExtractConf : ReflectorBase<MainAppExtractConf> {
-  bool makeZIP = true;
-  bool folderPerArc = true;
-} extractSettings;
-
-class ReflectorFriend : public Reflector {
-public:
-  using Reflector::GetReflectedInstance;
-  using Reflector::GetReflectedType;
-  using Reflector::SetReflectedValue;
+struct MainAppConfFriend : MainAppConf {
+  using MainAppConf::extractSettings;
+  using MainAppConf::generateLog;
 };
 
-inline auto &MainSettings() {
-  return reinterpret_cast<ReflectorFriend &>(mainSettings);
-}
-
-inline auto &ExtractSettings() {
-  return reinterpret_cast<ReflectorFriend &>(extractSettings);
-}
+extern struct MainAppConfFriend mainSettings;
 
 template <class func> class APPOptionalCall {
 public:
@@ -100,12 +84,14 @@ protected:
 };
 
 struct APPContext : APPContextCopyData {
-  APPContext(const char *moduleName_, const std::string &appFolder_);
+  APPContext(const char *moduleName_, const std::string &appFolder_,
+             const std::string &appName_);
   APPContext() = default;
   APPContext(const APPContext &) = delete;
   APPContext(APPContext &&other)
       : APPContextCopyData(other), dlHandle(other.dlHandle),
-        appFolder(std::move(other.appFolder)) {
+        appFolder(std::move(other.appFolder)),
+        appName(std::move(other.appName)) {
     other.dlHandle = nullptr;
   }
   ~APPContext();
@@ -124,10 +110,13 @@ struct APPContext : APPContextCopyData {
   void PrintCLIHelp() const;
   void SetupModule();
   void FromConfig();
+  void ResetSwitchSettings();
+  int ApplySetting(es::string_view key, es::string_view value);
 
 private:
   void *dlHandle = nullptr;
   std::string appFolder;
+  std::string appName;
 
   const reflectorStatic *RTTI() const;
   void CreateLog();
