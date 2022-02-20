@@ -32,6 +32,22 @@ public:
   using Reflector::GetReflectedType;
 };
 
+auto GetMakeAttribute(pugi::xml_node node, const char *name) {
+  if (auto child = node.attribute(name); child) {
+    return child;
+  } else {
+    return node.append_attribute(name);
+  }
+}
+
+auto GetMakeChild(pugi::xml_node node, const char *name) {
+  if (auto child = node.child(name); child) {
+    return child;
+  } else {
+    return node.append_child(name);
+  }
+}
+
 static bool SaveV2(const ReflType &cType, const Reflector &ri,
                    pugi::xml_node thisNode, size_t t,
                    const std::string &varName,
@@ -51,17 +67,17 @@ static bool SaveV2(const ReflType &cType, const Reflector &ri,
   case REFType::UnsignedInteger:
   case REFType::BitFieldMember: {
     std::string str = ri.GetReflectedValue(t);
-    auto cNode = thisNode.append_attribute(varName.data());
+    auto cNode = GetMakeAttribute(thisNode, varName.data());
     cNode.set_value(str.data());
     return true;
   }
   case REFType::Vector: {
     static const char axes[4][2]{"x", "y", "z", "w"};
-    pugi::xml_node cNode = thisNode.append_child(varName.c_str());
+    pugi::xml_node cNode = GetMakeChild(thisNode, varName.c_str());
 
     for (size_t a = 0; a < cType.asVector.numItems; a++) {
       std::string str = ri.GetReflectedValue(t, a);
-      cNode.append_attribute(axes[a]).set_value(str.data());
+      GetMakeAttribute(cNode, axes[a]).set_value(str.data());
     }
 
     return true;
@@ -73,13 +89,13 @@ static bool SaveV2(const ReflType &cType, const Reflector &ri,
     }
 
     auto cEnum = REFEnumStorage.at(JenHash(cType.asClass.typeHash));
-    pugi::xml_node cNode = thisNode.append_child(varName.c_str());
+    pugi::xml_node cNode = GetMakeChild(thisNode, varName.c_str());
 
     for (size_t e = 0; e < cEnum->numMembers; e++) {
       auto name = cEnum->names[e];
       const uint64 value = cEnum->values[e];
       auto valueName = ri.GetReflectedValue(t, value);
-      cNode.append_attribute(name).set_value(valueName.data());
+      GetMakeAttribute(cNode, name).set_value(valueName.data());
     }
 
     return true;
@@ -101,7 +117,7 @@ static pugi::xml_node MakeNode(const Reflector &, const reflectorStatic *stat,
     snprintf(&className[0], 15, "h:%X", cHash);
   }
 
-  return node.append_child(className.c_str());
+  return GetMakeChild(node, className.c_str());
 }
 
 static std::string GetName(const Reflector &, const reflectorStatic *stat,
@@ -130,7 +146,7 @@ pugi::xml_node ReflectorXMLUtil::Save(const Reflector &ri, pugi::xml_node node,
   for (size_t t = 0; t < stat->nTypes; t++) {
     auto &&cType = stat->types[t];
     std::string varName = GetName(ri, stat, cType, t);
-    pugi::xml_node cNode = thisNode.append_child(varName.c_str());
+    pugi::xml_node cNode = GetMakeChild(thisNode, varName.c_str());
 
     if (ri.IsReflectedSubClass(t)) {
       if (ri.IsArray(t)) {
@@ -143,7 +159,7 @@ pugi::xml_node ReflectorXMLUtil::Save(const Reflector &ri, pugi::xml_node node,
           }
           ReflectorPureWrap subCl(subRef);
           ReflectorXMLUtil::Save(
-              subCl, cNode.append_child(("i:" + std::to_string(s)).c_str()),
+              subCl, GetMakeChild(cNode, ("i:" + std::to_string(s)).c_str()),
               false);
         }
 
@@ -199,14 +215,14 @@ pugi::xml_node ReflectorXMLUtil::SaveV2a(const Reflector &ri,
           }
           ReflectorPureWrap subCl(subRef);
           auto nodeName = varName + '-' + std::to_string(s);
-          pugi::xml_node cNode = thisNode.append_child(nodeName.data());
+          pugi::xml_node cNode = GetMakeChild(thisNode, nodeName.c_str());
           auto subOpts = opts;
           subOpts -= Flags_ClassNode;
           SaveV2a(subCl, cNode, subOpts);
         }
 
       } else {
-        pugi::xml_node cNode = thisNode.append_child(varName.c_str());
+        pugi::xml_node cNode = GetMakeChild(thisNode, varName.c_str());
         auto subRef = ri.GetReflectedSubClass(t);
         if (!subRef) {
           throw std::runtime_error("Class not registered!");
@@ -229,7 +245,7 @@ pugi::xml_node ReflectorXMLUtil::SaveV2a(const Reflector &ri,
         for (int s = 0; s < numItems; s++) {
           std::string str = ri.GetReflectedValue(t, s);
           auto nodeName = varName + '-' + std::to_string(s);
-          auto cNode = thisNode.append_attribute(nodeName.data());
+          auto cNode = GetMakeAttribute(thisNode, nodeName.data());
           cNode.set_value(str.data());
         }
         break;
@@ -238,11 +254,11 @@ pugi::xml_node ReflectorXMLUtil::SaveV2a(const Reflector &ri,
         for (int s = 0; s < numItems; s++) {
           static const char axes[4][2]{"x", "y", "z", "w"};
           auto nodeName = varName + '-' + std::to_string(s);
-          pugi::xml_node cNode = thisNode.append_child(nodeName.data());
+          pugi::xml_node cNode = GetMakeChild(thisNode, nodeName.c_str());
 
           for (size_t a = 0; a < arr.asVector.numItems; a++) {
             std::string str = ri.GetReflectedValue(t, s, a);
-            cNode.append_attribute(axes[a]).set_value(str.data());
+            GetMakeAttribute(cNode, axes[a]).set_value(str.data());
           }
         }
         break;
@@ -256,26 +272,26 @@ pugi::xml_node ReflectorXMLUtil::SaveV2a(const Reflector &ri,
 
         for (int s = 0; s < numItems; s++) {
           auto nodeName = varName + '-' + std::to_string(s);
-          pugi::xml_node cNode = thisNode.append_child(nodeName.data());
+          pugi::xml_node cNode = GetMakeChild(thisNode, nodeName.c_str());
 
           for (size_t e = 0; e < cEnum->numMembers; e++) {
             auto name = cEnum->names[e];
             const uint64 value = cEnum->values[e];
             auto valueName = ri.GetReflectedValue(t, s, value);
-            cNode.append_attribute(name).set_value(valueName.data());
+            GetMakeAttribute(cNode, name).set_value(valueName.data());
           }
         }
         break;
       }
       default: {
-        pugi::xml_node cNode = thisNode.append_child(varName.c_str());
+        pugi::xml_node cNode = GetMakeChild(thisNode, varName.c_str());
         std::string str = ri.GetReflectedValue(t);
         cNode.append_buffer(str.c_str(), str.size());
         break;
       }
       }
     } else {
-      pugi::xml_node cNode = thisNode.append_child(varName.c_str());
+      pugi::xml_node cNode = GetMakeChild(thisNode, varName.c_str());
       std::string str = ri.GetReflectedValue(t);
       cNode.append_buffer(str.c_str(), str.size());
     }
