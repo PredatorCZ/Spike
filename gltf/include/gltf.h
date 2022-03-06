@@ -7,8 +7,20 @@
 // ------------------------------------------------------------
 
 #pragma once
+#include "../../datas/internal/sc_architecture.hpp"
 #include <nlohmann/json_fwd.hpp>
 #include <unordered_map>
+
+#ifdef GLTF_EXPORT
+    #define GLTF_EXTERN ES_EXPORT
+    #define GLTF_EXTERN_FN(what) ES_EXPORT_FN(what)
+#elif defined(GLTF_IMPORT)
+    #define GLTF_EXTERN ES_IMPORT
+    #define GLTF_EXTERN_FN(what) ES_IMPORT_FN(what)
+#else
+    #define GLTF_EXTERN
+    #define GLTF_EXTERN_FN(what) what
+#endif
 
 #if (defined(__cplusplus) && __cplusplus >= 201703L) || (defined(_MSVC_LANG) && (_MSVC_LANG >= 201703L) && (_MSC_VER >= 1911))
     #define FX_GLTF_HAS_CPP_17
@@ -59,10 +71,10 @@ namespace gltf
     {
         uint64_t rawData[2]{};
         ExtensionsAndExtras() = default;
-        ExtensionsAndExtras(ExtensionsAndExtras &&);
-        ExtensionsAndExtras(const ExtensionsAndExtras&);
-        ExtensionsAndExtras &operator=(ExtensionsAndExtras &&);
-        ExtensionsAndExtras &operator=(const ExtensionsAndExtras &);
+        GLTF_EXTERN ExtensionsAndExtras(ExtensionsAndExtras &&);
+        GLTF_EXTERN ExtensionsAndExtras(const ExtensionsAndExtras &);
+        GLTF_EXTERN ExtensionsAndExtras & operator=(ExtensionsAndExtras &&);
+        GLTF_EXTERN ExtensionsAndExtras & operator=(const ExtensionsAndExtras &);
 
         nlohmann::json & GetExtensionsAndExtras() noexcept
         {
@@ -74,7 +86,7 @@ namespace gltf
             return reinterpret_cast<const nlohmann::json &>(*rawData);
         }
 
-        ~ExtensionsAndExtras();
+        GLTF_EXTERN ~ExtensionsAndExtras();
         FX_GLTF_NODISCARD bool emptyExtensions() const noexcept
         {
             return rawData[0] == 0 && rawData[1] == 0;
@@ -196,9 +208,9 @@ namespace gltf
 
         std::vector<uint8_t> data{};
 
-        FX_GLTF_NODISCARD bool IsEmbeddedResource() const noexcept;
+        GLTF_EXTERN FX_GLTF_NODISCARD bool IsEmbeddedResource() const noexcept;
 
-        void SetEmbeddedResource();
+        GLTF_EXTERN void SetEmbeddedResource();
     };
 
     struct BufferView : ExtensionsAndExtras
@@ -260,9 +272,9 @@ namespace gltf
         std::string uri;
         std::string mimeType;
 
-        FX_GLTF_NODISCARD bool IsEmbeddedResource() const noexcept;
+        GLTF_EXTERN FX_GLTF_NODISCARD bool IsEmbeddedResource() const noexcept;
 
-        void MaterializeData(std::vector<uint8_t> & data) const;
+        GLTF_EXTERN void MaterializeData(std::vector<uint8_t> & data) const;
     };
 
     struct Material : ExtensionsAndExtras
@@ -467,17 +479,17 @@ namespace gltf
         uint32_t MaxBufferByteLength{ detail::DefaultMaxMemoryAllocation };
     };
 
-    Document LoadFromText(std::istream & input, std::string const & documentRootPath, ReadQuotas const & readQuotas = {});
+    GLTF_EXTERN Document LoadFromText(std::istream & input, std::string const & documentRootPath, ReadQuotas const & readQuotas = {});
 
-    Document LoadFromText(std::string const & documentFilePath, ReadQuotas const & readQuotas = {});
+    GLTF_EXTERN Document LoadFromText(std::string const & documentFilePath, ReadQuotas const & readQuotas = {});
 
-    Document LoadFromBinary(std::istream & input, std::string const & documentRootPath, ReadQuotas const & readQuotas = {});
+    GLTF_EXTERN Document LoadFromBinary(std::istream & input, std::string const & documentRootPath, ReadQuotas const & readQuotas = {});
 
-    Document LoadFromBinary(std::string const & documentFilePath, ReadQuotas const & readQuotas = {});
+    GLTF_EXTERN Document LoadFromBinary(std::string const & documentFilePath, ReadQuotas const & readQuotas = {});
 
-    void Save(Document const & document, std::ostream & output, std::string const & documentRootPath, bool useBinaryFormat);
+    GLTF_EXTERN void Save(Document const & document, std::ostream & output, std::string const & documentRootPath, bool useBinaryFormat);
 
-    void Save(Document const & document, std::string const & documentFilePath, bool useBinaryFormat);
+    GLTF_EXTERN void Save(Document const & document, std::string const & documentFilePath, bool useBinaryFormat);
 
     struct StreamState
     {
@@ -487,10 +499,10 @@ namespace gltf
         size_t jsonSize;
     };
 
-    void StreamBinaryFull(Document & document, std::istream & input, size_t inputSize, std::ostream & output, const std::string & documentRootPath);
+    GLTF_EXTERN void StreamBinaryFull(Document & document, std::istream & input, size_t inputSize, std::ostream & output, const std::string & documentRootPath);
 
-    FX_GLTF_NODISCARD StreamState StreamBinaryHeaders(Document & document, std::ostream & output, size_t inputSize);
-    void StreamBinaryFinish(const Document & document, const StreamState & state, std::ostream & output, const std::string & documentRootPath);
+    GLTF_EXTERN FX_GLTF_NODISCARD StreamState StreamBinaryHeaders(Document & document, std::ostream & output, size_t inputSize);
+    GLTF_EXTERN void StreamBinaryFinish(const Document & document, const StreamState & state, std::ostream & output, const std::string & documentRootPath);
 
 } // namespace gltf
 } // namespace fx
