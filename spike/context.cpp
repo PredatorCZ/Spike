@@ -214,13 +214,14 @@ APPContext::APPContext(const char *moduleName_, const std::string &appFolder_,
 
   func<decltype(AppInitModule)> InitModule;
   assign(InitModule, "AppInitModule");
-  info = InitModule();
+  AppInfo_s *info_ = InitModule();
+  info = info_;
 
   if (info->contextVersion > AppInfo_s::CONTEXT_VERSION) {
     throw std::runtime_error("Module context version mismatch!");
   }
 
-  const_cast<MainAppConf *&>(info->internalSettings) = &mainSettings;
+  info_->internalSettings = &mainSettings;
 
   tryAssign(AdditionalHelp, "AppAdditionalHelp");
   tryAssign(InitContext, "AppInitContext");
@@ -487,6 +488,14 @@ void APPContext::GetHelp(std::ostream &str) {
   ::GetHelp(str, RTTI());
 }
 
+struct AppHelpContextImpl : AppHelpContext {
+  std::map<std::string, std::stringstream> tagBuffers;
+
+  std::ostream &GetStream(const std::string &tag) override {
+    return tagBuffers[tag] = std::stringstream{};
+  }
+};
+
 void APPContext::FromConfig() {
   auto configName = (appFolder + appName) + ".config";
   pugi::xml_document doc = {};
@@ -513,7 +522,9 @@ void APPContext::FromConfig() {
   };
 
   TryFile([&] {
-    doc = XMLFromFile(configName);
+    auto flags = XMLDefaultParseFlags;
+    flags += XMLParseFlag::Comments;
+    doc = XMLFromFile(configName, flags);
     ReflectorXMLUtil::LoadV2(MainSettings(), doc.child("common"));
 
     if (info->settings) {
@@ -523,10 +534,62 @@ void APPContext::FromConfig() {
 
   {
     {
+      AppHelpContextImpl helpCtx;
+
+      if (auto commentNode = doc.find_child([](pugi::xml_node &node) {
+            return node.type() == pugi::xml_node_type::node_comment &&
+                   es::string_view(node.value()).begins_with("common");
+          });
+          commentNode) {
+        es::string_view comment(commentNode.value());
+        es::string_view lastTag;
+        size_t lastPos = 0;
+
+        while (true) {
+          lastPos = comment.find("<-tag:", lastPos);
+
+          if (!lastTag.empty()) {
+            auto tagName = lastTag;
+            lastTag.resize(comment.size());
+            size_t dataBegin = lastTag.find_first_of('\n');
+
+            if (dataBegin != lastTag.npos) {
+              dataBegin++;
+              const size_t dataEnd = lastPos != lastTag.npos ? dataEnd : lastTag.size();
+              helpCtx.GetStream(tagName) << lastTag.substr(dataBegin, dataEnd - dataBegin);
+            }
+
+            lastTag = {};
+          }
+
+          if (lastPos == comment.npos) {
+            break;
+          }
+
+          const size_t tagBegin = lastPos += 6;
+
+          lastPos = comment.find("->", lastPos);
+
+          if (lastPos == comment.npos) {
+            break;
+          }
+
+          auto tagName = comment.substr(tagBegin, lastPos - tagBegin);
+          lastTag = es::TrimWhitespace(tagName);
+        }
+
+        doc.remove_child(commentNode);
+      }
+
       std::stringstream str;
       str << "common settings." << std::endl;
       ::GetHelp(str, ::RTTI(MainSettings()));
-      AdditionalHelp(str, 1);
+      AdditionalHelp(&helpCtx, 1);
+
+      for (auto &[tag, data] : helpCtx.tagBuffers) {
+        str << "\t<-tag: " << tag << "->\n" << data.str();
+      }
+
       auto buff = str.str();
       pugi::xml_node commonNode;
       auto commentNode = doc.append_child(pugi::node_comment);
@@ -542,6 +605,14 @@ void APPContext::FromConfig() {
     }
 
     if (info->settings) {
+      if (auto commentNode = doc.find_child([&](pugi::xml_node &node) {
+            return node.type() == pugi::xml_node_type::node_comment &&
+                   es::string_view(node.value()).begins_with(moduleName);
+          });
+          commentNode) {
+        doc.remove_child(commentNode);
+      }
+
       std::stringstream str;
       GetHelp(str);
       auto buff = str.str();

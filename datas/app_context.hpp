@@ -159,11 +159,16 @@ struct AppPackStats {
   size_t totalSizeFileNames;
 };
 
+struct AppHelpContext {
+  virtual ~AppHelpContext() = default;
+  virtual std::ostream &GetStream(const std::string &tag) = 0;
+};
+
 using request_chunk = std::function<std::string(size_t offset, size_t size)>;
 
 extern "C" {
-const AppInfo_s AC_EXTERN *AppInitModule();
-void AC_EXTERN AppAdditionalHelp(std::ostream &str, size_t indent);
+AppInfo_s AC_EXTERN *AppInitModule();
+void AC_EXTERN AppAdditionalHelp(AppHelpContext *ctx, size_t indent);
 bool AC_EXTERN AppInitContext(const std::string &dataFolder);
 void AC_EXTERN AppProcessFile(std::istream &stream, AppContext *ctx);
 void AC_EXTERN AppExtractFile(std::istream &stream, AppExtractContext *ctx);

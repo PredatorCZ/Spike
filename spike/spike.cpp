@@ -778,7 +778,7 @@ int Main(int argc, TCHAR *argv[]) {
 
   if (argc < 2) {
     printwarning(
-        "No parameters provided, entring scan mode and generating config.");
+        "No parameters provided, entering scan mode and generating config.");
     ScanModules(appFolder, appName);
     return 0;
   }
