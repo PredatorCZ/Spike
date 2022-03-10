@@ -305,10 +305,9 @@ namespace es {
     const auto offset = pos;
     const auto increments = size() - v.size();
 
-    for (auto i = 0u; i <= increments; ++i) {
-      const auto j = i + offset;
-      if (substr(j, v.size()) == v) {
-        return j;
+    for (auto i = offset; i <= increments; ++i) {
+      if (substr(i, v.size()) == v) {
+        return i;
       }
     }
 
