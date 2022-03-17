@@ -35,7 +35,7 @@ void ZIPExtactContext::FinishZIP(cache_begin_cb cacheBeginCB) {
   es::Dispose(entriesStream);
   bool forcex64 = false;
   const size_t dirOffset = records.Tell();
-  const size_t dirSize = entriesStr.size();
+  size_t dirSize = entriesStr.size();
 
   auto SafeCast = [&](auto &where, auto &&what) {
     const uint64 limit =
@@ -52,7 +52,6 @@ void ZIPExtactContext::FinishZIP(cache_begin_cb cacheBeginCB) {
   zCentral.id = ZIPCentralDir::ID;
   SafeCast(zCentral.numDirEntries, numEntries);
   SafeCast(zCentral.numDiskEntries, numEntries);
-  SafeCast(zCentral.dirSize, dirSize);
   SafeCast(zCentral.dirOffset, dirOffset);
 
   records.WriteContainer(entriesStr);
@@ -63,7 +62,10 @@ void ZIPExtactContext::FinishZIP(cache_begin_cb cacheBeginCB) {
     records.Write<uint16>(sizeof(CacheBaseHeader));
     cache->meta.zipCheckupOffset = records.Tell();
     records.Write(cache->meta);
+    dirSize += sizeof(CacheBaseHeader) + 4;
   }
+
+  SafeCast(zCentral.dirSize, dirSize);
 
   if (forcex64) {
     ZIP64CentralDir zCentral64{};
@@ -198,6 +200,8 @@ inline std::tm localtime(std::time_t t) {
 }
 
 void ZIPExtactContext::NewFile(const std::string &path) {
+  AFileInfo pathInfo(path);
+  auto pathSv = pathInfo.GetFullPath();
   if (!curFileName.empty()) {
     FinishFile();
   }
@@ -217,15 +221,15 @@ void ZIPExtactContext::NewFile(const std::string &path) {
   zLocalFile.lastModFileDate = reinterpret_cast<uint16 &>(dosDate);
   zLocalFile.lastModFileTime = reinterpret_cast<uint16 &>(dosTime);
   zLocalFile.compression = ZIPCompressionMethod::Store;
-  zLocalFile.fileNameSize = prefixPath.size() + path.size();
+  zLocalFile.fileNameSize = prefixPath.size() + pathSv.size();
   zLocalFile.crc = 0;
   curFileSize = 0;
 
-  curFileName = path;
+  curFileName = pathSv;
   curLocalFileOffset = records.Tell();
   records.Write(zLocalFile);
   records.WriteContainer(prefixPath);
-  records.WriteContainer(path);
+  records.WriteContainer(pathSv);
 
   if (progBar) {
     (*progBar)++;

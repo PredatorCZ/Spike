@@ -99,6 +99,7 @@ struct APPContext : APPContextCopyData {
   auto &operator=(APPContext &&other) {
     static_cast<APPContextCopyData &>(*this) = other;
     appFolder = std::move(other.appFolder);
+    appName = std::move(other.appName);
     dlHandle = other.dlHandle;
     other.dlHandle = nullptr;
     return *this;
