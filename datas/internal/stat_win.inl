@@ -41,6 +41,10 @@ int mkdir(const std::string &path, uint32) {
 #define ENABLE_VIRTUAL_TERMINAL_PROCESSING 4
 #endif
 
+#ifndef DISABLE_NEWLINE_AUTO_RETURN
+#define DISABLE_NEWLINE_AUTO_RETURN 8
+#endif
+
 void SetupWinApiConsole() {
   auto checkApi = [](auto what) {
     if (!what) {
@@ -60,7 +64,7 @@ void SetupWinApiConsole() {
   // Enable virtual terminal
   DWORD mode{};
   GetConsoleMode(consoleHandle, &mode);
-  SetConsoleMode(consoleHandle, mode | ENABLE_VIRTUAL_TERMINAL_PROCESSING);
+  SetConsoleMode(consoleHandle, mode | ENABLE_VIRTUAL_TERMINAL_PROCESSING | DISABLE_NEWLINE_AUTO_RETURN);
 
   // Setup only capable font for advanced unicode characters
   CONSOLE_FONT_INFOEX infoEx{};
