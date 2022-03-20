@@ -192,7 +192,7 @@ void MakeLogger() {
     }
 
     for (size_t i = 0; i < lineQueue.size(); i++) {
-      es::Print("\033[F");
+      es::Print("\033[A");
     }
 
     mustClear = true;
