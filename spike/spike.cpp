@@ -809,7 +809,8 @@ void GenerateDocumentation(const std::string &appFolder,
     toolsetDescription = child.text().as_string();
   }
 
-  wr.BaseStream() << "# " << toolsetName << "\n\n" << toolsetDescription << "\n\n";
+  wr.BaseStream() << "# " << toolsetName << "\n\n"
+                  << toolsetDescription << "\n\n";
 
   for (auto &m : modules) {
     pugi::xml_node node = doc.child(m.data());
@@ -916,6 +917,7 @@ int Main(int argc, TCHAR *argv[]) {
   }
 
   if (!dontLoadConfig) {
+    printinfo("Loading config: " << appName << ".config");
     ctx.FromConfig();
   }
 
