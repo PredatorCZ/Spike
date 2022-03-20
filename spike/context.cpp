@@ -360,6 +360,48 @@ void APPContext::PrintCLIHelp() const {
   printline("");
 }
 
+void APPContext::GetMarkdownDoc(std::ostream &out, pugi::xml_node node) const {
+  const char *className = "[[MODULE CLASS NAME]]";
+  const char *description = "[[MODULE DESCRIPTION]]";
+
+  if (info->settings) {
+    className = RTTI()->className;
+  }
+
+  if (node) {
+    if (auto child = node.attribute("name"); child) {
+      className = child.as_string();
+    }
+    description = node.text().as_string();
+  }
+
+  out << "## " << className << "\n\n### Module command: " << moduleName << "\n\n"
+      << description << "\n\n";
+
+  if (!info->settings) {
+    return;
+  }
+
+  out << "### Settings\n\n";
+
+  auto rtti = RTTI();
+
+  for (size_t i = 0; i < rtti->nTypes; i++) {
+    out << "- **" << rtti->typeNames[i] << "**\n\n";
+    out << "  **CLI Long:** ***--" << rtti->typeNames[i] << "***\\\n";
+
+    if (rtti->typeAliases && rtti->typeAliases[i]) {
+      out << "  **CLI Short:** ***-" << rtti->typeAliases[i] << "***\n\n";
+    }
+
+    if (auto val = info->settings->GetReflectedValue(i); !val.empty()) {
+      out << "  **Default value:** " << val << "\n\n";
+    }
+
+    out << "  " << rtti->typeDescs[i].part1 << "\n\n";
+  }
+}
+
 void APPContext::SetupModule() {
   if (mainSettings.generateLog) {
     CreateLog();
@@ -555,8 +597,10 @@ void APPContext::FromConfig() {
 
             if (dataBegin != lastTag.npos) {
               dataBegin++;
-              const size_t dataEnd = lastPos != lastTag.npos ? dataEnd : lastTag.size();
-              helpCtx.GetStream(tagName) << lastTag.substr(dataBegin, dataEnd - dataBegin);
+              const size_t dataEnd =
+                  lastPos != lastTag.npos ? dataEnd : lastTag.size();
+              helpCtx.GetStream(tagName)
+                  << lastTag.substr(dataBegin, dataEnd - dataBegin);
             }
 
             lastTag = {};

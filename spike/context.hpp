@@ -19,6 +19,7 @@
 #pragma once
 #include "cache.hpp"
 #include "datas/app_context.hpp"
+#include "datas/pugi_fwd.hpp"
 #include <map>
 #include <mutex>
 
@@ -112,6 +113,7 @@ struct APPContext : APPContextCopyData {
   void SetupModule();
   void FromConfig();
   void ResetSwitchSettings();
+  void GetMarkdownDoc(std::ostream &out, pugi::xml_node node) const;
   int ApplySetting(es::string_view key, es::string_view value);
 
 private:

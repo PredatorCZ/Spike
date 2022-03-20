@@ -24,6 +24,7 @@
 #include "datas/fileinfo.hpp"
 #include "datas/master_printer.hpp"
 #include "datas/multi_thread.hpp"
+#include "datas/pugiex.hpp"
 #include "datas/stat.hpp"
 #include "datas/tchar.hpp"
 #include "out_context.hpp"
@@ -770,6 +771,57 @@ void ScanModules(const std::string &appFolder, const std::string &appName) {
   }
 }
 
+void GenerateDocumentation(const std::string &appFolder,
+                           const std::string &appName,
+                           const std::string &templatePath) {
+  DirectoryScanner sc;
+  sc.AddFilter(es::string_view(".spk$"));
+  sc.Scan(appFolder);
+  std::set<std::string> modules;
+  pugi::xml_document doc;
+
+  if (!templatePath.empty()) {
+    doc = XMLFromFile(templatePath);
+  }
+
+  for (auto &m : sc) {
+    try {
+      AFileInfo modulePath(m);
+      auto moduleName = modulePath.GetFilename();
+      const size_t firstDotPos = moduleName.find_first_of('.');
+      auto moduleNameStr = moduleName.substr(0, firstDotPos).to_string();
+      modules.emplace(moduleNameStr);
+    } catch (const std::runtime_error &e) {
+      printerror(e.what());
+    }
+  }
+
+  BinWritter_t<BinCoreOpenMode::Text> wr(appFolder + "/README.md");
+  const char *toolsetName = "[[TOOLSET NAME]]";
+
+  if (auto child = doc.child("toolset_name"); child) {
+    toolsetName = child.text().as_string();
+  }
+
+  const char *toolsetDescription = "[[TOOLSET DESCRIPTION]]";
+
+  if (auto child = doc.child("toolset_description"); child) {
+    toolsetDescription = child.text().as_string();
+  }
+
+  wr.BaseStream() << "# " << toolsetName << "\n\n" << toolsetDescription << "\n\n";
+
+  for (auto &m : modules) {
+    pugi::xml_node node = doc.child(m.data());
+    APPContext ctx(m.data(), appFolder, appName);
+    ctx.GetMarkdownDoc(wr.BaseStream(), node);
+  }
+
+  if (auto child = doc.child("toolset_footer"); child) {
+    wr.BaseStream() << child.text().as_string();
+  }
+}
+
 int Main(int argc, TCHAR *argv[]) {
   ConsolePrintDetail(1);
   AFileInfo appLocation(std::to_string(*argv));
@@ -783,12 +835,26 @@ int Main(int argc, TCHAR *argv[]) {
     return 0;
   }
 
+  auto moduleName = std::to_string(argv[1]);
+
+  if (moduleName == "--make-doc") {
+    std::string templatePath;
+
+    if (argc < 3) {
+      printwarning("Expexted template path!");
+    } else {
+      templatePath = std::to_string(argv[2]);
+    }
+
+    GenerateDocumentation(appFolder, appName, templatePath);
+    return 0;
+  }
+
   if (argc < 3) {
     printerror("Insufficient argument count, expected parameters.");
     return 1;
   }
 
-  auto moduleName = std::to_string(argv[1]);
   APPContext ctx;
 
   try {
