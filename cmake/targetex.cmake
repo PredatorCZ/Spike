@@ -197,7 +197,7 @@ function(build_target)
 
     install(
       TARGETS ${_arg_NAME}
-      LIBRARY DESTINATION $<IF:$<BOOL:${MINGW}>,bin,lib>
+      LIBRARY DESTINATION $<IF:$<BOOL:${UNIX}>,bin,lib>
       RUNTIME DESTINATION bin)
   endif()
 
