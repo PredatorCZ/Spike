@@ -77,6 +77,8 @@ function(set_precore_sources TARGET_NAME)
     elseif(${cFile} STREQUAL no_rtti)
       _set_no_rtti(${TARGET_NAME} PRIVATE)
       continue()
+    elseif(${cFile} STREQUAL matrix44)
+      target_link_libraries(${TARGET_NAME} glm::glm)
     endif()
     file(GLOB_RECURSE _fndGlob_${cFile} "${PRECORE_SOURCE_DIR}/*/${cFile}.cpp")
 
