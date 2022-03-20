@@ -8,18 +8,16 @@
 
 #pragma once
 #include "../../datas/internal/sc_architecture.hpp"
+#include <array>
 #include <nlohmann/json_fwd.hpp>
 #include <unordered_map>
 
 #ifdef GLTF_EXPORT
     #define GLTF_EXTERN ES_EXPORT
-    #define GLTF_EXTERN_FN(what) ES_EXPORT_FN(what)
 #elif defined(GLTF_IMPORT)
     #define GLTF_EXTERN ES_IMPORT
-    #define GLTF_EXTERN_FN(what) ES_IMPORT_FN(what)
 #else
     #define GLTF_EXTERN
-    #define GLTF_EXTERN_FN(what) what
 #endif
 
 #if (defined(__cplusplus) && __cplusplus >= 201703L) || (defined(_MSVC_LANG) && (_MSVC_LANG >= 201703L) && (_MSC_VER >= 1911))
@@ -208,9 +206,9 @@ namespace gltf
 
         std::vector<uint8_t> data{};
 
-        GLTF_EXTERN FX_GLTF_NODISCARD bool IsEmbeddedResource() const noexcept;
+        FX_GLTF_NODISCARD bool GLTF_EXTERN IsEmbeddedResource() const noexcept;
 
-        GLTF_EXTERN void SetEmbeddedResource();
+        void GLTF_EXTERN SetEmbeddedResource();
     };
 
     struct BufferView : ExtensionsAndExtras
@@ -272,9 +270,9 @@ namespace gltf
         std::string uri;
         std::string mimeType;
 
-        GLTF_EXTERN FX_GLTF_NODISCARD bool IsEmbeddedResource() const noexcept;
+        FX_GLTF_NODISCARD bool GLTF_EXTERN IsEmbeddedResource() const noexcept;
 
-        GLTF_EXTERN void MaterializeData(std::vector<uint8_t> & data) const;
+        void GLTF_EXTERN MaterializeData(std::vector<uint8_t> & data) const;
     };
 
     struct Material : ExtensionsAndExtras
@@ -479,17 +477,17 @@ namespace gltf
         uint32_t MaxBufferByteLength{ detail::DefaultMaxMemoryAllocation };
     };
 
-    GLTF_EXTERN Document LoadFromText(std::istream & input, std::string const & documentRootPath, ReadQuotas const & readQuotas = {});
+    Document GLTF_EXTERN LoadFromText(std::istream & input, std::string const & documentRootPath, ReadQuotas const & readQuotas = {});
 
-    GLTF_EXTERN Document LoadFromText(std::string const & documentFilePath, ReadQuotas const & readQuotas = {});
+    Document GLTF_EXTERN LoadFromText(std::string const & documentFilePath, ReadQuotas const & readQuotas = {});
 
-    GLTF_EXTERN Document LoadFromBinary(std::istream & input, std::string const & documentRootPath, ReadQuotas const & readQuotas = {});
+    Document GLTF_EXTERN LoadFromBinary(std::istream & input, std::string const & documentRootPath, ReadQuotas const & readQuotas = {});
 
-    GLTF_EXTERN Document LoadFromBinary(std::string const & documentFilePath, ReadQuotas const & readQuotas = {});
+    Document GLTF_EXTERN LoadFromBinary(std::string const & documentFilePath, ReadQuotas const & readQuotas = {});
 
-    GLTF_EXTERN void Save(Document const & document, std::ostream & output, std::string const & documentRootPath, bool useBinaryFormat);
+    void GLTF_EXTERN Save(Document const & document, std::ostream & output, std::string const & documentRootPath, bool useBinaryFormat);
 
-    GLTF_EXTERN void Save(Document const & document, std::string const & documentFilePath, bool useBinaryFormat);
+    void GLTF_EXTERN Save(Document const & document, std::string const & documentFilePath, bool useBinaryFormat);
 
     struct StreamState
     {
@@ -499,10 +497,10 @@ namespace gltf
         size_t jsonSize;
     };
 
-    GLTF_EXTERN void StreamBinaryFull(Document & document, std::istream & input, size_t inputSize, std::ostream & output, const std::string & documentRootPath);
+    void GLTF_EXTERN StreamBinaryFull(Document & document, std::istream & input, size_t inputSize, std::ostream & output, const std::string & documentRootPath);
 
-    GLTF_EXTERN FX_GLTF_NODISCARD StreamState StreamBinaryHeaders(Document & document, std::ostream & output, size_t inputSize);
-    GLTF_EXTERN void StreamBinaryFinish(const Document & document, const StreamState & state, std::ostream & output, const std::string & documentRootPath);
+    FX_GLTF_NODISCARD StreamState GLTF_EXTERN StreamBinaryHeaders(Document & document, std::ostream & output, size_t inputSize);
+    void GLTF_EXTERN StreamBinaryFinish(const Document & document, const StreamState & state, std::ostream & output, const std::string & documentRootPath);
 
 } // namespace gltf
 } // namespace fx
