@@ -938,7 +938,6 @@ int Main(int argc, TCHAR *argv[]) {
 }
 
 int _tmain(int argc, TCHAR *argv[]) {
-  setlocale(LC_ALL, "");
   es::SetupWinApiConsole();
   InitConsole();
   CleanTempStorages();

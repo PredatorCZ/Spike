@@ -24,6 +24,10 @@
 #include <thread>
 #include <vector>
 
+#if defined(_MSC_VER) || defined(__MINGW64__)
+#define USEWIN
+#endif
+
 const size_t nextTickMS = 100;
 
 const char *loopchars[] = {
@@ -43,7 +47,11 @@ void ProgressBar::PrintLine() {
   es::Print("\033[38;2;168;204;140m");
 
   for (size_t i = 0; i < state; i++) {
+#ifdef USEWIN
+    es::Print("#");
+#else
     es::Print(u8"\u25A0");
+#endif
   }
 
   for (size_t i = state; i < width; i++) {
@@ -207,10 +215,16 @@ void TerminateConsoleDontWait() {
   if (logger.joinable()) {
     logger.join();
   }
+
+#ifdef USEWIN
+  es::Print("\033[?25h"); // Enable cursor
+#endif
 }
 
 void InitConsole() {
-  setlocale(LC_ALL, "");
+#ifdef USEWIN
+  es::Print("\033[?25l"); // Disable cursor
+#endif
   es::print::AddQueuer(ReceiveQueue);
   logger = std::thread{MakeLogger};
   auto terminate = [](int sig) {
