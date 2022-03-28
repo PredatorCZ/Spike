@@ -54,7 +54,7 @@ struct Fixups {
 
 struct ReflectorIOHeader {
   static constexpr uint32 ID = CompileFourCC("RFDB");
-  static constexpr uint32 VERSION = 2000;
+  static constexpr uint32 VERSION = 3000;
 
   uint32 id, version, numClasses, numEnums, enumsOffset, bufferSize;
 
@@ -127,6 +127,7 @@ struct ReflectedEnum_io {
   uintptr_t enumName;
   uintptr_t names;
   uintptr_t values;
+  uintptr_t descriptions;
 
   void Fixup(uintptr_t base) {
     auto fixup = [base](uintptr_t &item) {
@@ -137,10 +138,20 @@ struct ReflectedEnum_io {
 
     auto fixupmore = [fixup](auto &...items) { (fixup(items), ...); };
 
-    fixupmore(enumName, names, values);
+    fixupmore(enumName, names, values, descriptions);
 
     if (names) {
       auto castedBase = reinterpret_cast<uintptr_t *>(names);
+      auto casted = &*castedBase;
+      for (uint32 i = 0; i < numMembers; i++) {
+        if (casted[i]) {
+          casted[i] += base;
+        }
+      }
+    }
+
+    if (descriptions) {
+      auto castedBase = reinterpret_cast<uintptr_t *>(descriptions);
       auto casted = &*castedBase;
       for (uint32 i = 0; i < numMembers; i++) {
         if (casted[i]) {
@@ -360,6 +371,12 @@ int ReflectorIO::Save(BinWritterRef wr) {
     wr.Skip<uint64>();
     itemFixups.AddPointer();
     wr.Skip<uint64>();
+
+    if (e->descriptions) {
+      descsFixups.AddPointer();
+    }
+
+    wr.Skip<uint64>();
   }
 
   for (auto e : enums) {
@@ -373,6 +390,14 @@ int ReflectorIO::Save(BinWritterRef wr) {
       itemStringsFixups.AddPointer();
       wr.Skip<uint64>();
     }
+
+    if (e->descriptions) {
+      descsFixups.FixupDestination();
+      for (size_t s = 0; s < e->numMembers; s++) {
+        descsFixups.AddPointer();
+        wr.Skip<uint64>();
+      }
+    }
   }
 
   for (auto e : enums) {
@@ -382,6 +407,13 @@ int ReflectorIO::Save(BinWritterRef wr) {
     for (size_t v = 0; v < e->numMembers; v++) {
       itemStringsFixups.FixupDestination();
       wr.WriteT(e->names[v]);
+    }
+
+    if (e->descriptions) {
+      for (size_t v = 0; v < e->numMembers; v++) {
+        descsFixups.FixupDestination();
+        wr.WriteT(e->descriptions[v]);
+      }
     }
   }
 

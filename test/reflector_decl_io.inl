@@ -100,6 +100,7 @@ int test_reflector_decl_io() {
     rio.AddEnum<EnumWrap01>();
     rio.AddEnum<EnumWrap02>();
     rio.AddEnum<EnumWrap03>();
+    rio.AddEnum<EnumType>();
     TEST_NOT_CHECK(rio.Save(mwr));
   }
 
@@ -112,7 +113,7 @@ int test_reflector_decl_io() {
   auto enums = rio2.Enums();
 
   TEST_EQUAL(classes.size(), 8);
-  TEST_EQUAL(enums.size(), 4);
+  TEST_EQUAL(enums.size(), 5);
 
   using tclass = templatedClass<int, float>;
 
@@ -127,7 +128,8 @@ int test_reflector_decl_io() {
              TEST_FUNC(test_enum<EnumWrap00>, enums[0]),
              TEST_FUNC(test_enum<EnumWrap01>, enums[1]),
              TEST_FUNC(test_enum<EnumWrap02>, enums[2]),
-             TEST_FUNC(test_enum<EnumWrap03>, enums[3]));
+             TEST_FUNC(test_enum<EnumWrap03>, enums[3]),
+             TEST_FUNC(test_enum<EnumType>, enums[4]));
 
   return testResult;
 }

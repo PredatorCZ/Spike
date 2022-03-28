@@ -21,6 +21,7 @@
 struct EnumProxy {
   const char *name;
   uint64 value;
+  const char *description = nullptr;
 };
 
 struct ReflectedEnum {
@@ -29,6 +30,7 @@ struct ReflectedEnum {
   const char *enumName;
   const char *const *names;
   const uint64 *values;
+  const char *const *descriptions = nullptr;
 
   template <class... C, size_t cs, class guard>
   ReflectedEnum(const guard *, const char (&enumName_)[cs], C... members)
@@ -38,13 +40,23 @@ struct ReflectedEnum {
     names = names_;
     static const uint64 values_[]{members.value...};
     values = values_;
+
+    union mutate {
+      const char *h;
+      uintptr_t i;
+    };
+
+    if ((mutate{members.description}.i | ...)) {
+      static const char *descriptions_[]{members.description...};
+      descriptions = descriptions_;
+    }
   }
 };
 
 template <class E> const ReflectedEnum *GetReflectedEnum();
 
-#define DECL_EMEMBER(type) type,
-#define DECL_EMEMBERVAL(type, value) type = value,
+#define DECL_EMEMBER(type, ...) type,
+#define DECL_EMEMBERVAL(type, value, ...) type = value,
 #define DECL_ENUM(type) enum type {
 #define DECL_ENUMSCOPE(type, ...) DECL_ENUM(type)
 #define DECL_END_ENUM(...)                                                     \
@@ -52,9 +64,9 @@ template <class E> const ReflectedEnum *GetReflectedEnum();
   ;
 #define DECL_END_ENUMSCOPE(...) DECL_END_ENUM()
 
-#define DEF_EMEMBER(type)                                                      \
-  EnumProxy{#type, static_cast<uint64>(enum_type::type)},
-#define DEF_EMEMBERVAL(type, ...) DEF_EMEMBER(type)
+#define DEF_EMEMBER(type, ...)                                                 \
+  EnumProxy{#type, static_cast<uint64>(enum_type::type), __VA_ARGS__},
+#define DEF_EMEMBERVAL(type, value, ...) DEF_EMEMBER(type, __VA_ARGS__)
 #define DEF_ENUM(name)                                                         \
   template <> constexpr JenHash EnumHash<name>() { return #name; }             \
   template <> inline const ReflectedEnum *GetReflectedEnum<name>() {           \
@@ -73,10 +85,11 @@ template <class E> const ReflectedEnum *GetReflectedEnum();
 #define MAKE_DECL(x) DECL_##x
 #define MAKE_DEF(x) DEF_##x
 
+// clang-format off
 // Creates enumeration and it's reflection definition
-// what: ENUM() or ENUMSCOPE()
-// args: EMEMBER or EMEMBERVAL
+// what: ENUM(name) or ENUMSCOPE(decl, name)
+// args: EMEMBER(name [, description]) or EMEMBERVAL(name, value [, description])
+// clang-format on
 #define MAKE_ENUM(what, ...)                                                   \
-  DECL_##what StaticFor(MAKE_DECL, __VA_ARGS__)                                \
-      DECL_END_##what DEF_##what StaticFor(MAKE_DEF, __VA_ARGS__)              \
-          DEF_END_##what
+  DECL_##what StaticFor(MAKE_DECL, __VA_ARGS__) DECL_END_##what DEF_##what     \
+  StaticFor(MAKE_DEF, __VA_ARGS__) DEF_END_##what

@@ -15,6 +15,7 @@ int test_reflector_enum00() {
   TEST_EQUAL(rEnum->enumHash, "EnumWrap00"_jh);
   TEST_EQUAL(rEnum->numMembers, 3);
   TEST_EQUAL(rEnum->enumName, "EnumWrap00"_sv);
+  TEST_EQUAL(rEnum->descriptions, nullptr);
 
   static const char *names[] = {"E1", "E2", "E3"};
   static const uint64 ids[] = {0, 1, 7};
@@ -33,6 +34,7 @@ int test_reflector_enum01() {
   TEST_EQUAL(rEnum->enumHash, "EnumWrap01"_jh);
   TEST_EQUAL(rEnum->numMembers, 3);
   TEST_EQUAL(rEnum->enumName, "EnumWrap01"_sv);
+  TEST_EQUAL(rEnum->descriptions, nullptr);
 
   static const char *names[] = {"EnumWrap01_E1", "EnumWrap01_E2",
                                 "EnumWrap01_E3"};
@@ -52,6 +54,7 @@ int test_reflector_enum02() {
   TEST_EQUAL(rEnum->enumHash, "EnumWrap02"_jh);
   TEST_EQUAL(rEnum->numMembers, 3);
   TEST_EQUAL(rEnum->enumName, "EnumWrap02"_sv);
+  TEST_EQUAL(rEnum->descriptions, nullptr);
 
   static const char *names[] = {"E4", "E5", "E6"};
   static const uint64 ids[] = {0, 1, 2};
@@ -70,6 +73,7 @@ int test_reflector_enum03() {
   TEST_EQUAL(rEnum->enumHash, "EnumWrap03"_jh);
   TEST_EQUAL(rEnum->numMembers, 3);
   TEST_EQUAL(rEnum->enumName, "EnumWrap03"_sv);
+  TEST_EQUAL(rEnum->descriptions, nullptr);
 
   static const char *names[] = {"E7", "E8", "E9"};
   static const uint64 ids[] = {7, 16586, 0x8bcd};
@@ -88,6 +92,7 @@ int test_reflector_enum04() {
   TEST_EQUAL(rEnum->enumHash, "EnumWrap04"_jh);
   TEST_EQUAL(rEnum->numMembers, 3);
   TEST_EQUAL(rEnum->enumName, "EnumWrap04"_sv);
+  TEST_EQUAL(rEnum->descriptions, nullptr);
 
   static const char *names[] = {"E10", "E11", "E12"};
   static const uint64 ids[] = {0, 1, 2};
@@ -95,6 +100,28 @@ int test_reflector_enum04() {
   for (int t = 0; t < 3; t++) {
     TEST_EQUAL(rEnum->names[t], names[t]);
     TEST_EQUAL(rEnum->values[t], ids[t]);
+  }
+
+  return 0;
+}
+
+int test_reflector_enum05() {
+  auto rEnum = GetReflectedEnum<EnumType>();
+
+  TEST_EQUAL(rEnum->enumHash, "EnumType"_jh);
+  TEST_EQUAL(rEnum->numMembers, 3);
+  TEST_EQUAL(rEnum->enumName, "EnumType"_sv);
+  TEST_NOT_EQUAL(rEnum->descriptions, nullptr);
+
+  static const char *names[] = {"Type1", "Type2", "Type3"};
+  static const uint64 ids[] = {0, 1, 0};
+  static const char *descs[] = {"Type 1 of EnumType", "Type 2 of EnumType",
+                                "Type 3 is same as Type 1"};
+
+  for (int t = 0; t < 3; t++) {
+    TEST_EQUAL(rEnum->names[t], names[t]);
+    TEST_EQUAL(rEnum->values[t], ids[t]);
+    TEST_EQUAL(rEnum->descriptions[t], descs[t]);
   }
 
   return 0;
@@ -2117,7 +2144,8 @@ int test_reflector_bitfield_custom_float(reflClass &input) {
   TEST_EQUAL(cPair.name, "x");
   TEST_EQUAL(cPair.value, "104");
 
-  TEST_EQUAL(sClass.SetReflectedValue("y", "5.125"), Reflector::ErrorType::None);
+  TEST_EQUAL(sClass.SetReflectedValue("y", "5.125"),
+             Reflector::ErrorType::None);
   TEST_EQUAL(Y::value_type::ToFloat(lClass.Get<Y>()), 5.125f);
   cPair = sClass.GetReflectedPair(1);
   TEST_EQUAL(cPair.name, "y");

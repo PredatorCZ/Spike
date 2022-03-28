@@ -23,6 +23,10 @@ MAKE_ENUM(ENUMSCOPE(class EnumWrap04
                     : uint32, EnumWrap04),
           EMEMBER(E10), EMEMBER(E11), EMEMBER(E12));
 
+MAKE_ENUM(ENUM(EnumType), EMEMBER(Type1, "Type 1 of EnumType"),
+          EMEMBER(Type2, "Type 2 of EnumType"),
+          EMEMBERVAL(Type3, EnumType::Type1, "Type 3 is same as Type 1"));
+
 struct subrefl {
   int data0;
   float data1;
