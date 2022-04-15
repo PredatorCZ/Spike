@@ -84,11 +84,11 @@ static bool SaveV2(const ReflType &cType, const Reflector &ri,
   }
 
   case REFType::EnumFlags: {
-    if (!REFEnumStorage.count(JenHash(cType.asClass.typeHash))) {
+    if (!ReflectedEnum::Registry().count(JenHash(cType.asClass.typeHash))) {
       return false;
     }
 
-    auto cEnum = REFEnumStorage.at(JenHash(cType.asClass.typeHash));
+    auto cEnum = ReflectedEnum::Registry().at(JenHash(cType.asClass.typeHash));
     pugi::xml_node cNode = GetMakeChild(thisNode, varName.c_str());
 
     for (size_t e = 0; e < cEnum->numMembers; e++) {
@@ -264,11 +264,12 @@ pugi::xml_node ReflectorXMLUtil::SaveV2a(const Reflector &ri,
         break;
       }
       case REFType::EnumFlags: {
-        if (!REFEnumStorage.count(JenHash(arr.asClass.typeHash))) {
+        if (!ReflectedEnum::Registry().count(JenHash(arr.asClass.typeHash))) {
           break;
         }
 
-        auto &&cEnum = REFEnumStorage.at(JenHash(arr.asClass.typeHash));
+        auto &&cEnum =
+            ReflectedEnum::Registry().at(JenHash(arr.asClass.typeHash));
 
         for (int s = 0; s < numItems; s++) {
           auto nodeName = varName + '-' + std::to_string(s);

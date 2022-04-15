@@ -22,7 +22,6 @@
 
 #include "internal/reflector_class.hpp"
 #include "internal/reflector_enum.hpp"
-#include "internal/reflector_reg.hpp"
 #include "internal/reflector_type.hpp"
 
 class Reflector {

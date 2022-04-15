@@ -16,7 +16,9 @@
 */
 
 #pragma once
+#include "../settings.hpp"
 #include "reflector_type.hpp"
+#include <map>
 
 struct ReflDesc {
   const char *part1 = nullptr;
@@ -65,6 +67,7 @@ public:
 };
 
 struct reflectorStatic {
+  using RegistryType = std::map<JenHash, const reflectorStatic *>;
   const JenHash classHash;
   const uint32 nTypes;
   const ReflType *types;
@@ -74,8 +77,8 @@ struct reflectorStatic {
   const JenHash *typeAliasHashes = nullptr;
   const ReflDesc *typeDescs;
 
-  template <class guard, class... C, size_t cs>
-  reflectorStatic(const guard *, const char (&className_)[cs], C... members)
+  template <class ClassType, class... C, size_t cs>
+  reflectorStatic(const ClassType *, const char (&className_)[cs], C... members)
       : classHash(JenHash(className_)), nTypes(sizeof...(C)),
         className(className_) {
     if constexpr (sizeof...(C) > 0) {
@@ -110,7 +113,14 @@ struct reflectorStatic {
         typeDescs = typeDescs_;
       }
     }
+
+    if constexpr (constexpr REFType type = _getType<ClassType>::TYPE;
+                  type == REFType::Class || type == REFType::BitFieldClass) {
+      Registry()[classHash] = this;
+    }
   }
+
+  static RegistryType PC_EXTERN &Registry();
 };
 
 static_assert(sizeof(reflectorStatic) == 56);
@@ -134,6 +144,10 @@ public:
 };
 
 template <class C> const reflectorStatic ES_IMPORT *GetReflectedClass();
+
+namespace es::reflector::detail {
+template <class C> class InvokeGuard;
+} // namespace es::reflector::detail
 
 #define MEMBERNAME(member, name, ...)                                          \
   MemberProxy {                                                                \
@@ -175,7 +189,11 @@ template <class C> const reflectorStatic ES_IMPORT *GetReflectedClass();
   }                                                                            \
   ;                                                                            \
   return &reflectedClass;                                                      \
-  }
+  }                                                                            \
+  template <> class es::reflector::detail::InvokeGuard<__VA_ARGS__> {          \
+    static inline const reflectorStatic *data =                                \
+        GetReflectedClass<__VA_ARGS__>();                                      \
+  };
 
 #define ENUMERATION(...)                                                       \
   template <> constexpr JenHash EnumHash<__VA_ARGS__>() {                      \
@@ -194,7 +212,10 @@ template <class C> const reflectorStatic ES_IMPORT *GetReflectedClass();
   }                                                                            \
   ;                                                                            \
   return &reflectedEnum;                                                       \
-  }
+  }                                                                            \
+  template <> class es::reflector::detail::InvokeGuard<__VA_ARGS__> {          \
+    static inline const ReflectedEnum *data = GetReflectedEnum<__VA_ARGS__>(); \
+  };
 
 // Create reflection definition (use only in TU)
 // what: CLASS() or ENUMERATION()

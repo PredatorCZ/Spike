@@ -17,6 +17,8 @@
 
 #pragma once
 #include "../jenkinshash.hpp"
+#include "../settings.hpp"
+#include <map>
 
 struct EnumProxy {
   const char *name;
@@ -25,6 +27,7 @@ struct EnumProxy {
 };
 
 struct ReflectedEnum {
+  using RegistryType = std::map<JenHash, const ReflectedEnum *>;
   JenHash enumHash;
   uint32 numMembers;
   const char *enumName;
@@ -50,7 +53,11 @@ struct ReflectedEnum {
       static const char *descriptions_[]{members.description...};
       descriptions = descriptions_;
     }
+
+    Registry()[enumHash] = this;
   }
+
+  static RegistryType PC_EXTERN &Registry();
 };
 
 template <class E> const ReflectedEnum *GetReflectedEnum();
@@ -79,8 +86,11 @@ template <class E> const ReflectedEnum *GetReflectedEnum();
   }                                                                            \
   ;                                                                            \
   return &reflectedEnum;                                                       \
-  }
-#define DEF_END_ENUMSCOPE(...) DEF_END_ENUM()
+  }                                                                            \
+  template <> class es::reflector::detail::InvokeGuard<__VA_ARGS__> {          \
+    static inline const ReflectedEnum *data = GetReflectedEnum<__VA_ARGS__>(); \
+  };
+#define DEF_END_ENUMSCOPE(type, name) DEF_END_ENUM(name)
 
 #define MAKE_DECL(x) DECL_##x
 #define MAKE_DEF(x) DEF_##x

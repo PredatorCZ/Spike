@@ -8,10 +8,6 @@ int main() {
   es::SetupWinApiConsole();
   es::print::AddPrinterFunction(es::Print);
 
-  RegisterReflectedTypes<subrefl, reflClass, roomInfo, roomInfo01, EnumWrap00,
-                         EnumWrap01, EnumWrap02, EnumWrap03, EnumWrap04,
-                         BitTypeRefl, BFVectorR10G11B10Type>();
-
   reflClass rClass = {};
 
   TEST_CASES(

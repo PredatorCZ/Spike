@@ -115,12 +115,6 @@ APPContext::APPContext(const char *moduleName_, const std::string &appFolder_,
     : appFolder(appFolder_), appName(appName_) {
   moduleName = moduleName_;
 
-  static bool registeredClasses = false;
-  if (!registeredClasses) {
-    registeredClasses = true;
-    RegisterReflectedTypes<ExtractConf, CompressConf>();
-  }
-
   auto modulePath = [&] {
     DirectoryScanner esmScan;
     esmScan.AddFilter((std::string(1, '^') + moduleName) + "*.spk$");
@@ -504,17 +498,17 @@ void GetHelp(std::ostream &str, const reflectorStatic *ref, size_t level = 1) {
     auto fl = ref->types[i];
 
     if (fl.type == REFType::Class || fl.type == REFType::BitFieldClass) {
-      GetHelp(str, REFSubClassStorage.at(JenHash(fl.asClass.typeHash)),
+      GetHelp(str, reflectorStatic::Registry().at(JenHash(fl.asClass.typeHash)),
               level + 1);
     } else if (fl.type == REFType::Array || fl.type == REFType::ArrayClass) {
       const auto &arr = fl.asArray;
 
       if (arr.type == REFType::Class || arr.type == REFType::BitFieldClass) {
-        GetHelp(str, REFSubClassStorage.at(JenHash(arr.asClass.typeHash)),
+        GetHelp(str, reflectorStatic::Registry().at(JenHash(arr.asClass.typeHash)),
                 level + 1);
       }
     } else if (fl.type == REFType::Enum) {
-      auto refEnum = REFEnumStorage.at(JenHash(fl.asClass.typeHash));
+      auto refEnum = ReflectedEnum::Registry().at(JenHash(fl.asClass.typeHash));
       fillIndent(1) << "Values: ";
 
       if ([&] {

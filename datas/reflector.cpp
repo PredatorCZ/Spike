@@ -209,7 +209,7 @@ static uint64 GetEnumValue(es::string_view input, JenHash hash,
                            const ReflectedEnum **rEnumFallback = nullptr) {
   const ReflectedEnum *rEnum = rEnumFallback && *rEnumFallback
                                    ? *rEnumFallback
-                                   : REFEnumStorage.at(hash);
+                                   : ReflectedEnum::Registry().at(hash);
 
   if (rEnumFallback) {
     *rEnumFallback = rEnum;
@@ -477,8 +477,7 @@ SetReflectedMember(ReflType reflValue, es::string_view value, char *objAddr) {
   case REFType::BitFieldMember: {
     uint64 &output = *reinterpret_cast<uint64 *>(objAddr);
     auto doStuff = [&](auto &&insertVal) {
-      LimitProxy<std::decay_t<decltype(insertVal)>>
-          proxy{reflValue.bit.size};
+      LimitProxy<std::decay_t<decltype(insertVal)>> proxy{reflValue.bit.size};
       auto err = SetNumber(value, insertVal, proxy);
       BitMember bfMember;
       bfMember.size = reflValue.bit.size;
@@ -738,7 +737,7 @@ PrintEnumValue(JenHash hash, uint64 value,
                const ReflectedEnum **rEnumFallback = nullptr) {
   const ReflectedEnum *rEnum = rEnumFallback && *rEnumFallback
                                    ? *rEnumFallback
-                                   : REFEnumStorage.at(hash);
+                                   : ReflectedEnum::Registry().at(hash);
 
   if (rEnumFallback)
     *rEnumFallback = rEnum;
@@ -1090,15 +1089,23 @@ ReflectedInstance Reflector::GetReflectedSubClass(size_t id,
   }
 
   if ((cType != REFType::Class && cType != REFType::BitFieldClass) ||
-      !REFSubClassStorage.count(JenHash(classType.typeHash)))
+      !reflectorStatic::Registry().count(JenHash(classType.typeHash)))
     return {};
 
-  return {REFSubClassStorage.at(JenHash(classType.typeHash)), thisAddr};
+  return {reflectorStatic::Registry().at(JenHash(classType.typeHash)),
+          thisAddr};
 }
 
 ReflectedInstance Reflector::GetReflectedSubClass(size_t id, size_t subID) {
   return const_cast<const Reflector *>(this)->GetReflectedSubClass(id, subID);
 }
 
-RefEnumMapper REFEnumStorage;
-RefSubClassMapper REFSubClassStorage;
+reflectorStatic::RegistryType &reflectorStatic::Registry() {
+  static RegistryType registry;
+  return registry;
+}
+
+ReflectedEnum::RegistryType &ReflectedEnum::Registry() {
+  static RegistryType registry;
+  return registry;
+}
