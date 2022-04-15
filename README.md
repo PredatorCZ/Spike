@@ -9,7 +9,7 @@ PreCore is a library with helper classes.\
 Main focus of this library is: Class/Enum RTTI and RTTR, SIMD classes like Vector and Matrix4x4, stream helpers, uni module.\
 It also contains logging services, algorhitms, data types, muti-threading queue classes, extensions for other libraries and many more.
 
-Library is made for C++17 standard and it's compilable under Clang 5+, GCC 7+, MSVC 2017+.
+Library is made for C++17 standard and it's compilable under Clang 6+, GCC 7+, MSVC 2017+.
 
 ## Visit [Wiki](https://github.com/PredatorCZ/PreCore/wiki) for more info
 

@@ -21,10 +21,10 @@ jobs:
             CC: gcc-7
             CXX: g++-7
             use-gcov: true
-          - name: Clang 5
-            CC: clang-5.0
-            CXX: clang++-5.0
-            install: clang-5.0
+          - name: Clang 6
+            CC: clang-6.0
+            CXX: clang++-6.0
+            install: clang-6.0
 
     env:
       CC: ${{matrix.CC}}
