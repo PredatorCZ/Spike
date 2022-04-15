@@ -375,7 +375,8 @@ void APPContext::GetMarkdownDoc(std::ostream &out, pugi::xml_node node) const {
     description = node.text().as_string();
   }
 
-  out << "## " << className << "\n\n### Module command: " << moduleName << "\n\n"
+  out << "## " << className << "\n\n### Module command: " << moduleName
+      << "\n\n"
       << description << "\n\n";
 
   if (!info->settings) {
@@ -516,11 +517,30 @@ void GetHelp(std::ostream &str, const reflectorStatic *ref, size_t level = 1) {
       auto refEnum = REFEnumStorage.at(JenHash(fl.asClass.typeHash));
       fillIndent(1) << "Values: ";
 
-      for (size_t e = 0; e < refEnum->numMembers; e++) {
-        str << refEnum->names[e] << ", ";
-      }
+      if ([&] {
+            for (size_t e = 0; e < refEnum->numMembers; e++) {
+              if (refEnum->descriptions[e]) {
+                return true;
+              }
+            }
+            return false;
+          }()) {
+        str << std::endl;
 
-      str << std::endl;
+        for (size_t e = 0; e < refEnum->numMembers; e++) {
+          fillIndent(2) << refEnum->names[e];
+          if (refEnum->descriptions[e]) {
+            str << ": " << refEnum->descriptions[e] << std::endl;
+          } else {
+            str << ", " << std::endl;
+          }
+        }
+      } else {
+        for (size_t e = 0; e < refEnum->numMembers; e++) {
+          str << refEnum->names[e] << ", ";
+        }
+        str << std::endl;
+      }
     }
   }
 }
