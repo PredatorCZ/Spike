@@ -334,30 +334,14 @@ public:
     return {X << input.X, Y << input.Y, Z << input.Z, W << input.W};
   }
 
-  vector operator+(value_type input) const {
-    return *this = *this + vector(input);
-  }
-  vector operator-(value_type input) const {
-    return *this = *this - vector(input);
-  }
-  vector operator*(value_type input) const {
-    return *this = *this * vector(input);
-  }
-  vector operator/(value_type input) const {
-    return *this = *this / vector(input);
-  }
-  vector operator&(value_type input) const {
-    return *this = *this & vector(input);
-  }
-  vector operator|(value_type input) const {
-    return *this = *this | vector(input);
-  }
-  vector operator>>(shift_value input) const {
-    return *this = *this >> vector(input);
-  }
-  vector operator<<(shift_value input) const {
-    return *this = *this << vector(input);
-  }
+  vector operator+(value_type input) const { return *this + vector(input); }
+  vector operator-(value_type input) const { return *this - vector(input); }
+  vector operator*(value_type input) const { return *this * vector(input); }
+  vector operator/(value_type input) const { return *this / vector(input); }
+  vector operator&(value_type input) const { return *this & vector(input); }
+  vector operator|(value_type input) const { return *this | vector(input); }
+  vector operator>>(shift_value input) const { return *this >> vector(input); }
+  vector operator<<(shift_value input) const { return *this << vector(input); }
 
   vec_ref operator+=(vec_cref input) { return *this = *this + input; }
   vec_ref operator-=(vec_cref input) { return *this = *this - input; }
