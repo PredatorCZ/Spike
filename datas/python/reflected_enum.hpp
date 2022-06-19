@@ -1,5 +1,5 @@
 /*  Reflected Enum Python binding
-    Copyright 2020-2021 Lukas Cone
+    Copyright 2020-2022 Lukas Cone
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -15,13 +15,12 @@
 */
 
 #pragma once
-#include "../internal/reflector_enum_reg.hpp"
+#include "../internal/reflector_enum.hpp"
 #include <Python.h>
 
 template <class E, const char *const doc = nullptr> struct ReflectedEnumPy {
   PyObject_HEAD;
-  using value_type = _EnumWrap<E>;
-
+  static inline const ReflectedEnum *ENUM = GetReflectedEnum<E>();
   static PyTypeObject *GetType() {
     static PyMappingMethods mappingMethods[] = {
         Len,
@@ -73,39 +72,32 @@ template <class E, const char *const doc = nullptr> struct ReflectedEnumPy {
     return &typeType;
   }
 
-  static Py_ssize_t Len(PyObject *) { return value_type::NUM_ITEMS; }
+  static Py_ssize_t Len(PyObject *) { return ENUM->numMembers; }
 
-  static constexpr const char *const GetName() {
-    return value_type::GetClassName().data();
-  }
+  static constexpr const char *const GetName() { return ENUM->enumName; }
 
   static PyObject *New(PyTypeObject *type, PyObject *, PyObject *) {
     return type->tp_alloc(type, 0);
   }
 
   static PyObject *Subscript(ReflectedEnumPy *self, PyObject *index) {
-    return SubscriptRaw(PyInt_AsSsize_t(index));
-  }
-
-  static const ReflectedEnum &GetEnum() {
-    static const ReflectedEnum refEnum = GetReflectedEnum<E>();
-    return refEnum;
+    return SubscriptRaw(PyLong_AsSize_t(index));
   }
 
   static PyObject *SubscriptRaw(size_t index) {
-    auto eName = GetEnum()[index];
-    return PyString_FromStringAndSize(eName.data(), eName.size());
+    return PyUnicode_FromString(ENUM->names[index]);
   }
 
   static PyObject *GetAttribute(PyObject *, char *attrName) {
     const auto foundEnum =
-        std::find(GetEnum().begin(), GetEnum().end(), attrName);
+        std::find(ENUM->names, ENUM->names + ENUM->numMembers, es::string_view(attrName));
 
-    if (es::IsEnd(GetEnum(), foundEnum))
+    if (ENUM->names + ENUM->numMembers == foundEnum) {
       return nullptr;
+    }
 
-    const size_t fndID = std::distance(GetEnum().begin(), foundEnum);
+    const size_t fndID = std::distance(ENUM->names, foundEnum);
 
-    return PyInt_FromSize_t(GetEnum().values[fndID]);
+    return PyLong_FromSize_t(ENUM->values[fndID]);
   }
 };
