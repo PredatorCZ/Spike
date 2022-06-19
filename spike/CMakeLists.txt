@@ -14,13 +14,13 @@ build_target(
   MAIN_APP
   SOURCES
   spike.cpp
-  out_context
-  in_context
-  context
-  out_cache
-  in_cache
-  tmp_storage
-  console
+  out_context.cpp
+  in_context.cpp
+  context.cpp
+  out_cache.cpp
+  in_cache.cpp
+  tmp_storage.cpp
+  console.cpp
   AUTHOR
   "Lukas Cone"
   DESCR

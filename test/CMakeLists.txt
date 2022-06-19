@@ -4,6 +4,9 @@ include(odr_test)
 set(PC_SHARED_LIB
     ON
     CACHE BOOL "" FORCE)
+set(PC_STATIC_OBJECTS
+    OFF
+    CACHE BOOL "" FORCE)
 
 set(PUGI_SHARED_LIBS
     ON
@@ -79,12 +82,11 @@ if(${RELEASEVER} AND NOT MINGW)
       PYMODULE
       SOURCES
       test_unipy.cpp
+      ${CMAKE_SOURCE_DIR}/uni/python/uni_python.cpp
       LINKS
       precore
       NO_PROJECT_H
       NO_VERINFO)
-
-    set_precore_sources(test_unipy uni_python)
     install(TARGETS test_unipy LIBRARY DESTINATION bin)
     install(FILES test_uni.py DESTINATION bin)
   endif()
