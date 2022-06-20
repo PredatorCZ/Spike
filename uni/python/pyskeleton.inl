@@ -1,6 +1,6 @@
 /*  Python binding definitions for uni::Skeleton
     part of uni module
-    Copyright 2020-2021 Lukas Cone
+    Copyright 2020-2022 Lukas Cone
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -62,7 +62,7 @@ struct SkeletonListInfo {
 
 using SkeletonList = List<SkeletonListInfo>;
 
-static PyGetSet boneGetSets[] = {
+static PyGetSetDef boneGetSets[] = {
     {"tm_type", (getter)Bone::GetTMType, nullptr, "Get bone transform type."},
     {"transform", (getter)Bone::GetTM, nullptr, "Get bone transformation."},
     {"name", (getter)Bone::GetName, nullptr, "Get bone name."},
@@ -114,7 +114,10 @@ static PyTypeObject boneType = {
 
 PyTypeObject *Bone::GetType() { return &boneType; }
 
-void Bone::Dealloc(Bone *self) { auto t0 = std::move(self->item); }
+void Bone::Dealloc(Bone *self) {
+  auto t0 = std::move(self->item);
+  Py_TYPE(self)->tp_free(self);
+}
 
 PyObject *Bone::GetTMType(Bone *self) {
   return PyLong_FromLong(self->item->TMType());
@@ -133,7 +136,7 @@ PyObject *Bone::GetTM(Bone *self) {
     return Py_BuildValue(rts);
   }
   default:
-    return Py_None;
+    Py_RETURN_NONE;
   }
 }
 
@@ -154,13 +157,17 @@ PyObject *Bone::GetParent(Bone *self) {
     rtVal->item = {bne, false};
     return reinterpret_cast<PyObject *>(rtVal);
   } else {
-    return Py_None;
+    Py_RETURN_NONE;
   }
 }
 
 PyObject *Bone::Compare(Bone *self, Bone *other, int op) {
-  if (op != Py_EQ && op != Py_NE) {
-    return Py_NotImplemented;
+  if (!(Py_TYPE(self) == GetType() && Py_TYPE(other) == GetType())) {
+    Py_RETURN_NOTIMPLEMENTED;
+  }
+
+  if (!(op == Py_EQ || op == Py_NE)) {
+    Py_RETURN_NOTIMPLEMENTED;
   }
 
   const auto i0d = self->item.get();
@@ -171,10 +178,13 @@ PyObject *Bone::Compare(Bone *self, Bone *other, int op) {
     eq = !eq;
   }
 
-  return eq ? Py_True : Py_False;
+  auto retVal = eq ? Py_True : Py_False;
+  Py_INCREF(retVal);
+
+  return retVal;
 }
 
-static PyGetSet skeletonGetSets[] = {
+static PyGetSetDef skeletonGetSets[] = {
     {"name", (getter)Skeleton::Name, nullptr, "Get skeleton's name."},
     {"bones", (getter)Skeleton::Bones, nullptr, "Get skeleton's bones."},
     {NULL} /* Sentinel */
@@ -226,7 +236,10 @@ static PyTypeObject skeletonType = {
 
 PyTypeObject *Skeleton::GetType() { return &skeletonType; }
 
-void Skeleton::Dealloc(Skeleton *self) { auto t0 = std::move(self->item); }
+void Skeleton::Dealloc(Skeleton *self) {
+  auto t0 = std::move(self->item);
+  Py_TYPE(self)->tp_free(self);
+}
 
 PyObject *Skeleton::Name(Skeleton *self) {
   auto skName = self->item->Name();
@@ -249,10 +262,6 @@ PyObject *Skeleton::Create(uni::SkeletonsConst &&tp) {
 }
 
 void Skeleton::InitType(PyObject *module) {
-  PyAddType<BoneTMTypeEnum>(module);
-  PyAddType<Bone>(module);
-  PyAddType<BoneList>(module);
-  PyAddType<Skeleton>(module);
-  PyAddType<SkeletonList>(module);
+  PyAddTypes<BoneTMTypeEnum, Bone, BoneList, Skeleton, SkeletonList>(module);
 }
 } // namespace UniPy

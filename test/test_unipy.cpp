@@ -208,7 +208,7 @@ extern "C" PyObject ES_EXPORT *PyInit_test_unipy() {
   PyObject *m = PyModule_Create(&module);
 
   if (!m)
-    return Py_None;
+    Py_RETURN_NONE;
 
   UniPy::Skeleton::InitType(m);
   UniPy::Motion::InitType(m);

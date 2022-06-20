@@ -1,6 +1,6 @@
 /*  Python binding definitions for uni::Skeleton
     part of uni module
-    Copyright 2020-2021 Lukas Cone
+    Copyright 2020-2022 Lukas Cone
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -99,7 +99,7 @@ static PyMethodDef motionTrackMethods[] = {
     {NULL},
 };
 
-static PyGetSet motionTrackGetSets[] = {
+static PyGetSetDef motionTrackGetSets[] = {
     {"track_type", (getter)MotionTrack::TrackType, nullptr,
      "Motion track type."},
     {"bone_index", (getter)MotionTrack::BoneIndex, nullptr, "Bone index."},
@@ -151,6 +151,7 @@ PyTypeObject *MotionTrack::GetType() { return &motionTrackType; }
 
 void MotionTrack::Dealloc(MotionTrack *self) {
   auto t0 = std::move(self->item);
+  Py_TYPE(self)->tp_free(self);
 }
 
 PyObject *MotionTrack::TrackType(MotionTrack *self) {
@@ -215,13 +216,13 @@ PyObject *MotionTrack::GetValues(MotionTrack *self, PyObject *index) {
     break;
   }
   default:
-    return Py_None;
+    Py_RETURN_NONE;
   }
 
   return retList;
 }
 
-static PyGetSet motionGetSets[] = {
+static PyGetSetDef motionGetSets[] = {
     {"name", (getter)Motion::Name, nullptr, "Motion name."},
     {"duration", (getter)Motion::Duration, nullptr,
      "Motion duration in seconds."},
@@ -280,7 +281,10 @@ PyTypeObject *Motion::GetType() { return &motionType; }
 
 PyTypeObject *Motion::GetListType() { return MotionList::GetType(); }
 
-void Motion::Dealloc(Motion *self) { auto t0 = std::move(self->item); }
+void Motion::Dealloc(Motion *self) {
+  auto t0 = std::move(self->item);
+  Py_TYPE(self)->tp_free(self);
+}
 
 PyObject *Motion::MotionType(Motion *self) {
   return PyLong_FromSize_t(self->item->MotionType());
@@ -320,12 +324,8 @@ PyObject *Motion::Create(uni::MotionsConst &&tp) {
 }
 
 void Motion::InitType(PyObject *module) {
-  PyAddType<TrackTypeEnum>(module);
-  PyAddType<MotionTypeEnum>(module);
-  PyAddType<MotionTrack>(module);
-  PyAddType<MotionTrackList>(module);
-  PyAddType<Motion>(module);
-  PyAddType<MotionList>(module);
+  PyAddTypes<TrackTypeEnum, MotionTypeEnum, MotionTrack, MotionTrackList,
+             Motion, MotionList>(module);
 }
 
 } // namespace UniPy

@@ -1,6 +1,6 @@
 /*  Python binding class for uni::List
     part of uni module
-    Copyright 2020 Lukas Cone
+    Copyright 2020-2022 Lukas Cone
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -84,7 +84,10 @@ template <class Info> struct List {
     return &typeObject;
   }
 
-  static void Dealloc(List *self) { auto t0 = std::move(self->cList); }
+  static void Dealloc(List *self) {
+    auto t0 = std::move(self->cList);
+    Py_TYPE(self)->tp_free(self);
+  }
 
   static size_t Len(List *self) { return self->cList->Size(); }
 

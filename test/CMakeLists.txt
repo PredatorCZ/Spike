@@ -71,22 +71,14 @@ build_target(
   NO_PROJECT_H
   NO_VERINFO)
 
-if(${RELEASEVER} AND NOT MINGW)
+if(NOT MINGW)
   find_package(Python3 COMPONENTS Development Interpreter)
 
-  if(${Python3_FOUND})
-    build_target(
-      NAME
-      test_unipy
-      TYPE
-      PYMODULE
-      SOURCES
-      test_unipy.cpp
-      ${CMAKE_SOURCE_DIR}/uni/python/uni_python.cpp
-      LINKS
-      precore
-      NO_PROJECT_H
-      NO_VERINFO)
+  if(Python3_FOUND)
+    python3_add_library(test_unipy MODULE test_unipy.cpp
+                        ${PRECORE_SOURCE_DIR}/uni/python/uni_python.cpp)
+
+    target_link_libraries(test_unipy PRIVATE precore)
     install(TARGETS test_unipy LIBRARY DESTINATION bin)
     install(FILES test_uni.py DESTINATION bin)
   endif()
