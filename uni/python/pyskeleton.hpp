@@ -1,6 +1,6 @@
 /*  Python binding classes for uni::Skeleton
     part of uni module
-    Copyright 2020 Lukas Cone
+    Copyright 2020-2022 Lukas Cone
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -26,11 +26,11 @@ struct Bone {
   uni::Element<const uni::Bone> item;
 
   static void Dealloc(Bone *self);
-  static PyObject *GetTMType(Bone *self);
-  static PyObject *GetTM(Bone *self);
-  static PyObject *GetIndex(Bone *self);
-  static PyObject *GetName(Bone *self);
-  static PyObject *GetParent(Bone *self);
+  static PyObject *GetTMType(Bone *self, void * = nullptr);
+  static PyObject *GetTM(Bone *self, void * = nullptr);
+  static PyObject *GetIndex(Bone *self, void * = nullptr);
+  static PyObject *GetName(Bone *self, void * = nullptr);
+  static PyObject *GetParent(Bone *self, void * = nullptr);
   static PyObject *Compare(Bone *self, Bone *other, int op);
 
   static PyTypeObject *GetType();
@@ -41,8 +41,8 @@ struct Skeleton {
   uni::Element<const uni::Skeleton> item;
 
   static void Dealloc(Skeleton *self);
-  static PyObject *Name(Skeleton *self);
-  static PyObject *Bones(Skeleton *self);
+  static PyObject *Name(Skeleton *self, void * = nullptr);
+  static PyObject *Bones(Skeleton *self, void * = nullptr);
 
   static void InitType(PyObject *module);
   static PyTypeObject *GetType();

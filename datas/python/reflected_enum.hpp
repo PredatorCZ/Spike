@@ -17,6 +17,7 @@
 #pragma once
 #include "../internal/reflector_enum.hpp"
 #include <Python.h>
+#pragma GCC diagnostic ignored "-Wmissing-field-initializers"
 
 template <class E, const char *const doc = nullptr> struct ReflectedEnumPy {
   PyObject_HEAD;
@@ -28,45 +29,14 @@ template <class E, const char *const doc = nullptr> struct ReflectedEnumPy {
         0,
     };
 
-    static PyTypeObject typeType = {
-        PyVarObject_HEAD_INIT(NULL, 0) /* init macro */
-        GetName(),                     /* tp_name */
-        sizeof(ReflectedEnumPy),       /* tp_basicsize */
-        0,                             /* tp_itemsize */
-        0,                             /* tp_dealloc */
-        0,                             /* tp_print */
-        GetAttribute,                  /* tp_getattr */
-        0,                             /* tp_setattr */
-        0,                             /* tp_compare */
-        0,                             /* tp_repr */
-        0,                             /* tp_as_number */
-        0,                             /* tp_as_sequence */
-        mappingMethods,                /* tp_as_mapping */
-        0,                             /* tp_hash */
-        0,                             /* tp_call */
-        0,                             /* tp_str */
-        0,                             /* tp_getattro */
-        0,                             /* tp_setattro */
-        0,                             /* tp_as_buffer */
-        Py_TPFLAGS_DEFAULT,            /* tp_flags */
-        doc,                           /* tp_doc */
-        0,                             /* tp_traverse */
-        0,                             /* tp_clear */
-        0,                             /* tp_richcompare */
-        0,                             /* tp_weaklistoffset */
-        0,                             /* tp_iter */
-        0,                             /* tp_iternext */
-        0,                             /* tp_methods */
-        0,                             /* tp_members */
-        0,                             /* tp_getset */
-        0,                             /* tp_base */
-        0,                             /* tp_dict */
-        0,                             /* tp_descr_get */
-        0,                             /* tp_descr_set */
-        0,                             /* tp_dictoffset */
-        0,                             /* tp_init */
-        0,                             /* tp_alloc */
-        New,                           /* tp_new */
+    static PyTypeObject typeType{
+      tp_name : GetName(),
+      tp_basicsize : sizeof(ReflectedEnumPy),
+      tp_getattr : GetAttribute,
+      tp_as_mapping : mappingMethods,
+      tp_flags : Py_TPFLAGS_DEFAULT,
+      tp_doc : doc,
+      tp_new : New,
     };
 
     return &typeType;
@@ -74,13 +44,13 @@ template <class E, const char *const doc = nullptr> struct ReflectedEnumPy {
 
   static Py_ssize_t Len(PyObject *) { return ENUM->numMembers; }
 
-  static constexpr const char *const GetName() { return ENUM->enumName; }
+  static constexpr const char *GetName() { return ENUM->enumName; }
 
   static PyObject *New(PyTypeObject *type, PyObject *, PyObject *) {
     return type->tp_alloc(type, 0);
   }
 
-  static PyObject *Subscript(ReflectedEnumPy *self, PyObject *index) {
+  static PyObject *Subscript(ReflectedEnumPy *, PyObject *index) {
     return SubscriptRaw(PyLong_AsSize_t(index));
   }
 
@@ -89,8 +59,8 @@ template <class E, const char *const doc = nullptr> struct ReflectedEnumPy {
   }
 
   static PyObject *GetAttribute(PyObject *, char *attrName) {
-    const auto foundEnum =
-        std::find(ENUM->names, ENUM->names + ENUM->numMembers, es::string_view(attrName));
+    const auto foundEnum = std::find(
+        ENUM->names, ENUM->names + ENUM->numMembers, es::string_view(attrName));
 
     if (ENUM->names + ENUM->numMembers == foundEnum) {
       return nullptr;
@@ -101,3 +71,4 @@ template <class E, const char *const doc = nullptr> struct ReflectedEnumPy {
     return PyLong_FromSize_t(ENUM->values[fndID]);
   }
 };
+#pragma GCC diagnostic pop

@@ -22,6 +22,7 @@
 #include "pymotion.hpp"
 #include "pyrts.hpp"
 #include <vector>
+#pragma GCC diagnostic ignored "-Wmissing-field-initializers"
 
 namespace UniPy {
 
@@ -43,7 +44,9 @@ struct TrackTypeInfo {
 
   static constexpr const char *GetName() { return "uniMotionTrackType"; }
   static constexpr const char *GetDoc() { return "Uni Motion Track Type Enum"; }
-  static size_t Len() { return sizeof(trackTypes) / sizeof(value_type); }
+  static size_t Len(PyObject *) {
+    return sizeof(trackTypes) / sizeof(value_type);
+  }
   static iterator_type begin() { return std::begin(trackTypes); }
   static iterator_type end() { return std::end(trackTypes); }
 };
@@ -66,7 +69,9 @@ struct MotionTypeInfo {
 
   static constexpr const char *GetName() { return "uniMotionType"; }
   static constexpr const char *GetDoc() { return "Uni Motion Type Enum"; }
-  static size_t Len() { return sizeof(motionTypes) / sizeof(value_type); }
+  static size_t Len(PyObject *) {
+    return sizeof(motionTypes) / sizeof(value_type);
+  }
   static iterator_type begin() { return std::begin(motionTypes); }
   static iterator_type end() { return std::end(motionTypes); }
 };
@@ -93,72 +98,43 @@ struct MotionListInfo {
 
 using MotionList = List<MotionListInfo>;
 
-static PyMethodDef motionTrackMethods[] = {
-    {"get_values", (PyCFunction)MotionTrack::GetValues, METH_VARARGS,
-     "Get sampled values from times."},
-    {NULL},
-};
+PyTypeObject *MotionTrack::GetType() {
+  static PyMethodDef motionTrackMethods[] = {
+      {"get_values", (PyCFunction)MotionTrack::GetValues, METH_VARARGS,
+       "Get sampled values from times."},
+      {NULL},
+  };
 
-static PyGetSetDef motionTrackGetSets[] = {
-    {"track_type", (getter)MotionTrack::TrackType, nullptr,
-     "Motion track type."},
-    {"bone_index", (getter)MotionTrack::BoneIndex, nullptr, "Bone index."},
-    {NULL},
-};
+  static PyGetSetDef motionTrackGetSets[] = {
+      {"track_type", (getter)MotionTrack::TrackType, nullptr,
+       "Motion track type."},
+      {"bone_index", (getter)MotionTrack::BoneIndex, nullptr, "Bone index."},
+      {NULL},
+  };
 
-static PyTypeObject motionTrackType = {
-    PyVarObject_HEAD_INIT(NULL, 0)               /* init macro */
-    "uni::MotionTrack",                          /* tp_name */
-    sizeof(MotionTrack),                         /* tp_basicsize */
-    0,                                           /* tp_itemsize */
-    (destructor)MotionTrack::Dealloc,            /* tp_dealloc */
-    0,                                           /* tp_print */
-    0,                                           /* tp_getattr */
-    0,                                           /* tp_setattr */
-    0,                                           /* tp_compare */
-    0,                                           /* tp_repr */
-    0,                                           /* tp_as_number */
-    0,                                           /* tp_as_sequence */
-    0,                                           /* tp_as_mapping */
-    0,                                           /* tp_hash */
-    0,                                           /* tp_call */
-    0,                                           /* tp_str */
-    0,                                           /* tp_getattro */
-    0,                                           /* tp_setattro */
-    0,                                           /* tp_as_buffer */
-    Py_TPFLAGS_DEFAULT | Py_TPFLAGS_IS_ABSTRACT, /* tp_flags */
-    "Uni MotionTrack interface",                 /* tp_doc */
-    0,                                           /* tp_traverse */
-    0,                                           /* tp_clear */
-    0,                                           /* tp_richcompare */
-    0,                                           /* tp_weaklistoffset */
-    0,                                           /* tp_iter */
-    0,                                           /* tp_iternext */
-    motionTrackMethods,                          /* tp_methods */
-    0,                                           /* tp_members */
-    (PyGetSetDef *)motionTrackGetSets,           /* tp_getset */
-    0,                                           /* tp_base */
-    0,                                           /* tp_dict */
-    0,                                           /* tp_descr_get */
-    0,                                           /* tp_descr_set */
-    0,                                           /* tp_dictoffset */
-    0,                                           /* tp_init */
-    0,                                           /* tp_alloc */
-    0,                                           /* tp_new */
-};
+  static PyTypeObject motionTrackType{
+    tp_name : "uni::MotionTrack",
+    tp_basicsize : sizeof(MotionTrack),
+    tp_dealloc : (destructor)MotionTrack::Dealloc,
+    tp_flags : Py_TPFLAGS_DEFAULT | Py_TPFLAGS_IS_ABSTRACT,
+    tp_doc : "Uni MotionTrack interface",
+    tp_methods : motionTrackMethods,
+    tp_getset : (PyGetSetDef *)motionTrackGetSets,
+  };
 
-PyTypeObject *MotionTrack::GetType() { return &motionTrackType; }
+  return &motionTrackType;
+}
 
 void MotionTrack::Dealloc(MotionTrack *self) {
   auto t0 = std::move(self->item);
   Py_TYPE(self)->tp_free(self);
 }
 
-PyObject *MotionTrack::TrackType(MotionTrack *self) {
+PyObject *MotionTrack::TrackType(MotionTrack *self, void *) {
   return PyLong_FromSize_t(self->item->TrackType());
 }
 
-PyObject *MotionTrack::BoneIndex(MotionTrack *self) {
+PyObject *MotionTrack::BoneIndex(MotionTrack *self, void *) {
   return PyLong_FromSize_t(self->item->BoneIndex());
 }
 
@@ -222,62 +198,32 @@ PyObject *MotionTrack::GetValues(MotionTrack *self, PyObject *index) {
   return retList;
 }
 
-static PyGetSetDef motionGetSets[] = {
-    {"name", (getter)Motion::Name, nullptr, "Motion name."},
-    {"duration", (getter)Motion::Duration, nullptr,
-     "Motion duration in seconds."},
-    {"motion_type", (getter)Motion::MotionType, nullptr, "Motion type."},
-    {"framerate", (getter)Motion::FrameRate, (setter)Motion::SetFrameRate,
-     "Motion framerate."},
-    {"tracks", (getter)Motion::Tracks, nullptr, "Motion tracks."},
-    {NULL},
-};
+PyTypeObject *Motion::GetType() {
+  static PyGetSetDef motionGetSets[] = {
+      {"name", (getter)Motion::Name, nullptr, "Motion name."},
+      {"duration", (getter)Motion::Duration, nullptr,
+       "Motion duration in seconds."},
+      {"motion_type", (getter)Motion::MotionType, nullptr, "Motion type."},
+      {"framerate", (getter)Motion::FrameRate, (setter)Motion::SetFrameRate,
+       "Motion framerate."},
+      {"tracks", (getter)Motion::Tracks, nullptr, "Motion tracks."},
+      {NULL},
+  };
 
-static constexpr size_t motionTypeFlags =
-    Py_TPFLAGS_DEFAULT | Py_TPFLAGS_IS_ABSTRACT | Py_TPFLAGS_BASETYPE;
+  static constexpr size_t motionTypeFlags =
+      Py_TPFLAGS_DEFAULT | Py_TPFLAGS_IS_ABSTRACT | Py_TPFLAGS_BASETYPE;
 
-static PyTypeObject motionType = {
-    PyVarObject_HEAD_INIT(NULL, 0) /* init macro */
-    "uni::Motion",                 /* tp_name */
-    sizeof(Motion),                /* tp_basicsize */
-    0,                             /* tp_itemsize */
-    (destructor)Motion::Dealloc,   /* tp_dealloc */
-    0,                             /* tp_print */
-    0,                             /* tp_getattr */
-    0,                             /* tp_setattr */
-    0,                             /* tp_compare */
-    0,                             /* tp_repr */
-    0,                             /* tp_as_number */
-    0,                             /* tp_as_sequence */
-    0,                             /* tp_as_mapping */
-    0,                             /* tp_hash */
-    0,                             /* tp_call */
-    0,                             /* tp_str */
-    0,                             /* tp_getattro */
-    0,                             /* tp_setattro */
-    0,                             /* tp_as_buffer */
-    motionTypeFlags,               /* tp_flags */
-    "Uni Motion interface",        /* tp_doc */
-    0,                             /* tp_traverse */
-    0,                             /* tp_clear */
-    0,                             /* tp_richcompare */
-    0,                             /* tp_weaklistoffset */
-    0,                             /* tp_iter */
-    0,                             /* tp_iternext */
-    0,                             /* tp_methods */
-    0,                             /* tp_members */
-    (PyGetSetDef *)motionGetSets,  /* tp_getset */
-    0,                             /* tp_base */
-    0,                             /* tp_dict */
-    0,                             /* tp_descr_get */
-    0,                             /* tp_descr_set */
-    0,                             /* tp_dictoffset */
-    0,                             /* tp_init */
-    0,                             /* tp_alloc */
-    0,                             /* tp_new */
-};
+  static PyTypeObject motionType{
+    tp_name : "uni::Motion",
+    tp_basicsize : sizeof(Motion),
+    tp_dealloc : (destructor)Motion::Dealloc,
+    tp_flags : motionTypeFlags,
+    tp_doc : "Uni Motion interface",
+    tp_getset : (PyGetSetDef *)motionGetSets,
+  };
 
-PyTypeObject *Motion::GetType() { return &motionType; }
+  return &motionType;
+}
 
 PyTypeObject *Motion::GetListType() { return MotionList::GetType(); }
 
@@ -286,28 +232,28 @@ void Motion::Dealloc(Motion *self) {
   Py_TYPE(self)->tp_free(self);
 }
 
-PyObject *Motion::MotionType(Motion *self) {
+PyObject *Motion::MotionType(Motion *self, void *) {
   return PyLong_FromSize_t(self->item->MotionType());
 }
 
-PyObject *Motion::Name(Motion *self) {
+PyObject *Motion::Name(Motion *self, void *) {
   const auto rName = self->item->Name();
   return PyUnicode_FromStringAndSize(rName.data(), rName.size());
 }
 
-PyObject *Motion::Duration(Motion *self) {
+PyObject *Motion::Duration(Motion *self, void *) {
   return PyFloat_FromDouble(self->item->Duration());
 }
 
-PyObject *Motion::Tracks(Motion *self) {
+PyObject *Motion::Tracks(Motion *self, void *) {
   return MotionTrackList::Create(self->item->Tracks());
 }
 
-PyObject *Motion::FrameRate(Motion *self) {
+PyObject *Motion::FrameRate(Motion *self, void *) {
   return PyLong_FromLong(self->item->FrameRate());
 }
 
-int Motion::SetFrameRate(Motion *self, PyObject *var) {
+int Motion::SetFrameRate(Motion *self, PyObject *var, void *) {
   self->sitem->FrameRate(PyLong_AsLong(var));
   return 0;
 }
@@ -329,3 +275,4 @@ void Motion::InitType(PyObject *module) {
 }
 
 } // namespace UniPy
+#pragma GCC diagnostic pop

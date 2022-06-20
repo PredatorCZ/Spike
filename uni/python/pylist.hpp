@@ -18,6 +18,7 @@
 #pragma once
 #include "uni/list.hpp"
 #include <Python.h>
+#pragma GCC diagnostic ignored "-Wmissing-field-initializers"
 
 namespace UniPy {
 
@@ -40,45 +41,15 @@ template <class Info> struct List {
         0,
     };
 
-    static PyTypeObject typeObject = {
-        PyVarObject_HEAD_INIT(NULL, 0)               /* init macro */
-        Info::GetName(),                             /* tp_name */
-        sizeof(List),                                /* tp_basicsize */
-        0,                                           /* tp_itemsize */
-        (destructor)List::Dealloc,                   /* tp_dealloc */
-        0,                                           /* tp_print */
-        0,                                           /* tp_getattr */
-        0,                                           /* tp_setattr */
-        0,                                           /* tp_compare */
-        0,                                           /* tp_repr */
-        0,                                           /* tp_as_number */
-        0,                                           /* tp_as_sequence */
-        &mappingMethods,                             /* tp_as_mapping */
-        0,                                           /* tp_hash */
-        0,                                           /* tp_call */
-        0,                                           /* tp_str */
-        0,                                           /* tp_getattro */
-        0,                                           /* tp_setattro */
-        0,                                           /* tp_as_buffer */
-        Py_TPFLAGS_DEFAULT | Py_TPFLAGS_IS_ABSTRACT, /* tp_flags */
-        Info::GetDoc(),                              /* tp_doc */
-        0,                                           /* tp_traverse */
-        0,                                           /* tp_clear */
-        0,                                           /* tp_richcompare */
-        0,                                           /* tp_weaklistoffset */
-        (getiterfunc)List::Iter,                     /* tp_iter */
-        (iternextfunc)List::IterNext,                /* tp_iternext */
-        0,                                           /* tp_methods */
-        0,                                           /* tp_members */
-        0,                                           /* tp_getset */
-        0,                                           /* tp_base */
-        0,                                           /* tp_dict */
-        0,                                           /* tp_descr_get */
-        0,                                           /* tp_descr_set */
-        0,                                           /* tp_dictoffset */
-        0,                                           /* tp_init */
-        0,                                           /* tp_alloc */
-        0,                                           /* tp_new */
+    static PyTypeObject typeObject{
+      tp_name : Info::GetName(),
+      tp_basicsize : sizeof(List),
+      tp_dealloc : (destructor)List::Dealloc,
+      tp_as_mapping : &mappingMethods,
+      tp_flags : Py_TPFLAGS_DEFAULT | Py_TPFLAGS_IS_ABSTRACT,
+      tp_doc : Info::GetDoc(),
+      tp_iter : (getiterfunc)List::Iter,
+      tp_iternext : (iternextfunc)List::IterNext,
     };
 
     return &typeObject;
@@ -125,3 +96,5 @@ template <class Info> struct List {
   }
 };
 } // namespace UniPy
+
+#pragma GCC diagnostic pop

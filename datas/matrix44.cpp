@@ -1,7 +1,7 @@
 /*  a source for Matrix44 class
     more info in README for PreCore Project
 
-    Copyright 2018-2021 Lukas Cone
+    Copyright 2018-2022 Lukas Cone
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -31,7 +31,7 @@ static const Vector4A16 &AsVec(const glm::vec4 &in) {
   return reinterpret_cast<const Vector4A16 &>(in);
 }
 
-static const Vector4A16 &AsVec(const glm::quat &in) {
+[[maybe_unused]] static const Vector4A16 &AsVec(const glm::quat &in) {
   return reinterpret_cast<const Vector4A16 &>(in);
 }
 
@@ -51,7 +51,7 @@ static const glm::mat4 &AsMat4(const Matrix44 &in) {
   return reinterpret_cast<const glm::mat4 &>(in);
 }
 
-static glm::mat4 &AsMat4(Matrix44 &in) {
+[[maybe_unused]] static glm::mat4 &AsMat4(Matrix44 &in) {
   return reinterpret_cast<glm::mat4 &>(in);
 }
 
@@ -125,7 +125,7 @@ void Matrix44::TransposeFull() {
   _MM_TRANSPOSE4_PS(r1()._data, r2()._data, r3()._data, r4()._data);
 }
 
-Vector4A16 es::operator*(const Vector4A16 &point, const es::Matrix44 &mtx) {
+Vector4A16 operator*(const Vector4A16 &point, const es::Matrix44 &mtx) {
   auto result = AsVec(point) * AsMat4(mtx);
   return AsVec(result);
 }

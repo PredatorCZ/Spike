@@ -1,6 +1,6 @@
 /*  Contains macros for unit testing
 
-    Copyright 2020-2021 Lukas Cone
+    Copyright 2020-2022 Lukas Cone
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -21,6 +21,7 @@
 #include "master_printer.hpp"
 #include <ostream>
 #include <type_traits>
+#pragma GCC diagnostic ignored "-Wsign-compare"
 
 #define _CHECK_FAILED_TMP(...)                                                 \
   printerror("Check failed " << __FILE__ << '(' << __LINE__                    \

@@ -1,6 +1,6 @@
 /*  Python binding classes for uni::Motion
     part of uni module
-    Copyright 2020 Lukas Cone
+    Copyright 2020-2022 Lukas Cone
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -25,8 +25,8 @@ struct MotionTrack {
   uni::Element<const uni::MotionTrack> item;
 
   static void Dealloc(MotionTrack *self);
-  static PyObject *TrackType(MotionTrack *self);
-  static PyObject *BoneIndex(MotionTrack *self);
+  static PyObject *TrackType(MotionTrack *self, void * = nullptr);
+  static PyObject *BoneIndex(MotionTrack *self, void * = nullptr);
   static PyObject *GetValues(MotionTrack *self, PyObject *time);
 
   static PyTypeObject *GetType();
@@ -40,13 +40,13 @@ struct Motion {
   };
 
   static void Dealloc(Motion *self);
-  static PyObject *Name(Motion *self);
-  static PyObject *Duration(Motion *self);
-  static PyObject *Tracks(Motion *self);
-  static PyObject *MotionType(Motion *self);
-  static PyObject *FrameRate(Motion *self);
+  static PyObject *Name(Motion *self, void * = nullptr);
+  static PyObject *Duration(Motion *self, void * = nullptr);
+  static PyObject *Tracks(Motion *self, void * = nullptr);
+  static PyObject *MotionType(Motion *self, void * = nullptr);
+  static PyObject *FrameRate(Motion *self, void * = nullptr);
 
-  static int SetFrameRate(Motion *self, PyObject *var);
+  static int SetFrameRate(Motion *self, PyObject *var, void * = nullptr);
 
   static void InitType(PyObject *module);
   static PyTypeObject *GetType();

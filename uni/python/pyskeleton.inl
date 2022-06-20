@@ -20,6 +20,7 @@
 #include "pylist.hpp"
 #include "pyrts.hpp"
 #include "pyskeleton.hpp"
+#pragma GCC diagnostic ignored "-Wmissing-field-initializers"
 
 namespace UniPy {
 
@@ -37,7 +38,9 @@ struct BoneTMTypeInfo {
 
   static constexpr const char *GetName() { return "uniBoneTMType"; }
   static constexpr const char *GetDoc() { return "Uni Bone TM Type Enum"; }
-  static size_t Len() { return sizeof(boneTMTypes) / sizeof(value_type); }
+  static size_t Len(PyObject *) {
+    return sizeof(boneTMTypes) / sizeof(value_type);
+  }
   static iterator_type begin() { return std::begin(boneTMTypes); }
   static iterator_type end() { return std::end(boneTMTypes); }
 };
@@ -62,68 +65,39 @@ struct SkeletonListInfo {
 
 using SkeletonList = List<SkeletonListInfo>;
 
-static PyGetSetDef boneGetSets[] = {
-    {"tm_type", (getter)Bone::GetTMType, nullptr, "Get bone transform type."},
-    {"transform", (getter)Bone::GetTM, nullptr, "Get bone transformation."},
-    {"name", (getter)Bone::GetName, nullptr, "Get bone name."},
-    {"index", (getter)Bone::GetIndex, nullptr, "Get bone identifier."},
-    {"parent", (getter)Bone::GetParent, nullptr, "Get bone parent object."},
-    {NULL},
-};
+PyTypeObject *Bone::GetType() {
+  static PyGetSetDef boneGetSets[] = {
+      {"tm_type", (getter)Bone::GetTMType, nullptr, "Get bone transform type."},
+      {"transform", (getter)Bone::GetTM, nullptr, "Get bone transformation."},
+      {"name", (getter)Bone::GetName, nullptr, "Get bone name."},
+      {"index", (getter)Bone::GetIndex, nullptr, "Get bone identifier."},
+      {"parent", (getter)Bone::GetParent, nullptr, "Get bone parent object."},
+      {NULL},
+  };
 
-static PyTypeObject boneType = {
-    PyVarObject_HEAD_INIT(NULL, 0)               /* init macro */
-    "uni::Bone",                                 /* tp_name */
-    sizeof(Bone),                                /* tp_basicsize */
-    0,                                           /* tp_itemsize */
-    (destructor)Bone::Dealloc,                   /* tp_dealloc */
-    0,                                           /* tp_print */
-    0,                                           /* tp_getattr */
-    0,                                           /* tp_setattr */
-    0,                                           /* tp_compare */
-    0,                                           /* tp_repr */
-    0,                                           /* tp_as_number */
-    0,                                           /* tp_as_sequence */
-    0,                                           /* tp_as_mapping */
-    0,                                           /* tp_hash */
-    0,                                           /* tp_call */
-    0,                                           /* tp_str */
-    0,                                           /* tp_getattro */
-    0,                                           /* tp_setattro */
-    0,                                           /* tp_as_buffer */
-    Py_TPFLAGS_DEFAULT | Py_TPFLAGS_IS_ABSTRACT, /* tp_flags */
-    "Uni Bone interface",                        /* tp_doc */
-    0,                                           /* tp_traverse */
-    0,                                           /* tp_clear */
-    (richcmpfunc)Bone::Compare,                  /* tp_richcompare */
-    0,                                           /* tp_weaklistoffset */
-    0,                                           /* tp_iter */
-    0,                                           /* tp_iternext */
-    0,                                           /* tp_methods */
-    0,                                           /* tp_members */
-    (PyGetSetDef *)boneGetSets,                  /* tp_getset */
-    0,                                           /* tp_base */
-    0,                                           /* tp_dict */
-    0,                                           /* tp_descr_get */
-    0,                                           /* tp_descr_set */
-    0,                                           /* tp_dictoffset */
-    0,                                           /* tp_init */
-    0,                                           /* tp_alloc */
-    0,                                           /* tp_new */
-};
+  static PyTypeObject boneType{
+    tp_name : "uni::Bone",
+    tp_basicsize : sizeof(Bone),
+    tp_dealloc : (destructor)Bone::Dealloc,
+    tp_flags : Py_TPFLAGS_DEFAULT | Py_TPFLAGS_IS_ABSTRACT,
+    tp_doc : "Uni Bone interface",
+    tp_richcompare : (richcmpfunc)Bone::Compare,
+    tp_getset : (PyGetSetDef *)boneGetSets,
+  };
 
-PyTypeObject *Bone::GetType() { return &boneType; }
+  return &boneType;
+}
 
 void Bone::Dealloc(Bone *self) {
   auto t0 = std::move(self->item);
   Py_TYPE(self)->tp_free(self);
 }
 
-PyObject *Bone::GetTMType(Bone *self) {
+PyObject *Bone::GetTMType(Bone *self, void *) {
   return PyLong_FromLong(self->item->TMType());
 }
 
-PyObject *Bone::GetTM(Bone *self) {
+PyObject *Bone::GetTM(Bone *self, void *) {
   switch (self->item->TMType()) {
   case uni::TransformType::TMTYPE_MATRIX: {
     es::Matrix44 mtx;
@@ -140,20 +114,21 @@ PyObject *Bone::GetTM(Bone *self) {
   }
 }
 
-PyObject *Bone::GetIndex(Bone *self) {
+PyObject *Bone::GetIndex(Bone *self, void *) {
   return PyLong_FromSize_t(self->item->Index());
 }
 
-PyObject *Bone::GetName(Bone *self) {
+PyObject *Bone::GetName(Bone *self, void *) {
   const auto retName = self->item->Name();
   return PyUnicode_FromStringAndSize(retName.data(), retName.size());
 }
 
-PyObject *Bone::GetParent(Bone *self) {
+PyObject *Bone::GetParent(Bone *self, void *) {
   auto bne = self->item->Parent();
 
   if (bne) {
-    Bone *rtVal = reinterpret_cast<Bone *>(PyType_GenericAlloc(&boneType, 0));
+    Bone *rtVal =
+        reinterpret_cast<Bone *>(PyType_GenericAlloc(Bone::GetType(), 0));
     rtVal->item = {bne, false};
     return reinterpret_cast<PyObject *>(rtVal);
   } else {
@@ -184,69 +159,39 @@ PyObject *Bone::Compare(Bone *self, Bone *other, int op) {
   return retVal;
 }
 
-static PyGetSetDef skeletonGetSets[] = {
-    {"name", (getter)Skeleton::Name, nullptr, "Get skeleton's name."},
-    {"bones", (getter)Skeleton::Bones, nullptr, "Get skeleton's bones."},
-    {NULL} /* Sentinel */
-};
+PyTypeObject *Skeleton::GetType() {
+  static PyGetSetDef skeletonGetSets[] = {
+      {"name", (getter)Skeleton::Name, nullptr, "Get skeleton's name."},
+      {"bones", (getter)Skeleton::Bones, nullptr, "Get skeleton's bones."},
+      {NULL} /* Sentinel */
+  };
 
-static constexpr size_t skeletonTypeFlags =
-    Py_TPFLAGS_DEFAULT | Py_TPFLAGS_IS_ABSTRACT | Py_TPFLAGS_BASETYPE;
+  static constexpr size_t skeletonTypeFlags =
+      Py_TPFLAGS_DEFAULT | Py_TPFLAGS_IS_ABSTRACT | Py_TPFLAGS_BASETYPE;
 
-static PyTypeObject skeletonType = {
-    PyVarObject_HEAD_INIT(NULL, 0)  /* init macro */
-    "uni::Skeleton",                /* tp_name */
-    sizeof(Skeleton),               /* tp_basicsize */
-    0,                              /* tp_itemsize */
-    (destructor)Skeleton::Dealloc,  /* tp_dealloc */
-    0,                              /* tp_print */
-    0,                              /* tp_getattr */
-    0,                              /* tp_setattr */
-    0,                              /* tp_compare */
-    0,                              /* tp_repr */
-    0,                              /* tp_as_number */
-    0,                              /* tp_as_sequence */
-    0,                              /* tp_as_mapping */
-    0,                              /* tp_hash */
-    0,                              /* tp_call */
-    0,                              /* tp_str */
-    0,                              /* tp_getattro */
-    0,                              /* tp_setattro */
-    0,                              /* tp_as_buffer */
-    skeletonTypeFlags,              /* tp_flags*/
-    "Uni skeleton interface",       /* tp_doc */
-    0,                              /* tp_traverse */
-    0,                              /* tp_clear */
-    0,                              /* tp_richcompare */
-    0,                              /* tp_weaklistoffset */
-    0,                              /* tp_iter */
-    0,                              /* tp_iternext */
-    0,                              /* tp_methods */
-    0,                              /* tp_members */
-    (PyGetSetDef *)skeletonGetSets, /* tp_getset */
-    0,                              /* tp_base */
-    0,                              /* tp_dict */
-    0,                              /* tp_descr_get */
-    0,                              /* tp_descr_set */
-    0,                              /* tp_dictoffset */
-    0,                              /* tp_init */
-    0,                              /* tp_alloc */
-    0,                              /* tp_new */
-};
+  static PyTypeObject skeletonType{
+    tp_name : "uni::Skeleton",
+    tp_basicsize : sizeof(Skeleton),
+    tp_dealloc : (destructor)Skeleton::Dealloc,
+    tp_flags : skeletonTypeFlags,
+    tp_doc : "Uni skeleton interface",
+    tp_getset : (PyGetSetDef *)skeletonGetSets,
+  };
 
-PyTypeObject *Skeleton::GetType() { return &skeletonType; }
+  return &skeletonType;
+}
 
 void Skeleton::Dealloc(Skeleton *self) {
   auto t0 = std::move(self->item);
   Py_TYPE(self)->tp_free(self);
 }
 
-PyObject *Skeleton::Name(Skeleton *self) {
+PyObject *Skeleton::Name(Skeleton *self, void *) {
   auto skName = self->item->Name();
   return PyUnicode_FromStringAndSize(skName.data(), skName.size());
 }
 
-PyObject *Skeleton::Bones(Skeleton *self) {
+PyObject *Skeleton::Bones(Skeleton *self, void *) {
   return BoneList::Create(self->item->Bones());
 }
 
@@ -265,3 +210,4 @@ void Skeleton::InitType(PyObject *module) {
   PyAddTypes<BoneTMTypeEnum, Bone, BoneList, Skeleton, SkeletonList>(module);
 }
 } // namespace UniPy
+#pragma GCC diagnostic pop
