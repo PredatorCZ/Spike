@@ -23,7 +23,7 @@ set(CMAKE_MODULE_PATH
 option(PC_SHARED_LIB "" OFF)
 option(PC_STATIC_OBJECTS "" ON)
 
-if(CMAKE_COMPILER_IS_GNUCXX AND USE_GCOV)
+if(NOT MSVC AND USE_GCOV)
   message("Compiling with GCOV.")
 endif()
 
@@ -33,10 +33,14 @@ add_library(precore-interface INTERFACE)
 target_include_directories(precore-interface INTERFACE ${PRECORE_SOURCE_DIR})
 target_link_libraries(precore-interface INTERFACE glm::glm)
 
-if(CMAKE_COMPILER_IS_GNUCXX AND USE_GCOV)
+if(NOT MSVC AND USE_GCOV)
+  if(${CMAKE_CXX_COMPILER_ID} MATCHES "GNU")
+    target_link_options(precore-interface INTERFACE gcov)
+  elseif(${CMAKE_CXX_COMPILER_ID} MATCHES "Clang")
+    target_link_options(precore-interface INTERFACE --coverage)
+  endif()
   target_compile_options(precore-interface INTERFACE -fprofile-arcs
                                                      -ftest-coverage)
-  target_link_libraries(precore-interface INTERFACE gcov)
 endif()
 
 if(MSVC)

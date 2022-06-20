@@ -17,8 +17,10 @@
 #pragma once
 #include "datas/flags.hpp"
 #include "datas/pointer.hpp"
+#include <array>
 #include <bit>
 #include <set>
+#include <stdexcept>
 
 namespace clgen {
 enum class LookupFlag : uint8 {

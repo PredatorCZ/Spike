@@ -21,6 +21,7 @@
 #include "endian_fwd.hpp"
 #include "supercore.hpp"
 #include <cstring>
+#include <stdexcept>
 
 namespace {
 
