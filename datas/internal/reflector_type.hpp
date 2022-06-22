@@ -84,7 +84,7 @@ struct ReflType {
   uint16 size;
 
   union {
-    uint32 raw[2]{};
+    uint32 raw[3]{};
     ReflTypeVector asVector;
     ReflTypeBitField asBitfield;
     ReflTypeFloat asFloat;
