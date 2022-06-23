@@ -12,19 +12,18 @@ env:
 
 jobs:
   build-linux:
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-20.04
     strategy:
       fail-fast: false
       matrix:
         include:
-          - name: G++ 7 & GCOV
-            CC: gcc-7
-            CXX: g++-7
+          - name: G++ 10 & GCOV
+            CC: gcc-10
+            CXX: g++-10
             use-gcov: true
-          - name: Clang 6
-            CC: clang-6.0
-            CXX: clang++-6.0
-            install: clang-6.0
+          - name: Clang 10
+            CC: clang-10
+            CXX: clang++-10
 
     env:
       CC: ${{matrix.CC}}
@@ -37,12 +36,6 @@ jobs:
 
     steps:
       - uses: actions/checkout@v2
-
-      - name: Install compiler
-        if: ${{matrix.install}}
-        run: |
-          sudo rm -rd /usr/lib/gcc/x86_64-linux-gnu/10 /usr/lib/gcc/x86_64-linux-gnu/8 /usr/lib/gcc/x86_64-linux-gnu/9
-          sudo apt install ${{matrix.install}}
 
       - name: Configure stuff
         run: |
@@ -69,8 +62,8 @@ jobs:
           pushd cpp-coveralls
           sudo python3 setup.py install
           popd
-          export COVERALLS_SERVICE_NAME="gitlab-ci"
-          coveralls -E ".*/build/.*.[ch]((pp)|(c)|(xx))?$" -e spike -e MAXex -e test -e datas/unit_testing.hpp -e 3rd_party -e formats --gcov-options '\-lp' > /dev/null
+          export COVERALLS_SERVICE_NAME="github-actions-ci"
+          coveralls -E ".*/build/.*.[ch]((pp)|(c)|(xx))?$" -e spike -e MAXex -e test -e datas/unit_testing.hpp -e 3rd_party -e formats --gcov-options '\-lpb' > /dev/null
 
   build-widle:
     runs-on: windows-2019
@@ -78,14 +71,18 @@ jobs:
       - uses: actions/checkout@v2
       - name: Configure stuff
         run: |
+          choco install ninja
           mkdir ${{github.workspace}}/build
           cd ${{github.workspace}}/build
-          cmake -DCMAKE_BUILD_TYPE=Release -A x64 -DCMAKE_INSTALL_PREFIX=${{github.workspace}} ..
+          cmake -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=${{github.workspace}} ..
+        env:
+          CC: clang
+          CXX: clang++
       - name: Build
         working-directory: ${{github.workspace}}/build
         run: |
-          cmake --build . -j 6 --config Release --target install
+          cmake --build . -j 6 --target install
 
       - name: Test
         working-directory: ${{github.workspace}}/build
-        run: ctest --output-on-failure -C Release
+        run: ctest --output-on-failure

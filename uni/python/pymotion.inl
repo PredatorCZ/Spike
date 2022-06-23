@@ -113,13 +113,13 @@ PyTypeObject *MotionTrack::GetType() {
   };
 
   static PyTypeObject motionTrackType{
-    tp_name : "uni::MotionTrack",
-    tp_basicsize : sizeof(MotionTrack),
-    tp_dealloc : (destructor)MotionTrack::Dealloc,
-    tp_flags : Py_TPFLAGS_DEFAULT | Py_TPFLAGS_IS_ABSTRACT,
-    tp_doc : "Uni MotionTrack interface",
-    tp_methods : motionTrackMethods,
-    tp_getset : (PyGetSetDef *)motionTrackGetSets,
+      .tp_name = "uni::MotionTrack",
+      .tp_basicsize = sizeof(MotionTrack),
+      .tp_dealloc = (destructor)MotionTrack::Dealloc,
+      .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_IS_ABSTRACT,
+      .tp_doc = "Uni MotionTrack interface",
+      .tp_methods = motionTrackMethods,
+      .tp_getset = (PyGetSetDef *)motionTrackGetSets,
   };
 
   return &motionTrackType;
@@ -214,12 +214,12 @@ PyTypeObject *Motion::GetType() {
       Py_TPFLAGS_DEFAULT | Py_TPFLAGS_IS_ABSTRACT | Py_TPFLAGS_BASETYPE;
 
   static PyTypeObject motionType{
-    tp_name : "uni::Motion",
-    tp_basicsize : sizeof(Motion),
-    tp_dealloc : (destructor)Motion::Dealloc,
-    tp_flags : motionTypeFlags,
-    tp_doc : "Uni Motion interface",
-    tp_getset : (PyGetSetDef *)motionGetSets,
+      .tp_name = "uni::Motion",
+      .tp_basicsize = sizeof(Motion),
+      .tp_dealloc = (destructor)Motion::Dealloc,
+      .tp_flags = motionTypeFlags,
+      .tp_doc = "Uni Motion interface",
+      .tp_getset = (PyGetSetDef *)motionGetSets,
   };
 
   return &motionType;

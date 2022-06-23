@@ -76,13 +76,13 @@ PyTypeObject *Bone::GetType() {
   };
 
   static PyTypeObject boneType{
-    tp_name : "uni::Bone",
-    tp_basicsize : sizeof(Bone),
-    tp_dealloc : (destructor)Bone::Dealloc,
-    tp_flags : Py_TPFLAGS_DEFAULT | Py_TPFLAGS_IS_ABSTRACT,
-    tp_doc : "Uni Bone interface",
-    tp_richcompare : (richcmpfunc)Bone::Compare,
-    tp_getset : (PyGetSetDef *)boneGetSets,
+      .tp_name = "uni::Bone",
+      .tp_basicsize = sizeof(Bone),
+      .tp_dealloc = (destructor)Bone::Dealloc,
+      .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_IS_ABSTRACT,
+      .tp_doc = "Uni Bone interface",
+      .tp_richcompare = (richcmpfunc)Bone::Compare,
+      .tp_getset = (PyGetSetDef *)boneGetSets,
   };
 
   return &boneType;
@@ -170,12 +170,12 @@ PyTypeObject *Skeleton::GetType() {
       Py_TPFLAGS_DEFAULT | Py_TPFLAGS_IS_ABSTRACT | Py_TPFLAGS_BASETYPE;
 
   static PyTypeObject skeletonType{
-    tp_name : "uni::Skeleton",
-    tp_basicsize : sizeof(Skeleton),
-    tp_dealloc : (destructor)Skeleton::Dealloc,
-    tp_flags : skeletonTypeFlags,
-    tp_doc : "Uni skeleton interface",
-    tp_getset : (PyGetSetDef *)skeletonGetSets,
+      .tp_name = "uni::Skeleton",
+      .tp_basicsize = sizeof(Skeleton),
+      .tp_dealloc = (destructor)Skeleton::Dealloc,
+      .tp_flags = skeletonTypeFlags,
+      .tp_doc = "Uni skeleton interface",
+      .tp_getset = (PyGetSetDef *)skeletonGetSets,
   };
 
   return &skeletonType;

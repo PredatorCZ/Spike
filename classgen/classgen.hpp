@@ -17,6 +17,7 @@
 #pragma once
 #include "datas/flags.hpp"
 #include "datas/pointer.hpp"
+#include "datas/endian.hpp"
 #include <array>
 #include <bit>
 #include <set>
@@ -104,17 +105,17 @@ template <class IType> void EndianSwap(IType &interface) {
     switch (swapType) {
     case 1: {
       uint16 *data = reinterpret_cast<uint16 *>(interface.data + offset);
-      *data = be16toh(*data);
+      FByteswapper(*data);
       break;
     }
     case 2: {
       uint32 *data = reinterpret_cast<uint32 *>(interface.data + offset);
-      *data = be32toh(*data);
+      FByteswapper(*data);
       break;
     }
     case 3: {
       uint64 *data = reinterpret_cast<uint64 *>(interface.data + offset);
-      *data = be64toh(*data);
+      FByteswapper(*data);
       break;
     }
     default:

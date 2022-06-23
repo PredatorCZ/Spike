@@ -259,8 +259,9 @@ class LayoutItem:
         same_swaps = self.swaps == other.swaps
         return same_size and same_offsets and same_swaps
 
-    def __str__(self):
-        return '(%s)' % ', '.join(str(s) for s in [self.version_begin, self.version_end, self.ptr_size, self.gnu_layout, self.total_size, self.offsets, self.swaps, ])
+    def str_cpp(self):
+        return '{{{{%s, %s, %s, %s}}, %s}, {%s}, {%s}}' % \
+            (self.version_begin, self.version_end, self.ptr_size, self.gnu_layout, self.total_size, str(self.offsets)[1:-1],  str(self.swaps)[1:-1].replace('\'', ''))
 
 
 class ClassData:
@@ -544,7 +545,7 @@ class ClassData:
                 nswaps.append(hex(cswap))
             t.swaps = nswaps
         hdr = 'static const std::set<ClassData<_count_>> LAYOUTS {\n  '
-        return hdr + ',\n  '.join(str(s).translate(str.maketrans('[]()', '{}{}', '\'')) for s in tbl) + '\n};'
+        return hdr + ',\n  '.join(s.str_cpp() for s in tbl) + '\n};'
 
     def get_location(self, cur_offset, settings: PermSettings):
         inherits, members = self.collect_members(

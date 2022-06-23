@@ -33,13 +33,13 @@ template <class Info> struct Enum {
     };
 
     static PyTypeObject typeType{
-      tp_name : Info::GetName(),
-      tp_basicsize : sizeof(Enum),
-      tp_getattr : GetAttribute,
-      tp_as_mapping : &mappingMethods,
-      tp_flags : Py_TPFLAGS_DEFAULT,
-      tp_doc : Info::GetDoc(),
-      tp_new : New,
+        .tp_name = Info::GetName(),
+        .tp_basicsize = sizeof(Enum),
+        .tp_getattr = GetAttribute,
+        .tp_as_mapping = &mappingMethods,
+        .tp_flags = Py_TPFLAGS_DEFAULT,
+        .tp_doc = Info::GetDoc(),
+        .tp_new = New,
     };
 
     return &typeType;

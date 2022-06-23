@@ -71,7 +71,7 @@ build_target(
   NO_PROJECT_H
   NO_VERINFO)
 
-if(NOT MINGW)
+if(NOT MINGW AND RELEASEVER)
   find_package(Python3 COMPONENTS Development Interpreter)
 
   if(Python3_FOUND)

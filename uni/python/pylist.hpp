@@ -42,14 +42,14 @@ template <class Info> struct List {
     };
 
     static PyTypeObject typeObject{
-      tp_name : Info::GetName(),
-      tp_basicsize : sizeof(List),
-      tp_dealloc : (destructor)List::Dealloc,
-      tp_as_mapping : &mappingMethods,
-      tp_flags : Py_TPFLAGS_DEFAULT | Py_TPFLAGS_IS_ABSTRACT,
-      tp_doc : Info::GetDoc(),
-      tp_iter : (getiterfunc)List::Iter,
-      tp_iternext : (iternextfunc)List::IterNext,
+        .tp_name = Info::GetName(),
+        .tp_basicsize = sizeof(List),
+        .tp_dealloc = (destructor)List::Dealloc,
+        .tp_as_mapping = &mappingMethods,
+        .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_IS_ABSTRACT,
+        .tp_doc = Info::GetDoc(),
+        .tp_iter = (getiterfunc)List::Iter,
+        .tp_iternext = (iternextfunc)List::IterNext,
     };
 
     return &typeObject;
