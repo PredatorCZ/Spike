@@ -22,7 +22,7 @@ set(CMAKE_MODULE_PATH
     CACHE STRING "")
 option(PC_SHARED_LIB "" OFF)
 option(PC_STATIC_OBJECTS "" ON)
-
+set(USE_GCOV ON)
 if(NOT MSVC AND USE_GCOV)
   message("Compiling with GCOV.")
 endif()
@@ -36,25 +36,27 @@ target_link_libraries(precore-interface INTERFACE glm::glm)
 if(NOT MSVC AND USE_GCOV)
   if(${CMAKE_CXX_COMPILER_ID} MATCHES "GNU")
     target_link_options(precore-interface INTERFACE gcov)
+    target_compile_options(precore-interface INTERFACE -fprofile-arcs
+                                                       -ftest-coverage)
   elseif(${CMAKE_CXX_COMPILER_ID} MATCHES "Clang")
     target_link_options(precore-interface INTERFACE --coverage)
+    target_compile_options(precore-interface INTERFACE -fprofile-instr-generate
+                                                       -fcoverage-mapping)
   endif()
-  target_compile_options(precore-interface INTERFACE -fprofile-arcs
-                                                     -ftest-coverage)
+
 endif()
 
 if(MSVC)
+  target_compile_options(precore-interface INTERFACE /GR-)
+else()
+  target_compile_options(precore-interface
+                         INTERFACE -msse4 -Wno-invalid-offsetof -fno-rtti)
   target_compile_definitions(
     precore-interface
     INTERFACE _SILENCE_CXX17_CODECVT_HEADER_DEPRECATION_WARNING)
-  target_compile_options(precore-interface INTERFACE /GR-)
-else()
-  target_compile_options(precore-interface INTERFACE -msse4
-                                                     -Wno-invalid-offsetof)
-  target_compile_options(precore-interface INTERFACE -fno-rtti)
 endif()
 
-if(NOT (MSVC OR MINGW))
+if(NOT WIN32 OR MINGW)
   set(THREADS_PREFER_PTHREAD_FLAG TRUE)
   find_package(Threads REQUIRED)
   target_link_libraries(precore-interface INTERFACE Threads::Threads)
@@ -111,7 +113,7 @@ if(PC_SHARED_LIB)
     target_link_libraries(precore pugixml-shared)
   endif()
 
-  if(MSVC OR MINGW)
+  if(WIN32 OR MINGW)
     set_target_properties(precore PROPERTIES SUFFIX ${PROJECT_VERSION_MAJOR}.dll
                                              PREFIX "")
   else()

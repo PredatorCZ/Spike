@@ -40,7 +40,7 @@ if(PUGI_SHARED_LIBS)
   add_library(pugixml SHARED pugixml_dll.rc)
   target_link_libraries(pugixml pugixml-shared)
 
-  if(MSVC OR MINGW)
+  if(WIN32 OR MINGW)
     set_target_properties(pugixml PROPERTIES SUFFIX ${PROJECT_VERSION_MAJOR}.dll
                                              PREFIX "")
   else()
@@ -48,7 +48,7 @@ if(PUGI_SHARED_LIBS)
                                              SOVERSION ${PROJECT_VERSION_MAJOR})
   endif()
 
-  if(MSVC)
+  if(WIN32)
     target_compile_definitions(
       pugixml-shared
       INTERFACE PUGIXML_API=__declspec\(dllimport\)

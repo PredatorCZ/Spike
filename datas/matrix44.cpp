@@ -125,10 +125,12 @@ void Matrix44::TransposeFull() {
   _MM_TRANSPOSE4_PS(r1()._data, r2()._data, r3()._data, r4()._data);
 }
 
+namespace es {
 Vector4A16 operator*(const Vector4A16 &point, const es::Matrix44 &mtx) {
   auto result = AsVec(point) * AsMat4(mtx);
   return AsVec(result);
 }
+} // namespace es
 
 Matrix44 Matrix44::operator*(const Matrix44 &right) const {
   auto &thisMat = AsMat4(*this);
