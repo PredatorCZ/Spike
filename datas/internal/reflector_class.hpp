@@ -20,6 +20,12 @@
 #include "reflector_type.hpp"
 #include <map>
 
+#ifdef REF_EXPORT
+#define REF_EXPORT_ ES_EXPORT
+#else
+#define REF_EXPORT_
+#endif
+
 struct ReflDesc {
   const char *part1 = nullptr;
   const char *part2 = nullptr;
@@ -179,7 +185,7 @@ template <class C> class InvokeGuard;
     return #__VA_ARGS__;                                                       \
   }                                                                            \
   template <>                                                                  \
-  const reflectorStatic ES_EXPORT *GetReflectedClass<__VA_ARGS__>() {          \
+  const reflectorStatic REF_EXPORT_ *GetReflectedClass<__VA_ARGS__>() {         \
     using class_type = __VA_ARGS__;                                            \
     static const reflectorStatic reflectedClass {                              \
       std::add_pointer_t<class_type>{nullptr}, #__VA_ARGS__,

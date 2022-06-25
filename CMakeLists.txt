@@ -20,20 +20,27 @@ set(PRECORE_SOURCE_DIR
 set(CMAKE_MODULE_PATH
     ${PRECORE_SOURCE_DIR}/cmake;${CMAKE_MODULE_PATH}
     CACHE STRING "")
-option(PC_SHARED_LIB "" OFF)
-option(PC_STATIC_OBJECTS "" ON)
 
-if(NOT MSVC AND USE_GCOV)
+if(USE_GCOV)
   message("Compiling with GCOV.")
 endif()
 
-add_subdirectory(3rd_party/glm)
+# TESTING
+if(${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_CURRENT_SOURCE_DIR})
+  add_subdirectory(test)
+  enable_testing()
+  add_subdirectory(bin ${CMAKE_SOURCE_DIR}/bin)
+endif()
 
+add_subdirectory(3rd_party/glm)
+add_subdirectory(3rd_party/pugixml)
+
+# INTERFACE
 add_library(precore-interface INTERFACE)
 target_include_directories(precore-interface INTERFACE ${PRECORE_SOURCE_DIR})
 target_link_libraries(precore-interface INTERFACE glm::glm)
 
-if(NOT MSVC AND USE_GCOV)
+if(USE_GCOV)
   target_link_options(precore-interface INTERFACE --coverage)
   if(${CMAKE_CXX_COMPILER_ID} MATCHES "GNU")
     target_compile_options(precore-interface INTERFACE -fprofile-arcs
@@ -45,16 +52,12 @@ if(NOT MSVC AND USE_GCOV)
 
 endif()
 
-if(MSVC)
-  target_compile_options(precore-interface INTERFACE /GR-)
-else()
-  target_compile_options(precore-interface
-                         INTERFACE -msse4 -Wno-invalid-offsetof -fno-rtti)
-  if(NOT UNIX)
-    target_compile_definitions(
-      precore-interface
-      INTERFACE _SILENCE_CXX17_CODECVT_HEADER_DEPRECATION_WARNING)
-  endif()
+target_compile_options(precore-interface INTERFACE -msse4 -Wno-invalid-offsetof
+                                                   -fno-rtti)
+if(WIN32)
+  target_compile_definitions(
+    precore-interface
+    INTERFACE _SILENCE_CXX17_CODECVT_HEADER_DEPRECATION_WARNING)
 endif()
 
 if(NOT WIN32 OR MINGW)
@@ -76,42 +79,29 @@ set(PC_SOURCES
     uni/uni.cpp
     uni/uni_format.cpp)
 
-if(${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_CURRENT_SOURCE_DIR})
-  add_subdirectory(test)
-  enable_testing()
-  add_subdirectory(bin ${CMAKE_SOURCE_DIR}/bin)
-endif()
-
-if(PC_STATIC_OBJECTS)
+# OBJECTS
+if(NOT NO_OBJECTS)
   add_library(precore-objects OBJECT ${PC_SOURCES})
-  target_link_libraries(precore-objects pugixml-objects precore-interface)
+  target_link_libraries(precore-objects pugixml-interface precore-interface)
+  set_target_properties(precore-objects PROPERTIES POSITION_INDEPENDENT_CODE
+                                                   ${OBJECTS_PID})
+  target_compile_options(precore-objects PRIVATE -fvisibility=hidden)
 endif()
 
-if(PC_SHARED_LIB)
+if(BUILD_SHARED_LIBS)
   add_library(precore SHARED ${PC_SOURCES})
-  target_link_libraries(precore precore-interface)
+  target_link_libraries(precore PUBLIC precore-interface pugixml)
 
   target_compile_definitions(
     precore
     PRIVATE PC_EXPORT
     INTERFACE PC_IMPORT)
 
-  if(NOT MSVC)
-    target_compile_options(precore PUBLIC -fvisibility=hidden)
-  endif()
+  target_compile_options(precore PUBLIC -fvisibility=hidden)
 
   if(MINGW)
     target_compile_options(precore PUBLIC -municode -fexcess-precision=fast)
     target_compile_definitions(precore PUBLIC UNICODE _UNICODE)
-  endif()
-
-  if(PUGI_SHARED_LIBS)
-    target_link_libraries(precore pugixml)
-  else()
-    set(PUGI_SHARED_OBJECTS
-        ON
-        CACHE BOOL "")
-    target_link_libraries(precore pugixml-shared)
   endif()
 
   if(WIN32 OR MINGW)
@@ -131,10 +121,7 @@ if(PC_SHARED_LIB)
     TARGETS precore
     LIBRARY NAMELINK_SKIP DESTINATION $<IF:$<BOOL:${MINGW}>,bin,lib>
     RUNTIME DESTINATION bin)
-
 endif()
-
-add_subdirectory(3rd_party/pugixml)
 
 function(install_mingw_lib libname)
   file(GLOB foundfile /usr/lib/gcc/x86_64-w64-mingw32/*-posix/${libname})

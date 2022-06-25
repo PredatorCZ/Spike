@@ -23,20 +23,20 @@ template <class E, const char *const doc = nullptr> struct ReflectedEnumPy {
   PyObject_HEAD;
   static inline const ReflectedEnum *ENUM = GetReflectedEnum<E>();
   static PyTypeObject *GetType() {
-    static PyMappingMethods mappingMethods[] = {
+    static PyMappingMethods mappingMethods{
         Len,
         (binaryfunc)Subscript,
         0,
     };
 
     static PyTypeObject typeType{
-      tp_name : GetName(),
-      tp_basicsize : sizeof(ReflectedEnumPy),
-      tp_getattr : GetAttribute,
-      tp_as_mapping : mappingMethods,
-      tp_flags : Py_TPFLAGS_DEFAULT,
-      tp_doc : doc,
-      tp_new : New,
+        .tp_name = GetName(),
+        .tp_basicsize = sizeof(ReflectedEnumPy),
+        .tp_getattr = GetAttribute,
+        .tp_as_mapping = &mappingMethods,
+        .tp_flags = Py_TPFLAGS_DEFAULT,
+        .tp_doc = doc,
+        .tp_new = New,
     };
 
     return &typeType;

@@ -1,14 +1,10 @@
 include(targetex)
 include(odr_test)
 
-set(PC_SHARED_LIB
+set(BUILD_SHARED_LIBS
     ON
     CACHE BOOL "" FORCE)
-set(PC_STATIC_OBJECTS
-    OFF
-    CACHE BOOL "" FORCE)
-
-set(PUGI_SHARED_LIBS
+set(NO_OBJECTS
     ON
     CACHE BOOL "" FORCE)
 

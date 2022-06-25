@@ -2,43 +2,29 @@ cmake_minimum_required(VERSION 3.4)
 project(pugixml VERSION 1.11)
 set(CMAKE_CXX_STANDARD 11)
 
-option(PUGI_STATIC_OBJECTS "Builds pugixml-objects target." OFF)
-option(PUGI_SHARED_OBJECTS "Builds pugixml-shared target." OFF)
-option(PUGI_STATIC_LIBS "Builds pugixml-static target." OFF)
-option(PUGI_SHARED_LIBS "Builds pugixml target." OFF)
+option(PUGI_STATIC_LIB "Builds pugixml-static target." OFF)
 
-if(PUGI_STATIC_LIBS)
-  set(PUGI_STATIC_OBJECTS ON)
-endif()
+add_library(pugixml-interface INTERFACE)
+target_include_directories(pugixml-interface INTERFACE include)
 
-if(PUGI_SHARED_LIBS)
-  set(PUGI_SHARED_OBJECTS ON)
-endif()
-
-if(PUGI_STATIC_OBJECTS)
+if((NOT NO_OBJECTS) OR PUGI_STATIC_LIB)
   add_library(pugixml-objects OBJECT pugixml.cpp)
-  target_include_directories(pugixml-objects PUBLIC include)
+  target_link_libraries(pugixml-objects PUBLIC pugixml-interface)
+  set_target_properties(pugixml-objects PROPERTIES POSITION_INDEPENDENT_CODE
+                                                   ${OBJECTS_PID})
+  target_compile_options(pugixml-objects PRIVATE -fvisibility=hidden)
 endif()
 
-if(PUGI_SHARED_OBJECTS)
-  add_library(pugixml-shared OBJECT pugixml.cpp)
-  target_include_directories(pugixml-shared PUBLIC include)
-  set_target_properties(pugixml-shared PROPERTIES POSITION_INDEPENDENT_CODE ON)
-  if(NOT MSVC AND NOT PUGI_SHARED_LIBS)
-    target_compile_options(pugixml-shared PRIVATE -fvisibility=hidden)
-  endif()
-endif()
-
-if(PUGI_STATIC_LIBS)
+if(PUGI_STATIC_LIB)
   add_library(pugixml-static STATIC)
   set_target_properties(pugixml-static PRIVATE PROPERTIES OUTPUT_NAME pugixml)
   target_link_libraries(pugixml-static pugixml-objects)
   install(TARGETS pugixml-static LIBRARY DESTINATION lib)
 endif()
 
-if(PUGI_SHARED_LIBS)
-  add_library(pugixml SHARED pugixml_dll.rc)
-  target_link_libraries(pugixml pugixml-shared)
+if(BUILD_SHARED_LIBS)
+  add_library(pugixml SHARED pugixml_dll.rc pugixml.cpp)
+  target_link_libraries(pugixml pugixml-interface)
 
   if(WIN32 OR MINGW)
     set_target_properties(pugixml PROPERTIES SUFFIX ${PROJECT_VERSION_MAJOR}.dll
@@ -50,7 +36,7 @@ if(PUGI_SHARED_LIBS)
 
   if(WIN32)
     target_compile_definitions(
-      pugixml-shared
+      pugixml
       INTERFACE PUGIXML_API=__declspec\(dllimport\)
       PRIVATE PUGIXML_API=__declspec\(dllexport\))
   endif()
