@@ -58,6 +58,8 @@ if(WIN32)
   target_compile_definitions(
     precore-interface
     INTERFACE _SILENCE_CXX17_CODECVT_HEADER_DEPRECATION_WARNING)
+    # Increase stack size from 1MB to 8MB
+    target_link_options(precore-interface INTERFACE -Wl,/stack:8388608)
 endif()
 
 if(NOT WIN32 OR MINGW)
