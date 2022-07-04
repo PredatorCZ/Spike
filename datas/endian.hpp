@@ -2,7 +2,7 @@
     calls void SwapEndian() on class instead of direct swap, if available,
     more info in README for PreCore Project
 
-    Copyright 2018-2021 Lukas Cone
+    Copyright 2018-2022 Lukas Cone
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -71,7 +71,7 @@ template <class C> void FByteswapper(C &input, bool outWay) {
   } else {
     auto rType = _fbswap(
         reinterpret_cast<typename es::TypeFromSize<sizeof(C)>::type &>(input));
-    memcpy(&input, &rType, sizeof(input));
+    memcpy(reinterpret_cast<char *>(&input), &rType, sizeof(input));
   }
 }
 
