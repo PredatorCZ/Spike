@@ -17,10 +17,16 @@
 
 #pragma once
 #include "datas/binwritter_stream.hpp"
+#include "datas/vectors_simd.hpp"
 #include "gltf.h"
 #include <sstream>
 
 using namespace fx;
+
+namespace uni
+{
+class MotionTrack;
+}
 
 struct GLTFStream : gltf::BufferView
 {
@@ -88,65 +94,28 @@ struct GLTF : gltf::Document
         return std::make_pair(std::ref(acc), accessors.size() - 1);
     }
 
-    void FinishAndSave(BinWritterRef wr, const std::string & docPath)
-    {
-        size_t totalBufferSize = [&]
-        {
-            size_t retval = 0;
-
-            for (auto & a : streams)
-            {
-                a.wr.ApplyPadding();
-                retval += a.wr.Tell();
-            }
-
-            return retval;
-        }();
-
-        if (totalBufferSize)
-        {
-            size_t curOffset = 0;
-
-            for (auto & a : streams)
-            {
-                a.buffer = 0;
-                a.byteLength = a.wr.Tell();
-                a.byteOffset = curOffset;
-                curOffset += a.byteLength;
-                bufferViews.emplace_back(std::move(a));
-            }
-
-            auto state = gltf::StreamBinaryHeaders(*this, wr.BaseStream(), totalBufferSize);
-
-            for (auto & a : streams)
-            {
-                char buffer[0x80000];
-                const size_t numChunks = a.byteLength / sizeof(buffer);
-                const size_t restBytes = a.byteLength % sizeof(buffer);
-
-                for (size_t i = 0; i < numChunks; i++)
-                {
-                    a.str.read(buffer, sizeof(buffer));
-                    wr.WriteBuffer(buffer, sizeof(buffer));
-                }
-
-                if (restBytes)
-                {
-                    a.str.read(buffer, restBytes);
-                    wr.WriteBuffer(buffer, restBytes);
-                }
-            }
-
-            gltf::StreamBinaryFinish(*this, state, wr.BaseStream(), docPath);
-        }
-        else
-        {
-            std::stringstream str;
-            str << "empty";
-            gltf::StreamBinaryFull(*this, str, 6, wr.BaseStream(), docPath);
-        }
-    }
+    void GLTF_EXTERN FinishAndSave(BinWritterRef wr, const std::string & docPath);
 
 private:
     std::vector<GLTFStream> streams;
 };
+
+namespace gltfutils
+{
+std::vector<float> GLTF_EXTERN MakeSamples(float sampleRate, float duration);
+
+struct StripResult
+{
+    std::vector<uint16> timeIndices;
+    std::vector<Vector4A16> values;
+};
+
+StripResult GLTF_EXTERN StripValues(const std::vector<float> & times, size_t upperLimit, const uni::MotionTrack * tck);
+std::array<StripResult, 3> GLTF_EXTERN StripValuesBlock(const std::vector<float> & times, size_t upperLimit, const uni::MotionTrack * tck);
+size_t GLTF_EXTERN FindTimeEndIndex(const std::vector<float> & times, float duration);
+
+inline bool fltcmp(float f0, float f1, float epsilon = FLT_EPSILON)
+{
+    return (f1 <= f0 + epsilon) && (f1 >= f0 - epsilon);
+}
+} // namespace gltfutils
