@@ -81,6 +81,7 @@ void Matrix44::Compose(const Vector4A16 &position, const Vector4A16 &rotation,
                        const Vector4A16 &scale) {
   FromQuat(rotation);
   r4() = position;
+  r4().w = 1.f;
   r1() *= scale.X;
   r2() *= scale.Y;
   r3() *= scale.Z;
