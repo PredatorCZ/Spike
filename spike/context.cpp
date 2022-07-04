@@ -513,7 +513,7 @@ void GetHelp(std::ostream &str, const reflectorStatic *ref, size_t level = 1) {
 
       if ([&] {
             for (size_t e = 0; e < refEnum->numMembers; e++) {
-              if (refEnum->descriptions[e]) {
+              if (refEnum->descriptions && refEnum->descriptions[e]) {
                 return true;
               }
             }
