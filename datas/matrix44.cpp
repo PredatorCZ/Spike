@@ -16,11 +16,6 @@
     limitations under the License.
 */
 
-// FIXME: This is very dangerous, move to cmake
-#define GLM_FORCE_DEFAULT_ALIGNED_GENTYPES
-#define GLM_FORCE_INTRINSICS
-#define GLM_FORCE_QUAT_DATA_XYZW
-#define GLM_FORCE_EXPLICIT_CTOR
 #include "matrix44.hpp"
 #include "glm/ext.hpp"
 #include "glm/glm.hpp"
@@ -31,7 +26,7 @@ static const Vector4A16 &AsVec(const glm::vec4 &in) {
   return reinterpret_cast<const Vector4A16 &>(in);
 }
 
-[[maybe_unused]] static const Vector4A16 &AsVec(const glm::quat &in) {
+static const Vector4A16 &AsVec(const glm::quat &in) {
   return reinterpret_cast<const Vector4A16 &>(in);
 }
 
@@ -59,6 +54,8 @@ static_assert(sizeof(glm::mat4) == sizeof(Matrix44));
 static_assert(alignof(glm::mat4) == alignof(Matrix44));
 static_assert(sizeof(glm::vec4) == sizeof(Vector4A16));
 static_assert(alignof(glm::vec4) == alignof(Vector4A16));
+static_assert(sizeof(glm::quat) == sizeof(Vector4A16));
+static_assert(alignof(glm::quat) == alignof(Vector4A16));
 
 void Matrix44::Decompose(Vector4A16 &position, Vector4A16 &rotation,
                          Vector4A16 &scale) const {
@@ -106,9 +103,7 @@ void Matrix44::FromQuat(const Vector4A16 &q) {
 }
 
 Vector4A16 Matrix44::ToQuat() const {
-  // BUG: https://github.com/g-truc/glm/pull/1084
-  auto asQuat = glm::quat_cast(AsMat4(*this));
-  return {asQuat.y, asQuat.z, asQuat.w, asQuat.x};
+  return AsVec(glm::quat_cast(AsMat4(*this)));
 }
 
 void Matrix44::Transpose() {
