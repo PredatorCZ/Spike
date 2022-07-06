@@ -1,7 +1,7 @@
 /*  Cache format for seekless zip loading
     Part of PreCore's Spike project
 
-    Copyright 2021 Lukas Cone
+    Copyright 2021-2022 Lukas Cone
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -26,11 +26,12 @@
 struct CacheGeneratorImpl;
 struct HybridLeaf;
 struct ZipEntryLeaf;
+struct CacheHeader;
 
 struct CacheBaseHeader {
   static constexpr uint32 ID = CompileFourCC("SPCH");
   uint32 id = ID;
-  uint8 version = 2;
+  uint8 version = 3;
   uint8 numLevels;
   uint16 maxPathSize;
   uint32 numFiles;
@@ -82,27 +83,17 @@ struct ZIPIOEntryRawIterator {
   virtual ~ZIPIOEntryRawIterator() = default;
 };
 
-struct CacheHeader : CacheBaseHeader {
-  uint32 numSimpleFixups;
-  uint32 numRleFixups;
-  uint32 cacheSize;
-  HybridLeaf *root;
-  ZipEntryLeaf *entries;
-};
-
 struct Cache {
   ZIPIOEntry FindFile(es::string_view pattern);
   ZipEntry RequestFile(es::string_view path);
-  void Load(BinReaderRef rd);
+  void Mount(const void *data_) { data = data_; }
 
   std::unique_ptr<ZIPIOEntryRawIterator> Iter(ZIPIOEntryType type) const;
 
 private:
   friend struct ZIPIOEntryRawIterator_impl;
-  void Load(BinReaderRef rd, size_t size);
-  const CacheHeader &Header() const {
-    return *reinterpret_cast<const CacheHeader *>(buffer.data());
-  }
+  friend struct ZIPIOContextCached;
+  const CacheHeader &Header() const;
 
-  std::string buffer;
+  const void *data;
 };

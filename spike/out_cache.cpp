@@ -1,7 +1,7 @@
 /*  Cache format generator for seekless zip loading
     Part of PreCore's Spike project
 
-    Copyright 2021 Lukas Cone
+    Copyright 2021-2022 Lukas Cone
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -17,11 +17,11 @@
 */
 
 #include "cache.hpp"
-#include "datas/base_128.hpp"
 #include "datas/binwritter_stream.hpp"
 #include "datas/fileinfo.hpp"
 #include <algorithm>
 #include <functional>
+#include <future>
 #include <map>
 #include <set>
 #include <sstream>
@@ -31,11 +31,75 @@
 struct StringSlider {
   std::string buffer;
 
+private:
+  using future_type = std::future<int64>;
+  std::vector<future_type> workingThreads;
+
+public:
+  StringSlider() { workingThreads.resize(std::thread::hardware_concurrency()); }
+
+  std::string::iterator FindString(es::string_view str) {
+    if (str.size() > buffer.size()) [[unlikely]] {
+      if (es::string_view(str).begins_with(buffer)) [[unlikely]] {
+        buffer = str;
+        return buffer.begin();
+      } else {
+        return buffer.end();
+      }
+    }
+    auto searcher = std::boyer_moore_horspool_searcher(str.begin(), str.end());
+
+    if (size_t bSize = buffer.size(); bSize > 1'000'000) {
+      const size_t numThreads = workingThreads.size();
+      size_t splitPoint = bSize / numThreads;
+      size_t chunkBegin = 0;
+
+      for (size_t i = 0; i < numThreads; ++i) {
+        workingThreads[i] =
+            std::async(std::launch::async, [=, &buffer = buffer] {
+              es::string_view item;
+              if (i + 1 == numThreads) {
+                item = es::string_view(buffer.data() + chunkBegin,
+                                       buffer.end().operator->());
+              } else {
+                item = es::string_view(buffer.data() + chunkBegin,
+                                       splitPoint + str.size());
+              }
+
+              auto found = std::search(item.begin(), item.end(), searcher);
+              int64 offset = -1;
+
+              if (found != item.end()) {
+                offset = std::distance(const_cast<const char *>(buffer.data()),
+                                       found);
+              }
+
+              return offset;
+            });
+        chunkBegin += splitPoint;
+      }
+
+      int64 offset = -1;
+
+      for (auto &wt : workingThreads) {
+        wt.wait();
+        if (int64 off = wt.get(); off >= 0 && offset < 0) {
+          offset = off;
+        }
+      }
+
+      if (offset >= 0) {
+        return std::next(buffer.begin(), offset);
+      }
+
+      return buffer.end();
+    } else {
+      return std::search(buffer.begin(), buffer.end(), searcher);
+    }
+  }
+
   size_t InsertString(es::string_view str) {
-    auto found =
-        std::search(buffer.begin(), buffer.end(),
-                    // slightly faster than boyer_moore_searcher
-                    std::boyer_moore_horspool_searcher(str.begin(), str.end()));
+    auto found = FindString(str);
 
     if (found == buffer.end()) {
       // todo add tail compare?
@@ -59,36 +123,35 @@ struct SliderString {
   }
 };
 
-static constexpr size_t STRING_OFFSET = sizeof(CacheHeader);
-static constexpr size_t HYBRIDLEAF_PARENTPTR = 8;
+static constexpr size_t STRING_OFFSET = sizeof(CacheBaseHeader) + 12;
+static constexpr size_t ENTRIES_OFFSET = sizeof(CacheBaseHeader) + 8;
+static constexpr size_t ROOT_OFFSET = sizeof(CacheBaseHeader) + 4;
+static constexpr size_t HYBRIDLEAF_PARENTPTR = 4;
 static constexpr size_t FINAL_PARENTPTR = 16;
 
 struct FinalEntry : SliderString {
   size_t zipOffset;
   size_t zipSize;
   size_t totalFileNameSize;
-  mutable size_t wrOffset;
+  mutable size_t wrOffset = 0;
 
-  void Write(BinWritterRef wr, std::set<size_t> &fixups) const {
+  void Write(BinWritterRef wr) const {
     wrOffset = wr.Tell();
     wr.Write(zipOffset);
     wr.Write(zipSize);
-    fixups.emplace(wr.Tell());
-    wr.Write<uint64>(0);
+    wr.Write<uint32>(0);
+    wr.Write<uint16>(size);
+    wr.Write<uint16>(totalFileNameSize);
 
-    if (size < 13) {
+    if (size < 9) {
       wr.WriteBuffer(base->buffer.data() + offset, size);
-      wr.Skip(12 - size);
+      wr.ApplyPadding(8);
     } else {
-      fixups.emplace(wr.Tell());
-      const int64 stringOffset = STRING_OFFSET + offset;
-      const int64 thisOffset = wr.Tell();
+      const int32 stringOffset = STRING_OFFSET + offset;
+      const int32 thisOffset = wr.Tell();
       wr.Write(stringOffset - thisOffset);
       wr.Write<uint32>(0);
     }
-
-    wr.Write<uint16>(size);
-    wr.Write<uint16>(totalFileNameSize);
   }
 };
 
@@ -97,45 +160,37 @@ struct HybridLeafGen {
   std::map<SliderString, size_t> childrenIds;
   SliderString partName;
 
-  size_t Write(BinWritterRef wr, const std::vector<size_t> &childrenOffsets,
-               std::set<size_t> &fixups) {
-    wr.ApplyPadding(8);
+  size_t Write(BinWritterRef wr, const std::vector<size_t> &childrenOffsets) {
+    wr.ApplyPadding(4);
     for (auto &[_, id] : childrenIds) {
-      const int64 childOffset = childrenOffsets.at(id);
-      const int64 thisOffset = wr.Tell();
-      fixups.emplace(thisOffset);
-      wr.Write(childOffset - thisOffset);
+      const int32 childOffset = childrenOffsets.at(id);
+      const int32 thisOffset = wr.Tell();
+      wr.Write((childOffset - thisOffset) / 4);
     }
 
-    const size_t retVal = wr.Tell() - 8;
+    const size_t retVal = wr.Tell() - HYBRIDLEAF_PARENTPTR;
 
     // fixup parent offset for children
     wr.Push();
     for (auto &[_, id] : childrenIds) {
-      const int64 childOffset = childrenOffsets.at(id);
+      const size_t childOffset = childrenOffsets.at(id);
       wr.Seek(childOffset + HYBRIDLEAF_PARENTPTR);
-      const int64 thisOffset = retVal;
-      const int64 memberOffset = wr.Tell();
-      wr.Write(thisOffset - memberOffset);
+      const int32 thisOffset = retVal;
+      const int32 memberOffset = wr.Tell();
+      wr.Write((thisOffset - memberOffset) / 4);
     }
     wr.Pop();
 
-    if (partName.size) {
-      // only root doesn't have partName & parent
-      fixups.emplace(wr.Tell());
-    }
-
-    wr.Write<uint64>(0);
+    wr.Write<uint32>(0);
     if (!partName.size) {
-      wr.Write<uint64>(0);
-    } else if (partName.size < 9) {
+      wr.Write<uint32>(0);
+    } else if (partName.size < 5) {
       wr.WriteBuffer(partName.base->buffer.data() + partName.offset,
                      partName.size);
-      wr.ApplyPadding(8);
+      wr.ApplyPadding(4);
     } else {
-      const int64 pathPartOffset_ = STRING_OFFSET + partName.offset;
-      const int64 thisOffset = wr.Tell();
-      fixups.emplace(thisOffset);
+      const int32 pathPartOffset_ = STRING_OFFSET + partName.offset;
+      const int32 thisOffset = wr.Tell();
       wr.Write(pathPartOffset_ - thisOffset);
     }
 
@@ -144,19 +199,18 @@ struct HybridLeafGen {
     wr.Write<uint32>(finals.size());
 
     for (auto &[_, entry] : finals) {
-      const int64 finalOffset = entry->wrOffset;
-      const int64 thisOffset = wr.Tell();
-      fixups.emplace(thisOffset);
-      wr.Write(finalOffset - thisOffset);
+      const int32 finalOffset = entry->wrOffset;
+      const int32 thisOffset = wr.Tell();
+      wr.Write((finalOffset - thisOffset) / 4);
     }
 
     wr.Push();
     for (auto &[_, entry] : finals) {
-      const int64 finalOffset = entry->wrOffset;
+      const size_t finalOffset = entry->wrOffset;
       wr.Seek(finalOffset + FINAL_PARENTPTR);
-      const int64 thisOffset = retVal;
-      const int64 memberOffset = wr.Tell();
-      wr.Write(thisOffset - memberOffset);
+      const int32 thisOffset = retVal;
+      const int32 memberOffset = wr.Tell();
+      wr.Write((thisOffset - memberOffset) / 4);
     }
     wr.Pop();
 
@@ -185,14 +239,14 @@ struct CacheGeneratorImpl {
       fileParts.pop_back();
 
       for (auto &p : fileParts) {
-        auto &sliderRef = p.size() > 8 ? slider : sliderTiny;
+        auto &sliderRef = p.size() > 4 ? slider : sliderTiny;
         const size_t position = sliderRef.InsertString(p);
         parts.emplace_back(SliderString{position, p.size(), &sliderRef});
       }
 
       finalKey.size = finalPart.size();
 
-      if (finalPart.size() < 13) {
+      if (finalPart.size() < 9) {
         const size_t position = sliderTiny.InsertString(finalPart);
         finalKey.offset = position;
         finalKey.base = &sliderTiny;
@@ -210,10 +264,7 @@ struct CacheGeneratorImpl {
     }
 
     auto AddFinal = [&](HybridLeafGen &where) {
-      FinalEntry entry{finalKey};
-      entry.zipOffset = offset;
-      entry.zipSize = size;
-      entry.totalFileNameSize = fileName.size();
+      FinalEntry entry{finalKey, offset, size, fileName.size()};
       auto entryIter = totalCache.emplace(entry);
       where.finals.emplace(finalKey, entryIter.operator->());
     };
@@ -246,26 +297,20 @@ struct CacheGeneratorImpl {
     AddFinal(*leaf);
   }
 
-  void Write(BinWritterRef wr, CacheBaseHeader &meta) {
-    meta.numFiles = totalCache.size();
-    meta.numLevels = levels.size() + 1;
-    meta.maxPathSize = maxPathSize;
-    CacheHeader hdr{meta};
+  void Write(BinWritterRef wr, CacheBaseHeader &hdr) {
+    hdr.numFiles = totalCache.size();
+    hdr.numLevels = levels.size() + 1;
+    hdr.maxPathSize = maxPathSize;
     wr.Write(hdr);
+    wr.Skip(12);
     wr.WriteContainer(slider.buffer);
     wr.ApplyPadding();
-    std::set<size_t> fixups;
 
-    {
-      const int64 thisOffset = offsetof(CacheHeader, entries);
-      fixups.emplace(thisOffset);
-      const int64 entriesOffset = wr.Tell();
-      hdr.entries =
-          reinterpret_cast<ZipEntryLeaf *>(entriesOffset - thisOffset);
-    }
+    const int32 entriesOffset = (wr.Tell() - ENTRIES_OFFSET) / 4;
+    int32 rootOffset;
 
     for (auto &f : totalCache) {
-      f.Write(wr, fixups);
+      f.Write(wr);
     }
 
     {
@@ -275,68 +320,25 @@ struct CacheGeneratorImpl {
         std::vector<size_t> newChildrenOffsets;
 
         for (auto &l : levels.at(l)) {
-          auto retVal = l.Write(wr, childrenOffsets, fixups);
+          auto retVal = l.Write(wr, childrenOffsets);
           newChildrenOffsets.push_back(retVal);
         }
 
         std::swap(childrenOffsets, newChildrenOffsets);
       }
 
-      const int64 rootOffset = root.Write(wr, childrenOffsets, fixups);
-      const int64 thisOffset = offsetof(CacheHeader, root);
-      fixups.emplace(thisOffset);
-      hdr.root = reinterpret_cast<HybridLeaf *>(rootOffset - thisOffset);
+      const int32 rootOffset_ = root.Write(wr, childrenOffsets);
+      rootOffset = (rootOffset_ - ROOT_OFFSET) / 4;
     }
 
-    hdr.cacheSize = wr.Tell();
-
-    std::stringstream str;
-    BinWritterRef wrs(str);
-    size_t lastFixup = 0;
-    size_t numRleFixups = 0;
-
-    for (auto f : fixups) {
-      if (!lastFixup) {
-        lastFixup = f;
-        continue;
-      }
-
-      if (f == lastFixup + 8 * (numRleFixups + 1)) {
-        numRleFixups++;
-        continue;
-      }
-
-      if (numRleFixups) {
-        wr.Write<buint128>(lastFixup);
-        wr.Write<buint128>(numRleFixups);
-        hdr.numRleFixups++;
-        numRleFixups = 0;
-      } else {
-        wrs.Write<buint128>(lastFixup);
-        hdr.numSimpleFixups++;
-      }
-
-      lastFixup = f;
-    }
-
-    if (numRleFixups) {
-      wr.Write<buint128>(lastFixup);
-      wr.Write<buint128>(numRleFixups);
-      hdr.numRleFixups++;
-    } else {
-      wrs.Write<buint128>(lastFixup);
-      hdr.numSimpleFixups++;
-    }
-
-    {
-      auto buff = str.str();
-      es::Dispose(str);
-      wr.WriteContainer(buff);
-    }
+    const uint32 cacheSize = wr.Tell();
 
     wr.Push();
     wr.Seek(0);
     wr.Write(hdr);
+    wr.Write(cacheSize);
+    wr.Write(rootOffset);
+    wr.Write(entriesOffset);
     wr.Pop();
   }
 };

@@ -1,7 +1,7 @@
 /*  Cache format loader for seekless zip loading
     Part of PreCore's Spike project
 
-    Copyright 2021 Lukas Cone
+    Copyright 2021-2022 Lukas Cone
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -17,27 +17,54 @@
 */
 
 #include "cache.hpp"
-#include "datas/base_128.hpp"
 #include "datas/binreader_stream.hpp"
 #include "datas/except.hpp"
 #include "datas/fileinfo.hpp"
 
+template <class C, size_t Align> struct CachePointer {
+  using value_type = C;
+  static constexpr size_t TYPE_ALIGN = Align;
+
+private:
+  int32 varPtr;
+
+public:
+  CachePointer() = default;
+  CachePointer(const CachePointer &) = delete;
+  CachePointer(CachePointer &&) = delete;
+  operator C *() {
+    return varPtr ? reinterpret_cast<C *>(reinterpret_cast<char *>(&varPtr) +
+                                          (varPtr * TYPE_ALIGN))
+                  : nullptr;
+  }
+
+  C &operator*() { return *static_cast<C *>(*this); }
+  C *operator->() { return *this; }
+
+  operator const C *() const {
+    return varPtr ? reinterpret_cast<const C *>(
+                        reinterpret_cast<const char *>(&varPtr) +
+                        (varPtr * TYPE_ALIGN))
+                  : nullptr;
+  }
+  const C &operator*() const { return *static_cast<const C *>(*this); }
+  const C *operator->() const { return *this; }
+};
+
+using HybridLeafPtr = CachePointer<HybridLeaf, 4>;
+using TextPtr = CachePointer<const char, 1>;
+
 struct ZipEntryLeaf : ZipEntry {
-  HybridLeaf *parent;
-  union {
-    const char *fileNamePtr;
-    const char fileName[8];
-  };
-  union {
-    const char extendedFileName[4];
-    uint32 tailData;
-  };
+  HybridLeafPtr parent;
   uint16 fileNameSize;
   uint16 totalFileNameSize;
+  union {
+    TextPtr fileNamePtr;
+    const char fileName[8];
+  };
 
   es::string_view Name() const {
-    if (fileNameSize < 13) {
-      // basically uses fileName + extendedFileName datablock
+    if (fileNameSize < 9) {
       return {fileName, fileNameSize};
     } else {
       return {fileNamePtr, fileNameSize};
@@ -47,8 +74,10 @@ struct ZipEntryLeaf : ZipEntry {
   bool operator<(es::string_view sw) const { return Name() < sw; }
 };
 
+using ZipEntryLeafPtr = CachePointer<ZipEntryLeaf, 4>;
+
 struct ChildrenIter {
-  using value_type = const HybridLeaf *;
+  using value_type = HybridLeafPtr;
   value_type const *begin_;
   value_type const *end_;
 
@@ -57,7 +86,7 @@ struct ChildrenIter {
 };
 
 struct FinalsIter {
-  using value_type = const ZipEntryLeaf *;
+  using value_type = ZipEntryLeafPtr;
   value_type const *begin_;
   value_type const *end_;
 
@@ -66,16 +95,16 @@ struct FinalsIter {
 };
 
 struct HybridLeaf {
-  HybridLeaf *children[1];
-  HybridLeaf *parent;
+  HybridLeafPtr children[1];
+  HybridLeafPtr parent;
   union {
-    const char *pathPartPtr;
-    const char pathPart[8];
+    TextPtr pathPartPtr;
+    const char pathPart[4];
   };
   uint16 numChildren;
   uint16 pathPartSize;
   uint32 numFinals;
-  ZipEntryLeaf *entries[1];
+  ZipEntryLeafPtr entries[1];
 
   ChildrenIter Children() const {
     return {children - numChildren + 1, children + 1};
@@ -84,7 +113,7 @@ struct HybridLeaf {
   FinalsIter Finals() const { return {entries, entries + numFinals}; }
 
   es::string_view Name() const {
-    if (pathPartSize < 9) {
+    if (pathPartSize < 5) {
       return {pathPart, pathPartSize};
     } else {
       return {pathPartPtr, pathPartSize};
@@ -92,8 +121,18 @@ struct HybridLeaf {
   }
 };
 
+struct CacheHeader : CacheBaseHeader {
+  uint32 cacheSize;
+  HybridLeafPtr root;
+  ZipEntryLeafPtr entries;
+};
+
+const CacheHeader &Cache::Header() const {
+  return *static_cast<const CacheHeader *>(data);
+}
+
 ZIPIOEntry Cache::FindFile(es::string_view pattern) {
-  auto begin = Header().entries;
+  const ZipEntryLeaf *begin = Header().entries;
   auto end = begin + Header().numFiles;
   bool clampBegin = pattern.front() == '^';
   bool clampEnd = pattern.back() == '$';
@@ -240,89 +279,53 @@ ZipEntry Cache::RequestFile(es::string_view path) {
   AFileInfo pp(path);
   auto parts = pp.Explode();
 
+  auto find = [&](auto children, size_t level) {
+    auto found =
+        std::lower_bound(children.begin(), children.end(), parts.at(level));
+
+    if (es::IsEnd(children, found) || (*found)->Name() != parts.at(level)) {
+      static const typename decltype(children)::value_type null{};
+      return std::ref(null);
+    }
+
+    return std::ref(*found);
+  };
+
   if (parts.size() > Header().numLevels) {
     return {};
+  } else if (parts.size() == 1) {
+    auto rootFinals = Header().root->Finals();
+    auto foundFinal = find(rootFinals, parts.size() - 1);
+
+    if (!foundFinal.get()) {
+      return {};
+    }
+
+    return *foundFinal.get();
   }
 
   auto rootChildren = Header().root->Children();
-
-  auto find = [&](auto children, size_t level) ->
-      typename decltype(children)::value_type {
-        auto found =
-            std::lower_bound(children.begin(), children.end(), parts.at(level));
-
-        if (es::IsEnd(children, found) || (*found)->Name() != parts.at(level)) {
-          return nullptr;
-        }
-
-        return *found;
-      };
-
   auto foundLevel = find(rootChildren, 0);
 
-  if (!foundLevel) {
+  if (!foundLevel.get()) {
     return {};
   }
 
   for (size_t l = 1; l < parts.size() - 1; l++) {
-    foundLevel = find(foundLevel->Children(), l);
+    foundLevel = find(foundLevel.get()->Children(), l);
 
-    if (!foundLevel) {
+    if (!foundLevel.get()) {
       return {};
     }
   }
 
-  auto foundFinal = find(foundLevel->Finals(), parts.size() - 1);
+  auto foundFinal = find(foundLevel.get()->Finals(), parts.size() - 1);
 
-  if (!foundFinal) {
+  if (!foundFinal.get()) {
     return {};
   }
 
-  return *foundFinal;
-}
-
-void Cache::Load(BinReaderRef rd) {
-  CacheHeader hdr;
-  rd.Push();
-  rd.Read(hdr);
-
-  if (hdr.id != hdr.ID) {
-    throw es::InvalidHeaderError(hdr.id);
-  }
-
-  if (hdr.version != 2) {
-    throw es::InvalidVersionError(hdr.version);
-  }
-
-  rd.Pop();
-  Load(rd, hdr.cacheSize);
-}
-
-void Cache::Load(BinReaderRef rd, size_t size) {
-  rd.ReadContainer(buffer, size);
-  auto &hdr = Header();
-
-  for (size_t f = 0; f < hdr.numRleFixups; f++) {
-    buint128 offset;
-    buint128 count;
-    rd.Read(offset);
-    rd.Read(count);
-
-    for (size_t s = 0; s <= count; s++) {
-      auto begin = &buffer[0] + offset + s * 8;
-      auto rOffset = reinterpret_cast<int64 *>(begin);
-      *rOffset = reinterpret_cast<int64>(begin) + *rOffset;
-    }
-  }
-
-  for (size_t f = 0; f < hdr.numSimpleFixups; f++) {
-    buint128 offset;
-    rd.Read(offset);
-
-    auto begin = &buffer[0] + offset;
-    auto rOffset = reinterpret_cast<int64 *>(begin);
-    *rOffset = reinterpret_cast<int64>(begin) + *rOffset;
-  }
+  return *foundFinal.get();
 }
 
 struct ZIPIOEntryRawIterator_impl : ZIPIOEntryRawIterator {
@@ -405,7 +408,7 @@ void Dump(const HybridLeaf *leaf, char *buffer, const char *wholeBuffer) {
 }
 
 void DumpEntries(const CacheHeader &cc) {
-  auto begin = cc.entries;
+  const ZipEntryLeaf *begin = cc.entries;
   auto end = begin + cc.numFiles;
 
   while (begin < end) {

@@ -454,12 +454,10 @@ struct ZIPIOContextCached : ZIPIOContext_implbase {
     return {cache.Iter(type)};
   }
 
-  ZIPIOContextCached(const std::string &file, BinReaderRef cacheFile)
-      : ZIPIOContext_implbase(file) {
-    CacheBaseHeader cacheHdr;
-    cacheFile.Push();
-    cacheFile.Read(cacheHdr);
-    cacheFile.Pop();
+  ZIPIOContextCached(const std::string &file, es::MappedFile &&cacheFile)
+      : ZIPIOContext_implbase(file), cacheMount(std::move(cacheFile)) {
+    cache.Mount(cacheMount.data);
+    auto &cacheHdr = reinterpret_cast<const CacheBaseHeader &>(cache.Header());
 
     rd.Seek(cacheHdr.zipCheckupOffset);
     CacheBaseHeader hdr;
@@ -468,12 +466,11 @@ struct ZIPIOContextCached : ZIPIOContext_implbase {
     if (memcmp(&hdr, &cacheHdr, sizeof(hdr))) {
       throw std::runtime_error("Cache header and zip checkup are different.");
     }
-
-    cache.Load(cacheFile);
   }
 
 private:
   Cache cache;
+  es::MappedFile cacheMount;
 };
 
 std::unique_ptr<ZIPIOContext> MakeZIPContext(const std::string &file,
@@ -484,16 +481,16 @@ std::unique_ptr<ZIPIOContext> MakeZIPContext(const std::string &file,
 
 std::unique_ptr<ZIPIOContext> MakeZIPContext(const std::string &file) {
   std::string cacheFile = file + ".cache";
-  BinReader rd;
+  es::MappedFile mf;
   try {
-    rd.Open(cacheFile);
+    mf = es::MappedFile(cacheFile);
   } catch (const std::exception &e) {
     printwarning("Failed loading cache: " << e.what());
     return std::make_unique<ZIPIOContext_impl>(file);
   }
   try {
     printinfo("Found zip cache: " << cacheFile);
-    return std::make_unique<ZIPIOContextCached>(file, rd);
+    return std::make_unique<ZIPIOContextCached>(file, std::move(mf));
   } catch (const std::exception &e) {
     printwarning("Failed loading cache: " << e.what());
     return std::make_unique<ZIPIOContext_impl>(file);
