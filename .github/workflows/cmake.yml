@@ -63,7 +63,7 @@ jobs:
           sudo python3 setup.py install
           popd
           export COVERALLS_SERVICE_NAME="github-actions-ci"
-          coveralls -E ".*/build/.*.[ch]((pp)|(c)|(xx))?$" -e spike -e MAXex -e test -e datas/unit_testing.hpp -e 3rd_party -e formats --gcov-options '\-lpb' > /dev/null
+          coveralls -E ".*/build/.*.[ch]((pp)|(c)|(xx))?$" -e classgen -e gltf -e test -e datas/unit_testing.hpp -e 3rd_party -e formats --gcov-options '\-lpb' > /dev/null
 
   build-widle:
     runs-on: windows-2019
