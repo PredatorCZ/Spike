@@ -46,6 +46,36 @@ void RemoveFile(const std::string &path);
 // Setup stdout handle to support utf8 and virtual env
 // Win only
 void MKDIR_EXTERN_ SetupWinApiConsole();
+
+struct MappedFile {
+  void *data = nullptr;
+  size_t dataSize = 0;
+  union {
+    int64 fd = -1;
+    void *hdl;
+  };
+
+  PC_EXTERN
+  MappedFile(const std::string &path);
+  MappedFile() = default;
+  MappedFile(const MappedFile &) = delete;
+  MappedFile(MappedFile &&other)
+      : data(other.data), dataSize(other.dataSize), fd(other.fd) {
+    other.data = nullptr;
+    other.fd = -1;
+  }
+
+  MappedFile &operator=(MappedFile &&other) {
+    data = other.data;
+    dataSize = other.dataSize;
+    fd = other.fd;
+    other.data = nullptr;
+    other.fd = -1;
+    return *this;
+  }
+  PC_EXTERN ~MappedFile();
+};
+
 } // namespace es
 
 #undef MKDIR_EXTERN_

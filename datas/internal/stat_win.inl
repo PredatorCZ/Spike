@@ -15,8 +15,9 @@
     limitations under the License.
 */
 
-#include <windows.h>
+#include "datas/except.hpp"
 #include <direct.h>
+#include <windows.h>
 
 namespace es {
 int mkdir(const char *path, uint32) {
@@ -64,7 +65,8 @@ void SetupWinApiConsole() {
   // Enable virtual terminal
   DWORD mode{};
   GetConsoleMode(consoleHandle, &mode);
-  SetConsoleMode(consoleHandle, mode | ENABLE_VIRTUAL_TERMINAL_PROCESSING | DISABLE_NEWLINE_AUTO_RETURN);
+  SetConsoleMode(consoleHandle, mode | ENABLE_VIRTUAL_TERMINAL_PROCESSING |
+                                    DISABLE_NEWLINE_AUTO_RETURN);
 
   // Setup only capable font for advanced unicode characters
   CONSOLE_FONT_INFOEX infoEx{};
@@ -73,6 +75,39 @@ void SetupWinApiConsole() {
   static const wchar_t buffer[] = L"NSimSun";
   wcsncpy(infoEx.FaceName, buffer, sizeof(buffer) / sizeof(wchar_t));
   SetCurrentConsoleFontEx(consoleHandle, false, &infoEx);
+}
+
+MappedFile::MappedFile(const std::string &path) {
+  auto cvted = es::ToUTF1632(path);
+  hdl = CreateFileW(cvted.c_str(), GENERIC_READ, FILE_SHARE_READ, NULL,
+                    OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+  if (hdl == INVALID_HANDLE_VALUE) {
+    throw es::FileNotFoundError(path);
+  }
+
+  auto fileSize = GetFileSize(hdl, NULL);
+  HANDLE mapping = CreateFileMapping(hdl, NULL, PAGE_READONLY, 0, 0, NULL);
+
+  if (!mapping) {
+    throw std::runtime_error("Cannot map file " + path);
+  }
+
+  data = MapViewOfFileEx(mapping, FILE_MAP_READ, 0, 0, fileSize, NULL);
+  CloseHandle(mapping);
+
+  if (!data) {
+    throw std::runtime_error("Cannot map file " + path);
+  }
+}
+
+MappedFile::~MappedFile() {
+  if (data) {
+    UnmapViewOfFile(data);
+  }
+
+  if (hdl != INVALID_HANDLE_VALUE) {
+    CloseHandle(hdl);
+  }
 }
 
 }; // namespace es

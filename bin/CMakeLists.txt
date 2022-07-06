@@ -14,6 +14,11 @@ add_test(test_xml test_xml)
 add_test(test_blowfish test_blowfish)
 add_test(shared_test shared_test)
 
+add_test(
+  NAME test_spike_cache
+  COMMAND bin/test_spike_cache
+  WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/..)
+
 add_dependencies(test_xml test_reflector)
 
 if(NOT MINGW)
