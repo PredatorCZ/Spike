@@ -354,6 +354,79 @@ void APPContext::PrintCLIHelp() const {
   printline("");
 }
 
+void DumpTypeMD(std::ostream &out, const ReflectorFriend &info,
+                size_t indent = 0) {
+  auto rtti = RTTI(info);
+
+  auto gi = [&]() -> std::ostream & {
+    static const char indents[]{"                "};
+    return out << indents + (8 - indent) * 2;
+  };
+
+  for (size_t i = 0; i < rtti->nTypes; i++) {
+    gi() << "- **" << rtti->typeNames[i] << "**\n\n";
+
+    if (info.IsReflectedSubClass(i)) {
+      auto sub = info.GetReflectedSubClass(i);
+      ReflectorPureWrap subRef(sub);
+      DumpTypeMD(
+          out, static_cast<ReflectorFriend &>(static_cast<Reflector &>(subRef)),
+          indent + 1);
+      continue;
+    }
+
+    gi() << "  **CLI Long:** ***--" << rtti->typeNames[i] << "***\\\n";
+
+    if (rtti->typeAliases && rtti->typeAliases[i]) {
+      gi() << "  **CLI Short:** ***-" << rtti->typeAliases[i] << "***\n\n";
+    }
+
+    if (auto val = info.GetReflectedValue(i); !val.empty()) {
+      gi() << "  **Default value:** " << val << "\n\n";
+    }
+
+    if (auto &rType = rtti->types[i]; rType.type == REFType::Enum) {
+      auto refEnum =
+          ReflectedEnum::Registry().at(JenHash(rType.asClass.typeHash));
+      gi() << "  **Valid values:** ";
+
+      if ([&] {
+            for (size_t e = 0; e < refEnum->numMembers; e++) {
+              if (refEnum->descriptions && refEnum->descriptions[e]) {
+                return true;
+              }
+            }
+            return false;
+          }()) {
+        out << "\n\n";
+        indent++;
+
+        for (size_t e = 0; e < refEnum->numMembers; e++) {
+          gi() << "- " << refEnum->names[e];
+          if (refEnum->descriptions[e]) {
+            out << ": " << refEnum->descriptions[e] << "\n\n";
+          } else {
+            out << ", "
+                << "\n\n";
+          }
+        }
+        indent--;
+      } else {
+        for (size_t e = 0; e < refEnum->numMembers; e++) {
+          out << refEnum->names[e] << ", ";
+        }
+      }
+
+      out.seekp(out.tellp() - std::streamoff(2));
+      out << "\n\n";
+    }
+
+    if (auto desc = rtti->typeDescs[i].part1; desc) {
+      gi() << "  " << rtti->typeDescs[i].part1 << "\n\n";
+    }
+  }
+}
+
 void APPContext::GetMarkdownDoc(std::ostream &out, pugi::xml_node node) const {
   const char *className = "[[MODULE CLASS NAME]]";
   const char *description = "[[MODULE DESCRIPTION]]";
@@ -379,22 +452,7 @@ void APPContext::GetMarkdownDoc(std::ostream &out, pugi::xml_node node) const {
 
   out << "### Settings\n\n";
 
-  auto rtti = RTTI();
-
-  for (size_t i = 0; i < rtti->nTypes; i++) {
-    out << "- **" << rtti->typeNames[i] << "**\n\n";
-    out << "  **CLI Long:** ***--" << rtti->typeNames[i] << "***\\\n";
-
-    if (rtti->typeAliases && rtti->typeAliases[i]) {
-      out << "  **CLI Short:** ***-" << rtti->typeAliases[i] << "***\n\n";
-    }
-
-    if (auto val = info->settings->GetReflectedValue(i); !val.empty()) {
-      out << "  **Default value:** " << val << "\n\n";
-    }
-
-    out << "  " << rtti->typeDescs[i].part1 << "\n\n";
-  }
+  DumpTypeMD(out, Settings());
 }
 
 void APPContext::SetupModule() {
@@ -504,7 +562,8 @@ void GetHelp(std::ostream &str, const reflectorStatic *ref, size_t level = 1) {
       const auto &arr = fl.asArray;
 
       if (arr.type == REFType::Class || arr.type == REFType::BitFieldClass) {
-        GetHelp(str, reflectorStatic::Registry().at(JenHash(arr.asClass.typeHash)),
+        GetHelp(str,
+                reflectorStatic::Registry().at(JenHash(arr.asClass.typeHash)),
                 level + 1);
       }
     } else if (fl.type == REFType::Enum) {
