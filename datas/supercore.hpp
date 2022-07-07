@@ -67,6 +67,9 @@ template <typename type> constexpr bool IsPow2(type input) {
 
 namespace es {
 static inline void Print(const char *data) { printf("%s", data); }
+static inline void Print(const char8_t *data) {
+  printf("%s", reinterpret_cast<const char *>(data));
+}
 
 template <class cnt, class iterType>
 bool IsEnd(const cnt &container, const iterType &iter) {

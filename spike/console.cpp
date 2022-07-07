@@ -30,11 +30,11 @@
 
 const size_t nextTickMS = 100;
 
-const char *loopchars[] = {
+const char8_t *loopchars[] = {
     u8"\u2807", u8"\u280B", u8"\u2819", u8"\u2838", u8"\u2834", u8"\u2826",
 };
 
-const char *barchars[] = {
+const char8_t *barchars[] = {
     u8"\u2801", u8"\u2803", u8"\u2807", u8"\u2847",
     u8"\u284F", u8"\u285F", u8"\u287F", u8"\u28FF",
 };

@@ -1,16 +1,16 @@
 ﻿cmake_minimum_required(VERSION 3.12)
 project(PreCore VERSION 6)
 
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED TRUE)
 
 if(${CMAKE_CXX_COMPILER_ID} MATCHES "GNU")
-  if(CMAKE_CXX_COMPILER_VERSION VERSION_LESS 7)
-    message(FATAL_ERROR "${PROJECT_NAME} requires at least gcc-7.")
+  if(CMAKE_CXX_COMPILER_VERSION VERSION_LESS 10)
+    message(FATAL_ERROR "${PROJECT_NAME} requires at least gcc-10.")
   endif()
 elseif(${CMAKE_CXX_COMPILER_ID} MATCHES "Clang")
-  if(CMAKE_CXX_COMPILER_VERSION VERSION_LESS 5.0)
-    message(FATAL_ERROR "${PROJECT_NAME} requires at least clang-5.0.")
+  if(CMAKE_CXX_COMPILER_VERSION VERSION_LESS 10)
+    message(FATAL_ERROR "${PROJECT_NAME} requires at least clang-10.")
   endif()
 endif()
 

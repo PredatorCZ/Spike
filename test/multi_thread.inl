@@ -11,7 +11,7 @@ int test_mt_thread00() {
 
   RunThreadedQueue(numTasks, [&](size_t curTask) {
     printline("Hello thread.");
-    auto curID = curIndex.fetch_add(1, std::memory_order::memory_order_relaxed);
+    auto curID = curIndex.fetch_add(1, std::memory_order::relaxed);
     pted[curID] = curTask;
   });
 
@@ -35,7 +35,7 @@ int test_mt_thread01() {
     std::uniform_int_distribution<int> randRange(10, 200);
     const auto cVal = randRange(eng);
     std::this_thread::sleep_for(std::chrono::milliseconds(cVal));
-    auto curID = curIndex.fetch_add(1, std::memory_order::memory_order_relaxed);
+    auto curID = curIndex.fetch_add(1, std::memory_order::relaxed);
     pted[curID] = curTask;
   });
 
