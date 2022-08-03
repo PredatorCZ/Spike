@@ -63,5 +63,3 @@ public:
 
   StreamType &BaseStream() { return *baseStream; }
 };
-
-typedef BinWritterRef_t<BinStreamOutTraits> BinWritterRef;

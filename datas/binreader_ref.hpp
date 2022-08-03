@@ -20,7 +20,8 @@
 #include "internal/bincore.hpp"
 #include "internal/sc_type.hpp"
 
-template <class _Traits> class BinReaderRef_t : public BinStreamNavi<_Traits> {
+template <class _Traits, bool HandleEndian>
+class BinReaderRef_t : public BinStreamNavi<_Traits> {
   using _Traits::Read;
 
 public:
@@ -29,6 +30,10 @@ public:
   BinReaderRef_t() noexcept = default;
   BinReaderRef_t(typename _Traits::StreamType &stream) noexcept
       : navi_type(stream) {}
+
+  operator BinReaderRef_t<_Traits, !HandleEndian>() {
+    return reinterpret_cast<BinReaderRef_t<_Traits, !HandleEndian> &>(*this);
+  }
 
   void ReadBuffer(char *buffer, size_t size) const {
     _Traits::Read(buffer, size);
@@ -53,7 +58,7 @@ public:
       constexpr size_t size = sizeof(T);
       ReadBuffer(reinterpret_cast<char *>(&input[0]), size * numitems);
 
-      if constexpr (size > 1) {
+      if constexpr (HandleEndian && size > 1) {
         if (this->swapEndian) {
           for (auto &item : input) {
             FByteswapper(item);
@@ -122,7 +127,7 @@ public:
 
     ReadBuffer(reinterpret_cast<char *>(value), arraySize);
 
-    if constexpr (size > 1) {
+    if constexpr (HandleEndian && size > 1) {
       if (this->swapEndian) {
         FByteswapper(value);
       }
@@ -134,10 +139,11 @@ public:
     if constexpr (use_read_v<T>) {
       value.Read(*this);
     } else {
-      const size_t size = sizeof(T);
-      ReadBuffer(reinterpret_cast<char *>(&value), size);
+      constexpr size_t typeSize = sizeof(std::remove_extent_t<T>);
+      constexpr size_t totalSize = sizeof(T);
+      ReadBuffer(reinterpret_cast<char *>(&value), totalSize);
 
-      if constexpr (size > 1) {
+      if constexpr (HandleEndian && typeSize > 1 && use_swap_v<T>) {
         if (this->swapEndian) {
           FByteswapper(value);
         }
@@ -146,9 +152,12 @@ public:
   }
 
 private:
-  using Self = BinReaderRef_t<_Traits>;
+  using Self = BinReaderRef_t<_Traits, HandleEndian>;
   template <class T>
   using use_read = decltype(std::declval<T>().Read(std::declval<Self>()));
   template <class C>
   constexpr static bool use_read_v = es::is_detected_v<use_read, C>;
+  template <class T> using no_swap = decltype(std::declval<T>().NoSwap());
+  template <class C>
+  constexpr static bool use_swap_v = !es::is_detected_v<no_swap, C>;
 };

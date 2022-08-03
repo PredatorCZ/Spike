@@ -54,5 +54,3 @@ public:
 
   StreamType &BaseStream() { return *baseStream; }
 };
-
-typedef BinReaderRef_t<BinStreamInTraits> BinReaderRef;

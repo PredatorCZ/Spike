@@ -21,13 +21,18 @@
 #include "internal/sc_type.hpp"
 #include "string_view.hpp"
 
-template <class _Traits> class BinWritterRef_t : public BinStreamNavi<_Traits> {
+template <class _Traits, bool HandleEndian>
+class BinWritterRef_t : public BinStreamNavi<_Traits> {
 public:
   typedef BinStreamNavi<_Traits> navi_type;
 
   BinWritterRef_t() noexcept = default;
   BinWritterRef_t(typename _Traits::StreamType &stream) noexcept
       : navi_type(stream) {}
+
+  operator BinWritterRef_t<_Traits, !HandleEndian>() {
+    return reinterpret_cast<BinWritterRef_t<_Traits, !HandleEndian> &>(*this);
+  }
 
   void WriteBuffer(const char *buffer, size_t size) const {
     _Traits::Write(buffer, size);
@@ -118,12 +123,13 @@ public:
     if constexpr (use_write_v<T>) {
       input.Write(*this);
     } else {
-      constexpr size_t capacity = sizeof(T);
+      constexpr size_t typeSize = sizeof(std::remove_extent_t<T>);
+      constexpr size_t totalSize = sizeof(T);
       auto wtbuffer = [&](auto *ptr) {
-        WriteBuffer(reinterpret_cast<const char *>(ptr), capacity);
+        WriteBuffer(reinterpret_cast<const char *>(ptr), totalSize);
       };
 
-      if constexpr (capacity > 1) {
+      if constexpr (HandleEndian && typeSize > 1 && use_swap_v<T>) {
         if (this->swapEndian) {
           auto outCopy = input;
           FByteswapper(outCopy, true);
@@ -138,9 +144,13 @@ public:
   }
 
 private:
-  using Self = BinWritterRef_t<_Traits>;
+  using Self = BinWritterRef_t<_Traits, HandleEndian>;
   template <class T>
   using use_write = decltype(std::declval<T>().Write(std::declval<Self>()));
   template <class C>
   constexpr static bool use_write_v = es::is_detected_v<use_write, C>;
+
+  template <class T> using no_swap = decltype(std::declval<T>().NoSwap());
+  template <class C>
+  constexpr static bool use_swap_v = !es::is_detected_v<no_swap, C>;
 };

@@ -39,10 +39,13 @@ constexpr bool operator&(BinCoreOpenMode o1, BinCoreOpenMode o2) {
 template <BinCoreOpenMode MODE = BinCoreOpenMode::Default> class BinReader_t;
 using BinReader = BinReader_t<>;
 class BinStreamInTraits;
-template <class _Traits> class BinReaderRef_t;
-typedef BinReaderRef_t<BinStreamInTraits> BinReaderRef;
+template <class _Traits, bool HandleEndian> class BinReaderRef_t;
+using BinReaderRef_e = BinReaderRef_t<BinStreamInTraits, true>;
+typedef BinReaderRef_t<BinStreamInTraits, false> BinReaderRef;
+
 template <BinCoreOpenMode MODE = BinCoreOpenMode::Default> class BinWritter_t;
 using BinWritter = BinWritter_t<>;
 class BinStreamOutTraits;
-template <class _Traits> class BinWritterRef_t;
-typedef BinWritterRef_t<BinStreamOutTraits> BinWritterRef;
+template <class _Traits, bool HandleEndian> class BinWritterRef_t;
+using BinWritterRef_e = BinWritterRef_t<BinStreamOutTraits, true>;
+typedef BinWritterRef_t<BinStreamOutTraits, false> BinWritterRef;
