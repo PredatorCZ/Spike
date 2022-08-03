@@ -213,6 +213,7 @@ struct esFloatValue {
   esFloatValue &operator=(const esFloatValue &) = default;
   esFloatValue &operator=(esFloatValue &&) = default;
   operator float() const { return float_codec::ToFloat(value); }
+  void Swap();
 };
 
 using float16 = esFloatValue<uint16, 10, 5, true>;
@@ -229,6 +230,8 @@ struct VectorR11G11B10_UFLOAT {
 
     return codec_type::ToVector4(input1);
   }
+
+  void Swap();
 };
 
 template <size_t _mantissa, size_t _exponent, bool _sign>

@@ -72,6 +72,7 @@ public:
 
   constexpr explicit operator ValueType() const noexcept { return value; }
 
+  void Swap();
 private:
   static constexpr ValueType MakeMask_(EnumClass at) {
     return static_cast<ValueType>(1) << static_cast<ValueType>(at);

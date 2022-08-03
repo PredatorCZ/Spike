@@ -20,14 +20,33 @@
 #include <cstddef>
 #include <type_traits>
 
-template <typename T> void FByteswapper(T &, bool = false);
-template <class C, size_t _size> void FByteswapper(C (&)[_size], bool = false);
-
-struct Endian_;
+template <class C>
+concept IsSwapableArith = std::is_arithmetic_v<C> || requires(C t) {
+  t.Swap();
+};
 
 template <class C>
-constexpr auto UseEndian_(int) -> decltype(std::declval<C>().Defined(), true) {
-  return true;
+concept IsSwapableMem = requires(C &t) {
+  t.SwapEndian();
+};
+
+template <class C>
+concept IsSwapableMemn = requires(C &t) {
+  t.SwapEndian(true);
+};
+
+template <class C>
+concept IsSwapableClass = std::is_class_v<C> && !IsSwapableMemn<C> &&
+                          !IsSwapableMem<C> && !IsSwapableArith<C>;
+
+template <IsSwapableArith T> void FByteswapper(T &, bool = false);
+template <IsSwapableMem C> void FByteswapper(C &input, bool = false) {
+  input.SwapEndian();
 }
 
-template <class C> constexpr bool UseEndian_(...) { return false; }
+template <IsSwapableMemn C> void FByteswapper(C &input, bool outWay = false) {
+  input.SwapEndian(outWay);
+}
+template <IsSwapableClass T> void FByteswapper(T &, bool = false);
+
+template <class C, size_t _size> void FByteswapper(C (&)[_size], bool = false);

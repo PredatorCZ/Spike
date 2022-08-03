@@ -25,9 +25,7 @@
 
 namespace {
 
-template <class C> C _fbswap(C) {
-  throw std::logic_error("Invalid swap type!");
-}
+template <class C> C _fbswap(C);
 
 template <> constexpr uint16 _fbswap(uint16 input) {
   return ((input & 0xFF) << 8) | ((input & 0xFF00) >> 8);
@@ -50,29 +48,12 @@ template <> constexpr uint64 _fbswap(uint64 input) {
 static_assert(_fbswap<uint16>(0xabcd) == 0xcdab);
 static_assert(_fbswap<uint32>(0x89abcdef) == 0xefcdab89);
 static_assert(_fbswap<uint64>(0x0123456789abcdef) == 0xefcdab8967452301);
-
-template <class T>
-using use_basic_swap = decltype(std::declval<T>().SwapEndian());
-template <class C>
-constexpr bool use_basic_swap_v = es::is_detected_v<use_basic_swap, C>;
-
-template <class T>
-using use_new_swap = decltype(std::declval<T>().SwapEndian(true));
-template <class C>
-constexpr bool use_new_swap_v = es::is_detected_v<use_new_swap, C>;
 } // namespace
 
-template <class C> void FByteswapper(C &input, bool outWay) {
-  (void)(outWay);
-  if constexpr (use_basic_swap_v<C>) {
-    input.SwapEndian();
-  } else if constexpr (use_new_swap_v<C>) {
-    input.SwapEndian(outWay);
-  } else {
-    auto rType = _fbswap(
-        reinterpret_cast<typename es::TypeFromSize<sizeof(C)>::type &>(input));
-    memcpy(reinterpret_cast<char *>(&input), &rType, sizeof(input));
-  }
+template <IsSwapableArith C> void FByteswapper(C &input, bool) {
+  auto rType = _fbswap(
+      reinterpret_cast<typename es::TypeFromSize<sizeof(C)>::type &>(input));
+  memcpy(reinterpret_cast<char *>(&input), &rType, sizeof(input));
 }
 
 template <class C, size_t _size>
@@ -82,7 +63,7 @@ void FByteswapper(C (&input)[_size], bool outWay) {
   }
 }
 
-template <class E, class C> void FArraySwapper(C &input) {
+template <class E = uint32, class C> void FArraySwapper(C &input) {
   const size_t numItems = sizeof(C) / sizeof(E);
   E *inputPtr = reinterpret_cast<E *>(&input);
 
@@ -90,7 +71,3 @@ template <class E, class C> void FArraySwapper(C &input) {
     FByteswapper(*(inputPtr + t));
   }
 }
-
-struct Endian_ {
-  bool Defined();
-};
