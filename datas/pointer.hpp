@@ -81,29 +81,43 @@ public:
     rawPtr = root + varPtr;
     return 1;
   }
+
+  void Swap();
 };
 
-template <class C> struct PointerX86 {
+template <class C, class Store = int32> struct PointerX86 {
   typedef C value_type;
 
 private:
-  int32 varPtr;
+  Store varPtr = 0;
 
 public:
-  operator C *() {
+#ifndef ES_COPYABLE_POINTER
+  PointerX86(const PointerX86 &) = delete;
+  PointerX86(PointerX86 &&) = delete;
+  PointerX86() = default;
+#else
+  Store RawValue() const { return varPtr; }
+#endif
+  operator bool() const { return varPtr != 0; }
+
+  C *Get() {
     return varPtr ? reinterpret_cast<C *>(reinterpret_cast<char *>(&varPtr) +
                                           varPtr)
                   : nullptr;
   }
 
-  C &operator*() { return *static_cast<C *>(*this); }
-  C *operator->() { return *this; }
-
-  operator const C *() const {
+  const C *Get() const {
     return varPtr ? reinterpret_cast<const C *>(
                         reinterpret_cast<const char *>(&varPtr) + varPtr)
                   : nullptr;
   }
+
+  operator C *() { return Get(); }
+  C &operator*() { return *static_cast<C *>(*this); }
+  C *operator->() { return *this; }
+
+  operator const C *() const { return Get(); }
   const C &operator*() const { return *static_cast<C *>(*this); }
   const C *operator->() const { return *this; }
 
@@ -116,9 +130,8 @@ public:
     return false;
   }
 
-  template <class container = void>
-  int Fixup(const char *root,
-            [[maybe_unused]] container *storedPtrs = nullptr) {
+  template <class container>
+  int Fixup(const char *root, container *storedPtrs) {
     if (!varPtr) {
       return 0;
     }
@@ -137,34 +150,51 @@ public:
       }
     }
 
+    return FixupRelative(root);
+  }
+
+  int FixupRelative(const char *root) {
     char *rawAddr = const_cast<char *>(root + varPtr);
     *this = reinterpret_cast<C *>(rawAddr);
     return 1;
   }
 
+  int Fixup(const char *root) {
+    if (!varPtr) {
+      return 0;
+    }
+
+    return FixupRelative(root);
+  }
+
   PointerX86 &operator=(C *newDest) {
     uintptr_t _rawDest = reinterpret_cast<uintptr_t>(newDest);
     varPtr =
-        static_cast<uint32>(_rawDest - reinterpret_cast<uintptr_t>(&varPtr));
+        static_cast<Store>(_rawDest - reinterpret_cast<uintptr_t>(&varPtr));
 
     return *this;
   }
+
+  void Reset(Store value = 0) { varPtr = value; }
+
+  void Swap();
 };
 
-template <class... C> void FixupPointers(const char *root, C &...ptrs) {
+template <class C>
+concept IsFixable = requires(C t) {
+  t.Fixup((const char *)nullptr);
+};
+
+template <class C>
+concept NotFixable = !IsFixable<C>;
+
+template <IsFixable... C> void FixupPointers(const char *root, C &...ptrs) {
   (ptrs.Fixup(root), ...);
 }
 
-template <class... C, template <class F> class ptr, class container>
-bool FixupPointers(const char *root, container &store, ptr<C> &...ptrs) {
-  auto ptrArray = {reinterpret_cast<ptr<char> *>(&ptrs)...};
-  for (auto p : ptrArray) {
-    if (p->Fixup(root, &store) == -1) {
-      return false;
-    }
-  }
-
-  return true;
+template <IsFixable... C, NotFixable container>
+bool FixupPointers(const char *root, container &store, C &...p) {
+  return (... && p->Fixup(root, &store));
 }
 
 template <class... C, template <class F> class ptr, class container, class fn>
