@@ -19,6 +19,10 @@
 #include "format.hpp"
 #include "list.hpp"
 
+namespace es {
+struct Matrix44;
+}
+
 namespace uni {
 struct RTSValue;
 struct BBOX {
