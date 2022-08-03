@@ -472,6 +472,33 @@ struct DDS : DDS_Header, DDS_PixelFormat, DDS_HeaderEnd, DDS_HeaderDX10 {
     uint32 _mipCount = mipMapCount ? mipMapCount : 1;
     uint32 _width = width;
     uint32 _height = height;
+    uint32 _depth = 0;
+
+    if (caps01 == Caps01Flags_CubeMap) {
+      if (caps01 == Caps01Flags_CubeMap_NegativeX) {
+        _depth += 1;
+      }
+      if (caps01 == Caps01Flags_CubeMap_NegativeY) {
+        _depth += 1;
+      }
+      if (caps01 == Caps01Flags_CubeMap_NegativeZ) {
+        _depth += 1;
+      }
+      if (caps01 == Caps01Flags_CubeMap_PositiveX) {
+        _depth += 1;
+      }
+      if (caps01 == Caps01Flags_CubeMap_NegativeY) {
+        _depth += 1;
+      }
+      if (caps01 == Caps01Flags_CubeMap_NegativeZ) {
+        _depth += 1;
+      }
+    } else if (caps01 == Caps01Flags_Volume || flags == Flags_Depth) {
+      _depth = depth;
+    } else {
+      _depth = 1;
+    }
+
     uint32 fullBuffer = 0;
     bool useBlockCompression = false;
 
@@ -524,7 +551,7 @@ struct DDS : DDS_Header, DDS_PixelFormat, DDS_HeaderEnd, DDS_HeaderDX10 {
         __height = 4;
       }
 
-      dOut.sizes[m] = ((__width * __height * bpp) + 7) / 8;
+      dOut.sizes[m] = _depth * ((__width * __height * bpp) + 7) / 8;
       dOut.offsets[m] = fullBuffer;
       fullBuffer += dOut.sizes[m];
       _width /= 2;
