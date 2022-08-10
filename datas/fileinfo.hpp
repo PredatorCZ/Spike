@@ -95,10 +95,13 @@ public:
     explode_type exVec = Explode();
     const size_t found = path.find(exVec[0]);
 
-    if (found == path.npos)
+    if (found == path.npos) {
       return string_type(path).append(GetFilenameExt());
-    else
+    } else if (found == 0) {
+      return GetFullPath();
+    } else {
       return string_type(path.begin(), found - 1).append(GetFullPath());
+    }
   }
 };
 
