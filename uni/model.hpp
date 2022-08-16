@@ -69,22 +69,37 @@ public:
 typedef Element<const List<PrimitiveDescriptor>> PrimitiveDescriptorsConst;
 typedef Element<List<PrimitiveDescriptor>> PrimitiveDescriptors;
 
+class IndexArray : public Base {
+public:
+  virtual const char *RawIndexBuffer() const = 0;
+  virtual size_t IndexSize() const = 0;
+  virtual size_t NumIndices() const = 0;
+};
+
+typedef Element<const List<IndexArray>> IndexArraysConst;
+typedef Element<List<IndexArray>> IndexArrays;
+
+class VertexArray : public Base {
+public:
+  virtual PrimitiveDescriptorsConst Descriptors() const = 0;
+  virtual size_t NumVertices() const = 0;
+};
+
+typedef Element<const List<VertexArray>> VertexArraysConst;
+typedef Element<List<VertexArray>> VertexArrays;
+
 class Primitive : public Base {
 public:
   enum class IndexType_e { None, Line, Triangle, Strip, Fan };
 
-  virtual const char *RawIndexBuffer() const = 0;
-  virtual const char *RawVertexBuffer(size_t id) const = 0;
-  virtual PrimitiveDescriptorsConst Descriptors() const = 0;
   virtual IndexType_e IndexType() const = 0;
-  virtual size_t IndexSize() const = 0;
-  virtual size_t NumVertices() const = 0;
-  virtual size_t NumVertexBuffers() const = 0;
-  virtual size_t NumIndices() const = 0;
   virtual std::string Name() const = 0;
   virtual size_t SkinIndex() const = 0;
-  virtual size_t LODIndex() const = 0;
+  virtual int64 LODIndex() const = 0;
   virtual size_t MaterialIndex() const = 0;
+  virtual size_t VertexArrayIndex(size_t id) const = 0;
+  virtual size_t IndexArrayIndex() const = 0;
+  virtual size_t NumVertexArrays() const = 0;
 };
 
 typedef Element<const List<Primitive>> PrimitivesConst;
@@ -118,6 +133,8 @@ using Materials = Element<List<Material>>;
 class Model : public Base {
 public:
   virtual PrimitivesConst Primitives() const = 0;
+  virtual IndexArraysConst Indices() const = 0;
+  virtual VertexArraysConst Vertices() const = 0;
   virtual SkinsConst Skins() const = 0;
   virtual ResourcesConst Resources() const = 0;
   virtual MaterialsConst Materials() const = 0;
