@@ -139,7 +139,8 @@ void ProcessZIPsExtractConvertMode(std::map<std::string, PathFilter> &zips,
     std::string outPath = zFile.GetFullPathNoExt();
     ZIPMerger mainZip;
 
-    if (!mainSettings.extractSettings.makeZIP) {
+    if (ctx.info->mode == AppMode_e::CONVERT ||
+        !mainSettings.extractSettings.makeZIP) {
       es::mkdir(outPath);
       outPath.push_back('/');
       IOExtractContext ctx_(outPath);
@@ -148,10 +149,13 @@ void ProcessZIPsExtractConvertMode(std::map<std::string, PathFilter> &zips,
         for (decltype(auto) f : store) {
           AFileInfo cFile(f.AsView());
 
-          if (mainSettings.extractSettings.folderPerArc) {
+          if (ctx.info->mode == AppMode_e::EXTRACT &&
+              mainSettings.extractSettings.folderPerArc) {
             ctx_.AddFolderPath(cFile.GetFullPathNoExt().to_string());
           } else {
-            ctx_.AddFolderPath(cFile.GetFolder().to_string());
+            if (auto fld = cFile.GetFolder(); !fld.empty()) {
+              ctx_.AddFolderPath(fld.to_string());
+            }
           }
         }
       };
@@ -317,7 +321,8 @@ void ProcessZIPsExtractConvertMode(std::map<std::string, PathFilter> &zips,
     }
 #endif
 
-    if (mainSettings.extractSettings.makeZIP) {
+    if (ctx.info->mode == AppMode_e::EXTRACT &&
+        mainSettings.extractSettings.makeZIP) {
       ModifyElements([](ElementAPI &api) {
         api.Clean();
         api.Append(std::make_unique<LoadingBar>("Generating final ZIP."));
