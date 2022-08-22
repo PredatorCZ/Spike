@@ -20,7 +20,7 @@
 #include "list.hpp"
 
 namespace es {
-struct Matrix44;
+class Matrix44;
 }
 
 namespace uni {
