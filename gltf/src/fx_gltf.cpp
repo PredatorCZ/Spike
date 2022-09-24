@@ -1301,7 +1301,7 @@ namespace gltf
                     throw invalid_gltf_document("Invalid buffer.byteLength value : 0");
                 }
 
-                if (!streamed && buffer.byteLength != buffer.data.size())
+                if (!streamed && !buffer.data.empty() && buffer.byteLength != buffer.data.size())
                 {
                     throw invalid_gltf_document("Invalid buffer.byteLength value : does not match buffer.data size");
                 }
@@ -1369,7 +1369,7 @@ namespace gltf
             for (; externalBufferIndex < document.buffers.size(); externalBufferIndex++)
             {
                 Buffer const & buffer = document.buffers[externalBufferIndex];
-                if (!buffer.IsEmbeddedResource())
+                if (!buffer.IsEmbeddedResource() && !buffer.data.empty())
                 {
                     std::ofstream fileData(detail::CreateBufferUriPath(documentRootPath, buffer.uri), std::ios::binary);
                     if (!fileData.good())
@@ -1457,7 +1457,7 @@ namespace gltf
             for (size_t externalBufferIndex = 1; externalBufferIndex < document.buffers.size(); externalBufferIndex++)
             {
                 Buffer const & buffer = document.buffers[externalBufferIndex];
-                if (!buffer.IsEmbeddedResource())
+                if (!buffer.IsEmbeddedResource() && !buffer.data.empty())
                 {
                     std::ofstream fileData(detail::CreateBufferUriPath(documentRootPath, buffer.uri), std::ios::binary);
                     if (!fileData.good())
@@ -1643,8 +1643,9 @@ namespace gltf
         if (document.buffers.empty())
         {
             auto & buffer = document.buffers.emplace_back();
-            buffer.byteLength = inputSize;
         }
+
+        document.buffers.front().byteLength = inputSize;
 
         try
         {

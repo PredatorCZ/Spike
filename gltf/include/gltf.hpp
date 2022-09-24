@@ -33,10 +33,11 @@ struct GLTFStream : gltf::BufferView
     std::stringstream str;
     BinWritterRef wr{ str };
     size_t slot;
+    size_t index;
     GLTFStream() = delete;
     GLTFStream(const GLTFStream &) = delete;
     GLTFStream(GLTFStream && o)
-        : gltf::BufferView{ std::move(static_cast<gltf::BufferView &>(o)) }, str{ std::move(o.str) }, wr{ str }, slot(o.slot) {}
+        : gltf::BufferView{ std::move(static_cast<gltf::BufferView &>(o)) }, str{ std::move(o.str) }, wr{ str }, slot(o.slot), index(o.index) {}
     GLTFStream & operator=(GLTFStream &&) = delete;
     GLTFStream & operator=(const GLTFStream &) = delete;
     GLTFStream(size_t slot_)
@@ -59,6 +60,8 @@ struct GLTF : gltf::Document
     {
         auto & stream = streams.emplace_back(streams.size(), stride);
         stream.name = name;
+        stream.index = bufferViews.size();
+        bufferViews.emplace_back();
         return stream;
     }
 
@@ -88,7 +91,7 @@ struct GLTF : gltf::Document
             accessors.emplace_back();
         }
         auto & acc = accessors.back();
-        acc.bufferView = where.slot;
+        acc.bufferView = where.index;
         where.wr.ApplyPadding(alignment);
         acc.byteOffset = where.wr.Tell() + strideOffset;
         return std::make_pair(std::ref(acc), accessors.size() - 1);

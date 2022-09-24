@@ -27,7 +27,7 @@ void GLTF::FinishAndSave(BinWritterRef wr, const std::string & docPath)
             a.byteLength = a.wr.Tell();
             a.byteOffset = curOffset;
             curOffset += a.byteLength;
-            bufferViews.emplace_back(std::move(a));
+            bufferViews.at(a.index) = std::move(a);
         }
 
         auto state = gltf::StreamBinaryHeaders(*this, wr.BaseStream(), totalBufferSize);
