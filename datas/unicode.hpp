@@ -15,11 +15,11 @@
 */
 
 #pragma once
-#include "string_view.hpp"
 #include "supercore.hpp"
 #include <codecvt>
 #include <locale>
 #include <string>
+#include <string_view>
 
 #if _MSC_VER >= 1900
 #define _ES_UTF16 int16
@@ -34,7 +34,7 @@ template <typename _Ty, size_t _size> struct _utf8cvt {};
 
 template <typename _Ty> struct _utf8cvt<_Ty, 2> {
   static std::string Cvt(const _Ty *input) {
-    const es::basic_string_view<_Ty> sw(input);
+    const std::basic_string_view<_Ty> sw(input);
     std::wstring_convert<std::codecvt_utf8_utf16<_ES_UTF16>, _ES_UTF16>
         converter;
     const _ES_UTF16 *first = reinterpret_cast<const _ES_UTF16 *>(&*sw.begin());
@@ -56,7 +56,7 @@ template <typename _Ty> struct _utf8cvt<_Ty, 2> {
 
 template <typename _Ty> struct _utf8cvt<_Ty, 4> {
   static std::string Cvt(const _Ty *input) {
-    const es::basic_string_view<_Ty> sw(input);
+    const std::basic_string_view<_Ty> sw(input);
     std::wstring_convert<std::codecvt_utf8<_ES_UTF32>, _ES_UTF32> converter;
     const _ES_UTF32 *first = reinterpret_cast<const _ES_UTF32 *>(&*sw.begin());
     const _ES_UTF32 *last =

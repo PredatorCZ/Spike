@@ -21,7 +21,7 @@
 #include "supercore.hpp"
 
 class XOREncoder : public IEncryptor {
-  es::string_view key;
+  std::string_view key;
 
 public:
   void Encode(char *buffer, size_t size) const {
@@ -31,5 +31,5 @@ public:
 
   void Decode(char *buffer, size_t size) const { Encode(buffer, size); }
 
-  void SetKey(es::string_view iKey) { key = iKey; }
+  void SetKey(std::string_view iKey) { key = iKey; }
 };

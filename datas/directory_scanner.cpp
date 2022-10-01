@@ -27,15 +27,15 @@
 
 #include <cstring>
 
-bool PathFilter::IsFiltered(es::string_view fileName_) const {
+bool PathFilter::IsFiltered(std::string_view fileName_) const {
   if (!filters.size()) {
     return true;
   }
 
-  es::string_view fileName(fileName_);
+  std::string_view fileName(fileName_);
 
   for (auto &f : filters) {
-    es::string_view kvi(f);
+    std::string_view kvi(f);
     bool clampBegin = kvi.front() == '^';
     bool clampEnd = kvi.back() == '$';
 
@@ -56,7 +56,7 @@ bool PathFilter::IsFiltered(es::string_view fileName_) const {
 
       // cases ^foo*bar or ^foo*bar$
       if (clampBegin) {
-        if (fileName.begins_with(part1)) {
+        if (fileName.starts_with(part1)) {
           if ((clampEnd && fileName.ends_with(part2)) || !clampEnd) {
             return true;
           }
@@ -75,7 +75,7 @@ bool PathFilter::IsFiltered(es::string_view fileName_) const {
         return true;
       }
     } else if (clampBegin) {
-      if (fileName.begins_with(kvi)) {
+      if (fileName.starts_with(kvi)) {
         return true;
       }
     } else if (clampEnd) {

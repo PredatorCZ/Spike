@@ -124,8 +124,8 @@ APPContext::APPContext(const char *moduleName_, const std::string &appFolder_,
     for (auto &f : esmScan) {
       const size_t lastDotPos = f.find_last_of('.');
       const size_t slashPos = f.find_last_of('/');
-      es::string_view extension(f.data() + lastDotPos);
-      es::string_view fileName(f.data() + slashPos, lastDotPos - slashPos);
+      std::string_view extension(f.data() + lastDotPos);
+      std::string_view fileName(f.data() + slashPos, lastDotPos - slashPos);
       char *nextDot = nullptr;
       const size_t versionDotPos = fileName.find_first_of('.');
 
@@ -282,7 +282,7 @@ void APPContext::ResetSwitchSettings() {
       mainSettings.extractSettings.makeZIP = false;
 }
 
-int APPContext::ApplySetting(es::string_view key, es::string_view value) {
+int APPContext::ApplySetting(std::string_view key, std::string_view value) {
   JenHash keyHash(key);
   ReflectorFriend *refl = nullptr;
   const ReflType *rType = nullptr;
@@ -501,7 +501,7 @@ void APPContext::CreateLog() {
     auto rtti = ::RTTI(what);
 
     for (size_t t = 0; t < numSettings; t++) {
-      es::string_view desc2;
+      std::string_view desc2;
 
       if (rtti->typeDescs && rtti->typeDescs[t].part2) {
         desc2 = rtti->typeDescs[t].part2;
@@ -545,7 +545,7 @@ void GetHelp(std::ostream &str, const reflectorStatic *ref, size_t level = 1) {
   };
 
   for (size_t i = 0; i < ref->nTypes; i++) {
-    es::string_view elName = ref->typeNames[i];
+    std::string_view elName = ref->typeNames[i];
     auto elDesc = ref->typeDescs[i];
     fillIndent() << elName << std::endl;
 
@@ -653,25 +653,25 @@ void APPContext::FromConfig() {
 
       if (auto commentNode = doc.find_child([](pugi::xml_node &node) {
             return node.type() == pugi::xml_node_type::node_comment &&
-                   es::string_view(node.value()).begins_with("common");
+                   std::string_view(node.value()).starts_with("common");
           });
           commentNode) {
-        es::string_view comment(commentNode.value());
-        es::string_view lastTag;
+        std::string_view comment(commentNode.value());
+        std::string_view lastTag;
         size_t lastPos = 0;
 
         while (true) {
           lastPos = comment.find("<-tag:", lastPos);
 
           if (!lastTag.empty()) {
-            auto tagName = lastTag;
-            lastTag.resize(comment.size());
+            std::string tagName(lastTag);
+            lastTag.substr(0, comment.size());
             size_t dataBegin = lastTag.find_first_of('\n');
 
             if (dataBegin != lastTag.npos) {
               dataBegin++;
               const size_t dataEnd =
-                  lastPos != lastTag.npos ? dataEnd : lastTag.size();
+                  lastPos != lastTag.npos ? lastPos : lastTag.size();
               helpCtx.GetStream(tagName)
                   << lastTag.substr(dataBegin, dataEnd - dataBegin);
             }
@@ -724,7 +724,7 @@ void APPContext::FromConfig() {
     if (info->settings) {
       if (auto commentNode = doc.find_child([&](pugi::xml_node &node) {
             return node.type() == pugi::xml_node_type::node_comment &&
-                   es::string_view(node.value()).begins_with(moduleName);
+                   std::string_view(node.value()).starts_with(moduleName);
           });
           commentNode) {
         doc.remove_child(commentNode);

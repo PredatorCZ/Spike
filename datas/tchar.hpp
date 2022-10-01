@@ -68,7 +68,7 @@ template <typename T> TSTRING ToTSTRING(const T &type) {
 }
 #endif
 
-inline bool IsHelp(es::basic_string_view<TCHAR> data) {
+inline bool IsHelp(std::basic_string_view<TCHAR> data) {
   return data == _T("-h") || data == _T("-?") || data == _T("/?") ||
          data == _T("--help");
 }

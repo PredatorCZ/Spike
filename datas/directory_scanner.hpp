@@ -17,14 +17,14 @@
 */
 
 #pragma once
-#include "datas/string_view.hpp"
 #include "settings.hpp"
 #include <string>
+#include <string_view>
 #include <vector>
 
 class PathFilter {
 public:
-  bool PC_EXTERN IsFiltered(es::string_view name) const;
+  bool PC_EXTERN IsFiltered(std::string_view name) const;
 
   /*
   Store only specified files with filename substring
@@ -38,12 +38,12 @@ public:
     filterHolders.push_back(val);
     filters.push_back(filterHolders.back());
   }
-  void AddFilter(es::string_view val) { filters.push_back(val); }
+  void AddFilter(std::string_view val) { filters.push_back(val); }
   void ClearFilters() { filters.clear(); }
 
 private:
   std::vector<std::string> filterHolders;
-  std::vector<es::string_view> filters;
+  std::vector<std::string_view> filters;
 };
 
 class DirectoryScanner : public PathFilter {

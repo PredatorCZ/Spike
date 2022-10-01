@@ -31,15 +31,14 @@ struct CounterLine;
 struct ZIPExtactContext : AppExtractContext {
   ZIPExtactContext(const std::string &outFile)
       : records(outFile), outputFile(outFile), entries(entriesStream),
-        cache(std::in_place) {
-  }
+        cache(std::in_place) {}
   ZIPExtactContext(const std::string &outFile, bool)
       : records(outFile), entries(entriesStream) {}
   ZIPExtactContext(const ZIPExtactContext &) = delete;
   ZIPExtactContext(ZIPExtactContext &&) = delete;
 
   void NewFile(const std::string &path) override;
-  void SendData(es::string_view data) override;
+  void SendData(std::string_view data) override;
   bool RequiresFolders() const override;
   void AddFolderPath(const std::string &path) override;
   void GenerateFolders() override;
@@ -69,8 +68,7 @@ private:
 struct ZIPMerger {
   ZIPMerger(const std::string &outFiles, const std::string &outEntries)
       : entries(outEntries), records(outFiles), entriesFile(outEntries),
-        outFile(outFiles) {
-  }
+        outFile(outFiles) {}
   ZIPMerger() = default;
   using cache_begin_cb = void (*)();
   void Merge(ZIPExtactContext &other, const std::string &recordsFile);
@@ -94,7 +92,7 @@ struct IOExtractContext : AppExtractContext, BinWritter {
   IOExtractContext(const std::string &outDir_) : outDir(outDir_) {}
 
   void NewFile(const std::string &path) override;
-  void SendData(es::string_view data) override;
+  void SendData(std::string_view data) override;
   bool RequiresFolders() const override;
   void AddFolderPath(const std::string &path) override;
   void GenerateFolders() override;

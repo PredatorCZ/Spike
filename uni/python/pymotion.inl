@@ -28,7 +28,7 @@ namespace UniPy {
 
 static const struct {
   int id;
-  es::string_view name;
+  std::string_view name;
 } trackTypes[]{
     {uni::MotionTrack::Position, "Position"},
     {uni::MotionTrack::Rotation, "Rotation"},
@@ -55,7 +55,7 @@ using TrackTypeEnum = Enum<TrackTypeInfo>;
 
 static const struct {
   int id;
-  es::string_view name;
+  std::string_view name;
 } motionTypes[]{
     {uni::Motion::Absolute, "Absolute"},
     {uni::Motion::Relative, "Relative"},

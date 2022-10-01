@@ -26,7 +26,7 @@ namespace UniPy {
 
 static const struct {
   int id;
-  es::string_view name;
+  std::string_view name;
 } boneTMTypes[]{
     {uni::TransformType::TMTYPE_RTS, "TMTYPE_RTS"},
     {uni::TransformType::TMTYPE_MATRIX, "TMTYPE_MATRIX"},

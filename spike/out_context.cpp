@@ -240,7 +240,7 @@ void ZIPExtactContext::NewFile(const std::string &path) {
   }
 }
 
-void ZIPExtactContext::SendData(es::string_view data) {
+void ZIPExtactContext::SendData(std::string_view data) {
   curFileSize += data.size();
   zLocalFile.crc = crc32b(zLocalFile.crc, data.data(), data.size());
   records.WriteContainer(data);
@@ -261,8 +261,8 @@ void ZIPExtactContext::GenerateFolders() {
 void IOExtractContext::NewFile(const std::string &path) {
   Close_();
   AFileInfo cfleWrap(path);
-  auto cfle = cfleWrap.GetFullPath();
-  Open(outDir + cfle.to_string());
+  std::string cfle(cfleWrap.GetFullPath());
+  Open(outDir + cfle);
 
   if (progBar) {
     (*progBar)++;
@@ -272,7 +272,7 @@ void IOExtractContext::NewFile(const std::string &path) {
   }
 }
 
-void IOExtractContext::SendData(es::string_view data) { WriteContainer(data); }
+void IOExtractContext::SendData(std::string_view data) { WriteContainer(data); }
 
 bool IOExtractContext::RequiresFolders() const { return true; }
 

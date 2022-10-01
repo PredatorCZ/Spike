@@ -3,7 +3,7 @@
 #include "reflector_def.inl"
 
 using namespace es::jenhash_literals;
-using namespace es::string_view_literals;
+using namespace std::string_view_literals;
 
 static_assert(sizeof(EnumWrap02) == 1);
 static_assert(sizeof(EnumWrap03) == 2);
@@ -14,7 +14,7 @@ int test_reflector_enum00() {
 
   TEST_EQUAL(rEnum->enumHash, "EnumWrap00"_jh);
   TEST_EQUAL(rEnum->numMembers, 3);
-  TEST_EQUAL(rEnum->enumName, "EnumWrap00"_sv);
+  TEST_EQUAL(rEnum->enumName, "EnumWrap00"sv);
   TEST_EQUAL(rEnum->descriptions, nullptr);
 
   static const char *names[] = {"E1", "E2", "E3"};
@@ -33,7 +33,7 @@ int test_reflector_enum01() {
 
   TEST_EQUAL(rEnum->enumHash, "EnumWrap01"_jh);
   TEST_EQUAL(rEnum->numMembers, 3);
-  TEST_EQUAL(rEnum->enumName, "EnumWrap01"_sv);
+  TEST_EQUAL(rEnum->enumName, "EnumWrap01"sv);
   TEST_EQUAL(rEnum->descriptions, nullptr);
 
   static const char *names[] = {"EnumWrap01_E1", "EnumWrap01_E2",
@@ -53,7 +53,7 @@ int test_reflector_enum02() {
 
   TEST_EQUAL(rEnum->enumHash, "EnumWrap02"_jh);
   TEST_EQUAL(rEnum->numMembers, 3);
-  TEST_EQUAL(rEnum->enumName, "EnumWrap02"_sv);
+  TEST_EQUAL(rEnum->enumName, "EnumWrap02"sv);
   TEST_EQUAL(rEnum->descriptions, nullptr);
 
   static const char *names[] = {"E4", "E5", "E6"};
@@ -72,7 +72,7 @@ int test_reflector_enum03() {
 
   TEST_EQUAL(rEnum->enumHash, "EnumWrap03"_jh);
   TEST_EQUAL(rEnum->numMembers, 3);
-  TEST_EQUAL(rEnum->enumName, "EnumWrap03"_sv);
+  TEST_EQUAL(rEnum->enumName, "EnumWrap03"sv);
   TEST_EQUAL(rEnum->descriptions, nullptr);
 
   static const char *names[] = {"E7", "E8", "E9"};
@@ -91,7 +91,7 @@ int test_reflector_enum04() {
 
   TEST_EQUAL(rEnum->enumHash, "EnumWrap04"_jh);
   TEST_EQUAL(rEnum->numMembers, 3);
-  TEST_EQUAL(rEnum->enumName, "EnumWrap04"_sv);
+  TEST_EQUAL(rEnum->enumName, "EnumWrap04"sv);
   TEST_EQUAL(rEnum->descriptions, nullptr);
 
   static const char *names[] = {"E10", "E11", "E12"};
@@ -110,7 +110,7 @@ int test_reflector_enum05() {
 
   TEST_EQUAL(rEnum->enumHash, "EnumType"_jh);
   TEST_EQUAL(rEnum->numMembers, 3);
-  TEST_EQUAL(rEnum->enumName, "EnumType"_sv);
+  TEST_EQUAL(rEnum->enumName, "EnumType"sv);
   TEST_NOT_EQUAL(rEnum->descriptions, nullptr);
 
   static const char *names[] = {"Type1", "Type2", "Type3"};
@@ -2172,7 +2172,7 @@ struct ReflectedInstanceFriend : ReflectedInstance {
 };
 
 int test_reflector(reflClass &input) {
-  TEST_EQUAL(input.GetClassName(), es::string_view("reflClass"));
+  TEST_EQUAL(input.GetClassName(), std::string_view("reflClass"));
   TEST_EQUAL(input.SetReflectedValue("pest", ""),
              Reflector::ErrorType::InvalidDestination);
   TEST_CHECK(input.GetReflectedValue(200).empty());

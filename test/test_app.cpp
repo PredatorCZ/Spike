@@ -1,9 +1,9 @@
 #include "datas/directory_scanner.hpp"
-#include "datas/unit_testing.hpp"
-#include "datas/supercore.hpp"
 #include "datas/stat.hpp"
+#include "datas/supercore.hpp"
+#include "datas/unit_testing.hpp"
 
-using namespace es::string_view_literals;
+using namespace std::string_view_literals;
 
 int test_dirscan() {
   DirectoryScanner sc;
@@ -20,8 +20,8 @@ int test_dirscan() {
   TEST_NOT_CHECK(
       es::IsEnd(fnd, std::find(fnd.begin(), fnd.end(), ".gitignore")));
 
-  sc.AddFilter(".cpp"_sv);
-  sc.AddFilter(".inl"_sv);
+  sc.AddFilter(".cpp"sv);
+  sc.AddFilter(".inl"sv);
 
   sc.Clear();
   sc.Scan("");

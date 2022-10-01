@@ -16,10 +16,10 @@
     limitations under the License.
 */
 
-#include "datas/string_view.hpp"
 #include <atomic>
 #include <functional>
 #include <memory>
+#include <string_view>
 
 struct LogLine {
   virtual void PrintLine() = 0;
@@ -37,7 +37,7 @@ protected:
 };
 
 struct ProgressBar : CounterLine, LogLine {
-  ProgressBar(es::string_view label_) : label(label_) {}
+  ProgressBar(std::string_view label_) : label(label_) {}
 
   void PrintLine() override;
 
@@ -52,7 +52,7 @@ struct ProgressBar : CounterLine, LogLine {
 
 protected:
   std::atomic<float> itemDelta;
-  es::string_view label;
+  std::string_view label;
 };
 
 struct DetailedProgressBar : ProgressBar {
@@ -64,7 +64,7 @@ private:
 };
 
 struct LoadingBar : LogLine {
-  LoadingBar(es::string_view payload_) : payload(payload_) {}
+  LoadingBar(std::string_view payload_) : payload(payload_) {}
 
   void PrintLine() override;
 
@@ -75,7 +75,7 @@ private:
   size_t innerTick = 0;
 
 protected:
-  es::string_view payload;
+  std::string_view payload;
 };
 
 void InitConsole();

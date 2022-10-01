@@ -17,6 +17,7 @@
 
 #include "datas/macroLoop.hpp"
 #include "internal/format_full.hpp"
+#include <stdexcept>
 #include <unordered_map>
 
 using namespace uni;

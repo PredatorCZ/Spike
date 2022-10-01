@@ -28,7 +28,7 @@ class PC_EXTERN BlowfishEncoder : public IBlockEncryptor {
 public:
   BlowfishEncoder();
   ~BlowfishEncoder();
-  void SetKey(es::string_view key) override;
+  void SetKey(std::string_view key) override;
   void Encode(char *buffer, size_t size) const override;
   void Decode(char *buffer, size_t size) const override;
   size_t GetStride() const override;

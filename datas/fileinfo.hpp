@@ -17,13 +17,15 @@
 */
 
 #pragma once
-#include "string_view.hpp"
 #include "supercore.hpp"
+#include <string>
+#include <string_view>
 #include <vector>
 
-template <class T> class FileInfo {
+class FileInfo {
 public:
-  typedef es::basic_string_view<T> stringref_type;
+  using T = char;
+  typedef std::basic_string_view<T> stringref_type;
   typedef std::basic_string<T, std::char_traits<T>, std::allocator<T>>
       string_type;
   typedef std::vector<stringref_type> explode_type;
@@ -69,6 +71,9 @@ public:
   }
   stringref_type GetExtension() const { return fullPath.data() + lastDot; }
   stringref_type GetFolder() const { return {fullPath.data(), endFolder}; }
+  string_type ChangeExtension(stringref_type newExt) const {
+    return string_type(GetFullPathNoExt()) + string_type(newExt);
+  }
 
   explode_type Explode() const {
     explode_type resVal;
@@ -98,11 +103,11 @@ public:
     if (found == path.npos) {
       return string_type(path).append(GetFilenameExt());
     } else if (found == 0) {
-      return GetFullPath();
+      return string_type(GetFullPath());
     } else {
-      return string_type(path.begin(), found - 1).append(GetFullPath());
+      return string_type(path.substr(0, found - 1)).append(GetFullPath());
     }
   }
 };
 
-typedef FileInfo<char> AFileInfo;
+using AFileInfo = FileInfo;

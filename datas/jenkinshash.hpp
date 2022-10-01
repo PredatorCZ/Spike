@@ -23,10 +23,10 @@
 #pragma warning(disable : 4307)
 #endif
 #include "internal/sc_type.hpp"
-#include "string_view.hpp"
+#include <string_view>
 
 template <typename T = uint64>
-constexpr uint32 JenkinsHash_(es::string_view input) {
+constexpr uint32 JenkinsHash_(std::string_view input) {
   T result = 0;
 
   for (const auto c : input) {
@@ -52,7 +52,8 @@ template <typename I> struct JenHash_t {
   template <size_t n>
   constexpr JenHash_t(const char (&input)[n])
       : value_(JenkinsHash_<I>({input, n - 1})) {}
-  constexpr JenHash_t(es::string_view input) : value_(JenkinsHash_<I>(input)) {}
+  constexpr JenHash_t(std::string_view input)
+      : value_(JenkinsHash_<I>(input)) {}
 
   constexpr JenHash_t &operator=(const JenHash_t &) = default;
   constexpr JenHash_t &operator=(JenHash_t &&) = default;

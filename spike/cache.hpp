@@ -18,9 +18,9 @@
 
 #pragma once
 #include "datas/bincore_fwd.hpp"
-#include "datas/string_view.hpp"
 #include "datas/supercore.hpp"
 #include <memory>
+#include <string_view>
 #include <variant>
 
 struct CacheGeneratorImpl;
@@ -43,7 +43,7 @@ struct CacheBaseHeader {
 struct CacheGenerator {
   CacheGenerator();
   ~CacheGenerator();
-  void AddFile(es::string_view fileName, size_t zipOffset, size_t fileSize);
+  void AddFile(std::string_view fileName, size_t zipOffset, size_t fileSize);
   void Write(BinWritterRef wr);
   CacheBaseHeader meta{};
 
@@ -62,13 +62,13 @@ enum class ZIPIOEntryType {
 };
 
 struct ZIPIOEntry : ZipEntry {
-  using variant_type = std::variant<es::string_view, std::string>;
+  using variant_type = std::variant<std::string_view, std::string>;
   variant_type name;
 
-  es::string_view AsView() const {
+  std::string_view AsView() const {
     return std::visit(
         [](auto &item) {
-          return es::string_view{item.data(), item.size()};
+          return std::string_view{item.data(), item.size()};
         },
         name);
   }
@@ -84,8 +84,8 @@ struct ZIPIOEntryRawIterator {
 };
 
 struct Cache {
-  ZIPIOEntry FindFile(es::string_view pattern);
-  ZipEntry RequestFile(es::string_view path);
+  ZIPIOEntry FindFile(std::string_view pattern);
+  ZipEntry RequestFile(std::string_view path);
   void Mount(const void *data_) { data = data_; }
 
   std::unique_ptr<ZIPIOEntryRawIterator> Iter(ZIPIOEntryType type) const;

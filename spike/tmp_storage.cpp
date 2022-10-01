@@ -65,13 +65,13 @@ static void RemmoveAll(const std::string &path) {
 void CleanTempStorages() {
   auto sample = es::GetTempFilename();
   AFileInfo sampleParts(sample);
-  std::string workDir(sampleParts.GetFolder().to_string() + "spike/");
+  std::string workDir(std::string(sampleParts.GetFolder()) + "spike/");
   DirectoryScanner sc;
   sc.ScanFolders(workDir);
   auto point = std::chrono::system_clock::now();
 
   for (auto &s : sc) {
-    es::string_view sw(s);
+    std::string_view sw(s);
     sw.remove_prefix(workDir.size());
     time_t time = std::strtoull(sw.data(), nullptr, 16);
     auto expiryTimePoint = std::chrono::system_clock::from_time_t(time);

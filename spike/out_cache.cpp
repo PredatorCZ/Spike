@@ -38,9 +38,9 @@ private:
 public:
   StringSlider() { workingThreads.resize(std::thread::hardware_concurrency()); }
 
-  std::string::iterator FindString(es::string_view str) {
+  std::string::iterator FindString(std::string_view str) {
     if (str.size() > buffer.size()) [[unlikely]] {
-      if (es::string_view(str).begins_with(buffer)) [[unlikely]] {
+      if (std::string_view(str).starts_with(buffer)) [[unlikely]] {
         buffer = str;
         return buffer.begin();
       } else {
@@ -57,13 +57,13 @@ public:
       for (size_t i = 0; i < numThreads; ++i) {
         workingThreads[i] =
             std::async(std::launch::async, [=, &buffer = buffer] {
-              es::string_view item;
+              std::string_view item;
               if (i + 1 == numThreads) {
-                item = es::string_view(buffer.data() + chunkBegin,
-                                       buffer.end().operator->());
+                item = std::string_view(buffer.data() + chunkBegin,
+                                        buffer.end().operator->());
               } else {
-                item = es::string_view(buffer.data() + chunkBegin,
-                                       splitPoint + str.size());
+                item = std::string_view(buffer.data() + chunkBegin,
+                                        splitPoint + str.size());
               }
 
               auto found = std::search(item.begin(), item.end(), searcher);
@@ -71,7 +71,7 @@ public:
 
               if (found != item.end()) {
                 offset = std::distance(const_cast<const char *>(buffer.data()),
-                                       found);
+                                       &*found);
               }
 
               return offset;
@@ -98,7 +98,7 @@ public:
     }
   }
 
-  size_t InsertString(es::string_view str) {
+  size_t InsertString(std::string_view str) {
     auto found = FindString(str);
 
     if (found == buffer.end()) {
@@ -117,9 +117,9 @@ struct SliderString {
   StringSlider *base;
 
   bool operator<(const SliderString &other) const {
-    return es::string_view(base->buffer.data() + offset, size) <
-           es::string_view(other.base->buffer.data() + other.offset,
-                           other.size);
+    return std::string_view(base->buffer.data() + offset, size) <
+           std::string_view(other.base->buffer.data() + other.offset,
+                            other.size);
   }
 };
 
@@ -226,7 +226,7 @@ struct CacheGeneratorImpl {
   StringSlider sliderTiny;
   size_t maxPathSize = 0;
 
-  void AddFile(es::string_view fileName, size_t offset, size_t size) {
+  void AddFile(std::string_view fileName, size_t offset, size_t size) {
     maxPathSize = std::max(fileName.size(), maxPathSize);
     std::vector<SliderString> parts;
     SliderString finalKey{};
@@ -345,7 +345,7 @@ struct CacheGeneratorImpl {
 
 CacheGenerator::~CacheGenerator() = default;
 CacheGenerator::CacheGenerator() : pi(std::make_unique<CacheGeneratorImpl>()) {}
-void CacheGenerator::AddFile(es::string_view fileName, size_t zipOffset,
+void CacheGenerator::AddFile(std::string_view fileName, size_t zipOffset,
                              size_t fileSize) {
   pi->AddFile(fileName, zipOffset, fileSize);
 }

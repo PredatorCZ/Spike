@@ -19,13 +19,13 @@
 #ifndef ES_ENCRYPTION_DEFINED
 #define ES_ENCRYPTION_DEFINED
 
-#include "../string_view.hpp"
+#include <string_view>
 
 class IEncryptor {
 public:
   virtual void Encode(char *buffer, size_t size) const = 0;
   virtual void Decode(char *buffer, size_t size) const = 0;
-  virtual void SetKey(es::string_view key) = 0;
+  virtual void SetKey(std::string_view key) = 0;
   virtual ~IEncryptor() = default;
 };
 

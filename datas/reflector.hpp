@@ -36,7 +36,7 @@ public:
   };
 
   struct KVPair {
-    es::string_view name;
+    std::string_view name;
     std::string value;
   };
 
@@ -53,7 +53,7 @@ public:
   virtual ~Reflector() = default;
 
   size_t GetNumReflectedValues() const;
-  es::string_view GetClassName() const;
+  std::string_view GetClassName() const;
 
   bool IsReflectedSubClass(JenHash hashName) const;
   bool IsReflectedSubClass(size_t id) const;
@@ -62,14 +62,14 @@ public:
   bool IsArray(size_t id) const;
 
   // clang-format off
-  ErrorType SetReflectedValue(size_t id, es::string_view value);
-  ErrorType SetReflectedValue(JenHash hashName, es::string_view value);
+  ErrorType SetReflectedValue(size_t id, std::string_view  value);
+  ErrorType SetReflectedValue(JenHash hashName, std::string_view  value);
 
-  ErrorType SetReflectedValue(size_t id, es::string_view value, size_t subID);
-  ErrorType SetReflectedValue(JenHash hashName, es::string_view value, size_t subID);
+  ErrorType SetReflectedValue(size_t id, std::string_view  value, size_t subID);
+  ErrorType SetReflectedValue(JenHash hashName, std::string_view  value, size_t subID);
 
-  ErrorType SetReflectedValue(size_t id, es::string_view value, size_t subID, size_t element);
-  ErrorType SetReflectedValue(JenHash hashName, es::string_view value, size_t subID, size_t element);
+  ErrorType SetReflectedValue(size_t id, std::string_view  value, size_t subID, size_t element);
+  ErrorType SetReflectedValue(JenHash hashName, std::string_view  value, size_t subID, size_t element);
 
   ErrorType SetReflectedValueInt(JenHash hashName, int64 value, size_t subID = 0);
   ErrorType SetReflectedValueInt(size_t id, int64 value, size_t subID = 0);
@@ -101,9 +101,9 @@ public:
 protected:
   const ReflType PC_EXTERN *GetReflectedType(JenHash hashName) const;
   const ReflType *GetReflectedType(size_t ID) const;
-  ErrorType PC_EXTERN SetReflectedValue(ReflType type, es::string_view value);
-  ErrorType PC_EXTERN SetReflectedValue(ReflType type, es::string_view value, size_t subID);
-  ErrorType PC_EXTERN SetReflectedValue(ReflType type, es::string_view value, size_t subID, size_t element);
+  ErrorType PC_EXTERN SetReflectedValue(ReflType type, std::string_view  value);
+  ErrorType PC_EXTERN SetReflectedValue(ReflType type, std::string_view  value, size_t subID);
+  ErrorType PC_EXTERN SetReflectedValue(ReflType type, std::string_view  value, size_t subID, size_t element);
   ErrorType PC_EXTERN SetReflectedValueUInt(ReflType type, uint64 value, size_t subID = 0);
   ErrorType PC_EXTERN SetReflectedValueInt(ReflType type, int64 value, size_t subID = 0);
   ErrorType PC_EXTERN SetReflectedValueFloat(ReflType type, double value, size_t subID = 0);

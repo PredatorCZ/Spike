@@ -22,5 +22,5 @@
 class PC_EXTERN BlowfishEncoder2 : public BlowfishEncoder {
 public:
   BlowfishEncoder2();
-  void SetKey(es::string_view key) override;
+  void SetKey(std::string_view key) override;
 };

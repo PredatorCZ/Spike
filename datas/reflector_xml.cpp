@@ -314,7 +314,7 @@ pugi::xml_node ReflectorXMLUtil::LoadV2(Reflector &ri, pugi::xml_node node,
     size_t index = nan_;
   };
 
-  auto MakeHash = [](es::string_view name) -> JenHash {
+  auto MakeHash = [](std::string_view name) -> JenHash {
     if (name[0] == 'h' && name[1] == ':') {
       name.remove_prefix(2);
       return JenHash(strtoul(name.data(), nullptr, 16));
@@ -324,7 +324,7 @@ pugi::xml_node ReflectorXMLUtil::LoadV2(Reflector &ri, pugi::xml_node node,
   };
 
   auto MakeNode = [MakeHash](auto a) {
-    es::string_view name(a.name());
+    std::string_view name(a.name());
     retval retVal;
     const size_t found = name.find_last_of('-');
 
@@ -478,7 +478,7 @@ pugi::xml_node ReflectorXMLUtil::Load(Reflector &ri, pugi::xml_node node,
           .Refl();
   pugi::xml_node thisNode;
 
-  auto MakeHash = [](es::string_view name) -> JenHash {
+  auto MakeHash = [](std::string_view name) -> JenHash {
     if (name[0] == 'h' && name[1] == ':') {
       name.remove_prefix(2);
       return JenHash(strtoul(name.data(), nullptr, 16));

@@ -11,7 +11,7 @@ template <class C> int test_class(const reflectorStatic *input) {
   TEST_EQUAL(input->classHash, orig->classHash);
 
   if (orig->className) {
-    TEST_EQUAL(es::string_view(input->className), orig->className);
+    TEST_EQUAL(std::string_view(input->className), orig->className);
   } else {
     TEST_EQUAL(input->className, nullptr);
   }
@@ -21,7 +21,7 @@ template <class C> int test_class(const reflectorStatic *input) {
   if (orig->typeAliases) {
     for (uint32 i = 0; i < orig->nTypes; i++) {
       if (input->typeAliases[i]) {
-        TEST_EQUAL(es::string_view(input->typeAliases[i]),
+        TEST_EQUAL(std::string_view(input->typeAliases[i]),
                    orig->typeAliases[i]);
       } else {
         TEST_EQUAL(input->typeAliases[i], nullptr);
@@ -35,7 +35,7 @@ template <class C> int test_class(const reflectorStatic *input) {
   if (orig->typeNames) {
     for (uint32 i = 0; i < orig->nTypes; i++)
       if (auto inputName = input->typeNames[i]) {
-        TEST_EQUAL(es::string_view(input->typeNames[i]), orig->typeNames[i]);
+        TEST_EQUAL(std::string_view(input->typeNames[i]), orig->typeNames[i]);
       }
 
   } else {
@@ -54,9 +54,9 @@ template <class C> int test_class(const reflectorStatic *input) {
 
   if (orig->typeDescs) {
     for (uint32 i = 0; i < orig->nTypes; i++) {
-      TEST_EQUAL(es::string_view(input->typeDescs[i].part1),
+      TEST_EQUAL(std::string_view(input->typeDescs[i].part1),
                  orig->typeDescs[i].part1);
-      TEST_EQUAL(es::string_view(input->typeDescs[i].part2),
+      TEST_EQUAL(std::string_view(input->typeDescs[i].part2),
                  orig->typeDescs[i].part2);
     }
   } else {
@@ -70,11 +70,11 @@ template <class ET> int test_enum(const ReflectedEnum *input) {
   auto orig = GetReflectedEnum<ET>();
 
   TEST_EQUAL(orig->enumHash, input->enumHash);
-  TEST_EQUAL(es::string_view(orig->enumName), input->enumName);
+  TEST_EQUAL(std::string_view(orig->enumName), input->enumName);
   TEST_EQUAL(orig->numMembers, input->numMembers);
 
   for (size_t i = 0; i < input->numMembers; i++) {
-    TEST_EQUAL(es::string_view(orig->names[i]), input->names[i]);
+    TEST_EQUAL(std::string_view(orig->names[i]), input->names[i]);
     TEST_EQUAL(orig->values[i], input->values[i]);
   }
 

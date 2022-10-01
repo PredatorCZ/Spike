@@ -17,10 +17,11 @@
 */
 
 #pragma once
-#include "string_view.hpp"
 #include <cinttypes>
 #include <cstring>
 #include <stdexcept>
+#include <string>
+#include <string_view>
 
 namespace es {
 class FileNotFoundError : public std::runtime_error {
@@ -28,8 +29,8 @@ class FileNotFoundError : public std::runtime_error {
 
 public:
   explicit FileNotFoundError() : parent("Couldn't open file.") {}
-  explicit FileNotFoundError(es::string_view fileName)
-      : parent("Couldn't open file: " + fileName.to_string()) {}
+  explicit FileNotFoundError(std::string_view fileName)
+      : parent("Couldn't open file: " + std::string(fileName)) {}
 };
 
 class FileInvalidAccessError : public std::runtime_error {
@@ -37,17 +38,18 @@ class FileInvalidAccessError : public std::runtime_error {
 
 public:
   explicit FileInvalidAccessError() : parent("Couldn't access file.") {}
-  explicit FileInvalidAccessError(es::string_view fileName)
-      : parent("Couldn't access file: " + fileName.to_string()) {}
+  explicit FileInvalidAccessError(std::string_view fileName)
+      : parent("Couldn't access file: " + std::string(fileName)) {}
 };
 
 class InvalidHeaderError : public std::runtime_error {
   using parent = std::runtime_error;
+
 public:
   static std::string DecompileFourCC(size_t magic, size_t size) {
     const char *rMagic = reinterpret_cast<const char *>(&magic);
     const size_t capSize =
-        std::min(size, es::string_view::traits_type::length(rMagic));
+        std::min(size, std::string_view ::traits_type::length(rMagic));
     bool isAlNum = true;
 
     for (size_t c = 0; c < capSize; c++) {
@@ -58,7 +60,7 @@ public:
     }
 
     if (isAlNum) {
-      return es::string_view{rMagic, capSize}.to_string();
+      return std::string{rMagic, capSize};
     } else {
       std::string retval;
 
@@ -73,8 +75,8 @@ public:
   }
 
   explicit InvalidHeaderError() : parent("Invalid format.") {}
-  InvalidHeaderError(es::string_view magic)
-      : parent("Invalid format: " + magic.to_string()) {}
+  InvalidHeaderError(std::string_view magic)
+      : parent("Invalid format: " + std::string(magic)) {}
   template <typename T>
   InvalidHeaderError(T magic, size_t size = sizeof(T))
       : parent("Invalid format: " + DecompileFourCC(magic, size)) {}

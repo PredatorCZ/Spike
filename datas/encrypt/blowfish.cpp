@@ -479,7 +479,7 @@ void BlowfishEncoder::DecodeOFB(char *buffer, size_t size) const {
   }
 }
 
-void BlowfishEncoder::SetKey(es::string_view key) {
+void BlowfishEncoder::SetKey(std::string_view key) {
   if (static_cast<bool>(mode)) {
     pi->CreateVector();
   }
@@ -580,7 +580,7 @@ void BlowfishContext2::DecodeBlock(uint64 &block) const {
   std::swap(_val0, _val1);
 }
 
-void BlowfishEncoder2::SetKey(es::string_view key) {
+void BlowfishEncoder2::SetKey(std::string_view key) {
   if (static_cast<bool>(mode)) {
     pi->CreateVector();
   }

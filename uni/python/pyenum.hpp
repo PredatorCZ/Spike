@@ -16,9 +16,9 @@
 */
 
 #pragma once
-#include "datas/string_view.hpp"
 #include <Python.h>
 #include <algorithm>
+#include <string_view>
 #pragma GCC diagnostic ignored "-Wmissing-field-initializers"
 
 namespace UniPy {
@@ -65,7 +65,7 @@ template <class Info> struct Enum {
   }
 
   static PyObject *GetAttribute(PyObject *, char *attrName) {
-    es::string_view attrNameRef(attrName);
+    std::string_view attrNameRef(attrName);
     const auto foundEnum = std::find_if(Info::begin(), Info::end(),
                                         [&](typename Info::value_type &typ) {
                                           return typ.name == attrNameRef;

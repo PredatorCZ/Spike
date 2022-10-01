@@ -59,8 +59,9 @@ template <class E, const char *const doc = nullptr> struct ReflectedEnumPy {
   }
 
   static PyObject *GetAttribute(PyObject *, char *attrName) {
-    const auto foundEnum = std::find(
-        ENUM->names, ENUM->names + ENUM->numMembers, es::string_view(attrName));
+    const auto foundEnum =
+        std::find(ENUM->names, ENUM->names + ENUM->numMembers,
+                  std::string_view(attrName));
 
     if (ENUM->names + ENUM->numMembers == foundEnum) {
       return nullptr;

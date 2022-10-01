@@ -19,7 +19,7 @@
 #include "endian.hpp"
 #include "internal/bincore.hpp"
 #include "internal/sc_type.hpp"
-#include "string_view.hpp"
+#include <string_view>
 
 template <class _Traits, bool HandleEndian>
 class BinWritterRef_t : public BinStreamNavi<_Traits> {
@@ -98,15 +98,15 @@ public:
   }
 
   // Write C string
-  void WriteT(es::string_view input) const {
-    using charType = es::string_view::value_type;
+  void WriteT(std::string_view input) const {
+    using charType = std::string_view ::value_type;
     WriteBuffer(input.data(), input.size());
     Write<charType>(0);
   }
 
   // Write C wstring (utf16, utf32, other)
-  void WriteT(es::wstring_view input) const {
-    using charType = es::wstring_view::value_type;
+  void WriteT(std::wstring_view input) const {
+    using charType = std::wstring_view::value_type;
     if (this->swapEndian) {
       WriteContainer(input);
     } else {

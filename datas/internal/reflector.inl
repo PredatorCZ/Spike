@@ -13,7 +13,7 @@ inline const ReflType *Reflector::GetReflectedType(size_t ID) const {
 }
 
 inline Reflector::ErrorType
-Reflector::SetReflectedValue(JenHash hash, es::string_view value) {
+Reflector::SetReflectedValue(JenHash hash, std::string_view value) {
   const ReflType *reflValue = GetReflectedType(hash);
 
   if (!reflValue)
@@ -23,7 +23,7 @@ Reflector::SetReflectedValue(JenHash hash, es::string_view value) {
 }
 
 inline Reflector::ErrorType
-Reflector::SetReflectedValue(size_t id, es::string_view value) {
+Reflector::SetReflectedValue(size_t id, std::string_view value) {
   const ReflType *reflValue = GetReflectedType(id);
 
   if (!reflValue)
@@ -33,7 +33,7 @@ Reflector::SetReflectedValue(size_t id, es::string_view value) {
 }
 
 inline Reflector::ErrorType Reflector::SetReflectedValue(JenHash hash,
-                                                         es::string_view value,
+                                                         std::string_view value,
                                                          size_t subID) {
   const ReflType *reflValue = GetReflectedType(hash);
 
@@ -52,7 +52,7 @@ inline Reflector::ErrorType Reflector::SetReflectedValue(JenHash hash,
 }
 
 inline Reflector::ErrorType
-Reflector::SetReflectedValue(size_t id, es::string_view value, size_t subID) {
+Reflector::SetReflectedValue(size_t id, std::string_view value, size_t subID) {
   const ReflType *reflValue = GetReflectedType(id);
 
   if (!reflValue)
@@ -70,7 +70,7 @@ Reflector::SetReflectedValue(size_t id, es::string_view value, size_t subID) {
 }
 
 inline Reflector::ErrorType Reflector::SetReflectedValue(JenHash hash,
-                                                         es::string_view value,
+                                                         std::string_view value,
                                                          size_t subID,
                                                          size_t element) {
   const ReflType *reflValue = GetReflectedType(hash);
@@ -82,7 +82,7 @@ inline Reflector::ErrorType Reflector::SetReflectedValue(JenHash hash,
 }
 
 inline Reflector::ErrorType Reflector::SetReflectedValue(size_t id,
-                                                         es::string_view value,
+                                                         std::string_view value,
                                                          size_t subID,
                                                          size_t element) {
   const ReflType *reflValue = GetReflectedType(id);
@@ -239,7 +239,7 @@ Reflector::GetReflectedPair(JenHash hash, const KVPairFormat &settings) const {
   return GetReflectedPair(found->index, settings);
 }
 
-inline es::string_view Reflector::GetClassName() const {
+inline std::string_view Reflector::GetClassName() const {
   return GetReflectedInstance().rfStatic->className;
 }
 
@@ -260,7 +260,7 @@ inline bool Reflector::IsReflectedSubClass(size_t id) const {
 
   return fl.type == REFType::Class || fl.type == REFType::BitFieldClass ||
          (IsArray(fl.index) && (fl.asArray.type == REFType::Class ||
-                             fl.asArray.type == REFType::BitFieldClass));
+                                fl.asArray.type == REFType::BitFieldClass));
 }
 
 inline bool Reflector::IsArray(JenHash hash) const {

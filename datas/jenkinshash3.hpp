@@ -18,7 +18,7 @@
 
 #pragma once
 #include "internal/sc_type.hpp"
-#include "string_view.hpp"
+#include <string_view>
 
 struct JenTriplet_ {
   uint32 a, b, c;
@@ -85,7 +85,7 @@ struct JenTriplet_ {
   }
 };
 
-constexpr uint32 JenMutateKey_(es::string_view input, size_t offset) {
+constexpr uint32 JenMutateKey_(std::string_view input, size_t offset) {
   uint32 ck0 = offset >= input.size() ? 0 : static_cast<uint8>(input[offset++]);
   uint32 ck1 = offset >= input.size() ? 0 : static_cast<uint8>(input[offset++]);
   uint32 ck2 = offset >= input.size() ? 0 : static_cast<uint8>(input[offset++]);
@@ -93,7 +93,7 @@ constexpr uint32 JenMutateKey_(es::string_view input, size_t offset) {
   return ck0 | (ck1 << 8) | (ck2 << 16) | (ck3 << 24);
 }
 
-constexpr uint32 JenkinsHash3_(es::string_view input, uint32 seed = 0) {
+constexpr uint32 JenkinsHash3_(std::string_view input, uint32 seed = 0) {
   size_t numRKeys = input.size() / sizeof(uint32);
   if (input.size() % sizeof(uint32)) {
     numRKeys++;
@@ -143,7 +143,7 @@ struct JenHash3 {
   template <size_t n>
   constexpr JenHash3(const char (&input)[n])
       : value_(JenkinsHash3_({input, n - 1})) {}
-  constexpr JenHash3(es::string_view input) : value_(JenkinsHash3_(input)) {}
+  constexpr JenHash3(std::string_view input) : value_(JenkinsHash3_(input)) {}
 
   constexpr JenHash3 &operator=(const JenHash3 &) = default;
   constexpr JenHash3 &operator=(JenHash3 &&) = default;

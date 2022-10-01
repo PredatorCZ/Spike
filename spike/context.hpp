@@ -114,7 +114,7 @@ struct APPContext : APPContextCopyData {
   void FromConfig();
   void ResetSwitchSettings();
   void GetMarkdownDoc(std::ostream &out, pugi::xml_node node) const;
-  int ApplySetting(es::string_view key, es::string_view value);
+  int ApplySetting(std::string_view key, std::string_view value);
 
 private:
   void *dlHandle = nullptr;

@@ -20,11 +20,11 @@
 #include "bitfield.hpp"
 #include "float.hpp"
 #include "master_printer.hpp"
-#include "string_view.hpp"
 #include <algorithm>
 #include <cctype>
 #include <cmath>
 #include <ostream>
+#include <string_view>
 
 static bool IsArray(REFType type) {
   return type == REFType::Array || type == REFType::ArrayClass;
@@ -36,7 +36,7 @@ static bool IsArrayVec(REFType type) {
 }
 
 static Reflector::ErrorType
-SetReflectedMember(ReflType reflValue, es::string_view value, char *objAddr);
+SetReflectedMember(ReflType reflValue, std::string_view value, char *objAddr);
 
 const ReflType *Reflector::GetReflectedType(const JenHash hash) const {
   const reflectorStatic *inst = GetReflectedInstance().rfStatic;
@@ -83,7 +83,7 @@ template <class type> struct LimitProxy<BFTag<type>> {
 };
 
 template <typename T, class ProxyType>
-static Reflector::ErrorType SetNumber(es::string_view input_, T &output,
+static Reflector::ErrorType SetNumber(std::string_view input_, T &output,
                                       ProxyType proxy) {
   std::string input(input_);
   Reflector::ErrorType errType = Reflector::ErrorType::None;
@@ -150,7 +150,7 @@ static Reflector::ErrorType SetNumber(es::string_view input_, T &output,
 }
 
 template <typename T>
-static Reflector::ErrorType SetNumber(es::string_view input_, T &output) {
+static Reflector::ErrorType SetNumber(std::string_view input_, T &output) {
   if constexpr (std::is_floating_point_v<T>) {
     std::string input(input_);
     constexpr T fMax = std::numeric_limits<T>::max();
@@ -205,7 +205,7 @@ static Reflector::ErrorType SetBoolean(std::string input, bool &output) {
   return Reflector::ErrorType::None;
 }
 
-static uint64 GetEnumValue(es::string_view input, JenHash hash,
+static uint64 GetEnumValue(std::string_view input, JenHash hash,
                            const ReflectedEnum **rEnumFallback = nullptr) {
   const ReflectedEnum *rEnum = rEnumFallback && *rEnumFallback
                                    ? *rEnumFallback
@@ -217,7 +217,7 @@ static uint64 GetEnumValue(es::string_view input, JenHash hash,
 
   auto namesEnd = rEnum->names + rEnum->numMembers;
   auto foundItem =
-      std::find_if(rEnum->names, namesEnd, [input](es::string_view item) {
+      std::find_if(rEnum->names, namesEnd, [input](std::string_view item) {
         return !item.compare(input);
       });
 
@@ -229,7 +229,7 @@ static uint64 GetEnumValue(es::string_view input, JenHash hash,
   return rEnum->values[std::distance(rEnum->names, foundItem)];
 }
 
-static Reflector::ErrorType SetEnum(es::string_view input, char *objAddr,
+static Reflector::ErrorType SetEnum(std::string_view input, char *objAddr,
                                     JenHash hash, uint16 size) {
   input = es::SkipEndWhitespace(input);
 
@@ -256,7 +256,7 @@ static Reflector::ErrorType SetEnum(es::string_view input, char *objAddr,
   return Reflector::ErrorType::None;
 }
 
-static Reflector::ErrorType FlagFromEnum(es::string_view input, JenHash hash,
+static Reflector::ErrorType FlagFromEnum(std::string_view input, JenHash hash,
                                          uint64 &fallbackValue,
                                          const ReflectedEnum *&fallback) {
   input = es::TrimWhitespace(input);
@@ -287,9 +287,10 @@ static Reflector::ErrorType FlagFromEnum(es::string_view input, JenHash hash,
   return Reflector::ErrorType::None;
 }
 
-static Reflector::ErrorType SetEnumFlags(es::string_view input, char *objAddr,
+static Reflector::ErrorType SetEnumFlags(std::string_view input, char *objAddr,
                                          JenHash hash, uint16 size) {
-  const char *lastIterator = input.begin();
+  auto lastIterator = input.data();
+  auto inputEnd = input.data() + input.size();
   Reflector::ErrorType errType = Reflector::ErrorType::None;
   uint64 eValue = 0;
   const ReflectedEnum *rEnumFallback = nullptr;
@@ -308,9 +309,9 @@ static Reflector::ErrorType SetEnumFlags(es::string_view input, char *objAddr,
     }
   }
 
-  if (lastIterator < input.end()) {
+  if (lastIterator < inputEnd) {
     auto subErrType =
-        FlagFromEnum({lastIterator, size_t(input.end() - lastIterator)}, hash,
+        FlagFromEnum({lastIterator, size_t(inputEnd - lastIterator)}, hash,
                      eValue, rEnumFallback);
     if (subErrType == Reflector::ErrorType::InvalidDestination) {
       return subErrType;
@@ -326,7 +327,7 @@ static Reflector::ErrorType SetEnumFlags(es::string_view input, char *objAddr,
 
 static Reflector::ErrorType SetReflectedArray(char startBrace, char endBrace,
                                               char *objAddr,
-                                              es::string_view value,
+                                              std::string_view value,
                                               ReflType reflValue) {
   const size_t arrBegin = value.find(startBrace);
 
@@ -346,7 +347,7 @@ static Reflector::ErrorType SetReflectedArray(char startBrace, char endBrace,
     return Reflector::ErrorType::InvalidFormat;
   }
 
-  value = {value.begin() + arrBegin + 1, arrEnd - arrBegin - 1};
+  value = {value.data() + arrBegin + 1, arrEnd - arrBegin - 1};
 
   if (value.empty()) {
     printerror("[Reflector] Empty array input.");
@@ -371,7 +372,7 @@ static Reflector::ErrorType SetReflectedArray(char startBrace, char endBrace,
     }
 
     if (*it == ',' || isEnding) {
-      es::string_view cValue(curIter, (isEnding ? value.end() : it) - curIter);
+      std::string_view cValue(&*curIter, std::distance(curIter, (isEnding ? value.end() : it)));
       cValue = es::SkipStartWhitespace(cValue);
 
       if (cValue.empty() && curElement < arr.numItems) {
@@ -396,7 +397,7 @@ static Reflector::ErrorType SetReflectedArray(char startBrace, char endBrace,
 }
 
 static Reflector::ErrorType
-SetReflectedMember(ReflType reflValue, es::string_view value, char *objAddr) {
+SetReflectedMember(ReflType reflValue, std::string_view value, char *objAddr) {
   Reflector::ErrorType errType = Reflector::ErrorType::None;
   char startBrace = 0;
   char endBrace = 0;
@@ -521,7 +522,7 @@ SetReflectedMember(ReflType reflValue, es::string_view value, char *objAddr) {
     }
     case REFType::Bool: {
       bool result;
-      auto err = SetBoolean(value, result);
+      auto err = SetBoolean(std::string(value), result);
       auto mask = (1ULL << reflValue.bit.position);
 
       if (result) {
@@ -570,7 +571,7 @@ SetReflectedMember(ReflType reflValue, es::string_view value, char *objAddr) {
 }
 
 Reflector::ErrorType Reflector::SetReflectedValue(ReflType type,
-                                                  es::string_view value) {
+                                                  std::string_view value) {
   auto inst = GetReflectedInstance();
   char *thisAddr = static_cast<char *>(inst.instance);
   thisAddr =
@@ -580,7 +581,7 @@ Reflector::ErrorType Reflector::SetReflectedValue(ReflType type,
 }
 
 Reflector::ErrorType Reflector::SetReflectedValue(ReflType type,
-                                                  es::string_view value,
+                                                  std::string_view value,
                                                   size_t subID) {
   auto inst = GetReflectedInstance();
   char *thisAddr = static_cast<char *>(inst.instance);
@@ -598,7 +599,7 @@ Reflector::ErrorType Reflector::SetReflectedValue(ReflType type,
 }
 
 Reflector::ErrorType Reflector::SetReflectedValue(ReflType type,
-                                                  es::string_view value,
+                                                  std::string_view value,
                                                   size_t subID,
                                                   size_t element) {
   if (!::IsArray(type.type)) {
@@ -732,7 +733,7 @@ Reflector::ErrorType Reflector::SetReflectedValueFloat(ReflType reflValue,
   }
 }
 
-static es::string_view
+static std::string_view
 PrintEnumValue(JenHash hash, uint64 value,
                const ReflectedEnum **rEnumFallback = nullptr) {
   const ReflectedEnum *rEnum = rEnumFallback && *rEnumFallback
@@ -894,7 +895,8 @@ static std::string GetReflectedPrimitive(const char *objAddr, ReflType type) {
     case REFType::Bool:
       return output ? "true" : "false";
     case REFType::Enum:
-      return PrintEnumValue(JenHash(type.asBitfield.typeHash), output);
+      return std::string(
+          PrintEnumValue(JenHash(type.asBitfield.typeHash), output));
     case REFType::FloatingPoint: {
       const auto &flt = type.asBitfield.asFloat;
 

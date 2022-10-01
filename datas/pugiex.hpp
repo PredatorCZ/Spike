@@ -23,8 +23,9 @@
 #include "flags.hpp"
 #include "pugixml.hpp"
 #include "reflector.hpp"
-#include "string_view.hpp"
 #include "unicode.hpp"
+#include <algorithm>
+#include <string_view>
 #include <vector>
 
 MAKE_ENUM(
@@ -205,7 +206,7 @@ public:
 };
 
 inline auto XMLCollectChildren(pugi::xml_node node,
-                               es::string_view childName = {}) {
+                               std::string_view childName = {}) {
   std::vector<pugi::xml_node> children;
   std::for_each(node.begin(), node.end(), [&](auto item) {
     if (childName.empty() || item.name() == childName) {
@@ -228,18 +229,20 @@ inline auto XMLFromFile(const std::string &fileName,
   if (auto result = doc.load_file(fileName_.data(), static_cast<uint32>(pflags),
                                   static_cast<pugi::xml_encoding>(encoding));
       !result) {
-    if (static_cast<XMLError>(result.status) == XMLError::status_file_not_found) {
+    if (static_cast<XMLError>(result.status) ==
+        XMLError::status_file_not_found) {
       throw es::FileNotFoundError(fileName);
     }
 
-    if (static_cast<XMLError>(result.status) == XMLError::status_no_document_element) {
+    if (static_cast<XMLError>(result.status) ==
+        XMLError::status_no_document_element) {
       throw es::InvalidHeaderError();
     }
 
     throw std::runtime_error(
         "Couldn't load XML file <" + fileName + ">[" +
-        GetReflectedEnum<XMLError>()->names[result.status] +
-        "] at offset " + std::to_string(result.offset));
+        GetReflectedEnum<XMLError>()->names[result.status] + "] at offset " +
+        std::to_string(result.offset));
   }
 
   return doc;

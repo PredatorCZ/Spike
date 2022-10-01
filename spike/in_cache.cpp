@@ -63,7 +63,7 @@ struct ZipEntryLeaf : ZipEntry {
     const char fileName[8];
   };
 
-  es::string_view Name() const {
+  std::string_view Name() const {
     if (fileNameSize < 9) {
       return {fileName, fileNameSize};
     } else {
@@ -71,7 +71,7 @@ struct ZipEntryLeaf : ZipEntry {
     }
   }
 
-  bool operator<(es::string_view sw) const { return Name() < sw; }
+  bool operator<(std::string_view sw) const { return Name() < sw; }
 };
 
 using ZipEntryLeafPtr = CachePointer<ZipEntryLeaf, 4>;
@@ -112,7 +112,7 @@ struct HybridLeaf {
 
   FinalsIter Finals() const { return {entries, entries + numFinals}; }
 
-  es::string_view Name() const {
+  std::string_view Name() const {
     if (pathPartSize < 5) {
       return {pathPart, pathPartSize};
     } else {
@@ -131,7 +131,7 @@ const CacheHeader &Cache::Header() const {
   return *static_cast<const CacheHeader *>(data);
 }
 
-ZIPIOEntry Cache::FindFile(es::string_view pattern) {
+ZIPIOEntry Cache::FindFile(std::string_view pattern) {
   const ZipEntryLeaf *begin = Header().entries;
   auto end = begin + Header().numFiles;
   bool clampBegin = pattern.front() == '^';
@@ -162,7 +162,7 @@ ZIPIOEntry Cache::FindFile(es::string_view pattern) {
 
       auto foundName = found->Name();
 
-      while (foundName.begins_with(part1)) {
+      while (foundName.starts_with(part1)) {
         if (clampEnd) {
           if (foundName.ends_with(part2)) {
             return {*found, foundName};
@@ -241,7 +241,7 @@ ZIPIOEntry Cache::FindFile(es::string_view pattern) {
 
     auto foundName = found->Name();
 
-    if (foundName.begins_with(pattern)) {
+    if (foundName.starts_with(pattern)) {
       return {*found, foundName};
     }
 
@@ -267,15 +267,15 @@ ZIPIOEntry Cache::FindFile(es::string_view pattern) {
   return {};
 }
 
-bool operator<(const HybridLeaf *leaf, es::string_view sw) {
+bool operator<(const HybridLeaf *leaf, std::string_view sw) {
   return leaf->Name() < sw;
 }
 
-bool operator<(const ZipEntryLeaf *leaf, es::string_view sw) {
+bool operator<(const ZipEntryLeaf *leaf, std::string_view sw) {
   return leaf->operator<(sw);
 }
 
-ZipEntry Cache::RequestFile(es::string_view path) {
+ZipEntry Cache::RequestFile(std::string_view path) {
   AFileInfo pp(path);
   auto parts = pp.Explode();
 
@@ -395,7 +395,7 @@ void Dump(const HybridLeaf *leaf, char *buffer, const char *wholeBuffer) {
   buffer[0] = '/';
   buffer++;
   for (auto &f : leaf->Finals()) {
-    es::string_view sw(wholeBuffer, buffer);
+    std::string_view sw(wholeBuffer, buffer);
     printinfo(sw << f->Name());
   }
 
