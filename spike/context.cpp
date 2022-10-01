@@ -220,16 +220,11 @@ APPContext::APPContext(const char *moduleName_, const std::string &appFolder_,
   tryAssign(AdditionalHelp, "AppAdditionalHelp");
   tryAssign(InitContext, "AppInitContext");
   tryAssign(FinishContext, "AppFinishContext");
+  tryAssign(NewArchive, "AppNewArchive");
+  tryAssign(ProcessFile, "AppProcessFile");
 
-  if (info->mode == AppMode_e::EXTRACT) {
-    assign(ExtractFile, "AppExtractFile");
-    tryAssign(ExtractStat, "AppExtractStat");
-  } else if (info->mode == AppMode_e::PACK) {
-    assign(NewArchive, "AppNewArchive");
-  } else {
-    assign(ProcessFile, "AppProcessFile");
-    mainSettings.extractSettings.makeZIP = false;
-    mainSettings.extractSettings.folderPerArc = false;
+  if (NewArchive && ProcessFile) {
+    throw std::logic_error("Module uses 2 or more contexts!");
   }
 }
 
@@ -297,13 +292,13 @@ int APPContext::ApplySetting(std::string_view key, std::string_view value) {
 
     if (rType) {
       refl = &MainSettings();
-    } else if (info->mode == AppMode_e::EXTRACT) {
+    } else if (ProcessFile) {
       rType = ExtractSettings().GetReflectedType(keyHash);
 
       if (rType) {
         refl = &ExtractSettings();
       }
-    } else if (info->mode == AppMode_e::PACK) {
+    } else if (NewArchive) {
       rType = CompressSettings().GetReflectedType(keyHash);
 
       if (rType) {
@@ -342,9 +337,9 @@ void APPContext::PrintCLIHelp() const {
 
   printStuff(::RTTI(MainSettings()));
 
-  if (info->mode == AppMode_e::EXTRACT) {
+  if (ProcessFile) {
     printStuff(::RTTI(ExtractSettings()));
-  } else if (info->mode == AppMode_e::PACK) {
+  } else if (NewArchive) {
     printStuff(::RTTI(CompressSettings()));
   }
 
@@ -522,9 +517,9 @@ void APPContext::CreateLog() {
   };
 
   PrintStuff(MainSettings());
-  if (info->mode == AppMode_e::EXTRACT) {
+  if (ProcessFile) {
     PrintStuff(ExtractSettings());
-  } else if (info->mode == AppMode_e::PACK) {
+  } else if (NewArchive) {
     PrintStuff(CompressSettings());
   }
 

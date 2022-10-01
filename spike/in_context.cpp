@@ -25,34 +25,110 @@
 #include "datas/master_printer.hpp"
 #include "datas/stat.hpp"
 #include "formats/ZIP_istream.inl"
+#include "out_context.hpp"
 #include "tmp_storage.hpp"
 #include <mutex>
 #include <sstream>
 
 static std::mutex simpleIOLock;
 
-struct SimpleIOContext : AppContext {
+struct AppContextShareImpl : AppContextShare {
+  std::ostream &NewFile(const std::string &path) override {
+    outFile.Open(basePath + path);
+    return outFile.BaseStream();
+  }
+
+  void BaseOutputPath(const std::string &basePath_) override {
+    basePath = basePath_;
+
+    if (basePath.back() != '/') {
+      basePath.push_back('/');
+    }
+  }
+
+  void MountUI(CounterLine *total, CounterLine *progress) override {
+    totalBar = total;
+    progBar = progress;
+  }
+
+  AppExtractContext *ExtractContext() override {
+    if (ectx) [[unlikely]] {
+      throw std::logic_error(
+          "ExtractContext has been already called within this context.");
+    }
+
+    std::string outPath(basePath);
+    outPath += workingFile.GetFullPathNoExt();
+
+    if (mainSettings.extractSettings.makeZIP) {
+      if (workingFile.GetExtension() == ".zip") {
+        outPath.append("_out");
+      }
+
+      outPath.append(".zip");
+
+      auto uniq = std::make_unique<ZIPExtactContext>(outPath);
+      uniq->totalBar = totalBar;
+      uniq->progBar = progBar;
+      ectx = std::move(uniq);
+    } else {
+      if (!mainSettings.extractSettings.folderPerArc) {
+        outPath = workingFile.GetFolder();
+      } else {
+        es::mkdir(outPath);
+        outPath.push_back('/');
+      }
+
+      auto uniq = std::make_unique<IOExtractContext>(outPath);
+      uniq->totalBar = totalBar;
+      uniq->progBar = progBar;
+      ectx = std::move(uniq);
+    }
+
+    return ectx.get();
+  }
+
+  void Finish() override {
+    if (ectx && mainSettings.extractSettings.makeZIP) {
+      static_cast<ZIPExtactContext *>(ectx.get())->FinishZIP([] {
+        printinfo("Generating cache.");
+      });
+    }
+  }
+
+  JenHash Hash() override {
+    auto fullPath = basePath + std::string(workingFile.GetFullPath());
+    return JenHash(fullPath);
+  }
+
+private:
+  BinWritter outFile;
+  std::string basePath;
+  CounterLine *totalBar = nullptr;
+  CounterLine *progBar = nullptr;
+  std::unique_ptr<AppExtractContext> ectx;
+};
+
+struct SimpleIOContext : AppContextShareImpl {
+  SimpleIOContext(const std::string &path) {
+    workingFile.Load(path);
+    mainFile.Open(path);
+  }
   std::istream *OpenFile(const std::string &path);
 
   AppContextStream RequestFile(const std::string &path) override;
 
   AppContextFoundStream FindFile(const std::string &rootFolder,
                                  const std::string &pattern) override;
+  std::istream &GetStream() override;
+  std::string GetBuffer(size_t size, size_t begin) override;
 
   void DisposeFile(std::istream *str) override;
 
 private:
+  BinReader mainFile;
   BinReader streamedFiles[32];
   uint32 usedFiles = 0;
-};
-
-struct ZIPContext : AppContext {
-  AppContextStream RequestFile(const std::string &path) override;
-
-  AppContextFoundStream FindFile(const std::string &rootFolder,
-                                 const std::string &pattern) override;
-
-  void DisposeFile(std::istream *str) override;
 };
 
 std::istream *SimpleIOContext::OpenFile(const std::string &path) {
@@ -88,7 +164,7 @@ AppContextFoundStream SimpleIOContext::FindFile(const std::string &rootFolder,
     throw std::runtime_error("Too many files found.");
   }
 
-  return {OpenFile(sc.Files().front()), this, sc.Files().front()};
+  return {OpenFile(sc.Files().front()), this, AFileInfo(sc.Files().front())};
 }
 
 void SimpleIOContext::DisposeFile(std::istream *str) {
@@ -113,8 +189,67 @@ void SimpleIOContext::DisposeFile(std::istream *str) {
   throw std::runtime_error("Requested stream not found!");
 }
 
-std::unique_ptr<AppContext> MakeIOContext() {
-  return std::make_unique<SimpleIOContext>();
+std::istream &SimpleIOContext::GetStream() { return mainFile.BaseStream(); }
+
+std::string SimpleIOContext::GetBuffer(size_t size, size_t begin) {
+  mainFile.Push();
+  mainFile.Seek(begin);
+  std::string buffer;
+  mainFile.ReadContainer(buffer,
+                         size == size_t(-1) ? mainFile.GetSize() : size);
+  mainFile.Pop();
+
+  return buffer;
+}
+
+std::shared_ptr<AppContextShare> MakeIOContext(const std::string &path) {
+  return std::make_unique<SimpleIOContext>(path);
+}
+
+struct ZIPIOContextInstance : AppContextShareImpl {
+  ZIPIOContextInstance(const ZIPIOContextInstance &) = delete;
+  ZIPIOContextInstance(ZIPIOContextInstance &&) = delete;
+  ZIPIOContextInstance(ZIPIOContext *base_, ZIPIOEntry entry_)
+      : base(base_), entry(entry_) {}
+
+  ~ZIPIOContextInstance() {
+    if (stream) {
+      base->DisposeFile(stream);
+    }
+  }
+
+  AppContextStream RequestFile(const std::string &path) override {
+    return base->RequestFile(path);
+  }
+  void DisposeFile(std::istream *file) override { base->DisposeFile(file); }
+  AppContextFoundStream FindFile(const std::string &rootFolder,
+                                 const std::string &pattern) override {
+    return base->FindFile(rootFolder, pattern);
+  }
+
+  std::istream &GetStream() override {
+    if (!stream) {
+      stream = base->OpenFile(entry);
+    }
+    return *stream;
+  }
+  std::string GetBuffer(size_t size, size_t begin) override {
+    BinReaderRef rd(GetStream());
+    rd.Push();
+    rd.Seek(begin);
+    std::string buffer;
+    rd.ReadContainer(buffer, size == size_t(-1) ? rd.GetSize() : size);
+    rd.Pop();
+    return buffer;
+  }
+
+  ZIPIOContext *base;
+  std::istream *stream = nullptr;
+  ZipEntry entry;
+};
+
+std::shared_ptr<AppContextShare> ZIPIOContext::Instance(ZIPIOEntry entry) {
+  return std::make_unique<ZIPIOContextInstance>(this, entry);
 }
 
 static std::mutex ZIPLock;
@@ -283,12 +418,12 @@ AppContextFoundStream ZIPIOContext_impl::FindFile(const std::string &,
   filter.AddFilter(pattern);
 
   for (auto &f : vfs) {
-    es::string_view kvi(f.first);
+    std::string_view kvi(f.first);
     size_t lastSlash = kvi.find_last_of('/');
     kvi.remove_prefix(lastSlash + 1);
 
     if (filter.IsFiltered(kvi)) {
-      return {OpenFile(f.second), this, f.first};
+      return {OpenFile(f.second), this, AFileInfo(f.first)};
     }
   }
 
@@ -445,7 +580,7 @@ struct ZIPIOContextCached : ZIPIOContext_implbase {
 
     return std::visit(
         [&](auto &item) -> AppContextFoundStream {
-          return {OpenFile(found), this, item};
+          return {OpenFile(found), this, AFileInfo(item)};
         },
         found.name);
   }

@@ -19,6 +19,7 @@
 #pragma once
 #include "cache.hpp"
 #include "datas/app_context.hpp"
+#include "datas/jenkinshash.hpp"
 #include "datas/pugi_fwd.hpp"
 #include <map>
 #include <mutex>
@@ -26,6 +27,7 @@
 class PathFilter;
 struct reflectorStatic;
 class ReflectorFriend;
+struct CounterLine;
 
 struct MainAppConfFriend : MainAppConf {
   using MainAppConf::extractSettings;
@@ -48,7 +50,7 @@ public:
     return *this;
   }
 
-  operator bool() { return object != nullptr; }
+  operator bool() const { return object != nullptr; }
   template <class... C> auto operator()(C &&...params) {
     using return_type = decltype(object(std::forward<C>(params)...));
 
@@ -71,10 +73,9 @@ private:
 struct APPContextCopyData {
   template <class C> using func = std::add_pointer_t<C>;
   template <class C> using opt_func = APPOptionalCall<std::add_pointer_t<C>>;
-  func<decltype(AppProcessFile)> ProcessFile;
-  func<decltype(AppExtractFile)> ExtractFile;
+  opt_func<decltype(AppProcessFile)> ProcessFile;
   opt_func<decltype(AppExtractStat)> ExtractStat;
-  func<decltype(AppNewArchive)> NewArchive;
+  opt_func<decltype(AppNewArchive)> NewArchive;
   opt_func<decltype(AppFinishContext)> FinishContext;
   const AppInfo_s *info;
 
@@ -145,34 +146,27 @@ struct ZIPIOEntryIterator {
 
 struct ZIPIOContextIterator {
   std::unique_ptr<ZIPIOEntryRawIterator> base;
-  ZIPIOEntryIterator begin() const { return {*base.get(), base->Fist()}; }
+  ZIPIOEntryIterator begin() const { return {*base.get(), base->Fist(), {}}; }
   ZIPIOEntry end() const { return {}; }
 };
 
-struct ZIPIOContext : AppContext {
+struct AppContextShare : AppContext {
+  virtual void BaseOutputPath(const std::string &basePath_) = 0;
+  virtual void MountUI(CounterLine *total, CounterLine *progress) = 0;
+  virtual void Finish() = 0;
+  virtual JenHash Hash() = 0;
+};
+
+struct ZIPIOContext : AppContextLocator {
   virtual std::istream *OpenFile(const ZipEntry &entry) = 0;
   virtual ZIPIOContextIterator
       Iter(ZIPIOEntryType = ZIPIOEntryType::String) const = 0;
   virtual std::string GetChunk(const ZipEntry &entry, size_t offset,
                                size_t size) const = 0;
+  virtual std::shared_ptr<AppContextShare> Instance(ZIPIOEntry entry);
 };
 
-struct ZIPIOContextInstance : AppContext {
-  ZIPIOContextInstance(ZIPIOContext *base_) : base(base_) {}
-  AppContextStream RequestFile(const std::string &path) {
-    return base->RequestFile(path);
-  }
-  void DisposeFile(std::istream *file) { base->DisposeFile(file); }
-  AppContextFoundStream FindFile(const std::string &rootFolder,
-                                 const std::string &pattern) {
-    return base->FindFile(rootFolder, pattern);
-  }
-
-private:
-  ZIPIOContext *base;
-};
-
-std::unique_ptr<AppContext> MakeIOContext();
+std::shared_ptr<AppContextShare> MakeIOContext(const std::string &path);
 std::unique_ptr<ZIPIOContext> MakeZIPContext(const std::string &file,
                                              const PathFilter &pathFilter,
                                              const PathFilter &moduleFilter);

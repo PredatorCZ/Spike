@@ -17,10 +17,11 @@
 */
 
 #pragma once
-#include "datas/string_view.hpp"
-#include "datas/supercore.hpp"
+#include "datas/fileinfo.hpp"
+#include <cstring>
 #include <functional>
 #include <iosfwd>
+#include <span>
 #include <string>
 
 #ifdef MAIN_APP
@@ -28,18 +29,6 @@
 #else
 #define AC_EXTERN ES_EXPORT
 #endif
-
-enum class AppMode_e : uint8 {
-  EXTRACT,
-  CONVERT,
-  PACK,
-};
-
-// Archive only (ZIP,) load only filtered entries or load all entries.
-enum class ArchiveLoadType : uint8 {
-  FILTERED,
-  ALL,
-};
 
 class ReflectorFriend;
 struct AppContextStream;
@@ -67,28 +56,72 @@ protected:
 };
 
 struct AppInfo_s {
-  static constexpr uint32 CONTEXT_VERSION = 1;
-  uint32 contextVersion;
-  AppMode_e mode;
-  ArchiveLoadType arcLoadType;
-  es::string_view header;
+  static constexpr uint32 CONTEXT_VERSION = 2;
+  uint32 contextVersion = CONTEXT_VERSION;
+  // No RequestFile or FindFile is being called
+  bool filteredLoad = false;
+  // AppProcessFile is called by thread
+  bool multithreaded = true;
+  std::string_view header;
   ReflectorFriend *settings = nullptr;
-  es::string_view *filters = nullptr;
+  std::span<std::string_view> filters;
   const MainAppConf *internalSettings = nullptr;
 };
 
-struct AppContext {
-  // Used with ZIP to separate zip and system filesystem
-  // Used only for locating additional files (RequestFile, FindFile)
-  std::string workingFile;
-  // Used only in CONVERT mode, represents presumed file location within system
-  // filesystem
-  std::string outFile;
-  virtual ~AppContext() = default;
+struct AppExtractContext {
+  virtual ~AppExtractContext() = default;
+  virtual void NewFile(const std::string &path) = 0;
+  virtual void SendData(std::string_view data) = 0;
+  virtual bool RequiresFolders() const = 0;
+  virtual void AddFolderPath(const std::string &path) = 0;
+  virtual void GenerateFolders() = 0;
+};
+
+// Every call is multi-threaded
+struct AppPackContext {
+  virtual ~AppPackContext() = default;
+  virtual void SendFile(std::string_view path, std::istream &stream) = 0;
+  virtual void Finish() = 0;
+};
+
+struct AppPackStats {
+  size_t numFiles;
+  size_t totalSizeFileNames;
+};
+
+struct AppHelpContext {
+  virtual ~AppHelpContext() = default;
+  virtual std::ostream &GetStream(const std::string &tag) = 0;
+};
+
+using request_chunk = std::function<std::string(size_t offset, size_t size)>;
+
+struct AppContextLocator {
+  virtual ~AppContextLocator() = default;
   virtual AppContextStream RequestFile(const std::string &path) = 0;
   virtual void DisposeFile(std::istream *file) = 0;
   virtual AppContextFoundStream FindFile(const std::string &rootFolder,
                                          const std::string &pattern) = 0;
+};
+
+struct AppContext : AppContextLocator {
+  // Path to currently processed file within current filesystem
+  AFileInfo workingFile;
+  virtual std::istream &GetStream() = 0;
+  virtual std::string GetBuffer(size_t size = -1, size_t begin = 0) = 0;
+  // Creates context for extraction, can be called only once per context
+  virtual AppExtractContext *ExtractContext() = 0;
+  // Create new file in system's filesystem
+  // Provides single interfce, calling it mutiple times within the same context
+  // will cause to close previous stream
+  // To make mutiple files in single context, use ExtractContext() instead.
+  // path can be relative, use with workingFile
+  virtual std::ostream &NewFile(const std::string &path) = 0;
+
+  template <class C> void GetType(C &out, size_t offset = 0) {
+    auto buffer = GetBuffer(offset, sizeof(C));
+    memcpy(&out, buffer.data(), buffer.size());
+  }
 };
 
 struct AppContextStream {
@@ -98,7 +131,7 @@ struct AppContextStream {
       : stream(other.stream), ctx(other.ctx) {
     other.ctx = nullptr;
   }
-  AppContextStream(std::istream *str, AppContext *ctx_)
+  AppContextStream(std::istream *str, AppContextLocator *ctx_)
       : stream(str), ctx(ctx_) {}
   ~AppContextStream() {
     if (*this) {
@@ -126,52 +159,22 @@ struct AppContextStream {
 
 private:
   std::istream *stream = nullptr;
-  AppContext *ctx = nullptr;
+  AppContextLocator *ctx = nullptr;
 };
 
 struct AppContextFoundStream : AppContextStream {
-  std::string workingFile;
+  AFileInfo path;
   using AppContextStream::AppContextStream;
-  AppContextFoundStream(std::istream *str, AppContext *ctx_,
-                        const std::string &workFile)
-      : AppContextStream(str, ctx_), workingFile(workFile) {}
+  AppContextFoundStream(std::istream *str, AppContextLocator *ctx_,
+                        const AFileInfo &workFile)
+      : AppContextStream(str, ctx_), path(workFile) {}
 };
-
-struct AppExtractContext {
-  AppContext *ctx = nullptr;
-  virtual ~AppExtractContext() = default;
-  virtual void NewFile(const std::string &path) = 0;
-  virtual void SendData(es::string_view data) = 0;
-  virtual bool RequiresFolders() const = 0;
-  virtual void AddFolderPath(const std::string &path) = 0;
-  virtual void GenerateFolders() = 0;
-};
-
-// Every call is multi-threaded
-struct AppPackContext {
-  virtual ~AppPackContext() = default;
-  virtual void SendFile(es::string_view path, std::istream &stream) = 0;
-  virtual void Finish() = 0;
-};
-
-struct AppPackStats {
-  size_t numFiles;
-  size_t totalSizeFileNames;
-};
-
-struct AppHelpContext {
-  virtual ~AppHelpContext() = default;
-  virtual std::ostream &GetStream(const std::string &tag) = 0;
-};
-
-using request_chunk = std::function<std::string(size_t offset, size_t size)>;
 
 extern "C" {
 AppInfo_s AC_EXTERN *AppInitModule();
 void AC_EXTERN AppAdditionalHelp(AppHelpContext *ctx, size_t indent);
 bool AC_EXTERN AppInitContext(const std::string &dataFolder);
-void AC_EXTERN AppProcessFile(std::istream &stream, AppContext *ctx);
-void AC_EXTERN AppExtractFile(std::istream &stream, AppExtractContext *ctx);
+void AC_EXTERN AppProcessFile(AppContext *ctx);
 // Returns total number of files within archive
 size_t AC_EXTERN AppExtractStat(request_chunk requester);
 AppPackContext AC_EXTERN *AppNewArchive(const std::string &folder,

@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.12)
 
 set(CMAKE_CXX_STANDARD 20)
-project(Spike VERSION 1.0)
+project(Spike VERSION 2.0)
 
 build_target(
   NAME
