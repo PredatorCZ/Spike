@@ -18,7 +18,7 @@
 
 #pragma once
 #include "settings.hpp"
-#include <iosfwd>
+#include <ostream>
 #include <string>
 
 #define printerror(...)                                                        \

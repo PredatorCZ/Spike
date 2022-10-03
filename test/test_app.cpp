@@ -2,6 +2,7 @@
 #include "datas/stat.hpp"
 #include "datas/supercore.hpp"
 #include "datas/unit_testing.hpp"
+#include <algorithm>
 
 using namespace std::string_view_literals;
 
