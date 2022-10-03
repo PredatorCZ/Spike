@@ -46,8 +46,7 @@ struct ZIPExtactContext : AppExtractContext {
   void FinishZIP(cache_begin_cb cacheBeginCB);
 
   std::string prefixPath;
-  CounterLine *totalBar = nullptr;
-  CounterLine *progBar = nullptr;
+  std::function<void()> forEachFile;
 
 private:
   friend struct ZIPMerger;
@@ -86,8 +85,7 @@ private:
 struct IOExtractContext : AppExtractContext, BinWritter {
   std::string outDir;
   std::set<std::string> folderTree;
-  CounterLine *totalBar = nullptr;
-  CounterLine *progBar = nullptr;
+  std::function<void()> forEachFile;
 
   IOExtractContext(const std::string &outDir_) : outDir(outDir_) {}
 

@@ -27,7 +27,6 @@
 class PathFilter;
 struct reflectorStatic;
 class ReflectorFriend;
-struct CounterLine;
 
 struct MainAppConfFriend : MainAppConf {
   using MainAppConf::extractSettings;
@@ -152,10 +151,13 @@ struct ZIPIOContextIterator {
 
 struct AppContextShare : AppContext {
   virtual void BaseOutputPath(const std::string &basePath_) = 0;
-  virtual void MountUI(CounterLine *total, CounterLine *progress) = 0;
   virtual void Finish() = 0;
   virtual JenHash Hash() = 0;
+  virtual std::string FullPath() = 0;
+  std::function<void()> forEachFile;
 };
+
+struct ZIPExtactContext;
 
 struct ZIPIOContext : AppContextLocator {
   virtual std::istream *OpenFile(const ZipEntry &entry) = 0;
@@ -164,6 +166,10 @@ struct ZIPIOContext : AppContextLocator {
   virtual std::string GetChunk(const ZipEntry &entry, size_t offset,
                                size_t size) const = 0;
   virtual std::shared_ptr<AppContextShare> Instance(ZIPIOEntry entry);
+  virtual void Merge(ZIPExtactContext *eCtx, const std::string &records) = 0;
+  virtual void InitMerger() = 0;
+  virtual void Finish() = 0;
+  std::string basePath;
 };
 
 std::shared_ptr<AppContextShare> MakeIOContext(const std::string &path);

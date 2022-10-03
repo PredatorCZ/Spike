@@ -190,6 +190,8 @@ void MakeLogger() {
       if (state > 1) {
         break;
       } else {
+        std::this_thread::sleep_for(std::chrono::milliseconds(nextTickMS));
+        innerTick += nextTickMS;
         continue;
       }
     }

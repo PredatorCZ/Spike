@@ -27,8 +27,10 @@
 #include "formats/ZIP_istream.inl"
 #include "out_context.hpp"
 #include "tmp_storage.hpp"
+#include <list>
 #include <mutex>
-#include <sstream>
+#include <optional>
+#include <spanstream>
 
 static std::mutex simpleIOLock;
 
@@ -46,67 +48,14 @@ struct AppContextShareImpl : AppContextShare {
     }
   }
 
-  void MountUI(CounterLine *total, CounterLine *progress) override {
-    totalBar = total;
-    progBar = progress;
+  JenHash Hash() override { return JenHash(FullPath()); }
+
+  std::string FullPath() override {
+    return basePath + std::string(workingFile.GetFullPath());
   }
 
-  AppExtractContext *ExtractContext() override {
-    if (ectx) [[unlikely]] {
-      throw std::logic_error(
-          "ExtractContext has been already called within this context.");
-    }
-
-    std::string outPath(basePath);
-    outPath += workingFile.GetFullPathNoExt();
-
-    if (mainSettings.extractSettings.makeZIP) {
-      if (workingFile.GetExtension() == ".zip") {
-        outPath.append("_out");
-      }
-
-      outPath.append(".zip");
-
-      auto uniq = std::make_unique<ZIPExtactContext>(outPath);
-      uniq->totalBar = totalBar;
-      uniq->progBar = progBar;
-      ectx = std::move(uniq);
-    } else {
-      if (!mainSettings.extractSettings.folderPerArc) {
-        outPath = workingFile.GetFolder();
-      } else {
-        es::mkdir(outPath);
-        outPath.push_back('/');
-      }
-
-      auto uniq = std::make_unique<IOExtractContext>(outPath);
-      uniq->totalBar = totalBar;
-      uniq->progBar = progBar;
-      ectx = std::move(uniq);
-    }
-
-    return ectx.get();
-  }
-
-  void Finish() override {
-    if (ectx && mainSettings.extractSettings.makeZIP) {
-      static_cast<ZIPExtactContext *>(ectx.get())->FinishZIP([] {
-        printinfo("Generating cache.");
-      });
-    }
-  }
-
-  JenHash Hash() override {
-    auto fullPath = basePath + std::string(workingFile.GetFullPath());
-    return JenHash(fullPath);
-  }
-
-private:
   BinWritter outFile;
   std::string basePath;
-  CounterLine *totalBar = nullptr;
-  CounterLine *progBar = nullptr;
-  std::unique_ptr<AppExtractContext> ectx;
 };
 
 struct SimpleIOContext : AppContextShareImpl {
@@ -125,10 +74,54 @@ struct SimpleIOContext : AppContextShareImpl {
 
   void DisposeFile(std::istream *str) override;
 
+  AppExtractContext *ExtractContext() override {
+    if (ectx) [[unlikely]] {
+      throw std::logic_error(
+          "ExtractContext has been already called within this context.");
+    }
+
+    std::string outPath(basePath);
+    outPath += workingFile.GetFullPathNoExt();
+
+    if (mainSettings.extractSettings.makeZIP) {
+      if (workingFile.GetExtension() == ".zip") {
+        outPath.append("_out");
+      }
+
+      outPath.append(".zip");
+
+      auto uniq = std::make_unique<ZIPExtactContext>(outPath);
+      uniq->forEachFile = forEachFile;
+      ectx = std::move(uniq);
+    } else {
+      if (!mainSettings.extractSettings.folderPerArc) {
+        outPath = workingFile.GetFolder();
+      } else {
+        es::mkdir(outPath);
+        outPath.push_back('/');
+      }
+
+      auto uniq = std::make_unique<IOExtractContext>(outPath);
+      uniq->forEachFile = forEachFile;
+      ectx = std::move(uniq);
+    }
+
+    return ectx.get();
+  }
+
+  void Finish() override {
+    if (ectx && mainSettings.extractSettings.makeZIP) {
+      static_cast<ZIPExtactContext *>(ectx.get())->FinishZIP([] {
+        printinfo("Generating cache.");
+      });
+    }
+  }
+
 private:
   BinReader mainFile;
   BinReader streamedFiles[32];
   uint32 usedFiles = 0;
+  std::unique_ptr<AppExtractContext> ectx;
 };
 
 std::istream *SimpleIOContext::OpenFile(const std::string &path) {
@@ -210,7 +203,10 @@ struct ZIPIOContextInstance : AppContextShareImpl {
   ZIPIOContextInstance(const ZIPIOContextInstance &) = delete;
   ZIPIOContextInstance(ZIPIOContextInstance &&) = delete;
   ZIPIOContextInstance(ZIPIOContext *base_, ZIPIOEntry entry_)
-      : base(base_), entry(entry_) {}
+      : base(base_), entry(entry_) {
+    workingFile.Load(entry_.AsView());
+    BaseOutputPath(base->basePath);
+  }
 
   ~ZIPIOContextInstance() {
     if (stream) {
@@ -243,9 +239,54 @@ struct ZIPIOContextInstance : AppContextShareImpl {
     return buffer;
   }
 
+  AppExtractContext *ExtractContext() override {
+    if (ectx) [[unlikely]] {
+      throw std::logic_error(
+          "ExtractContext has been already called within this context.");
+    }
+
+    if (mainSettings.extractSettings.makeZIP) {
+      base->InitMerger();
+      entriesPath = RequestTempFile();
+      auto uniq = std::make_unique<ZIPExtactContext>(entriesPath, false);
+      if (mainSettings.extractSettings.folderPerArc) {
+        uniq->prefixPath = workingFile.GetFullPathNoExt();
+        uniq->prefixPath.push_back('/');
+      }
+      uniq->forEachFile = forEachFile;
+      ectx = std::move(uniq);
+    } else {
+      std::string outPath;
+      if (!mainSettings.extractSettings.folderPerArc) {
+        outPath = workingFile.GetFolder();
+      } else {
+        outPath = basePath;
+        outPath += workingFile.GetFullPathNoExt();
+        mkdirs(outPath);
+        outPath.push_back('/');
+      }
+
+      auto uniq = std::make_unique<IOExtractContext>(outPath);
+      uniq->forEachFile = forEachFile;
+      ectx = std::move(uniq);
+    }
+
+    return ectx.get();
+  }
+
+  void Finish() override {
+    if (ectx && mainSettings.extractSettings.makeZIP) {
+      base->Merge(static_cast<ZIPExtactContext *>(ectx.get()), entriesPath);
+      es::Dispose(ectx);
+      es::RemoveFile(entriesPath);
+    }
+  }
+
   ZIPIOContext *base;
   std::istream *stream = nullptr;
   ZipEntry entry;
+  std::unique_ptr<AppExtractContext> ectx;
+  std::string entriesPath;
 };
 
 std::shared_ptr<AppContextShare> ZIPIOContext::Instance(ZIPIOEntry entry) {
@@ -259,15 +300,32 @@ struct ZIPDataHolder {
 };
 
 struct ZIPIOContext_implbase : ZIPIOContext {
-  ZIPIOContext_implbase(const std::string &file) : rd(file) {}
+  ZIPIOContext_implbase(const std::string &file) : zipMount(file) {}
   std::istream *OpenFile(const ZipEntry &entry) override;
   std::string GetChunk(const ZipEntry &entry, size_t offset,
                        size_t size) const override;
   void DisposeFile(std::istream *str) override;
 
+  void Merge(ZIPExtactContext *eCtx, const std::string &records) override {
+    merger->Merge(*eCtx, records);
+  }
+
+  void InitMerger() override {
+    if (!merger) {
+      merger.emplace(basePath + "_out.zip", RequestTempFile());
+    }
+  }
+
+  void Finish() override {
+    if (merger) {
+      merger->FinishMerge([] { printinfo("Generating cache."); });
+    }
+  }
+
 protected:
-  std::map<std::istream *, std::unique_ptr<ZIPDataHolder>> openedFiles;
-  BinReader rd;
+  std::list<std::spanstream> openedFiles;
+  es::MappedFile zipMount;
+  std::optional<ZIPMerger> merger;
 };
 
 struct ZIPMemoryStream : ZIPDataHolder {
@@ -292,60 +350,32 @@ struct ZIPFileStream : ZIPDataHolder {
 };
 
 std::istream *ZIPIOContext_implbase::OpenFile(const ZipEntry &entry) {
+  auto dataBegin = static_cast<char *>(zipMount.data) + entry.offset;
+  auto dataEnd = dataBegin + entry.size;
+
   std::lock_guard<std::mutex> guard(ZIPLock);
-  rd.Seek(entry.offset);
-  constexpr size_t memoryLimit = 16777216;
-
-  if (entry.size > memoryLimit) {
-    std::string path = RequestTempFile();
-    {
-      std::string semi;
-      semi.resize(memoryLimit);
-      const size_t numBlocks = entry.size / memoryLimit;
-      const size_t restBytes = entry.size % memoryLimit;
-      BinWritter wr(path);
-
-      for (size_t b = 0; b < numBlocks; b++) {
-        rd.ReadBuffer(&semi[0], memoryLimit);
-        wr.WriteContainer(semi);
-      }
-
-      if (restBytes) {
-        rd.ReadBuffer(&semi[0], restBytes);
-        wr.WriteBuffer(semi.data(), restBytes);
-      }
-    }
-
-    auto stoff = std::make_unique<ZIPFileStream>(path);
-    std::istream *ptr = &stoff->rd.BaseStream();
-    openedFiles.emplace(ptr, std::move(stoff));
-    return ptr;
-  } else {
-    std::string semi;
-    rd.ReadContainer(semi, entry.size);
-    auto stoff = std::make_unique<ZIPMemoryStream>(std::move(semi));
-    std::istream *ptr = &stoff->stream;
-    openedFiles.emplace(ptr, std::move(stoff));
-    return ptr;
-  }
+  auto &str = openedFiles.emplace_back(std::span<char>(dataBegin, dataEnd),
+                                       std::ios::binary | std::ios::in);
+  return &str;
 }
 
 std::string ZIPIOContext_implbase::GetChunk(const ZipEntry &entry,
                                             size_t offset, size_t size) const {
-  std::lock_guard<std::mutex> guard(ZIPLock);
-  rd.Seek(entry.offset + offset);
-  std::string retVal;
-  rd.ReadContainer(retVal, size);
-  return retVal;
+  auto dataBegin = static_cast<char *>(zipMount.data) + entry.offset + offset;
+  auto dataEnd = dataBegin + size;
+
+  return {dataBegin, dataEnd};
 }
 
 void ZIPIOContext_implbase::DisposeFile(std::istream *str) {
   std::lock_guard<std::mutex> guard(ZIPLock);
-  openedFiles.erase(str);
+  openedFiles.remove_if([&](auto &spanStr) {
+    return static_cast<std::istream *>(&spanStr) == str;
+  });
 }
 
 struct ZIPIOContextIter_impl : ZIPIOEntryRawIterator {
-  using map_type = std::map<std::string, ZipEntry>;
+  using map_type = std::map<std::string_view, ZipEntry>;
   ZIPIOContextIter_impl(const map_type &map)
       : base(&map), current(map.begin()), end(map.end()) {}
   ZIPIOEntry Fist() const override {
@@ -395,11 +425,10 @@ struct ZIPIOContext_impl : ZIPIOContext_implbase {
   }
 
 private:
-  void ReadEntry();
   void Read();
   const PathFilter *pathFilter = nullptr;
   const PathFilter *moduleFilter = nullptr;
-  std::map<std::string, ZipEntry> vfs;
+  std::map<std::string_view, ZipEntry> vfs;
 };
 
 AppContextStream ZIPIOContext_impl::RequestFile(const std::string &path) {
@@ -430,127 +459,164 @@ AppContextFoundStream ZIPIOContext_impl::FindFile(const std::string &,
   throw es::FileNotFoundError(pattern);
 }
 
+// Warning: Unaligned accesses
+// Note: Multiple central directories? (unlikely)
 void ZIPIOContext_impl::Read() {
-  const size_t fileSize = rd.GetSize();
-  while (rd.Tell() < fileSize) {
-    ReadEntry();
+  auto curEnd = static_cast<const char *>(zipMount.data) + zipMount.dataSize -
+                (sizeof(ZIPCentralDir) - 2);
+  auto curLocator = reinterpret_cast<const ZIPCentralDir *>(curEnd);
+
+  if (curLocator->id != ZIPCentralDir::ID) {
+    int numIters = 4096;
+    while (numIters > 0) {
+      curEnd--;
+      numIters--;
+
+      curLocator = reinterpret_cast<const ZIPCentralDir *>(curEnd);
+      if (curLocator->id == ZIPCentralDir::ID) {
+        break;
+      }
+    }
   }
-}
 
-void ZIPIOContext_impl::ReadEntry() {
-  uint32 id;
-  rd.Push();
-  rd.Read(id);
-  rd.Pop();
+  if (curLocator->id != ZIPCentralDir::ID) {
+    throw std::runtime_error("Cannot find ZIP central directory");
+  }
 
-  switch (id) {
-  case ZIPLocalFile::ID: {
-    ZIPLocalFile hdr;
-    rd.Read(hdr);
+  uint64 dirOffset = 0;
+  uint64 numEntries = 0;
+  uint64 dirSize = 0;
 
-    [&] {
-      if (!hdr.compressedSize) {
-        rd.Skip(hdr.fileNameSize + hdr.extraFieldSize + hdr.uncompressedSize);
-        return;
+  if (curLocator->dirOffset == -1U || curLocator->numDirEntries == uint16(-1) ||
+      curLocator->dirSize == -1U) {
+    curEnd -= sizeof(ZIP64CentralDir) - 4;
+    auto curLocatorX64 = reinterpret_cast<const ZIP64CentralDir *>(curEnd);
+    if (curLocatorX64->id != ZIP64CentralDir::ID) {
+      int numIters = 4096;
+      while (numIters > 0) {
+        curEnd--;
+        numIters--;
+
+        curLocatorX64 = reinterpret_cast<const ZIP64CentralDir *>(curEnd);
+        if (curLocatorX64->id == ZIP64CentralDir::ID) {
+          break;
+        }
       }
+    }
 
-      if (hdr.flags[ZIPLocalFlag::Encrypted]) {
-        throw std::runtime_error("ZIP cannot have encrypted files!");
-      }
+    if (curLocator->id != ZIP64CentralDir::ID) {
+      throw std::runtime_error("Cannot find ZIPx64 central directory");
+    }
 
-      if (hdr.compression != ZIPCompressionMethod::Store) {
-        throw std::runtime_error("ZIP cannot have compressed files!");
-      }
+    dirOffset = curLocatorX64->dirOffset;
+    numEntries = curLocatorX64->numDirEntries;
+    dirSize = curLocatorX64->dirSize;
+  } else {
+    dirOffset = curLocator->dirOffset;
+    numEntries = curLocator->numDirEntries;
+    dirSize = curLocator->dirSize;
+  }
 
-      if (!hdr.fileNameSize) {
-        throw std::runtime_error("ZIP local file's path must be specified!");
-      }
+  auto entriesBegin = static_cast<char *>(zipMount.data) + dirOffset;
+  auto entriesEnd = entriesBegin + dirSize;
+  std::spanstream entriesSpan(std::span<char>(entriesBegin, entriesEnd),
+                              std::ios::binary | std::ios::in);
+  BinReaderRef rd(entriesSpan);
+  std::spanstream localStreamSpan(
+      std::span<char>(static_cast<char *>(zipMount.data), entriesBegin),
+      std::ios::binary | std::ios::in);
+  BinReaderRef localRd(localStreamSpan);
 
-      std::string path;
-      rd.ReadContainer(path, hdr.fileNameSize);
-      size_t entrySize = hdr.compressedSize;
+  for (size_t d = 0; d < numEntries; d++) {
+    uint32 id;
+    rd.Push();
+    rd.Read(id);
+    rd.Pop();
 
-      if (hdr.compressedSize == 0xffffffff) {
-        const size_t extraEnd = rd.Push() + hdr.extraFieldSize;
+    switch (id) {
+    case ZIPFile::ID: {
+      ZIPFile hdr;
+      rd.Read(hdr);
 
-        while (rd.Tell() < extraEnd) {
-          ZIP64Extra extra;
-          rd.Read(extra.id);
-          rd.Read(extra.size);
+      [&] {
+        std::string_view entryName(entriesBegin + rd.Tell(), hdr.fileNameSize);
+        rd.Skip(hdr.fileNameSize);
 
-          if (extra.id == 1) {
-            rd.Read(extra.compressedSize);
-            entrySize = extra.compressedSize;
-            break;
-          } else {
-            rd.Skip(extra.size);
-          }
+        if (!hdr.compressedSize) {
+          return;
         }
 
-        rd.Pop();
-      }
+        if (hdr.flags[ZIPLocalFlag::Encrypted]) {
+          throw std::runtime_error("ZIP cannot have encrypted files!");
+        }
 
-      rd.Skip(hdr.extraFieldSize);
-      ZipEntry entry{rd.Tell(), entrySize};
-      rd.Skip(entrySize);
+        if (hdr.compression != ZIPCompressionMethod::Store) {
+          throw std::runtime_error("ZIP cannot have compressed files!");
+        }
 
-      if (pathFilter && !pathFilter->IsFiltered(path)) {
-        return;
-      }
+        if (!hdr.fileNameSize) {
+          throw std::runtime_error("ZIP local file's path must be specified!");
+        }
 
-      if (moduleFilter && !moduleFilter->IsFiltered(path)) {
-        return;
-      }
+        size_t entrySize = hdr.compressedSize;
+        size_t localOffset = hdr.localHeaderOffset;
 
-      vfs.emplace(std::move(path), entry);
-    }();
-    break;
-  }
+        if (hdr.compressedSize == -1U || hdr.uncompressedSize == -1U ||
+            hdr.localHeaderOffset == -1U) {
+          const size_t extraEnd = rd.Push() + hdr.extraFieldSize;
 
-  case ZIPFile::ID: {
-    ZIPFile hdr;
-    rd.Read(hdr);
-    rd.Skip(hdr.fileNameSize + hdr.extraFieldSize + hdr.fileCommentSize);
-    break;
-  };
+          while (rd.Tell() < extraEnd) {
+            ZIP64Extra extra;
+            rd.Read(extra.id);
+            rd.Read(extra.size);
 
-  case ZIPCentralDir::ID: {
-    ZIPCentralDir hdr;
-    rd.Read(hdr);
-    rd.Skip(hdr.commentSize);
-    break;
-  }
+            if (extra.id == 1) {
+              if (hdr.uncompressedSize == -1U) {
+                rd.Read(extra.uncompressedSize);
+                entrySize = extra.uncompressedSize;
+              }
+              if (hdr.compressedSize == -1U) {
+                rd.Read(extra.compressedSize);
+              }
+              if (hdr.localHeaderOffset == -1U) {
+                rd.Read(extra.localHeaderOffset);
+                localOffset = extra.localHeaderOffset;
+              }
+              break;
+            } else {
+              rd.Skip(extra.size);
+            }
+          }
 
-  case ZIP64CentralDir::ID: {
-    ZIP64CentralDir hdr;
-    rd.Read(hdr);
-    break;
-  }
+          rd.Pop();
+        }
 
-  case ZIP64CentralDirLocator::ID: {
-    ZIP64CentralDirLocator hdr;
-    rd.Read(hdr);
-    break;
-  }
+        if (pathFilter && !pathFilter->IsFiltered(entryName)) {
+          return;
+        }
 
-  case ZIPSignature::ID: {
-    ZIPSignature hdr;
-    rd.Read(hdr);
-    rd.Skip(hdr.dataSize);
-    break;
-  }
+        if (moduleFilter && !moduleFilter->IsFiltered(entryName)) {
+          return;
+        }
 
-  case ZIPExtraData::ID: {
-    ZIPExtraData hdr;
-    rd.Read(hdr);
-    rd.Skip(hdr.dataSize);
-    break;
-  }
+        ZIPLocalFile localEntry;
+        localRd.Seek(localOffset);
+        localRd.Read(localEntry);
+        ZipEntry entry;
+        entry.size = entrySize;
+        entry.offset = localRd.Tell() + localEntry.extraFieldSize +
+                       localEntry.fileNameSize;
+        vfs.emplace(entryName, entry);
+      }();
 
-  default:
-    using std::to_string;
-    throw std::runtime_error("Invalid block " + to_string(id) + " at " +
-                             to_string(rd.Tell()));
+      rd.Skip(hdr.extraFieldSize + hdr.fileCommentSize);
+      break;
+    }
+    default:
+      using std::to_string;
+      throw std::runtime_error("Invalid dir entry " + to_string(id) + " at " +
+                               to_string(rd.Tell() + dirOffset));
+    }
   }
 }
 
@@ -593,12 +659,11 @@ struct ZIPIOContextCached : ZIPIOContext_implbase {
       : ZIPIOContext_implbase(file), cacheMount(std::move(cacheFile)) {
     cache.Mount(cacheMount.data);
     auto &cacheHdr = reinterpret_cast<const CacheBaseHeader &>(cache.Header());
+    auto zipData = static_cast<const char *>(zipMount.data);
+    auto zipHeader = reinterpret_cast<const CacheBaseHeader *>(
+        zipData + cacheHdr.zipCheckupOffset);
 
-    rd.Seek(cacheHdr.zipCheckupOffset);
-    CacheBaseHeader hdr;
-    rd.Read(hdr);
-
-    if (memcmp(&hdr, &cacheHdr, sizeof(hdr))) {
+    if (memcmp(zipHeader, &cacheHdr, sizeof(cacheHdr))) {
       throw std::runtime_error("Cache header and zip checkup are different.");
     }
   }

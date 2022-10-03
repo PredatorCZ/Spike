@@ -119,7 +119,7 @@ struct AppContext : AppContextLocator {
   virtual std::ostream &NewFile(const std::string &path) = 0;
 
   template <class C> void GetType(C &out, size_t offset = 0) {
-    auto buffer = GetBuffer(offset, sizeof(C));
+    auto buffer = GetBuffer(sizeof(C), offset);
     memcpy(&out, buffer.data(), buffer.size());
   }
 };

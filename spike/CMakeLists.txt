@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.12)
 
-set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD 23)
 project(Spike VERSION 2.0)
 
 build_target(
@@ -21,6 +21,7 @@ build_target(
   in_cache.cpp
   tmp_storage.cpp
   console.cpp
+  batch.cpp
   AUTHOR
   "Lukas Cone"
   DESCR

@@ -222,6 +222,7 @@ APPContext::APPContext(const char *moduleName_, const std::string &appFolder_,
   tryAssign(FinishContext, "AppFinishContext");
   tryAssign(NewArchive, "AppNewArchive");
   tryAssign(ProcessFile, "AppProcessFile");
+  tryAssign(ExtractStat, "AppExtractStat");
 
   if (NewArchive && ProcessFile) {
     throw std::logic_error("Module uses 2 or more contexts!");

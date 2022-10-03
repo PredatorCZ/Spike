@@ -231,12 +231,8 @@ void ZIPExtactContext::NewFile(const std::string &path) {
   records.WriteContainer(prefixPath);
   records.WriteContainer(pathSv);
 
-  if (progBar) {
-    (*progBar)++;
-  }
-
-  if (totalBar) {
-    (*totalBar)++;
+  if (forEachFile) {
+    forEachFile();
   }
 }
 
@@ -264,11 +260,8 @@ void IOExtractContext::NewFile(const std::string &path) {
   std::string cfle(cfleWrap.GetFullPath());
   Open(outDir + cfle);
 
-  if (progBar) {
-    (*progBar)++;
-  }
-  if (totalBar) {
-    (*totalBar)++;
+  if (forEachFile) {
+    forEachFile();
   }
 }
 
@@ -397,7 +390,7 @@ void ZIPMerger::FinishMerge(cache_begin_cb cacheBeginCB) {
   BinReader rd(entriesFile);
   const size_t numBlocks = entriesSize / sizeof(buffer);
   const size_t restBytes = entriesSize % sizeof(buffer);
-  bool forcex64 = true;
+  bool forcex64 = false;
   const size_t dirOffset = records.Tell();
 
   auto SafeCast = [&](auto &where, auto &&what) {
