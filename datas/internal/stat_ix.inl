@@ -49,8 +49,7 @@ MappedFile::MappedFile(const std::string &path) {
   }
 
   dataSize = fileStat.st_size;
-  data = mmap(nullptr, fileStat.st_size, PROT_READ, MAP_SHARED | MAP_POPULATE,
-              fd, 0);
+  data = mmap(nullptr, fileStat.st_size, PROT_READ, MAP_SHARED, fd, 0);
 
   madvise(data, dataSize, MADV_RANDOM);
   madvise(data, dataSize, MADV_WILLNEED);
