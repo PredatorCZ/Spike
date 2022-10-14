@@ -201,14 +201,14 @@ void PackModeBatch(Batch &batch) {
     AppPackContext *archiveContext = nullptr;
     std::string pbarLabel;
     DetailedProgressBar *progBar = nullptr;
-    const std::string *folderPath = nullptr;
+    std::string folderPath;
   };
 
   auto payload = std::make_shared<PackData>();
 
   batch.forEachFolder = [payload, ctx = batch.ctx](const std::string &path,
                                                    AppPackStats stats) {
-    payload->folderPath = &path;
+    payload->folderPath = path;
     payload->archiveContext = ctx->NewArchive(path, stats);
     payload->pbarLabel = "Folder id " + std::to_string(payload->index++);
     payload->progBar =
