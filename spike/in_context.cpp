@@ -462,7 +462,7 @@ AppContextFoundStream ZIPIOContext_impl::FindFile(const std::string &,
 // Warning: Unaligned accesses
 // Note: Multiple central directories? (unlikely)
 void ZIPIOContext_impl::Read() {
-  auto curEnd = static_cast<const char *>(zipMount.data) + zipMount.dataSize -
+  auto curEnd = static_cast<char *>(zipMount.data) + zipMount.dataSize -
                 (sizeof(ZIPCentralDir) - 2);
   auto curLocator = reinterpret_cast<const ZIPCentralDir *>(curEnd);
 
@@ -489,7 +489,7 @@ void ZIPIOContext_impl::Read() {
 
   if (curLocator->dirOffset == -1U || curLocator->numDirEntries == uint16(-1) ||
       curLocator->dirSize == -1U) {
-    curEnd -= sizeof(ZIP64CentralDir) - 4;
+    curEnd -= sizeof(ZIP64CentralDir) - 8;
     auto curLocatorX64 = reinterpret_cast<const ZIP64CentralDir *>(curEnd);
     if (curLocatorX64->id != ZIP64CentralDir::ID) {
       int numIters = 4096;
@@ -504,13 +504,21 @@ void ZIPIOContext_impl::Read() {
       }
     }
 
-    if (curLocator->id != ZIP64CentralDir::ID) {
+    if (curLocatorX64->id != ZIP64CentralDir::ID) {
       throw std::runtime_error("Cannot find ZIPx64 central directory");
     }
 
-    dirOffset = curLocatorX64->dirOffset;
-    numEntries = curLocatorX64->numDirEntries;
-    dirSize = curLocatorX64->dirSize;
+    std::spanstream entriesSpan(
+        std::span<char>(curEnd, static_cast<char *>(zipMount.data) +
+                                          zipMount.dataSize),
+        std::ios::binary | std::ios::in);
+    BinReaderRef rd(entriesSpan);
+    ZIP64CentralDir x64CentraDir;
+    rd.Read(x64CentraDir);
+
+    dirOffset = x64CentraDir.dirOffset;
+    numEntries = x64CentraDir.numDirEntries;
+    dirSize = x64CentraDir.dirSize;
   } else {
     dirOffset = curLocator->dirOffset;
     numEntries = curLocator->numDirEntries;
