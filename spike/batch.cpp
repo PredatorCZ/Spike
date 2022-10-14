@@ -38,6 +38,16 @@ struct MultiThreadManagerImpl {
     canProcess.notify_one();
   }
 
+  void Wait() {
+    if (queue.empty() && workingWorkers == 0) {
+      return;
+    }
+    std::mutex mutex_;
+    std::unique_lock<std::mutex> lk(mutex_);
+    finsihedBatch.wait(lk,
+                       [&] { return queue.empty() && workingWorkers == 0; });
+  }
+
   FuncType Pop() {
     FuncType retval;
     {
@@ -46,6 +56,7 @@ struct MultiThreadManagerImpl {
           lk, [&] { return !queue.empty() || (done && queue.empty()); });
 
       if (!queue.empty()) [[likely]] {
+        workingWorkers++;
         retval = std::move(queue.front());
         queue.pop_front();
       }
@@ -72,39 +83,49 @@ struct MultiThreadManagerImpl {
   std::vector<std::thread> workers;
   std::vector<std::future<void>> states;
   std::deque<FuncType> queue;
+  std::atomic_int32_t workingWorkers;
   size_t capacity;
   bool done = false;
   std::mutex mutex;
   std::condition_variable canProcess;
   std::condition_variable hasSpace;
+  std::condition_variable finsihedBatch;
 };
 
 void WorkerThread::operator()() {
   while (true) {
-    auto item = manager.Pop();
+    {
+      auto item = manager.Pop();
 
-    if (!item) [[unlikely]] {
-      break;
+      if (!item) [[unlikely]] {
+        manager.workingWorkers--;
+        manager.finsihedBatch.notify_all();
+        break;
+      }
+
+      try {
+        item();
+      } catch (const std::exception &e) {
+        if constexpr (CATCH_EXCEPTIONS) {
+          state.set_exception(std::current_exception());
+          return;
+        } else {
+          printerror(e.what());
+        }
+      } catch (...) {
+        if constexpr (CATCH_EXCEPTIONS) {
+          state.set_exception(std::current_exception());
+          return;
+        } else {
+          printerror("Uncaught exception");
+        }
+      }
     }
 
-    try {
-      item();
-    } catch (const std::exception &e) {
-      if constexpr (CATCH_EXCEPTIONS) {
-        state.set_exception(std::current_exception());
-        return;
-      } else {
-        printerror(e.what());
-      }
-    } catch (...) {
-      if constexpr (CATCH_EXCEPTIONS) {
-        state.set_exception(std::current_exception());
-        return;
-      } else {
-        printerror("Uncaught exception");
-      }
-    }
+    manager.workingWorkers--;
+    manager.finsihedBatch.notify_all();
   }
+
 
   state.set_value();
 }
@@ -115,6 +136,8 @@ MultiThreadManager::MultiThreadManager(size_t capacity_)
 MultiThreadManager::~MultiThreadManager() = default;
 
 void MultiThreadManager::Push(FuncType item) { pi->Push(std::move(item)); }
+
+void MultiThreadManager::Wait() { pi->Wait(); }
 
 void SimpleManager::Push(SimpleManager::FuncType item) {
   try {
@@ -186,6 +209,8 @@ void Batch::AddFile(std::string path) {
       });
     }
 
+    manager.Wait();
+
     if (forEachFolderFinish) {
       forEachFolderFinish();
     }
@@ -253,15 +278,21 @@ void Batch::AddFile(std::string path) {
             stats.totalSizeFileNames += f.AsView().size() + 1;
           });
 
-          forEachFolder(std::move(zipPath), stats);
+          forEachFolder(zipPath, stats);
         }
 
         Iterate([&](auto &f) {
-          manager.Push([&, zInstance = fctx->Instance(f)] {
+          manager.Push([&, zInstance(fctx->Instance(f))] {
             forEachFile(zInstance.get());
             zInstance->Finish();
           });
         });
+
+        manager.Wait();
+
+        if (forEachFolderFinish) {
+          forEachFolderFinish();
+        }
 
         fctx->Finish();
         break;
@@ -351,11 +382,17 @@ void Batch::FinishBatch() {
     }
 
     Iterate([&](auto &f) {
-      manager.Push([&, zInstance = fctx->Instance(f)] {
+      manager.Push([&, zInstance(fctx->Instance(f))] {
         forEachFile(zInstance.get());
         zInstance->Finish();
       });
     });
+
+    manager.Wait();
+
+    if (forEachFolderFinish) {
+      forEachFolderFinish();
+    }
 
     fctx->Finish();
   }

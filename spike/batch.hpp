@@ -16,6 +16,7 @@ struct MultiThreadManager {
   ~MultiThreadManager();
 
   void Push(FuncType item);
+  void Wait();
 
 private:
   std::unique_ptr<MultiThreadManagerImpl> pi;
@@ -25,6 +26,7 @@ struct SimpleManager {
   using FuncType = std::function<void()>;
 
   void Push(FuncType item);
+  void Wait() {};
 };
 
 struct WorkerManager {
@@ -43,6 +45,8 @@ struct WorkerManager {
   void Push(FuncType func) {
     std::visit([&](auto &item) { item.Push(std::move(func)); }, man);
   }
+
+  void Wait() {std::visit([](auto &item) { item.Wait(); }, man);}
 };
 
 struct Batch {
