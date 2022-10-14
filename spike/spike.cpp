@@ -198,7 +198,7 @@ void GenerateDocumentation(const std::string &appFolder,
 void PackModeBatch(Batch &batch) {
   struct PackData {
     size_t index = 0;
-    AppPackContext *archiveContext = nullptr;
+    std::unique_ptr<AppPackContext> archiveContext;
     std::string pbarLabel;
     DetailedProgressBar *progBar = nullptr;
     std::string folderPath;
@@ -209,7 +209,7 @@ void PackModeBatch(Batch &batch) {
   batch.forEachFolder = [payload, ctx = batch.ctx](const std::string &path,
                                                    AppPackStats stats) {
     payload->folderPath = path;
-    payload->archiveContext = ctx->NewArchive(path, stats);
+    payload->archiveContext.reset(ctx->NewArchive(path, stats));
     payload->pbarLabel = "Folder id " + std::to_string(payload->index++);
     payload->progBar =
         AppendNewLogLine<DetailedProgressBar>(payload->pbarLabel);
@@ -226,6 +226,7 @@ void PackModeBatch(Batch &batch) {
   batch.forEachFolderFinish = [payload] {
     ConsolePrintDetail(1);
     payload->archiveContext->Finish();
+    payload->archiveContext.reset();
     RemoveLogLines(payload->progBar);
   };
 }
