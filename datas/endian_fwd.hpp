@@ -23,7 +23,7 @@
 template <class C>
 concept IsSwapableArith = std::is_arithmetic_v<C> || requires(C t) {
   t.Swap();
-};
+} || std::is_enum_v<C>;
 
 template <class C>
 concept IsSwapableMem = requires(C &t) {
