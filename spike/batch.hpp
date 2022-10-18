@@ -5,8 +5,6 @@
 #include <set>
 #include <variant>
 
-static constexpr bool USE_THREADS = true;
-
 struct MultiThreadManagerImpl;
 
 struct MultiThreadManager {
@@ -26,7 +24,7 @@ struct SimpleManager {
   using FuncType = std::function<void()>;
 
   void Push(FuncType item);
-  void Wait() {};
+  void Wait(){};
 };
 
 struct WorkerManager {
@@ -37,7 +35,7 @@ struct WorkerManager {
   WorkerManager(WorkerManager &&) = delete;
 
   WorkerManager(size_t capacityPerThread) {
-    if constexpr (USE_THREADS) {
+    if (capacityPerThread) {
       man.emplace<MultiThreadManager>(capacityPerThread);
     }
   }
@@ -46,7 +44,9 @@ struct WorkerManager {
     std::visit([&](auto &item) { item.Push(std::move(func)); }, man);
   }
 
-  void Wait() {std::visit([](auto &item) { item.Wait(); }, man);}
+  void Wait() {
+    std::visit([](auto &item) { item.Wait(); }, man);
+  }
 };
 
 struct Batch {
@@ -59,7 +59,8 @@ struct Batch {
   Batch(const Batch &) = delete;
   Batch(Batch &&) = delete;
 
-  Batch(APPContext *ctx_) : ctx(ctx_) {
+  Batch(APPContext *ctx_, size_t queueCapacity)
+      : ctx(ctx_), manager(queueCapacity) {
     for (auto &c : ctx->info->filters) {
       scanner.AddFilter(c);
     }
@@ -82,5 +83,5 @@ private:
   std::set<std::string> rootZips;
   std::map<std::string, PathFilter> zips;
   DirectoryScanner scanner;
-  WorkerManager manager{50};
+  WorkerManager manager{0};
 };

@@ -28,8 +28,6 @@
 #include "tmp_storage.hpp"
 #include <thread>
 
-static constexpr uint8 CONSOLE_DETAIL = 1 | uint8(USE_THREADS) << 1;
-
 static const char appHeader0[] =
     "Simply drag'n'drop files/folders onto application or "
     "use as ";
@@ -214,7 +212,9 @@ void PackModeBatch(Batch &batch) {
     payload->progBar =
         AppendNewLogLine<DetailedProgressBar>(payload->pbarLabel);
     payload->progBar->ItemCount(stats.numFiles);
-    ConsolePrintDetail(CONSOLE_DETAIL);
+    uint8 consoleDetail = 1 | uint8(ctx->info->multithreaded) << 1;
+    ConsolePrintDetail(consoleDetail);
+    printline("Processing: " << path);
   };
 
   batch.forEachFile = [payload](AppContextShare *iCtx) {
@@ -247,7 +247,8 @@ auto ExtractStatBatch(Batch &batch) {
 
   batch.keepFinishLines = false;
   auto sharedData = std::make_shared<ExtractStatsMaker>();
-  ConsolePrintDetail(CONSOLE_DETAIL);
+  uint8 consoleDetail = 1 | uint8(batch.ctx->info->multithreaded) << 1;
+  ConsolePrintDetail(consoleDetail);
   sharedData->scanBar =
       AppendNewLogLine<LoadingBar>("Processing extract stats.");
 
@@ -264,7 +265,8 @@ auto ExtractStatBatch(Batch &batch) {
 }
 
 void ProcessBatch(Batch &batch, ExtractStats *stats) {
-  ConsolePrintDetail(CONSOLE_DETAIL);
+  uint8 consoleDetail = 1 | uint8(batch.ctx->info->multithreaded) << 1;
+  ConsolePrintDetail(consoleDetail);
   batch.forEachFile = [payload = std::make_shared<UILines>(*stats),
                        archiveFiles =
                            std::make_shared<decltype(stats->archiveFiles)>(
@@ -294,7 +296,8 @@ void ProcessBatch(Batch &batch, ExtractStats *stats) {
 }
 
 void ProcessBatch(Batch &batch, size_t numFiles) {
-  ConsolePrintDetail(CONSOLE_DETAIL);
+  uint8 consoleDetail = 1 | uint8(batch.ctx->info->multithreaded) << 1;
+  ConsolePrintDetail(consoleDetail);
   batch.forEachFile = [payload = std::make_shared<UILines>(numFiles),
                        ctx = batch.ctx](AppContextShare *iCtx) {
     printline("Processing: " << iCtx->FullPath());
@@ -410,8 +413,7 @@ int Main(int argc, TCHAR *argv[]) {
 
   InitTempStorage();
   ctx.SetupModule();
-
-  Batch batch(&ctx);
+  Batch batch(&ctx, ctx.info->multithreaded * 50);
 
   if (ctx.NewArchive) {
     PackModeBatch(batch);
