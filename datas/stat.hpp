@@ -49,25 +49,31 @@ void MKDIR_EXTERN_ SetupWinApiConsole();
 
 struct MappedFile {
   void *data = nullptr;
-  size_t dataSize = 0;
+  size_t mappedSize = 0;
+  size_t fileSize = 0;
   union {
     int64 fd = -1;
     void *hdl;
   };
 
+  // When allocSize = 0, opened in read only state
   PC_EXTERN
-  MappedFile(const std::string &path);
+  MappedFile(const std::string &path, size_t allocSize = 0);
   MappedFile() = default;
   MappedFile(const MappedFile &) = delete;
   MappedFile(MappedFile &&other)
-      : data(other.data), dataSize(other.dataSize), fd(other.fd) {
+      : data(other.data), fileSize(other.fileSize), fd(other.fd) {
     other.data = nullptr;
     other.fd = -1;
   }
 
+  // File size cannot be decreased
+  // Win only: data member can be a new address
+  void PC_EXTERN ReserveFileSize(size_t newSize);
+
   MappedFile &operator=(MappedFile &&other) {
     data = other.data;
-    dataSize = other.dataSize;
+    fileSize = other.fileSize;
     fd = other.fd;
     other.data = nullptr;
     other.fd = -1;

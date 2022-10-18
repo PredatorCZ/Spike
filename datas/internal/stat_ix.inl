@@ -37,8 +37,16 @@ FileType_e FileType(const std::string &path) {
 }
 
 namespace es {
-MappedFile::MappedFile(const std::string &path) {
-  fd = open(path.c_str(), O_RDONLY);
+MappedFile::MappedFile(const std::string &path, size_t allocSize) {
+  uint32 mapFlags = PROT_READ;
+  if (allocSize) {
+    mapFlags |= PROT_WRITE;
+    fd = open(path.c_str(), O_RDWR | O_CREAT,
+              S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH);
+  } else {
+    fd = open(path.c_str(), O_RDONLY);
+  }
+
   if (fd == -1) {
     throw es::FileNotFoundError(path);
   }
@@ -48,24 +56,39 @@ MappedFile::MappedFile(const std::string &path) {
     throw std::runtime_error("Cannot stat file " + path);
   }
 
-  dataSize = fileStat.st_size;
-  data = mmap(nullptr, fileStat.st_size, PROT_READ, MAP_SHARED, fd, 0);
+  fileSize = fileStat.st_size;
+  mappedSize = std::max(fileSize, allocSize);
 
-  madvise(data, dataSize, MADV_RANDOM);
-  madvise(data, dataSize, MADV_WILLNEED);
-  madvise(data, dataSize, MADV_DONTDUMP);
+  data = mmap(nullptr, mappedSize, mapFlags, MAP_SHARED, fd, 0);
+
+  madvise(data, mappedSize, MADV_RANDOM);
+  madvise(data, mappedSize, MADV_WILLNEED);
+  madvise(data, mappedSize, MADV_DONTDUMP);
 
   if (data == MAP_FAILED) {
     throw std::runtime_error("Cannot map file " + path);
   }
 }
 
+void MappedFile::ReserveFileSize(size_t newSize) {
+  if (fileSize < newSize) {
+    fileSize = newSize;
+    if (ftruncate(fd, newSize)) {
+      throw std::runtime_error("Couldn't resize file, code: " +
+                               std::to_string(errno));
+    }
+  }
+}
+
 MappedFile::~MappedFile() {
   if (data && data != MAP_FAILED) {
-    munmap(data, dataSize);
+    munmap(data, mappedSize);
   }
 
   if (fd != -1) {
+    if (fcntl(fd, F_GETFL) & O_RDWR) {
+      fsync(fd);
+    }
     close(fd);
   }
 }

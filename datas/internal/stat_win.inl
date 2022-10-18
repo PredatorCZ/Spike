@@ -19,6 +19,8 @@
 #include <direct.h>
 #include <windows.h>
 
+#undef max
+
 namespace es {
 int mkdir(const char *path, uint32) {
 #ifdef UNICODE
@@ -77,26 +79,56 @@ void SetupWinApiConsole() {
   SetCurrentConsoleFontEx(consoleHandle, false, &infoEx);
 }
 
-MappedFile::MappedFile(const std::string &path) {
+MappedFile::MappedFile(const std::string &path, size_t allocSize) {
   auto cvted = es::ToUTF1632(path);
-  hdl = CreateFileW(cvted.c_str(), GENERIC_READ, FILE_SHARE_READ, NULL,
-                    OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+  auto accessFlags = GENERIC_READ | (allocSize ? GENERIC_WRITE : 0);
+  auto openFlags = allocSize ? OPEN_ALWAYS : OPEN_EXISTING;
+
+  hdl = CreateFileW(cvted.c_str(), accessFlags, FILE_SHARE_READ, NULL,
+                    openFlags, FILE_ATTRIBUTE_NORMAL, NULL);
   if (hdl == INVALID_HANDLE_VALUE) {
     throw es::FileNotFoundError(path);
   }
 
-  auto fileSize = GetFileSize(hdl, NULL);
-  HANDLE mapping = CreateFileMapping(hdl, NULL, PAGE_READONLY, 0, 0, NULL);
+  fileSize = GetFileSize(hdl, NULL);
+  mappedSize = std::max(fileSize, allocSize);
 
-  if (!mapping) {
-    throw std::runtime_error("Cannot map file " + path);
+  if (!allocSize) {
+    ReserveFileSize(0);
+  } else {
+    ReserveFileSize(0x1000);
+  }
+}
+
+void MappedFile::ReserveFileSize(size_t newSize) {
+  if (newSize && fileSize >= newSize) {
+    return;
   }
 
-  data = MapViewOfFileEx(mapping, FILE_MAP_READ, 0, 0, fileSize, NULL);
+  fileSize = newSize;
+
+  if (data) {
+    UnmapViewOfFile(data);
+  }
+
+  auto mappingFlags = newSize ? PAGE_READWRITE : PAGE_READONLY;
+
+  HANDLE mapping =
+      CreateFileMapping(hdl, NULL, mappingFlags, 0, newSize, NULL);
+
+  if (!mapping) {
+    auto errCode = GetLastError();
+    throw std::runtime_error("WinApi call error " + std::to_string(errCode));
+  }
+
+  auto mappingViewFlags = newSize ? FILE_MAP_ALL_ACCESS : FILE_MAP_READ;
+
+  data = MapViewOfFileEx(mapping, mappingViewFlags, 0, 0, newSize, NULL);
   CloseHandle(mapping);
 
   if (!data) {
-    throw std::runtime_error("Cannot map file " + path);
+    auto errCode = GetLastError();
+    throw std::runtime_error("WinApi call error " + std::to_string(errCode));
   }
 }
 

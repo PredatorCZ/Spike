@@ -462,7 +462,7 @@ AppContextFoundStream ZIPIOContext_impl::FindFile(const std::string &,
 // Warning: Unaligned accesses
 // Note: Multiple central directories? (unlikely)
 void ZIPIOContext_impl::Read() {
-  auto curEnd = static_cast<char *>(zipMount.data) + zipMount.dataSize -
+  auto curEnd = static_cast<char *>(zipMount.data) + zipMount.fileSize -
                 (sizeof(ZIPCentralDir) - 2);
   auto curLocator = reinterpret_cast<const ZIPCentralDir *>(curEnd);
 
@@ -510,7 +510,7 @@ void ZIPIOContext_impl::Read() {
 
     std::spanstream entriesSpan(
         std::span<char>(curEnd, static_cast<char *>(zipMount.data) +
-                                          zipMount.dataSize),
+                                          zipMount.fileSize),
         std::ios::binary | std::ios::in);
     BinReaderRef rd(entriesSpan);
     ZIP64CentralDir x64CentraDir;
