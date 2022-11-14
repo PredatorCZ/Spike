@@ -19,6 +19,8 @@
 #include "datas/binwritter_stream.hpp"
 #include "datas/vectors_simd.hpp"
 #include "gltf.h"
+#include <datas/matrix44.hpp>
+#include <optional>
 #include <sstream>
 
 using namespace fx;
@@ -26,7 +28,9 @@ using namespace fx;
 namespace uni
 {
 class MotionTrack;
-}
+class IndexArray;
+class PrimitiveDescriptor;
+} // namespace uni
 
 struct GLTFStream : gltf::BufferView
 {
@@ -101,6 +105,87 @@ struct GLTF : gltf::Document
 
 private:
     std::vector<GLTFStream> streams;
+};
+
+struct GLTFModel : GLTF
+{
+    std::optional<es::Matrix44> transform;
+    size_t GLTF_EXTERN SaveIndices(const uni::IndexArray & idArray);
+    void GLTF_EXTERN WritePositions(gltf::Attributes & attrs, const uni::PrimitiveDescriptor & d, size_t numVertices);
+    void GLTF_EXTERN WriteTexCoord(gltf::Attributes & attrs, const uni::PrimitiveDescriptor & d, size_t numVertices);
+    void GLTF_EXTERN WriteVertexColor(gltf::Attributes & attrs, const uni::PrimitiveDescriptor & d, size_t numVertices);
+    size_t GLTF_EXTERN WriteNormals8(const uni::PrimitiveDescriptor & d, size_t numVertices);
+    size_t GLTF_EXTERN WriteNormals16(const uni::PrimitiveDescriptor & d, size_t numVertices);
+
+    GLTFStream & SkinStream()
+    {
+        if (ibmStream < 0)
+        {
+            auto & newStream = NewStream("ibms");
+            ibmStream = newStream.slot;
+            return newStream;
+        }
+        return Stream(ibmStream);
+    }
+
+    GLTFStream & GetIndexStream()
+    {
+        if (indexStream < 0)
+        {
+            auto & str = NewStream("indices");
+            str.target = gltf::BufferView::TargetType::ElementArrayBuffer;
+            indexStream = str.slot;
+            return str;
+        }
+
+        return Stream(indexStream);
+    }
+
+    GLTFStream & GetVt12()
+    {
+        if (vt12Stream < 0)
+        {
+            auto & str = NewStream("vtStride12", 12);
+            str.target = gltf::BufferView::TargetType::ArrayBuffer;
+            vt12Stream = str.slot;
+            return str;
+        }
+
+        return Stream(vt12Stream);
+    }
+
+    GLTFStream & GetVt8()
+    {
+        if (vt8Stream < 0)
+        {
+            auto & str = NewStream("vtStride8", 8);
+            str.target = gltf::BufferView::TargetType::ArrayBuffer;
+            vt8Stream = str.slot;
+            return str;
+        }
+
+        return Stream(vt8Stream);
+    }
+
+    GLTFStream & GetVt4()
+    {
+        if (vt4Stream < 0)
+        {
+            auto & str = NewStream("vtStride4", 4);
+            str.target = gltf::BufferView::TargetType::ArrayBuffer;
+            vt4Stream = str.slot;
+            return str;
+        }
+
+        return Stream(vt4Stream);
+    }
+
+private:
+    int32 ibmStream = -1;
+    int32 indexStream = -1;
+    int32 vt12Stream = -1;
+    int32 vt8Stream = -1;
+    int32 vt4Stream = -1;
 };
 
 namespace gltfutils
