@@ -15,12 +15,13 @@
 */
 
 #pragma once
+#include "datas/endian.hpp"
 #include "datas/flags.hpp"
 #include "datas/pointer.hpp"
-#include "datas/endian.hpp"
 #include <array>
 #include <bit>
 #include <set>
+#include <span>
 #include <stdexcept>
 
 namespace clgen {
@@ -138,11 +139,43 @@ auto GetLayout(const std::set<ClassData<N>> &layouts, LayoutLookup layout) {
 
 template <class IType> struct Iterator : IType {
   using IType::IType;
+  Iterator(const IType &o) : IType(o) {}
+  Iterator(IType &&o) : IType(o) {}
+  Iterator &operator=(const IType &o) { return IType::operator=(o); }
+  Iterator &operator=(IType &&o) { return IType::operator=(o); }
+
   Iterator &Next(int by = 1) {
     this->data += this->layout->totalSize * by;
     return *this;
   }
+
+  Iterator operator+(int by) {
+    Iterator retVal = *this;
+    retVal.data += this->layout->totalSize * by;
+    return retVal;
+  }
+
+  Iterator operator-(int by) {
+    Iterator retVal = *this;
+    retVal.data -= this->layout->totalSize * by;
+    return retVal;
+  }
+
+  Iterator &operator+=(int by) { return Next(by); }
+  Iterator &operator++() { return Next(1); }
+  Iterator &operator-=(int by) { return Next(-by); }
+
+  IType operator*() { return *this; }
+
+  bool operator==(const Iterator &other) const {
+    return this->data == other.data;
+  }
 };
+
+template <class T>
+using is_layout = decltype(std::declval<T>().LayoutVersion());
+template <class C>
+constexpr static bool use_layout_v = !es::is_detected_v<is_layout, C>;
 
 template <class Type> struct Pointer {
   Pointer(char *data_, LayoutLookup layout_) : data{data_}, lookup{layout_} {
@@ -151,7 +184,7 @@ template <class Type> struct Pointer {
   }
 
   auto operator*() {
-    if constexpr (std::is_class_v<Type>) {
+    if constexpr (!use_layout_v<Type>) {
       if (layout.ptrSize == 8) {
         return Type{*reinterpret_cast<char **>(data), lookup};
       }
@@ -167,8 +200,45 @@ template <class Type> struct Pointer {
     }
   }
 
+  void Fixup(char *root) {
+    if (layout.ptrSize == 8) {
+      reinterpret_cast<es::PointerX64<char> *>(data)->Fixup(root);
+    } else {
+      reinterpret_cast<es::PointerX86<char> *>(data)->Fixup(root);
+    }
+  }
+
+  template <class container> int Fixup(char *root, container &store) {
+    if (layout.ptrSize == 8) {
+      return reinterpret_cast<es::PointerX64<char> *>(data)->Fixup(root, store);
+    }
+    return reinterpret_cast<es::PointerX86<char> *>(data)->Fixup(root, store);
+  }
+
+  template <class container> bool Check(container &store) {
+    if (layout.ptrSize == 8) {
+      return reinterpret_cast<es::PointerX64<char> *>(data)->Check(store);
+    }
+    return reinterpret_cast<es::PointerX86<char> *>(data)->Check(store);
+  }
+
   char *data;
   LayoutLookup lookup;
   ClassDataHeader layout;
+};
+
+template <class Type> struct LayoutedSpan {
+  Iterator<Type> dataBegin;
+  size_t count;
+
+  LayoutedSpan(Type input, size_t count_) : dataBegin(input), count(count_) {}
+  LayoutedSpan(LayoutedSpan &&) = default;
+  LayoutedSpan(const LayoutedSpan &) = default;
+  LayoutedSpan &operator=(LayoutedSpan &&) = default;
+  LayoutedSpan &operator=(const LayoutedSpan &) = default;
+
+  Iterator<Type> begin() { return dataBegin; }
+  Iterator<Type> end() { return dataBegin + count; }
+  Type at(size_t id) { return dataBegin + id; }
 };
 } // namespace clgen

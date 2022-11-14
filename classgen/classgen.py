@@ -75,8 +75,6 @@ class TYPES:
     Vector = NamedType('Vector', 12, 4)
     Vector4 = NamedType('Vector4', 16, 4)
     Vector2 = NamedType('Vector2', 8, 4)
-    pointer = Template('Pointer')
-    pointer.template = Template('Type')
 
 
 class PermSettings:
@@ -111,10 +109,6 @@ class TemplateLink:
         self.args = args
 
     def get_location(self, cur_offset, settings: PermSettings):
-        if self.template == TYPES.pointer:
-            repr = TYPES.uint64 if settings.pointer_x64 else TYPES.uint32
-            return repr.get_location(cur_offset, settings)
-
         loc: TypeLocation = self.template.get_location(0, settings)
 
         align = cur_offset % loc.alignment
@@ -133,12 +127,92 @@ class TemplateLink:
 
 class Pointer(TemplateLink):
     def __init__(self, type):
-        super(Pointer, self).__init__(TYPES.pointer, type)
+        super(Pointer, self).__init__(NamedType('Pointer'), type)
+
+    def get_location(self, cur_offset, settings: PermSettings):
+        repr = TYPES.uint64 if settings.pointer_x64 else TYPES.uint32
+        return repr.get_location(cur_offset, settings)
 
     def get_swap_type(self, settings: PermSettings):
         if settings.swap_pointers:
             return SwapType.S64 if settings.pointer_x64 else SwapType.S32
         return SwapType.DontSwap
+
+    def cpp_submethod(self, context, parent):
+        ptr_type = self.args[0]
+        stuff = {
+            'name': parent.name,
+            'type': ptr_type.str_decl(),
+            'const': ''
+        }
+
+        template = '''Pointer<{type}> %s() {{
+    int16 off = m({name}); if (off == -1) return {{nullptr, lookup}};
+    return {{data + off, lookup}};
+  }}
+'''
+        context[0].add_unique_line(template.format_map(stuff),
+                                    None, parent.func + 'Ptr', parent.perm)
+
+        if type(ptr_type) == NamedType:
+            template = '''{const}{type} *%s() {const}{{
+    int16 off = m({name}); if (off == -1) return nullptr;
+    if (layout->ptrSize == 8) return *reinterpret_cast<{type}**>(data + off);
+    return *reinterpret_cast<es::PointerX86<{type}>*>(data + off);
+  }}
+'''
+        else:
+            template = '''Iterator<{type}> %s() {const}{{
+    int16 off = m({name}); if (off == -1) return {{nullptr, lookup}};
+    if (layout->ptrSize == 8) return {{*reinterpret_cast<char**>(data + off), lookup}};
+    return {{*reinterpret_cast<es::PointerX86<char>*>(data + off), lookup}};
+  }}
+'''
+        non_const_line = template.format_map(stuff)
+        stuff['const'] = 'const '
+        context[0].add_unique_line(non_const_line,
+                                    template.format_map(stuff), parent.func, parent.perm)
+
+
+class InlineArray(TemplateLink):
+    def __init__(self, type_, count):
+        class TemplateType:
+            def __init__(self, type_, count):
+                self.type = type_
+                self.count = count
+            def get_location(self, cur_offset, settings):
+                sub_loc: TypeLocation = self.type.get_location(cur_offset, settings)
+                sub_loc.end = (sub_loc.end - sub_loc.begin) * self.count
+
+                return sub_loc
+        class Counter:
+            def __init__(self, count):
+                self.count = count
+            def str_decl(self):
+                return str(self.count)
+
+        super(InlineArray, self).__init__(TemplateType(type_, count), type_, Counter(count))
+        self.type = type_
+        self.count = count
+
+    def get_swap_type(self, settings):
+        return SwapType.DontSwap
+
+    def cpp_submethod(self, context, parent):
+        stuff = {
+            'name': parent.name,
+            'type': 'std::span<%s>' % (self.type.str_decl()),
+            'subtype': self.type.str_decl(),
+            'count': str(self.count),
+        }
+        template = None
+        if type(self.type) == NamedType:
+            template = '{type} %s() const {{ return m({name}) == -1 ? {type}{{}} : {type}{{reinterpret_cast<{subtype}*>(data + m({name})), {count}}}; }}\n'
+        else:
+            template = 'LayoutedSpan<{subtype}> %s() const {{ return {{{{m({name}) == -1 ? nullptr : data + m({name}), lookup}}, {count} }}; }}\n'
+
+        context[0].add_unique_line(
+            template.format_map(stuff), None, parent.func, parent.perm)
 
 
 class ClassPatchType(IntEnum):
@@ -397,6 +471,10 @@ class ClassData:
         template = \
             '''struct Interface {
   Interface(char *data_, LayoutLookup layout_): data{data_}, layout{GetLayout(LAYOUTS, {layout_, {%s}})}, lookup{layout_} {}
+  Interface(const Interface&) = default;
+  Interface(Interface&&) = default;
+  Interface &operator=(const Interface&) = default;
+  Interface &operator=(Interface&&) = default;
   uint16 LayoutVersion() const { return lookup.version; }
   %s
 
@@ -622,35 +700,10 @@ class ClassMember():
         return self.type.get_location(cur_offset, settings)
 
     def cpp_method(self, context):
-        func = self.name[0].upper() + self.name[1:]
+        self.func = self.name[0].upper() + self.name[1:]
 
-        if type(self.type) == Pointer:
-            ptr_type = self.type.args[0]
-            stuff = {
-                'name': self.name,
-                'type': ptr_type.str_decl(),
-                'const': ''
-            }
-            template = None
-
-            if type(ptr_type) == NamedType:
-                template = '''{const}{type} *%s() {const}{{
-    int16 off = m({name}); if (off == -1) return nullptr;
-    if (layout->ptrSize == 8) return *reinterpret_cast<{type}**>(data + off);
-    return *reinterpret_cast<es::PointerX86<{type}>*>(data + off);
-  }}
-'''
-            else:
-                template = '''Iterator<{type}> %s() {const}{{
-    int16 off = m({name}); if (off == -1) return {{nullptr, lookup}};
-    if (layout->ptrSize == 8) return {{*reinterpret_cast<char**>(data + off), lookup}};
-    return {{*reinterpret_cast<es::PointerX86<char>*>(data + off), lookup}};
-  }}
-'''
-            non_const_line = template.format_map(stuff)
-            stuff['const'] = 'const '
-            context[0].add_unique_line(non_const_line,
-                                       template.format_map(stuff), func, self.perm)
+        if hasattr(self.type, 'cpp_submethod'):
+            self.type.cpp_submethod(context, self)
         else:
             stuff = {
                 'name': self.name,
@@ -661,12 +714,12 @@ class ClassMember():
                 template = '{type} %s() const {{ return m({name}) == -1 ? {type}{{}} : *reinterpret_cast<{type}*>(data + m({name})); }}\n'
                 set_template = 'void %s({type} value) {{ if (m({name}) >= 0) *reinterpret_cast<{type}*>(data + m({name})) = value; }}\n'
                 context[1].add_unique_line(
-                    set_template.format_map(stuff), None, func, self.perm)
+                    set_template.format_map(stuff), None, self.func, self.perm)
             else:
                 template = '{type} %s() const {{ return {{m({name}) == -1 ? nullptr : data + m({name}), lookup}}; }}\n'
 
             context[0].add_unique_line(
-                template.format_map(stuff), None, func, self.perm)
+                template.format_map(stuff), None, self.func, self.perm)
 
     def str_decl(self):
         rval = '%s %s;' % (self.type.str_decl(), self.name)
