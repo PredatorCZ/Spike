@@ -64,7 +64,7 @@ struct AppInfo_s {
   bool multithreaded = true;
   std::string_view header;
   ReflectorFriend *settings = nullptr;
-  std::span<std::string_view> filters;
+  std::span<std::string_view> filters{};
   const MainAppConf *internalSettings = nullptr;
 };
 
