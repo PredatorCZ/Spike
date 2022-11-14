@@ -57,25 +57,29 @@ public:
     return false;
   }
 
-  template <class container = void>
-  int Fixup(const char *root,
-            [[maybe_unused]] container *storedPtrs = nullptr) {
+  template <class container>
+  int Fixup(const char *root, container &storedPtrs) {
     if (!pointer) {
       return 0;
     }
 
-    if constexpr (!std::is_void_v<container>) {
-      if (storedPtrs) {
-        if (Check(*storedPtrs)) {
-          return -1;
-        } else {
-          if constexpr (use_push_back_v<container>) {
-            storedPtrs->push_back(&varPtr);
-          } else {
-            storedPtrs->emplace(&varPtr);
-          }
-        }
+    if (Check(storedPtrs)) {
+      return -1;
+    } else {
+      if constexpr (use_push_back_v<container>) {
+        storedPtrs.push_back(&varPtr);
+      } else {
+        storedPtrs.emplace(&varPtr);
       }
+    }
+
+    rawPtr = root + varPtr;
+    return 1;
+  }
+
+  int Fixup(const char *root) {
+    if (!pointer) {
+      return 0;
     }
 
     rawPtr = root + varPtr;
@@ -131,22 +135,18 @@ public:
   }
 
   template <class container>
-  int Fixup(const char *root, container *storedPtrs) {
+  int Fixup(const char *root, container &storedPtrs) {
     if (!varPtr) {
       return 0;
     }
 
-    if constexpr (!std::is_void_v<container>) {
-      if (storedPtrs) {
-        if (Check(*storedPtrs)) {
-          return -1;
-        } else {
-          if constexpr (use_push_back_v<container>) {
-            storedPtrs->push_back(&varPtr);
-          } else {
-            storedPtrs->emplace(&varPtr);
-          }
-        }
+    if (Check(storedPtrs)) {
+      return -1;
+    } else {
+      if constexpr (use_push_back_v<container>) {
+        storedPtrs.push_back(&varPtr);
+      } else {
+        storedPtrs.emplace(&varPtr);
       }
     }
 
@@ -194,7 +194,7 @@ template <IsFixable... C> void FixupPointers(const char *root, C &...ptrs) {
 
 template <IsFixable... C, NotFixable container>
 bool FixupPointers(const char *root, container &store, C &...p) {
-  return (... && p->Fixup(root, &store));
+  return (... && (p.Fixup(root, store) != -1));
 }
 
 template <class... C, template <class F> class ptr, class container, class fn>
@@ -202,7 +202,7 @@ bool FixupPointersCB(const char *root, container &store, fn &&notFixedCB,
                      ptr<C> &...ptrs) {
   auto ptrArray = {reinterpret_cast<ptr<char> *>(&ptrs)...};
   for (auto p : ptrArray) {
-    if (p->Check(store)) {
+    if (p.Check(store)) {
       return false;
     }
   }
