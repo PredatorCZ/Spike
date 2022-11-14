@@ -36,7 +36,13 @@ static std::mutex simpleIOLock;
 
 struct AppContextShareImpl : AppContextShare {
   std::ostream &NewFile(const std::string &path) override {
-    outFile.Open(basePath + path);
+    const std::string filePath(basePath + path);
+    try {
+      outFile.Open(filePath);
+    } catch (const es::FileInvalidAccessError &e) {
+      mkdirs(filePath);
+      outFile.Open(filePath);
+    }
     return outFile.BaseStream();
   }
 
@@ -509,8 +515,8 @@ void ZIPIOContext_impl::Read() {
     }
 
     std::spanstream entriesSpan(
-        std::span<char>(curEnd, static_cast<char *>(zipMount.data) +
-                                          zipMount.fileSize),
+        std::span<char>(curEnd,
+                        static_cast<char *>(zipMount.data) + zipMount.fileSize),
         std::ios::binary | std::ios::in);
     BinReaderRef rd(entriesSpan);
     ZIP64CentralDir x64CentraDir;
