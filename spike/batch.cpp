@@ -103,20 +103,18 @@ void WorkerThread::operator()() {
         break;
       }
 
-      try {
+      if constexpr (CATCH_EXCEPTIONS) {
         item();
-      } catch (const std::exception &e) {
-        if constexpr (CATCH_EXCEPTIONS) {
-          state.set_exception(std::current_exception());
-          return;
-        } else {
-          printerror(e.what());
+
+        if (auto curException = std::current_exception(); curException) {
+          state.set_exception(curException);
         }
-      } catch (...) {
-        if constexpr (CATCH_EXCEPTIONS) {
-          state.set_exception(std::current_exception());
-          return;
-        } else {
+      } else {
+        try {
+          item();
+        } catch (const std::exception &e) {
+          printerror(e.what());
+        } catch (...) {
           printerror("Uncaught exception");
         }
       }
@@ -125,7 +123,6 @@ void WorkerThread::operator()() {
     manager.workingWorkers--;
     manager.finsihedBatch.notify_all();
   }
-
 
   state.set_value();
 }
@@ -140,12 +137,12 @@ void MultiThreadManager::Push(FuncType item) { pi->Push(std::move(item)); }
 void MultiThreadManager::Wait() { pi->Wait(); }
 
 void SimpleManager::Push(SimpleManager::FuncType item) {
-  try {
+  if constexpr (CATCH_EXCEPTIONS) {
     item();
-  } catch (const std::exception &e) {
-    if constexpr (CATCH_EXCEPTIONS) {
-      throw;
-    } else {
+  } else {
+    try {
+      item();
+    } catch (const std::exception &e) {
       printerror(e.what());
     }
   }
