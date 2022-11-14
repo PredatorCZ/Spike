@@ -113,11 +113,17 @@ struct UILines {
       if (totalCount) {
         // Wait a little bit for internal queues to finish printing
         std::this_thread::sleep_for(std::chrono::milliseconds(100));
-        auto data = static_cast<ProcessedFiles *>(totalCount);
-        data->Finish();
-        api.Release(data);
+        if (totalProgress) {
+          auto data = static_cast<ProcessedFiles *>(totalCount);
+          data->Finish();
+          api.Release(data);
+        } else {
+          auto data = static_cast<DetailedProgressBar *>(totalCount);
+          api.Remove(data);
+        }
       }
       api.Clean();
+      std::this_thread::sleep_for(std::chrono::milliseconds(100));
     });
   }
 };
