@@ -70,6 +70,7 @@ struct Batch {
 
   void FinishBatch();
   void Clean() {
+    manager.Wait();
     es::Dispose(rootZips);
     es::Dispose(zips);
     scanner.Clear();
