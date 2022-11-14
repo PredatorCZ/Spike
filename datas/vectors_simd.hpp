@@ -56,12 +56,12 @@ private:
 #endif
   }
 
-  static bool Compare(store_type input1, store_type input2) {
+  static int Compare(store_type input1, store_type input2) {
     const store_type result =
         _mm_and_ps(_mm_cmple_ps(input2, _mm_add_ps(input1, GetEpsilon())),
                    _mm_cmpge_ps(input2, _mm_sub_ps(input1, GetEpsilon())));
 
-    return _mm_movemask_ps(result) == 0xF;
+    return _mm_movemask_ps(result);
   }
 
 public:
@@ -147,7 +147,7 @@ public:
                            static_cast<T>(Z), static_cast<T>(W));
   }
 
-  bool operator==(vec_cref input) const { return Compare(input._data, _data); }
+  bool operator==(vec_cref input) const { return Compare(input._data, _data) == 0xF; }
   bool operator!=(vec_cref input) const { return !(*this == input); }
 
   bool operator<(vec_cref input) const {
@@ -157,10 +157,10 @@ public:
     return _mm_movemask_ps(_mm_cmpgt_ps(_data, input._data)) == 0xF;
   }
   bool operator<=(vec_cref input) const {
-    return *this < input || *this == input;
+    return (_mm_movemask_ps(_mm_cmplt_ps(_data, input._data)) | Compare(_data, input._data)) == 0xF;
   }
   bool operator>=(vec_cref input) const {
-    return *this > input || *this == input;
+    return (_mm_movemask_ps(_mm_cmpgt_ps(_data, input._data)) | Compare(_data, input._data)) == 0xF;
   }
 
   bool operator<(value_type input) const { return *this < vector(input); }
@@ -172,7 +172,7 @@ public:
   bool IsSymetrical() const {
     const store_type temp =
         _mm_shuffle_ps(_data, _data, _MM_SHUFFLE(3, 1, 0, 2));
-    return Compare(_mm_hsub_ps(_data, _data), _mm_hsub_ps(temp, temp));
+    return Compare(_mm_hsub_ps(_data, _data), _mm_hsub_ps(temp, temp)) == 0xF;
   }
 
   // Return -1 if [X | Y | Z | W] < 0
