@@ -47,9 +47,44 @@ inline void PrimitiveDescriptor::Resample(FormatCodec::fvec &data) const {
     }
     break;
   }
+  }
+}
 
-  default:
+inline void PrimitiveDescriptor::Resample(FormatCodec::fvec &data,
+                                   const es::Matrix44 &transform) const {
+  switch (UnpackDataType()) {
+  case UnpackDataType_e::None:
+    for (auto &d : data) {
+      d = d * transform;
+    }
     break;
+
+  case UnpackDataType_e::Mul: {
+    auto udata = UnpackData();
+
+    for (auto &d : data) {
+      d = (d * udata.min) * transform;
+    }
+    break;
+  }
+
+  case UnpackDataType_e::Madd: {
+    auto udata = UnpackData();
+
+    for (auto &d : data) {
+      d = (udata.max + d * udata.min) * transform;
+    }
+    break;
+  }
+
+  case UnpackDataType_e::Add: {
+    auto udata = UnpackData();
+
+    for (auto &d : data) {
+      d = (d + udata.min) * transform;
+    }
+    break;
+  }
   }
 }
 

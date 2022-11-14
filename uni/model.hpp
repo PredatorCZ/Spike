@@ -16,12 +16,9 @@
 */
 
 #pragma once
+#include "datas/matrix44.hpp"
 #include "format.hpp"
 #include "list.hpp"
-
-namespace es {
-class Matrix44;
-}
 
 namespace uni {
 struct RTSValue;
@@ -64,6 +61,7 @@ public:
   virtual BBOX UnpackData() const = 0;
   virtual UnpackDataType_e UnpackDataType() const = 0;
   void Resample(FormatCodec::fvec &data) const;
+  void Resample(FormatCodec::fvec &data, const es::Matrix44 &transform) const;
 };
 
 typedef Element<const List<PrimitiveDescriptor>> PrimitiveDescriptorsConst;
