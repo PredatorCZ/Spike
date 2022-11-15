@@ -77,6 +77,7 @@ size_t GLTFModel::SaveIndices(const uni::IndexArray & idArray)
         bool inverted = false;
         stream.wr.Write(indices[0]);
         stream.wr.Write(indices[1]);
+        acc.count = 2;
 
         for (size_t i = 2; i < indexCount - 1; i++)
         {
@@ -105,6 +106,7 @@ size_t GLTFModel::SaveIndices(const uni::IndexArray & idArray)
         if (indices.back() != reset)
         {
             stream.wr.Write(indices.back());
+            acc.count++;
         }
     };
 
@@ -127,6 +129,8 @@ size_t GLTFModel::SaveIndices(const uni::IndexArray & idArray)
 
         if (as16bit)
         {
+            acc.count = indexCount;
+
             for (uint16 i : indices)
             {
                 stream.wr.Write(i);
@@ -169,8 +173,6 @@ void GLTFModel::WritePositions(gltf::Attributes & attrs, const uni::PrimitiveDes
     auto [acc, index] = NewAccessor(stream, 4);
     acc.count = numVertices;
     acc.type = gltf::Accessor::Type::Vec3;
-    acc.max.insert(acc.max.begin(), max._arr, max._arr + 3);
-    acc.min.insert(acc.min.begin(), min._arr, min._arr + 3);
     attrs["POSITION"] = index;
     auto vertWr = stream.wr;
 
@@ -181,6 +183,10 @@ void GLTFModel::WritePositions(gltf::Attributes & attrs, const uni::PrimitiveDes
         if (min >= 0.f)
         {
             acc.componentType = gltf::Accessor::ComponentType::UnsignedShort;
+            min *= 0xffff;
+            min = Vector4A16(_mm_round_ps(min._data, _MM_ROUND_NEAREST));
+            max *= 0xffff;
+            max = Vector4A16(_mm_round_ps(max._data, _MM_ROUND_NEAREST));
 
             for (auto & v : basePosition)
             {
@@ -192,6 +198,10 @@ void GLTFModel::WritePositions(gltf::Attributes & attrs, const uni::PrimitiveDes
         else
         {
             acc.componentType = gltf::Accessor::ComponentType::Short;
+            min *= 0x7fff;
+            min = Vector4A16(_mm_round_ps(min._data, _MM_ROUND_NEAREST));
+            max *= 0x7fff;
+            max = Vector4A16(_mm_round_ps(max._data, _MM_ROUND_NEAREST));
 
             for (auto & v : basePosition)
             {
@@ -210,6 +220,9 @@ void GLTFModel::WritePositions(gltf::Attributes & attrs, const uni::PrimitiveDes
             vertWr.Write<Vector>(v);
         }
     }
+
+    acc.max.insert(acc.max.begin(), max._arr, max._arr + 3);
+    acc.min.insert(acc.min.begin(), min._arr, min._arr + 3);
 }
 
 void GLTFModel::WriteTexCoord(gltf::Attributes & attrs, const uni::PrimitiveDescriptor & d, size_t numVertices)
