@@ -31,8 +31,7 @@
 void ZIPExtactContext::FinishZIP(cache_begin_cb cacheBeginCB) {
   FinishFile(true);
 
-  auto entriesStr = entriesStream.str();
-  es::Dispose(entriesStream);
+  auto entriesStr = std::move(entriesStream).str();
   bool forcex64 = false;
   const size_t dirOffset = records.Tell();
   size_t dirSize = entriesStr.size();
@@ -72,7 +71,8 @@ void ZIPExtactContext::FinishZIP(cache_begin_cb cacheBeginCB) {
     zCentral64.id = ZIP64CentralDir::ID;
     zCentral64.madeBy = 10;
     zCentral64.extractVersion = 10;
-    zCentral64.dirRecord = 44;
+    zCentral64.diskNumber = 1;
+    zCentral64.dirRecord = 0x2C;
     zCentral64.numDiskEntries = numEntries;
     zCentral64.numDirEntries = numEntries;
     zCentral64.dirSize = dirSize;
@@ -384,7 +384,7 @@ void ZIPMerger::Merge(ZIPExtactContext &other, const std::string &recordsFile) {
 }
 
 void ZIPMerger::FinishMerge(cache_begin_cb cacheBeginCB) {
-  const size_t entriesSize = entries.Tell();
+  size_t entriesSize = entries.Tell();
   es::Dispose(entries);
   char buffer[0x80000];
   BinReader rd(entriesFile);
@@ -408,7 +408,6 @@ void ZIPMerger::FinishMerge(cache_begin_cb cacheBeginCB) {
   zCentral.id = ZIPCentralDir::ID;
   SafeCast(zCentral.numDirEntries, numEntries);
   SafeCast(zCentral.numDiskEntries, numEntries);
-  SafeCast(zCentral.dirSize, entriesSize);
   SafeCast(zCentral.dirOffset, dirOffset);
 
   for (size_t b = 0; b < numBlocks; b++) {
@@ -429,15 +428,15 @@ void ZIPMerger::FinishMerge(cache_begin_cb cacheBeginCB) {
     rd.Skip(-skipValue);
     rd.ReadBuffer(buffer, skipValue);
     std::string_view sv(buffer, skipValue);
-    size_t foundLastEntry = sv.find_last_of("PK\x01\x02");
+    size_t foundLastEntry = sv.rfind("PK\x01\x02");
     validCacheEntry = foundLastEntry != sv.npos;
 
     if (validCacheEntry) {
       foundLastEntry += offsetof(ZIPFile, extraFieldSize);
-      uint16 extraFieldSize =
-          *reinterpret_cast<uint16 *>(buffer + foundLastEntry);
+      char *data = buffer + foundLastEntry;
+      uint16 extraFieldSize = *reinterpret_cast<uint16 *>(data);
       records.Push();
-      records.Skip(-(skipValue - foundLastEntry + 3));
+      records.Skip(-(skipValue - foundLastEntry));
       records.Write<uint16>(extraFieldSize + 4 + sizeof(CacheBaseHeader));
       records.Pop();
 
@@ -445,8 +444,11 @@ void ZIPMerger::FinishMerge(cache_begin_cb cacheBeginCB) {
       records.Write<uint16>(sizeof(CacheBaseHeader));
       cache.meta.zipCheckupOffset = records.Tell();
       records.Write(cache.meta);
+      entriesSize += sizeof(CacheBaseHeader) + 4;
     }
   }
+
+  SafeCast(zCentral.dirSize, entriesSize);
 
   if (forcex64) {
     ZIP64CentralDir zCentral64{};
@@ -457,6 +459,8 @@ void ZIPMerger::FinishMerge(cache_begin_cb cacheBeginCB) {
     zCentral64.numDirEntries = numEntries;
     zCentral64.dirSize = entriesSize;
     zCentral64.dirOffset = dirOffset;
+    zCentral64.diskNumber = 1;
+    zCentral64.dirRecord = 0x2C;
 
     const size_t centralOffset = records.Tell();
     records.Write(zCentral64);
