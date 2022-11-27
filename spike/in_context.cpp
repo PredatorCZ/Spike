@@ -313,10 +313,12 @@ struct ZIPIOContext_implbase : ZIPIOContext {
   void DisposeFile(std::istream *str) override;
 
   void Merge(ZIPExtactContext *eCtx, const std::string &records) override {
+    std::lock_guard<std::mutex> lg(mergerMtx);
     merger->Merge(*eCtx, records);
   }
 
   void InitMerger() override {
+    std::lock_guard<std::mutex> lg(mergerMtx);
     if (!merger) {
       merger.emplace(basePath + "_out.zip", RequestTempFile());
     }
@@ -332,6 +334,7 @@ protected:
   std::list<std::spanstream> openedFiles;
   es::MappedFile zipMount;
   std::optional<ZIPMerger> merger;
+  std::mutex mergerMtx;
 };
 
 struct ZIPMemoryStream : ZIPDataHolder {
