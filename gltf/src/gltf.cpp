@@ -20,9 +20,21 @@ void GLTF::FinishAndSave(BinWritterRef wr, const std::string & docPath)
         return retval;
     }();
 
-    if (totalBufferSize)
+    size_t inBufferSize = [&]
     {
-        size_t curOffset = 0;
+        size_t retval = 0;
+
+        for (auto & b : buffers)
+        {
+            retval += b.byteLength;
+        }
+
+        return retval;
+    }();
+
+    if (totalBufferSize + inBufferSize)
+    {
+        size_t curOffset = inBufferSize;
 
         for (auto & a : streams)
         {
@@ -33,7 +45,12 @@ void GLTF::FinishAndSave(BinWritterRef wr, const std::string & docPath)
             bufferViews.at(a.index) = std::move(a);
         }
 
-        auto state = gltf::StreamBinaryHeaders(*this, wr.BaseStream(), totalBufferSize);
+        auto state = gltf::StreamBinaryHeaders(*this, wr.BaseStream(), totalBufferSize + inBufferSize);
+
+        for (auto & a : buffers)
+        {
+            wr.WriteContainer(a.data);
+        }
 
         for (auto & a : streams)
         {
