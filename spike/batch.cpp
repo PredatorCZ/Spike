@@ -1,7 +1,9 @@
 #include "batch.hpp"
 #include "console.hpp"
+#include "datas/binreader.hpp"
 #include "datas/master_printer.hpp"
 #include "datas/stat.hpp"
+#include "nlohmann/json.hpp"
 #include <cinttypes>
 #include <deque>
 #include <future>
@@ -169,6 +171,28 @@ struct ScanningFoldersBar : LoadingBar {
   }
 };
 
+Batch::Batch(APPContext *ctx_, size_t queueCapacity)
+    : ctx(ctx_), manager(queueCapacity) {
+  if (ctx->info->batchControlFilters.empty()) {
+    for (auto &c : ctx->info->filters) {
+      scanner.AddFilter(c);
+      loaderFilter.AddFilter(c);
+    }
+  } else {
+    scanner.AddFilter(std::string_view("batch.json$"));
+
+    for (auto &c : ctx->info->batchControlFilters) {
+      loaderFilter.AddFilter(c);
+      batchControlFilter.AddFilter(c);
+    }
+
+    for (auto &c : ctx->info->filters) {
+      loaderFilter.AddFilter(c);
+      supplementalFilter.AddFilter(c);
+    }
+  }
+}
+
 void Batch::AddFile(std::string path) {
   auto type = FileType(path);
   switch (type) {
@@ -231,7 +255,7 @@ void Batch::AddFile(std::string path) {
         auto labelData = "Loading ZIP vfs: " + path;
         auto loadBar = AppendNewLogLine<LoadingBar>(labelData);
         const bool loadFiltered = ctx->info->filteredLoad;
-        auto fctx = loadFiltered ? MakeZIPContext(path, scanner, {})
+        auto fctx = loadFiltered ? MakeZIPContext(path, loaderFilter, {})
                                  : MakeZIPContext(path);
 
         AFileInfo zFile(path);
@@ -314,10 +338,50 @@ void Batch::AddFile(std::string path) {
     }
 
     if (type == FileType_e::File) {
-      manager.Push([&, iCtx{MakeIOContext(path)}] {
-        forEachFile(iCtx.get());
-        iCtx->Finish();
-      });
+      if (!ctx->info->batchControlFilters.empty()) {
+        if (!path.ends_with("batch.json")) {
+          printerror("Expected json bach, got: " << path);
+          break;
+        }
+
+        BinReader mainFile(path);
+        std::string pathDir(AFileInfo(path).GetFolder());
+        nlohmann::json batch(nlohmann::json::parse(mainFile.BaseStream()));
+
+        if (updateFileCount) {
+          updateFileCount(batch.size());
+        }
+
+        for (auto &group : batch) {
+          std::vector<std::string> supplementals;
+          std::string controlPath;
+
+          for (std::string item : group) {
+            if (batchControlFilter.IsFiltered(item)) {
+              if (!controlPath.empty()) {
+                printerror("Dupicate main file for batch: " << item);
+                continue;
+              }
+
+              controlPath = pathDir + item;
+              continue;
+            }
+
+            supplementals.emplace_back(pathDir + item);
+          }
+
+          manager.Push(
+              [&, iCtx{MakeIOContext(controlPath, std::move(supplementals))}] {
+                forEachFile(iCtx.get());
+                iCtx->Finish();
+              });
+        }
+      } else {
+        manager.Push([&, iCtx{MakeIOContext(path)}] {
+          forEachFile(iCtx.get());
+          iCtx->Finish();
+        });
+      }
       break;
     }
     printerror("Invalid path: " << path);
@@ -331,7 +395,7 @@ void Batch::FinishBatch() {
     auto labelData = "Loading ZIP vfs: " + zip;
     auto loadBar = AppendNewLogLine<LoadingBar>(labelData);
     const bool loadFiltered = ctx->info->filteredLoad;
-    auto fctx = loadFiltered ? MakeZIPContext(zip, scanner, paths)
+    auto fctx = loadFiltered ? MakeZIPContext(zip, loaderFilter, paths)
                              : MakeZIPContext(zip);
 
     AFileInfo zFile(zip);

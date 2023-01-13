@@ -56,7 +56,7 @@ protected:
 };
 
 struct AppInfo_s {
-  static constexpr uint32 CONTEXT_VERSION = 2;
+  static constexpr uint32 CONTEXT_VERSION = 3;
   uint32 contextVersion = CONTEXT_VERSION;
   // No RequestFile or FindFile is being called
   bool filteredLoad = false;
@@ -66,6 +66,7 @@ struct AppInfo_s {
   ReflectorFriend *settings = nullptr;
   std::span<std::string_view> filters{};
   const MainAppConf *internalSettings = nullptr;
+  std::span<std::string_view> batchControlFilters{};
 };
 
 struct AppExtractContext {
@@ -102,6 +103,7 @@ struct AppContextLocator {
   virtual void DisposeFile(std::istream *file) = 0;
   virtual AppContextFoundStream FindFile(const std::string &rootFolder,
                                          const std::string &pattern) = 0;
+  virtual const std::vector<std::string> &SupplementalFiles() = 0;
 };
 
 struct AppContext : AppContextLocator {

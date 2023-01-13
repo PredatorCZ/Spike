@@ -54,17 +54,12 @@ struct Batch {
   std::function<void(const std::string &path, AppPackStats)> forEachFolder;
   std::function<void()> forEachFolderFinish;
   std::function<void(AppContextShare *)> forEachFile;
+  std::function<void(size_t)> updateFileCount;
   bool keepFinishLines = true;
 
   Batch(const Batch &) = delete;
   Batch(Batch &&) = delete;
-
-  Batch(APPContext *ctx_, size_t queueCapacity)
-      : ctx(ctx_), manager(queueCapacity) {
-    for (auto &c : ctx->info->filters) {
-      scanner.AddFilter(c);
-    }
-  }
+  Batch(APPContext *ctx_, size_t queueCapacity);
 
   void AddFile(std::string path);
 
@@ -84,5 +79,8 @@ private:
   std::set<std::string> rootZips;
   std::map<std::string, PathFilter> zips;
   DirectoryScanner scanner;
+  PathFilter loaderFilter;
+  PathFilter batchControlFilter;
+  PathFilter supplementalFilter;
   WorkerManager manager{0};
 };

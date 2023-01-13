@@ -304,7 +304,8 @@ void ProcessBatch(Batch &batch, ExtractStats *stats) {
 void ProcessBatch(Batch &batch, size_t numFiles) {
   uint8 consoleDetail = 1 | uint8(batch.ctx->info->multithreaded) << 1;
   ConsolePrintDetail(consoleDetail);
-  batch.forEachFile = [payload = std::make_shared<UILines>(numFiles),
+  auto payload = std::make_shared<UILines>(numFiles);
+  batch.forEachFile = [payload = payload,
                        ctx = batch.ctx](AppContextShare *iCtx) {
     printline("Processing: " << iCtx->FullPath());
     ctx->ProcessFile(iCtx);
@@ -314,6 +315,13 @@ void ProcessBatch(Batch &batch, size_t numFiles) {
     if (payload->totalCount) {
       (*payload->totalCount)++;
     }
+  };
+
+  auto totalFiles = std::make_shared<size_t>(numFiles);
+  batch.updateFileCount = [payload = payload,
+                           totalFiles = totalFiles](size_t addedFiles) {
+    *totalFiles.get() += addedFiles;
+    payload->totalProgress->ItemCount(*totalFiles);
   };
 }
 

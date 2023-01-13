@@ -34,6 +34,24 @@
 
 static std::mutex simpleIOLock;
 
+const std::vector<std::string> &AppContextShare::SupplementalFiles() {
+  if (!supplementals) {
+    throw std::runtime_error(
+        "Invalid call of SupplementalFiles, module is not for batch.");
+  }
+
+  return supplementals.value();
+}
+
+const std::vector<std::string> &ZIPIOContext::SupplementalFiles() {
+  if (!supplementals) {
+    throw std::runtime_error(
+        "Invalid call of SupplementalFiles, module is not for batch.");
+  }
+
+  return supplementals.value();
+}
+
 struct AppContextShareImpl : AppContextShare {
   std::ostream &NewFile(const std::string &path) override {
     const std::string filePath(basePath + path);
@@ -65,9 +83,11 @@ struct AppContextShareImpl : AppContextShare {
 };
 
 struct SimpleIOContext : AppContextShareImpl {
-  SimpleIOContext(const std::string &path) {
-    workingFile.Load(path);
+  SimpleIOContext(const std::string &path,
+                  std::optional<std::vector<std::string>> supplementals_) {
     mainFile.Open(path);
+    workingFile.Load(path);
+    supplementals = std::move(supplementals_);
   }
   std::istream *OpenFile(const std::string &path);
 
@@ -201,8 +221,10 @@ std::string SimpleIOContext::GetBuffer(size_t size, size_t begin) {
   return buffer;
 }
 
-std::shared_ptr<AppContextShare> MakeIOContext(const std::string &path) {
-  return std::make_unique<SimpleIOContext>(path);
+std::shared_ptr<AppContextShare>
+MakeIOContext(const std::string &path,
+              std::optional<std::vector<std::string>> supplementals) {
+  return std::make_unique<SimpleIOContext>(path, supplementals);
 }
 
 struct ZIPIOContextInstance : AppContextShareImpl {

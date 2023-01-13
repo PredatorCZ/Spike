@@ -23,6 +23,7 @@
 #include "datas/pugi_fwd.hpp"
 #include <map>
 #include <mutex>
+#include <optional>
 
 class PathFilter;
 struct reflectorStatic;
@@ -154,7 +155,9 @@ struct AppContextShare : AppContext {
   virtual void Finish() = 0;
   virtual JenHash Hash() = 0;
   virtual std::string FullPath() = 0;
+  const std::vector<std::string> &SupplementalFiles() override;
   std::function<void()> forEachFile;
+  std::optional<std::vector<std::string>> supplementals;
 };
 
 struct ZIPExtactContext;
@@ -169,10 +172,14 @@ struct ZIPIOContext : AppContextLocator {
   virtual void Merge(ZIPExtactContext *eCtx, const std::string &records) = 0;
   virtual void InitMerger() = 0;
   virtual void Finish() = 0;
+  const std::vector<std::string> &SupplementalFiles() override;
   std::string basePath;
+  std::optional<std::vector<std::string>> supplementals;
 };
 
-std::shared_ptr<AppContextShare> MakeIOContext(const std::string &path);
+std::shared_ptr<AppContextShare>
+MakeIOContext(const std::string &path,
+              std::optional<std::vector<std::string>> supplementals = std::nullopt);
 std::unique_ptr<ZIPIOContext> MakeZIPContext(const std::string &file,
                                              const PathFilter &pathFilter,
                                              const PathFilter &moduleFilter);

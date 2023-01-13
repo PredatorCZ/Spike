@@ -8,6 +8,8 @@ build_target(
   spike
   TYPE
   APP
+  INCLUDES
+  ../3rd_party/json
   LINKS
   precore
   DEFINITIONS
