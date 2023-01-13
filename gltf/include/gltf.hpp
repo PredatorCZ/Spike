@@ -22,6 +22,7 @@
 #include <datas/matrix44.hpp>
 #include <optional>
 #include <sstream>
+#include <span>
 
 using namespace fx;
 
@@ -55,6 +56,8 @@ struct GLTFStream : gltf::BufferView
 
 struct GLTF : gltf::Document
 {
+    GLTF(gltf::Document && doc)
+        : gltf::Document(std::move(doc)) {}
     GLTF()
     {
         scenes.emplace_back();
@@ -198,12 +201,22 @@ struct StripResult
     std::vector<Vector4A16> values;
 };
 
-StripResult GLTF_EXTERN StripValues(const std::vector<float> & times, size_t upperLimit, const uni::MotionTrack * tck);
-std::array<StripResult, 3> GLTF_EXTERN StripValuesBlock(const std::vector<float> & times, size_t upperLimit, const uni::MotionTrack * tck);
-size_t GLTF_EXTERN FindTimeEndIndex(const std::vector<float> & times, float duration);
+StripResult GLTF_EXTERN StripValues(std::span<float> times, size_t upperLimit, const uni::MotionTrack * tck);
+std::array<StripResult, 3> GLTF_EXTERN StripValuesBlock(std::span<float> times, size_t upperLimit, const uni::MotionTrack * tck);
+size_t GLTF_EXTERN FindTimeEndIndex(std::span<float> times, float duration);
 
 inline bool fltcmp(float f0, float f1, float epsilon = FLT_EPSILON)
 {
     return (f1 <= f0 + epsilon) && (f1 >= f0 - epsilon);
 }
+
+struct BoneInfo
+{
+    std::vector<std::pair<size_t, es::Matrix44>> boneLookupTMs;
+    std::map<size_t, float> boneLens;
+
+    void GLTF_EXTERN Add(size_t index, Vector4A16 translation, int32 parentIndex = -1);
+};
+
+void GLTF_EXTERN VisualizeSkeleton(GLTF & main, const BoneInfo & infos);
 } // namespace gltfutils

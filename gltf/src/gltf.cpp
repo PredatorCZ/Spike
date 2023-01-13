@@ -412,7 +412,7 @@ std::vector<float> MakeSamples(float sampleRate, float duration)
     return times;
 }
 
-StripResult StripValues(const std::vector<float> & times, size_t upperLimit, const uni::MotionTrack * tck)
+StripResult StripValues(std::span<float> times, size_t upperLimit, const uni::MotionTrack * tck)
 {
     StripResult retval;
     retval.timeIndices.push_back(0);
@@ -494,7 +494,7 @@ public:
     }
 };
 
-std::array<StripResult, 3> GLTF_EXTERN StripValuesBlock(const std::vector<float> & times, size_t upperLimit, const uni::MotionTrack * tck)
+std::array<StripResult, 3> StripValuesBlock(std::span<float> times, size_t upperLimit, const uni::MotionTrack * tck)
 {
     std::array<StripResult, 3> retVal;
     RTSHelper helper;
@@ -509,7 +509,7 @@ std::array<StripResult, 3> GLTF_EXTERN StripValuesBlock(const std::vector<float>
     return retVal;
 }
 
-size_t FindTimeEndIndex(const std::vector<float> & times, float duration)
+size_t FindTimeEndIndex(std::span<float> times, float duration)
 {
     size_t upperLimit = -1U;
 
@@ -528,6 +528,266 @@ size_t FindTimeEndIndex(const std::vector<float> & times, float duration)
     }
 
     return upperLimit;
+}
+
+void BoneInfo::Add(size_t index, Vector4A16 translation, int32 parentIndex)
+{
+    auto boneLen = translation.Length();
+    boneLens.emplace(index, boneLen);
+
+    if (parentIndex < 0 || boneLen < 0.00001f)
+        return;
+
+    // Generate octahedron transforms for bone visualization
+    // This might be still finicky
+    es::Matrix44 lookupMtx;
+    lookupMtx.r1() = translation.Normalized();
+    lookupMtx.r2() =
+        lookupMtx.r1() * es::Matrix44(Vector4A16(0, 0, 0.7007, 0.7007));
+    lookupMtx.r3() = lookupMtx.r1().Cross(lookupMtx.r2());
+
+    if (lookupMtx.r3().Length() < 0.00001f)
+    {
+        lookupMtx.r2() =
+            lookupMtx.r1() * es::Matrix44(Vector4A16(0.7007, 0, 0, 0.7007));
+        lookupMtx.r3() = lookupMtx.r1().Cross(lookupMtx.r2());
+    }
+
+    lookupMtx.r1() *= boneLen;
+    lookupMtx.r2() *= boneLen;
+    lookupMtx.r3() *= boneLen;
+
+    boneLookupTMs.emplace_back(parentIndex, lookupMtx);
+}
+
+void VisualizeSkeleton(GLTF & main, const BoneInfo & infos)
+{
+    size_t idStreamSlot = 0;
+    {
+        static const Vector octa[]{
+            { 0, 0, 0 },
+            { 1, 1, -1 },
+            { 1, 1, 1 },
+            { 1, -1, -1 },
+            { 1, -1, 1 },
+            { 10, 0, 0 },
+        };
+        static const uint16 octaIndices[]{
+            0,
+            2,
+            1,
+            0,
+            4,
+            2,
+            0,
+            3,
+            4,
+            0,
+            1,
+            3,
+            5,
+            1,
+            2,
+            5,
+            2,
+            4,
+            5,
+            4,
+            3,
+            5,
+            3,
+            1,
+        };
+
+        auto & vtStream = main.NewStream("visual-vertices", 20);
+        vtStream.target = gltf::BufferView::TargetType::ArrayBuffer;
+        size_t vtStreamSlot = vtStream.slot;
+        size_t numVerts = 6 * infos.boneLookupTMs.size();
+        auto [vpAcc, vpId] = main.NewAccessor(vtStream, 4);
+        vpAcc.componentType = gltf::Accessor::ComponentType::Float;
+        vpAcc.type = gltf::Accessor::Type::Vec3;
+        vpAcc.count = numVerts;
+        auto [biAcc, biId] = main.NewAccessor(vtStream, 4, 12);
+        biAcc.componentType = gltf::Accessor::ComponentType::UnsignedByte;
+        biAcc.type = gltf::Accessor::Type::Vec4;
+        biAcc.count = numVerts;
+        auto [bwAcc, bwId] = main.NewAccessor(vtStream, 4, 16, &biAcc);
+        bwAcc.normalized = true;
+
+        auto & idStream = main.NewStream("visual-indices");
+        idStreamSlot = idStream.slot;
+        idStream.target = gltf::BufferView::TargetType::ElementArrayBuffer;
+        auto [idAcc, idId] = main.NewAccessor(idStream, 2);
+        idAcc.componentType = gltf::Accessor::ComponentType::UnsignedShort;
+        idAcc.type = gltf::Accessor::Type::Scalar;
+        idAcc.count = 24 * infos.boneLookupTMs.size();
+
+        gltf::Primitive prim;
+        prim.mode = gltf::Primitive::Mode::Triangles;
+        prim.indices = idId;
+        prim.attributes["POSITION"] = vpId;
+        prim.attributes["JOINTS_0"] = biId;
+        prim.attributes["WEIGHTS_0"] = bwId;
+
+        gltf::Mesh mesh;
+        mesh.primitives.emplace_back(std::move(prim));
+
+        gltf::Skin skin;
+        std::map<size_t, size_t> remaps;
+
+        for (auto [id, _] : infos.boneLookupTMs)
+        {
+            if (remaps.contains(id))
+            {
+                continue;
+            }
+            skin.joints.push_back(id);
+            remaps.emplace(id, remaps.size());
+        };
+
+        gltf::Node meshNode;
+        meshNode.mesh = main.meshes.size();
+        meshNode.skin = main.skins.size();
+        main.scenes.back().nodes.push_back(main.nodes.size());
+        main.nodes.push_back(meshNode);
+
+        main.meshes.emplace_back(std::move(mesh));
+        main.skins.emplace_back(std::move(skin));
+
+        size_t localId = 0;
+
+        auto & vtnStream = main.Stream(vtStreamSlot);
+
+        for (auto [id, tm] : infos.boneLookupTMs)
+        {
+            for (auto t : octa)
+            {
+                Vector correctedPos = (t * 0.1f) * tm;
+                vtnStream.wr.Write(correctedPos);
+                uint8 boneId[]{ uint8(remaps.at(id)), 0, 0, 0 };
+                vtnStream.wr.Write(boneId);
+                uint8 boneWt[]{ 0xff, 0, 0, 0 };
+                vtnStream.wr.Write(boneWt);
+            }
+
+            for (auto t : octaIndices)
+            {
+                uint16 correctedIndex = t + (localId * 6);
+                idStream.wr.Write(correctedIndex);
+            }
+            localId++;
+        }
+    }
+    {
+
+#include "icosphere.hpp"
+        auto & idStream = main.Stream(idStreamSlot);
+
+        auto [idAcc, idId] = main.NewAccessor(idStream, 2);
+        idAcc.componentType = gltf::Accessor::ComponentType::UnsignedShort;
+        idAcc.type = gltf::Accessor::Type::Scalar;
+        idAcc.count = 960;
+        idStream.wr.Write(icoSphereIndices);
+
+        auto & vtStream = main.NewStream("icovisual-basevertices", 16);
+        vtStream.target = gltf::BufferView::TargetType::ArrayBuffer;
+        auto [vpAcc, vpId] = main.NewAccessor(vtStream, 4);
+        vpAcc.componentType = gltf::Accessor::ComponentType::Float;
+        vpAcc.type = gltf::Accessor::Type::Vec3;
+        vpAcc.count = 162;
+        vpAcc.min = { -1, -1, -1 };
+        vpAcc.max = { 1, 1, 1 };
+        auto [bwAcc, bwId] = main.NewAccessor(vtStream, 4, 12);
+        bwAcc.componentType = gltf::Accessor::ComponentType::UnsignedByte;
+        bwAcc.type = gltf::Accessor::Type::Vec4;
+        bwAcc.count = 162;
+        bwAcc.normalized = true;
+
+        for (auto t : icoSphereX3)
+        {
+            vtStream.wr.Write(t);
+            uint8 boneWt[]{ 0xff, 0, 0, 0 };
+            vtStream.wr.Write(boneWt);
+        }
+
+        gltf::Mesh mesh;
+        gltf::Skin skin;
+        uint8 localId = 0;
+
+        auto vbStreamSlot = main.NewStream("icovisual-vertices", 4).slot;
+        auto & viStream = main.NewStream("icovisual-ibms");
+        auto [viAcc, viId] = main.NewAccessor(viStream, 16);
+        skin.inverseBindMatrices = viId;
+        viAcc.componentType = gltf::Accessor::ComponentType::Float;
+        viAcc.type = gltf::Accessor::Type::Mat4;
+        viAcc.count = infos.boneLens.size();
+
+        auto & vbStream = main.Stream(vbStreamSlot);
+        vbStream.target = gltf::BufferView::TargetType::ArrayBuffer;
+
+        const float avgLen = [&]
+        {
+            float totalLen = 0;
+            int32 totalItems = 0;
+
+            for (auto [id, len] : infos.boneLens)
+            {
+                if (len < 0.00001)
+                {
+                    continue;
+                }
+
+                totalLen += len;
+                totalItems++;
+            }
+
+            return totalLen / totalItems;
+        }();
+
+        for (auto [id, len] : infos.boneLens)
+        {
+            if (len < 0.00001)
+            {
+                len = avgLen;
+            }
+            es::Matrix44 ibm;
+            len *= 0.05f;
+            ibm.r1() *= len;
+            ibm.r2() *= len;
+            ibm.r3() *= len;
+            viStream.wr.Write(ibm);
+            skin.joints.push_back(id);
+            auto [biAcc, biId] = main.NewAccessor(vbStream, 4);
+            biAcc.componentType = gltf::Accessor::ComponentType::UnsignedByte;
+            biAcc.type = gltf::Accessor::Type::Vec4;
+            biAcc.count = 162;
+
+            gltf::Primitive prim;
+            prim.mode = gltf::Primitive::Mode::Triangles;
+            prim.indices = idId;
+            prim.attributes["POSITION"] = vpId;
+            prim.attributes["NORMAL"] = vpId;
+            prim.attributes["JOINTS_0"] = biId;
+            prim.attributes["WEIGHTS_0"] = bwId;
+
+            mesh.primitives.emplace_back(std::move(prim));
+            uint8 boneId[]{ localId++, 0, 0, 0 };
+
+            for (size_t i = 0; i < biAcc.count; i++)
+            {
+                vbStream.wr.Write(boneId);
+            }
+        }
+
+        gltf::Node meshNode;
+        meshNode.mesh = main.meshes.size();
+        meshNode.skin = main.skins.size();
+        main.scenes.back().nodes.push_back(main.nodes.size());
+        main.nodes.push_back(meshNode);
+
+        main.meshes.emplace_back(std::move(mesh));
+        main.skins.emplace_back(std::move(skin));
+    }
 }
 
 } // namespace gltfutils
