@@ -20,6 +20,9 @@ set(PRECORE_SOURCE_DIR
 set(CMAKE_MODULE_PATH
     ${PRECORE_SOURCE_DIR}/cmake;${CMAKE_MODULE_PATH}
     CACHE STRING "")
+set(OBJECTS_PID
+    OFF
+    CACHE BOOL "")
 
 if(USE_GCOV)
   message("Compiling with GCOV.")

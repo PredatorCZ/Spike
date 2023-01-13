@@ -69,7 +69,7 @@ std::ostream &Get(MPType type) {
 
 void FlushAll() {
   Queuer que;
-  que.payload = MASTER_PRINTER.buffer.str();
+  que.payload = std::move(MASTER_PRINTER.buffer).str();
   std::thread::id threadID = std::this_thread::get_id();
   que.threadId = reinterpret_cast<uint32 &>(threadID);
   que.type = MASTER_PRINTER.cType;
@@ -110,7 +110,6 @@ void FlushAll() {
     q(que);
   }
 
-  MASTER_PRINTER.buffer.str("");
   MASTER_PRINTER.cType = MPType::MSG;
   MASTER_PRINTER.mutex.unlock();
   MASTER_PRINTER.lockedThread = {};

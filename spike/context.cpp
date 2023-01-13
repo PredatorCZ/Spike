@@ -703,7 +703,7 @@ void APPContext::FromConfig() {
         str << "\t<-tag: " << tag << "->\n" << data.str();
       }
 
-      auto buff = str.str();
+      auto buff = std::move(str).str();
       pugi::xml_node commonNode;
       auto commentNode = doc.append_child(pugi::node_comment);
       commentNode.set_value(buff.data());
@@ -728,7 +728,7 @@ void APPContext::FromConfig() {
 
       std::stringstream str;
       GetHelp(str);
-      auto buff = str.str();
+      auto buff = std::move(str).str();
       pugi::xml_node node;
       auto commentNode = doc.append_child(pugi::node_comment);
       commentNode.set_value(buff.data());
