@@ -103,6 +103,17 @@ size_t GLTFModel::SaveIndices(const uni::IndexArray & idArray)
             if (item == reset)
             {
                 stream.wr.Write(indices[i - 1]);
+
+                while (i < indexCount - 1)
+                {
+                    if (indices[i + 1] != reset)
+                    {
+                        break;
+                    }
+
+                    i++;
+                }
+
                 if (inverted)
                 {
                     stream.wr.Write(indices[i + 1]);
