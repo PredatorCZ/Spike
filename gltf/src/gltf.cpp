@@ -256,8 +256,24 @@ void GLTFModel::WritePositions(gltf::Attributes & attrs, const uni::PrimitiveDes
 void GLTFModel::WriteTexCoord(gltf::Attributes & attrs, const uni::PrimitiveDescriptor & d, size_t numVertices)
 {
     uni::FormatCodec::fvec sampled;
-    d.Codec().Sample(sampled, d.RawBuffer(), numVertices, d.Stride());
+
+    if (d.Type().outType == uni::FormatType::INT || d.Type().outType == uni::FormatType::UINT)
+    {
+        uni::FormatCodec::ivec sampled_;
+        d.Codec().Sample(sampled_, d.RawBuffer(), numVertices, d.Stride());
+
+        for (auto & s : sampled_)
+        {
+            sampled.emplace_back(s);
+        }
+    }
+    else
+    {
+        d.Codec().Sample(sampled, d.RawBuffer(), numVertices, d.Stride());
+    }
+
     d.Resample(sampled);
+
     auto aabb = GetAABB(sampled);
     auto & max = aabb.max;
     auto & min = aabb.min;
