@@ -89,7 +89,7 @@ size_t GLTFModel::SaveIndices(const uni::IndexArray & idArray)
     size_t indexCount = idArray.NumIndices();
     auto indicesRaw = idArray.RawIndexBuffer();
 
-    auto Process = [&](auto indices, uint32 reset)
+    auto Process = [&, &acc = acc](auto indices, uint32 reset)
     {
         bool inverted = false;
         stream.wr.Write(indices[0]);
