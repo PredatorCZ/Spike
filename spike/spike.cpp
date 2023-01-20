@@ -224,8 +224,9 @@ void PackModeBatch(Batch &batch) {
   };
 
   batch.forEachFile = [payload](AppContextShare *iCtx) {
-    payload->archiveContext->SendFile(iCtx->workingFile.GetFullPath(),
-                                      iCtx->GetStream());
+    payload->archiveContext->SendFile(
+        iCtx->workingFile.GetFullPath().substr(payload->folderPath.size() + 1),
+        iCtx->GetStream());
     (*payload->progBar)++;
   };
 
