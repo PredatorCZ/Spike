@@ -56,10 +56,10 @@ struct AppContextShareImpl : AppContextShare {
   std::ostream &NewFile(const std::string &path) override {
     const std::string filePath(basePath + path);
     try {
-      outFile.Open(filePath);
+      outFile = BinWritter(filePath);
     } catch (const es::FileInvalidAccessError &e) {
       mkdirs(filePath);
-      outFile.Open(filePath);
+      outFile = BinWritter(filePath);
     }
     return outFile.BaseStream();
   }
