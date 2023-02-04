@@ -43,9 +43,6 @@ source_group("SIMD Files" FILES ${SIMD_INLINE})
 source_group("SIMD Files" FILES ${SIMD_HEADER})
 
 add_library(glm INTERFACE)
-target_compile_definitions(
-  glm INTERFACE GLM_FORCE_DEFAULT_ALIGNED_GENTYPES GLM_FORCE_INTRINSICS
-                GLM_FORCE_EXPLICIT_CTOR)
 
 include(GNUInstallDirs)
 

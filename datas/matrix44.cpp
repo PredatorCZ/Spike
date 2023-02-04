@@ -16,6 +16,7 @@
     limitations under the License.
 */
 
+#define GLM_FORCE_QUAT_DATA_XYZW
 #include "matrix44.hpp"
 #include "glm/ext.hpp"
 #include "glm/glm.hpp"
@@ -103,7 +104,8 @@ void Matrix44::FromQuat(const Vector4A16 &q) {
 }
 
 Vector4A16 Matrix44::ToQuat() const {
-  return AsVec(glm::quat_cast(AsMat4(*this)));
+  auto asQuat = glm::quat_cast(AsMat4(*this));
+  return {asQuat.y, asQuat.z, asQuat.w, asQuat.x};
 }
 
 void Matrix44::Transpose() {

@@ -42,6 +42,9 @@ add_subdirectory(3rd_party/pugixml)
 add_library(precore-interface INTERFACE)
 target_include_directories(precore-interface INTERFACE ${PRECORE_SOURCE_DIR})
 target_link_libraries(precore-interface INTERFACE glm::glm)
+target_compile_definitions(
+  glm INTERFACE GLM_FORCE_DEFAULT_ALIGNED_GENTYPES GLM_FORCE_INTRINSICS
+                GLM_FORCE_EXPLICIT_CTOR)
 
 if(USE_GCOV)
   target_link_options(precore-interface INTERFACE --coverage)

@@ -42,12 +42,20 @@ namespace glm
 #		if GLM_LANG & GLM_LANG_CXXMS_FLAG
 			union
 			{
-				struct { T x, y, z, w; };
+#				ifdef GLM_FORCE_QUAT_DATA_XYZW
+					struct { T x, y, z, w; };
+#				else
+					struct { T w, x, y, z; };
+#				endif
 
 				typename detail::storage<4, T, detail::is_aligned<Q>::value>::type data;
 			};
 #		else
-			T x, y, z, w;
+#			ifdef GLM_FORCE_QUAT_DATA_XYZW
+				T x, y, z, w;
+#			else
+				T w, x, y, z;
+#			endif
 #		endif
 
 #		if GLM_SILENT_WARNINGS == GLM_ENABLE
@@ -81,7 +89,11 @@ namespace glm
 
 		GLM_FUNC_DECL GLM_CONSTEXPR qua(T s, vec<3, T, Q> const& v);
 
+#		ifdef GLM_FORCE_QUAT_DATA_XYZW
+		GLM_FUNC_DECL GLM_CONSTEXPR qua(T x, T y, T z, T w);
+#		else
 		GLM_FUNC_DECL GLM_CONSTEXPR qua(T w, T x, T y, T z);
+#		endif
 
 		// -- Conversion constructors --
 
