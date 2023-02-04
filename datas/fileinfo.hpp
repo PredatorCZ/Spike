@@ -105,7 +105,9 @@ public:
     } else if (found == 0) {
       return string_type(GetFullPath());
     } else {
-      return string_type(path.substr(0, found - 1)).append(GetFullPath());
+      auto nextPath = GetFullPath();
+      size_t sub = nextPath.front() == '/';
+      return std::string(path.substr(0, found - sub)).append(nextPath);
     }
   }
 };
