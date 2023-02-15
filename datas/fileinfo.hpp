@@ -74,6 +74,9 @@ public:
   string_type ChangeExtension(stringref_type newExt) const {
     return string_type(GetFullPathNoExt()) + string_type(newExt);
   }
+  string_type ChangeExtension2(stringref_type newExt) const {
+    return string_type(GetFullPathNoExt()).append(".") + string_type(newExt);
+  }
 
   explode_type Explode() const {
     explode_type resVal;
