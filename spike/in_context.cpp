@@ -180,7 +180,29 @@ AppContextFoundStream SimpleIOContext::FindFile(const std::string &rootFolder,
   if (sc.Files().empty()) {
     throw es::FileNotFoundError(pattern);
   } else if (sc.Files().size() > 1) {
-    throw std::runtime_error("Too many files found.");
+    std::string *winner = nullptr;
+    size_t minFolder = 0x10000;
+
+    for (auto &f : sc) {
+      size_t foundIdx = f.find_last_of('/');
+
+      if (foundIdx == f.npos) {
+        throw std::runtime_error("Too many files found.");
+      }
+
+      if (foundIdx < minFolder) {
+        winner = &f;
+        minFolder = foundIdx;
+      } else if (foundIdx == minFolder) {
+        throw std::runtime_error("Too many files found.");
+      }
+    }
+
+    if (!winner) {
+      throw std::runtime_error("Too many files found.");
+    }
+
+    return {OpenFile(*winner), this, AFileInfo(*winner)};
   }
 
   return {OpenFile(sc.Files().front()), this, AFileInfo(sc.Files().front())};
