@@ -55,6 +55,7 @@ auto dlerror() {
 #endif
 
 MainAppConfFriend mainSettings{};
+CLISettings cliSettings{};
 
 REFLECT(CLASS(MainAppConfFriend),
         MEMBERNAME(generateLog, "generate-log", "L",
@@ -63,6 +64,9 @@ REFLECT(CLASS(MainAppConfFriend),
         MEMBER(verbosity, "v", ReflDesc{"Prints more information per level."}),
         MEMBERNAME(extractSettings, "extract-settings"),
         MEMBERNAME(compressSettings, "compress-settings"))
+
+REFLECT(CLASS(CLISettings),
+        MEMBER(out, ReflDesc{"Output folder for processed files"}))
 
 REFLECT(
     CLASS(ExtractConf),
@@ -257,6 +261,11 @@ static auto &CompressSettings() {
   return reinterpret_cast<ReflectorFriend &>(wrap);
 }
 
+static auto &CliSettings() {
+  static ReflectorWrap<CLISettings> wrap(cliSettings);
+  return reinterpret_cast<ReflectorFriend &>(wrap);
+}
+
 static const reflectorStatic *RTTI(const ReflectorFriend &ref) {
   auto rawRTTI = ref.GetReflectedInstance();
   return static_cast<const ReflectedInstanceFriend &>(rawRTTI).Refl();
@@ -293,17 +302,23 @@ int APPContext::ApplySetting(std::string_view key, std::string_view value) {
 
     if (rType) {
       refl = &MainSettings();
-    } else if (ProcessFile) {
-      rType = ExtractSettings().GetReflectedType(keyHash);
+    } else {
+      rType = CliSettings().GetReflectedType(keyHash);
 
       if (rType) {
-        refl = &ExtractSettings();
-      }
-    } else if (NewArchive) {
-      rType = CompressSettings().GetReflectedType(keyHash);
+        refl = &CliSettings();
+      } else if (ProcessFile) {
+        rType = ExtractSettings().GetReflectedType(keyHash);
 
-      if (rType) {
-        refl = &CompressSettings();
+        if (rType) {
+          refl = &ExtractSettings();
+        }
+      } else if (NewArchive) {
+        rType = CompressSettings().GetReflectedType(keyHash);
+
+        if (rType) {
+          refl = &CompressSettings();
+        }
       }
     }
   }

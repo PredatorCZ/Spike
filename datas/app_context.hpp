@@ -56,7 +56,7 @@ protected:
 };
 
 struct AppInfo_s {
-  static constexpr uint32 CONTEXT_VERSION = 3;
+  static constexpr uint32 CONTEXT_VERSION = 4;
   uint32 contextVersion = CONTEXT_VERSION;
   // No RequestFile or FindFile is being called
   bool filteredLoad = false;
@@ -106,6 +106,12 @@ struct AppContextLocator {
   virtual const std::vector<std::string> &SupplementalFiles() = 0;
 };
 
+struct NewFileContext {
+  std::ostream &str;
+  std::string fullPath;
+  size_t delimiter = 0;
+};
+
 struct AppContext : AppContextLocator {
   // Path to currently processed file within current filesystem
   AFileInfo workingFile;
@@ -118,7 +124,7 @@ struct AppContext : AppContextLocator {
   // will cause to close previous stream
   // To make mutiple files in single context, use ExtractContext() instead.
   // path can be relative, use with workingFile
-  virtual std::ostream &NewFile(const std::string &path) = 0;
+  virtual NewFileContext NewFile(const std::string &path) = 0;
 
   template <class C> void GetType(C &out, size_t offset = 0) {
     auto buffer = GetBuffer(sizeof(C), offset);

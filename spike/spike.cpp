@@ -389,29 +389,32 @@ int Main(int argc, TCHAR *argv[]) {
     auto opt = argv[a];
 
     if (opt[0] == '-') {
-      // We won't use config file, reset all booleans to false,
-      // so we can properly use cli switches
-      [&] {
-        if (dontLoadConfig) {
-          return;
-        }
+      auto optStr = std::to_string(opt);
+      std::string_view optsw(optStr);
 
-        printinfo("CLI option detected, config won't be loaded, all booleans "
-                  "set to false!");
-        ctx.ResetSwitchSettings();
-      }();
+      if (optsw != "--out") {
+        // We won't use config file, reset all booleans to false,
+        // so we can properly use cli switches
+        [&] {
+          if (dontLoadConfig) {
+            return;
+          }
 
-      dontLoadConfig = true;
-      opt++;
+          printinfo("CLI option detected, config won't be loaded, all booleans "
+                    "set to false!");
+          ctx.ResetSwitchSettings();
+        }();
+        dontLoadConfig = true;
+      }
+      optsw.remove_prefix(1);
 
       if (opt[0] == '-') {
-        opt++;
+        optsw.remove_prefix(1);
       }
 
-      auto optStr = std::to_string(opt);
       auto valStr = std::to_string(argv[a + 1]);
 
-      if (auto retVal = ctx.ApplySetting(optStr, valStr); retVal > 0) {
+      if (auto retVal = ctx.ApplySetting(optsw, valStr); retVal > 0) {
         a++;
       }
 

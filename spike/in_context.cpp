@@ -53,33 +53,76 @@ const std::vector<std::string> &ZIPIOContext::SupplementalFiles() {
 }
 
 struct AppContextShareImpl : AppContextShare {
-  std::ostream &NewFile(const std::string &path) override {
-    const std::string filePath(basePath + path);
+  NewFileContext NewFile(const std::string &path) override {
+    std::string filePath;
+    size_t delimeter = 0;
+
+    if (basePathParts.empty()) {
+      filePath = std::string(basePath.GetFullPath()) + path;
+      delimeter = basePath.GetFullPath().size();
+    } else {
+      AFileInfo pathInfo(path);
+      auto exploded = pathInfo.Explode();
+      const size_t numItems = std::min(exploded.size(), basePathParts.size());
+
+      if (basePath.GetFullPath().at(0) == '/') {
+        filePath.push_back('/');
+      }
+
+      size_t i = 0;
+
+      for (; i < numItems; i++) {
+        if (basePathParts[i] == exploded[i]) {
+          filePath.append(exploded[i]);
+          filePath.push_back('/');
+          continue;
+        }
+
+        break;
+      }
+
+      for (size_t j = i; j < basePathParts.size(); j++) {
+        filePath.append(basePathParts[j]);
+        filePath.push_back('/');
+      }
+
+      delimeter = filePath.size();
+
+      for (; i < exploded.size(); i++) {
+        filePath.append(exploded[i]);
+        filePath.push_back('/');
+      }
+
+      filePath.pop_back();
+    }
+
     try {
       outFile = BinWritter(filePath);
     } catch (const es::FileInvalidAccessError &e) {
       mkdirs(filePath);
       outFile = BinWritter(filePath);
     }
-    return outFile.BaseStream();
+    return {outFile.BaseStream(), filePath, delimeter};
   }
 
-  void BaseOutputPath(const std::string &basePath_) override {
-    basePath = basePath_;
-
-    if (basePath.back() != '/') {
-      basePath.push_back('/');
+  void BaseOutputPath(std::string basePath_) override {
+    if (basePath_.back() != '/') {
+      basePath_.push_back('/');
     }
+    basePath = AFileInfo(basePath_);
+    basePathParts = basePath.Explode();
   }
 
   JenHash Hash() override { return JenHash(FullPath()); }
 
   std::string FullPath() override {
-    return basePath + std::string(workingFile.GetFullPath());
+    return std::string(basePath.GetFullPath()) +
+           std::string(workingFile.GetFullPath());
   }
 
   BinWritter outFile;
-  std::string basePath;
+  AFileInfo basePath;
+  std::vector<std::string_view> basePathParts;
 };
 
 struct SimpleIOContext : AppContextShareImpl {
@@ -88,6 +131,10 @@ struct SimpleIOContext : AppContextShareImpl {
     mainFile.Open(path);
     workingFile.Load(path);
     supplementals = std::move(supplementals_);
+
+    if (!cliSettings.out.empty()) {
+      BaseOutputPath(cliSettings.out);
+    }
   }
   std::istream *OpenFile(const std::string &path);
 
@@ -106,7 +153,7 @@ struct SimpleIOContext : AppContextShareImpl {
           "ExtractContext has been already called within this context.");
     }
 
-    std::string outPath(basePath);
+    std::string outPath(basePath.GetFullPath());
     outPath += workingFile.GetFullPathNoExt();
 
     if (mainSettings.extractSettings.makeZIP) {
@@ -310,7 +357,7 @@ struct ZIPIOContextInstance : AppContextShareImpl {
       if (!mainSettings.extractSettings.folderPerArc) {
         outPath = workingFile.GetFolder();
       } else {
-        outPath = basePath;
+        outPath = std::string(basePath.GetFullPath());
         outPath += workingFile.GetFullPathNoExt();
         mkdirs(outPath);
         outPath.push_back('/');

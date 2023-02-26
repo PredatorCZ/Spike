@@ -36,6 +36,12 @@ struct MainAppConfFriend : MainAppConf {
 
 extern struct MainAppConfFriend mainSettings;
 
+struct CLISettings {
+  std::string out;
+};
+
+extern struct CLISettings cliSettings;
+
 template <class func> class APPOptionalCall {
 public:
   using value_type = func;
@@ -151,7 +157,7 @@ struct ZIPIOContextIterator {
 };
 
 struct AppContextShare : AppContext {
-  virtual void BaseOutputPath(const std::string &basePath_) = 0;
+  virtual void BaseOutputPath(std::string basePath_) = 0;
   virtual void Finish() = 0;
   virtual JenHash Hash() = 0;
   virtual std::string FullPath() = 0;
