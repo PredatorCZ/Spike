@@ -83,12 +83,12 @@ struct APPContextCopyData {
   opt_func<decltype(AppExtractStat)> ExtractStat;
   opt_func<decltype(AppNewArchive)> NewArchive;
   opt_func<decltype(AppFinishContext)> FinishContext;
-  const AppInfo_s *info;
+  opt_func<decltype(AppAdditionalHelp)> AdditionalHelp;
+  const AppInfo_s *info = nullptr;
 
 protected:
   const char *moduleName;
   opt_func<decltype(AppInitContext)> InitContext;
-  opt_func<decltype(AppAdditionalHelp)> AdditionalHelp;
 };
 
 struct APPContext : APPContextCopyData {
@@ -96,22 +96,10 @@ struct APPContext : APPContextCopyData {
              const std::string &appName_);
   APPContext() = default;
   APPContext(const APPContext &) = delete;
-  APPContext(APPContext &&other)
-      : APPContextCopyData(other), dlHandle(other.dlHandle),
-        appFolder(std::move(other.appFolder)),
-        appName(std::move(other.appName)) {
-    other.dlHandle = nullptr;
-  }
+  APPContext(APPContext &&other);
   ~APPContext();
 
-  auto &operator=(APPContext &&other) {
-    static_cast<APPContextCopyData &>(*this) = other;
-    appFolder = std::move(other.appFolder);
-    appName = std::move(other.appName);
-    dlHandle = other.dlHandle;
-    other.dlHandle = nullptr;
-    return *this;
-  }
+  APPContext &operator=(APPContext &&other);
 
   ReflectorFriend &Settings() { return *info->settings; }
   const ReflectorFriend &Settings() const { return *info->settings; }

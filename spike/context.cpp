@@ -57,16 +57,27 @@ auto dlerror() {
 MainAppConfFriend mainSettings{};
 CLISettings cliSettings{};
 
+// NOTE: ReflDesc flags, used for guis and logs
+// MAX:n - Maximum number limit (numbers only)
+// MIN:n - Minimum number limit (numbers only)
+// HIDDEN - Hide text value (strings only)
+// FILEPATH - Mark string as filepath for all files
+// FILEPATH:<ext0>;<ext1>;<extn> - Mark string as filepath only for specified
+//                                 extensions/patterns
+// FOLDER - Mark string as folder
+
 REFLECT(CLASS(MainAppConfFriend),
         MEMBERNAME(generateLog, "generate-log", "L",
                    ReflDesc{"Will generate text log of console output inside "
                             "application location."}),
-        MEMBER(verbosity, "v", ReflDesc{"Prints more information per level."}),
+        MEMBER(verbosity, "v",
+               ReflDesc{"Prints more information per level.", "MAX:3"}),
         MEMBERNAME(extractSettings, "extract-settings"),
         MEMBERNAME(compressSettings, "compress-settings"))
 
 REFLECT(CLASS(CLISettings),
-        MEMBER(out, ReflDesc{"Output folder for processed files"}))
+        MEMBERNAME(out, "output-directory",
+                   ReflDesc{"Output folder for processed files", "FOLDER"}))
 
 REFLECT(
     CLASS(ExtractConf),
@@ -84,7 +95,8 @@ REFLECT(
     MEMBERNAME(ratioThreshold, "ratio-threshold", "c",
                ReflDesc{
                    "Writes compressed data only when compression ratio is less "
-                   "than specified threshold [0 - 100]%"}),
+                   "than specified threshold [0 - 100]%",
+                   "MAX:100"}),
     MEMBERNAME(minFileSize, "min-file-size", "m",
                ReflDesc{"Files that are smaller than specified size won't be "
                         "compressed."}), );
@@ -200,6 +212,10 @@ APPContext::APPContext(const char *moduleName_, const std::string &appFolder_,
     return value = reinterpret_cast<type_>(dlsym(dlHandle, name));
   };
 
+  if (mainSettings.verbosity > 1) {
+    printinfo("Module open: " << modulePath);
+  }
+
 #if defined(_MSC_VER) || defined(__MINGW64__)
   auto modPath = ToTSTRING(modulePath);
   dlHandle = LoadLibrary(modPath.data());
@@ -215,7 +231,7 @@ APPContext::APPContext(const char *moduleName_, const std::string &appFolder_,
   AppInfo_s *info_ = InitModule();
   info = info_;
 
-  if (info->contextVersion > AppInfo_s::CONTEXT_VERSION) {
+  if (info->contextVersion != AppInfo_s::CONTEXT_VERSION) {
     throw std::runtime_error("Module context version mismatch!");
   }
 
@@ -231,6 +247,28 @@ APPContext::APPContext(const char *moduleName_, const std::string &appFolder_,
   if (NewArchive && ProcessFile) {
     throw std::logic_error("Module uses 2 or more contexts!");
   }
+}
+
+APPContext::APPContext(APPContext &&other)
+    : APPContextCopyData(other), appFolder(std::move(other.appFolder)),
+      appName(std::move(other.appName)) {
+  if (dlHandle && dlHandle != other.dlHandle) {
+    dlclose(dlHandle);
+  }
+  dlHandle = other.dlHandle;
+  std::construct_at(&other);
+}
+
+APPContext &APPContext::operator=(APPContext &&other) {
+  static_cast<APPContextCopyData &>(*this) = other;
+  appFolder = std::move(other.appFolder);
+  appName = std::move(other.appName);
+  if (dlHandle && dlHandle != other.dlHandle) {
+    dlclose(dlHandle);
+  }
+  dlHandle = other.dlHandle;
+  std::construct_at(&other);
+  return *this;
 }
 
 APPContext::~APPContext() {
