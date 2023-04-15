@@ -62,4 +62,29 @@ void PC_EXTERN AddQueuer(queue_func func);
 // Unlocks other threads access to Get
 void PC_EXTERN FlushAll();
 void PC_EXTERN PrintThreadID(bool yn);
+
+template <class... C> void Print(es::print::MPType type, C... args) {
+  auto &printStream = es::print::Get(type);
+  // todo?, add detectors and to_string converters
+  ((printStream << std::forward<C>(args)), ...) << '\n';
+
+  es::print::FlushAll();
+}
+
 } // namespace es::print
+
+template <class... C> void PrintInfo(C... args) {
+  es::print::Print(es::print::MPType::INF, std::forward<C>(args)...);
+}
+
+template <class... C> void PrintError(C... args) {
+  es::print::Print(es::print::MPType::ERR, std::forward<C>(args)...);
+}
+
+template <class... C> void PrintWarning(C... args) {
+  es::print::Print(es::print::MPType::WRN, std::forward<C>(args)...);
+}
+
+template <class... C> void PrintLine(C... args) {
+  es::print::Print(es::print::MPType::MSG, std::forward<C>(args)...);
+}
