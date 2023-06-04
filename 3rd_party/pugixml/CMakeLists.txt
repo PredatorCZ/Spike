@@ -31,7 +31,7 @@ if(BUILD_SHARED_LIBS)
                                              PREFIX "")
   else()
     set_target_properties(pugixml PROPERTIES VERSION ${PROJECT_VERSION}
-                                             SOVERSION ${PROJECT_VERSION_MAJOR})
+                                             SOVERSION ${PROJECT_VERSION})
   endif()
 
   if(WIN32)
