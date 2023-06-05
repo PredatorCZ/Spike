@@ -38,7 +38,7 @@ endif()
 
 function(build_target)
   cmake_parse_arguments(
-    _arg "NO_PROJECT_H;NO_VERINFO" "TYPE;AUTHOR;DESCR;NAME;START_YEAR"
+    _arg "NO_PROJECT_H;NO_VERINFO" "TYPE;AUTHOR;DESCR;NAME;START_YEAR;VERSION"
     "SOURCES;DEFINITIONS;LINKS;INCLUDES;LINK_DIRS;PROPERTIES" ${ARGN})
 
   link_directories(${_arg_LINK_DIRS})
@@ -74,6 +74,11 @@ function(build_target)
   set(PROJECT_VERSION_MINOR_ 0)
   set(PROJECT_VERSION_PATCH_ 0)
   set(PROJECT_VERSION_TWEAK_ 0)
+
+  if(_arg_VERSION)
+    include(version)
+    module_version(${_arg_NAME} ${_arg_VERSION})
+  endif()
 
   if(DEFINED PROJECT_VERSION)
     set(PROJECT_VERSION_ ${PROJECT_VERSION})
