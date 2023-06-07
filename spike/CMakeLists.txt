@@ -2,6 +2,7 @@ cmake_minimum_required(VERSION 3.12)
 
 set(CMAKE_CXX_STANDARD 23)
 project(Spike VERSION 2.0)
+set(CMAKE_INSTALL_RPATH "$ORIGIN/lib")
 
 build_target(
   NAME
@@ -31,7 +32,7 @@ build_target(
   START_YEAR
   2021)
 
-install(TARGETS spike RUNTIME DESTINATION bin)
+install(TARGETS spike RUNTIME DESTINATION $<IF:$<BOOL:${UNIX}>,.,bin>)
 
 if(NOT (WIN32 OR MINGW))
   target_link_libraries(spike dl)

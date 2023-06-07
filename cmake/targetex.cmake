@@ -54,6 +54,10 @@ function(build_target)
     set(_arg_TYPE SHARED)
   endif()
 
+  if(_is_es_module)
+    set(CMAKE_INSTALL_RPATH "$ORIGIN/../lib")
+  endif()
+
   if(_arg_TYPE STREQUAL APP)
     add_executable(${_arg_NAME} ${_arg_SOURCES})
   else()
@@ -206,7 +210,7 @@ function(build_target)
 
     install(
       TARGETS ${_arg_NAME}
-      LIBRARY DESTINATION $<IF:$<BOOL:${UNIX}>,bin,lib>
+      LIBRARY DESTINATION $<IF:$<BOOL:${UNIX}>,modules,lib>
       RUNTIME DESTINATION bin)
   endif()
 
