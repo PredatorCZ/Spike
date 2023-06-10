@@ -71,7 +71,6 @@ void ZIPExtactContext::FinishZIP(cache_begin_cb cacheBeginCB) {
     zCentral64.id = ZIP64CentralDir::ID;
     zCentral64.madeBy = 10;
     zCentral64.extractVersion = 10;
-    zCentral64.diskNumber = 1;
     zCentral64.dirRecord = 0x2C;
     zCentral64.numDiskEntries = numEntries;
     zCentral64.numDirEntries = numEntries;
@@ -459,7 +458,6 @@ void ZIPMerger::FinishMerge(cache_begin_cb cacheBeginCB) {
     zCentral64.numDirEntries = numEntries;
     zCentral64.dirSize = entriesSize;
     zCentral64.dirOffset = dirOffset;
-    zCentral64.diskNumber = 1;
     zCentral64.dirRecord = 0x2C;
 
     const size_t centralOffset = records.Tell();
