@@ -212,6 +212,10 @@ void Batch::AddFile(std::string path) {
       RemoveLogLines(scanBar);
     }
 
+    if (updateFileCount && scanner.Files().size()) {
+      updateFileCount(scanner.Files().size() - 1);
+    }
+
     if (forEachFolder) {
       AppPackStats stats{};
       stats.numFiles = scanner.Files().size();
@@ -271,20 +275,14 @@ void Batch::AddFile(std::string path) {
         auto Iterate = [&](auto &&what) {
           auto vfsIter = fctx->Iter();
 
-          if (loadFiltered) {
-            for (auto f : vfsIter) {
-              auto item = f.AsView();
-              if (size_t lastSlash = item.find_last_of("/\\");
-                  lastSlash != item.npos) {
-                item.remove_prefix(lastSlash + 1);
-              }
-
-              if (scanner.IsFiltered(item)) {
-                what(f);
-              }
+          for (auto f : vfsIter) {
+            auto item = f.AsView();
+            if (size_t lastSlash = item.find_last_of("/\\");
+                lastSlash != item.npos) {
+              item.remove_prefix(lastSlash + 1);
             }
-          } else {
-            for (auto f : vfsIter) {
+
+            if (scanner.IsFiltered(item)) {
               what(f);
             }
           }
@@ -411,20 +409,14 @@ void Batch::FinishBatch() {
     auto Iterate = [&, &paths = paths](auto &&what) {
       auto vfsIter = fctx->Iter();
 
-      if (loadFiltered) {
-        for (auto f : vfsIter) {
-          auto item = f.AsView();
-          if (size_t lastSlash = item.find_last_of("/\\");
-              lastSlash != item.npos) {
-            item.remove_prefix(lastSlash + 1);
-          }
-
-          if (scanner.IsFiltered(item) && paths.IsFiltered(f.AsView())) {
-            what(f);
-          }
+      for (auto f : vfsIter) {
+        auto item = f.AsView();
+        if (size_t lastSlash = item.find_last_of("/\\");
+            lastSlash != item.npos) {
+          item.remove_prefix(lastSlash + 1);
         }
-      } else {
-        for (auto f : vfsIter) {
+
+        if (scanner.IsFiltered(item) && paths.IsFiltered(f.AsView())) {
           what(f);
         }
       }
