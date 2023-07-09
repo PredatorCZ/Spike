@@ -229,6 +229,7 @@ AppContextFoundStream SimpleIOContext::FindFile(const std::string &rootFolder,
   } else if (sc.Files().size() > 1) {
     std::string *winner = nullptr;
     size_t minFolder = 0x10000;
+    size_t minLevel = 0x10000;
 
     for (auto &f : sc) {
       size_t foundIdx = f.find_last_of('/');
@@ -240,8 +241,16 @@ AppContextFoundStream SimpleIOContext::FindFile(const std::string &rootFolder,
       if (foundIdx < minFolder) {
         winner = &f;
         minFolder = foundIdx;
+        minLevel = std::count(f.begin(), f.end(), '/');
       } else if (foundIdx == minFolder) {
-        throw std::runtime_error("Too many files found.");
+        if (auto clevel = std::count(f.begin(), f.end(), '/');
+            clevel < minLevel) {
+          winner = &f;
+          minFolder = foundIdx;
+          minLevel = clevel;
+        } else if (clevel == minLevel) {
+          throw std::runtime_error("Too many files found.");
+        }
       }
     }
 
