@@ -431,37 +431,39 @@ int Main(int argc, TCHAR *argv[]) {
 
   InitTempStorage();
   ctx.SetupModule();
-  Batch batch(&ctx, ctx.info->multithreaded * 50);
+  {
+    Batch batch(&ctx, ctx.info->multithreaded * 50);
 
-  if (ctx.NewArchive) {
-    PackModeBatch(batch);
-  } else {
-    if (ctx.ExtractStat) {
-      auto stats = ExtractStatBatch(batch);
-      for (int a = 2; a < argc; a++) {
-        if (!markedFiles.at(a)) {
-          continue;
-        }
-        batch.AddFile(std::to_string(argv[a]));
-      }
-
-      batch.FinishBatch();
-      batch.Clean();
-      stats.get()->totalFiles += totalFiles;
-      ProcessBatch(batch, stats.get());
+    if (ctx.NewArchive) {
+      PackModeBatch(batch);
     } else {
-      ProcessBatch(batch, totalFiles);
-    }
-  }
+      if (ctx.ExtractStat) {
+        auto stats = ExtractStatBatch(batch);
+        for (int a = 2; a < argc; a++) {
+          if (!markedFiles.at(a)) {
+            continue;
+          }
+          batch.AddFile(std::to_string(argv[a]));
+        }
 
-  for (int a = 2; a < argc; a++) {
-    if (!markedFiles.at(a)) {
-      continue;
+        batch.FinishBatch();
+        batch.Clean();
+        stats.get()->totalFiles += totalFiles;
+        ProcessBatch(batch, stats.get());
+      } else {
+        ProcessBatch(batch, totalFiles);
+      }
     }
-    batch.AddFile(std::to_string(argv[a]));
-  }
 
-  batch.FinishBatch();
+    for (int a = 2; a < argc; a++) {
+      if (!markedFiles.at(a)) {
+        continue;
+      }
+      batch.AddFile(std::to_string(argv[a]));
+    }
+
+    batch.FinishBatch();
+  }
 
   if (ctx.FinishContext) {
     ctx.FinishContext();
