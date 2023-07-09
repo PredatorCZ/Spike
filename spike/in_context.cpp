@@ -147,14 +147,14 @@ struct SimpleIOContext : AppContextShareImpl {
 
   void DisposeFile(std::istream *str) override;
 
-  AppExtractContext *ExtractContext() override {
+  AppExtractContext *ExtractContext(std::string_view name) override {
     if (ectx) [[unlikely]] {
-      throw std::logic_error(
-          "ExtractContext has been already called within this context.");
+      return ectx.get();
     }
 
     std::string outPath(basePath.GetFullPath());
-    outPath += workingFile.GetFullPathNoExt();
+    outPath += workingFile.GetFolder();
+    outPath += name;
 
     if (mainSettings.extractSettings.makeZIP) {
       if (workingFile.GetExtension() == ".zip") {
@@ -180,6 +180,10 @@ struct SimpleIOContext : AppContextShareImpl {
     }
 
     return ectx.get();
+  }
+
+  AppExtractContext *ExtractContext() override {
+    return ExtractContext(workingFile.GetFilename());
   }
 
   void Finish() override {
@@ -345,10 +349,9 @@ struct ZIPIOContextInstance : AppContextShareImpl {
     return buffer;
   }
 
-  AppExtractContext *ExtractContext() override {
+  AppExtractContext *ExtractContext(std::string_view name) override {
     if (ectx) [[unlikely]] {
-      throw std::logic_error(
-          "ExtractContext has been already called within this context.");
+      return ectx.get();
     }
 
     if (mainSettings.extractSettings.makeZIP) {
@@ -356,7 +359,8 @@ struct ZIPIOContextInstance : AppContextShareImpl {
       entriesPath = RequestTempFile();
       auto uniq = std::make_unique<ZIPExtactContext>(entriesPath, false);
       if (mainSettings.extractSettings.folderPerArc) {
-        uniq->prefixPath = workingFile.GetFullPathNoExt();
+        uniq->prefixPath = workingFile.GetFolder();
+        uniq->prefixPath += name;
         uniq->prefixPath.push_back('/');
       }
       uniq->forEachFile = forEachFile;
@@ -367,7 +371,8 @@ struct ZIPIOContextInstance : AppContextShareImpl {
         outPath = workingFile.GetFolder();
       } else {
         outPath = std::string(basePath.GetFullPath());
-        outPath += workingFile.GetFullPathNoExt();
+        outPath += workingFile.GetFolder();
+        outPath += name;
         mkdirs(outPath);
         outPath.push_back('/');
       }
@@ -378,6 +383,10 @@ struct ZIPIOContextInstance : AppContextShareImpl {
     }
 
     return ectx.get();
+  }
+
+  AppExtractContext *ExtractContext() override {
+    return ExtractContext(workingFile.GetFilename());
   }
 
   void Finish() override {

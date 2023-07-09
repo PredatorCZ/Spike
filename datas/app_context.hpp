@@ -56,7 +56,7 @@ protected:
 };
 
 struct AppInfo_s {
-  static constexpr uint32 CONTEXT_VERSION = 4;
+  static constexpr uint32 CONTEXT_VERSION = 5;
   uint32 contextVersion = CONTEXT_VERSION;
   // No RequestFile or FindFile is being called
   bool filteredLoad = false;
@@ -125,6 +125,8 @@ struct AppContext : AppContextLocator {
   // To make mutiple files in single context, use ExtractContext() instead.
   // path can be relative, use with workingFile
   virtual NewFileContext NewFile(const std::string &path) = 0;
+
+  virtual AppExtractContext *ExtractContext(std::string_view name) = 0;
 
   template <class C> void GetType(C &out, size_t offset = 0) {
     auto buffer = GetBuffer(sizeof(C), offset);
