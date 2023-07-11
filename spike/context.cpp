@@ -509,7 +509,7 @@ void APPContext::SetupModule() {
     CreateLog();
   }
 
-  if (InitContext && !InitContext(appFolder)) {
+  if (InitContext && !InitContext(appFolder + "data/")) {
     throw std::runtime_error("Error while initializing context.");
   }
 }
