@@ -69,6 +69,8 @@ struct ZIPMerger {
       : entries(outEntries), records(outFiles), entriesFile(outEntries),
         outFile(outFiles) {}
   ZIPMerger() = default;
+  ZIPMerger(const ZIPMerger &) = delete;
+  ZIPMerger(ZIPMerger&&) = delete;
   using cache_begin_cb = void (*)();
   void Merge(ZIPExtactContext &other, const std::string &recordsFile);
   void FinishMerge(cache_begin_cb cacheBeginCB);

@@ -21,6 +21,10 @@
 #include <memory>
 #include <string_view>
 
+#if defined(_MSC_VER) || defined(__MINGW64__)
+#define USEWIN
+#endif
+
 struct LogLine {
   virtual void PrintLine() = 0;
   virtual ~LogLine() = default;
@@ -124,3 +128,7 @@ template <class... Lines> void ReleaseLogLines(Lines *...item) {
 template <class... Lines> void RemoveLogLines(Lines *...item) {
   ModifyElements([&](ElementAPI &api) { (api.Remove(item), ...); });
 }
+
+#ifdef USEWIN
+inline void pthread_setname_np(auto &&, const char*){}
+#endif

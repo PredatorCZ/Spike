@@ -7,6 +7,7 @@ build_target(
   test_cache.cpp
   ${PRECORE_SOURCE_DIR}/spike/out_cache.cpp
   ${PRECORE_SOURCE_DIR}/spike/in_cache.cpp
+  ${PRECORE_SOURCE_DIR}/spike/console.cpp
   LINKS
   precore
   NO_PROJECT_H

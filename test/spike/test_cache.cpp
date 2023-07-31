@@ -4,6 +4,9 @@
 #include "datas/supercore.hpp"
 #include "datas/unit_testing.hpp"
 #include "spike/cache.hpp"
+#include "spike/console.hpp"
+
+std::string RequestTempFile() { return "wal_file"; }
 
 int test_dirscan() {
   DirectoryScanner sc;
@@ -20,7 +23,7 @@ int test_dirscan() {
   {
     BinWritter wr("cache.spch");
 
-    cGen.Write(wr);
+    cGen.WaitAndWrite(wr);
   }
 
   es::MappedFile mf("cache.spch");

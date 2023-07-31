@@ -28,6 +28,7 @@ struct MultiThreadManagerImpl {
       std::promise<void> promise;
       states.emplace_back(promise.get_future());
       workers.emplace_back(WorkerThread{*this, std::move(promise)});
+      pthread_setname_np(workers.back().native_handle(), "batch_worker");
     }
   }
 

@@ -17,9 +17,14 @@
 */
 
 #include "cache.hpp"
+#include "console.hpp"
 #include "datas/binwritter_stream.hpp"
 #include "datas/fileinfo.hpp"
+#include "tmp_storage.hpp"
 #include <algorithm>
+#include <barrier>
+#include <cinttypes>
+#include <fstream>
 #include <functional>
 #include <future>
 #include <map>
@@ -32,11 +37,132 @@ struct StringSlider {
   std::string buffer;
 
 private:
-  using future_type = std::future<int64>;
-  std::vector<future_type> workingThreads;
+  std::vector<std::thread> workingThreads;
+  std::map<std::thread::id, int64> threadResults;
+  struct SearchArgs {
+    size_t chunkBegin;
+    size_t splitPoint;
+    std::string_view str;
+    std::boyer_moore_horspool_searcher<std::string_view::iterator> *searcher;
+    bool endThread;
+  };
+  std::map<std::thread::id, SearchArgs> threadArgs;
+
+  // All threads finished searching, notify main thread and resume ready state
+  struct {
+    std::map<std::thread::id, int64> *threadResults;
+    std::atomic_bool *finishedSearch;
+    int64 *resultOffset;
+    void operator()() noexcept {
+      // PrintInfo("Processing worker data");
+      *resultOffset = -1;
+      for (auto [_, off] : *threadResults) {
+        if (off >= 0) {
+          *resultOffset = off;
+          break;
+        }
+      }
+
+      // PrintInfo("Search end");
+
+      *finishedSearch = true;
+      finishedSearch->notify_all();
+    }
+  } workersDone;
+
+  std::barrier<decltype(workersDone)> workerSync;
+
+  // Call when threads are in ready state and notify main thread
+  struct {
+    std::atomic_bool *runWorkers;
+    void operator()() noexcept {
+      runWorkers->wait(false);
+      *runWorkers = false;
+      runWorkers->notify_all();
+    }
+  } workersReadyCb;
+  std::barrier<decltype(workersReadyCb)> workersReady;
+
+  std::atomic_bool stopWorkers;
+  std::atomic_bool finishedSearch;
+  std::atomic_bool runWorkers;
+
+  int64 resultOffset = -1;
+
+  std::atomic_bool &allowThreads;
 
 public:
-  StringSlider() { workingThreads.resize(std::thread::hardware_concurrency()); }
+  StringSlider(std::atomic_bool &allowThreads)
+      : workersDone{&threadResults, &finishedSearch, &resultOffset},
+        workerSync(std::thread::hardware_concurrency(), workersDone),
+        workersReadyCb{&runWorkers},
+        workersReady(std::thread::hardware_concurrency(), workersReadyCb),
+        allowThreads(allowThreads) {
+    const size_t numThreads = std::thread::hardware_concurrency();
+
+    auto SearcherThread = [this, numThreads] {
+      while (true) {
+        // PrintInfo("Thread wait");
+        workersReady.arrive_and_wait();
+
+        // PrintInfo("Thread begin");
+
+        if (stopWorkers) {
+          return;
+        }
+
+        try {
+          SearchArgs &args = threadArgs.at(std::this_thread::get_id());
+
+          std::string_view item;
+          if (args.endThread) {
+            item = std::string_view(buffer.data() + args.chunkBegin,
+                                    buffer.end().operator->());
+          } else {
+            item = std::string_view(buffer.data() + args.chunkBegin,
+                                    args.splitPoint + args.str.size());
+          }
+
+          auto found = std::search(item.begin(), item.end(), *args.searcher);
+          int64 offset = -1;
+
+          if (found != item.end()) {
+            offset =
+                std::distance(const_cast<const char *>(buffer.data()), &*found);
+          }
+
+          threadResults.at(std::this_thread::get_id()) = offset;
+        } catch (...) {
+          std::terminate();
+        }
+
+        // PrintInfo("Thread end");
+        workerSync.arrive_and_wait();
+        // PrintInfo("Thread end wait");
+      }
+    };
+
+    workingThreads.resize(numThreads);
+    for (size_t i = 0; i < numThreads; i++) {
+      workingThreads.at(i) = std::thread(SearcherThread);
+      auto &curThread = workingThreads.at(i);
+      threadArgs.emplace(curThread.get_id(), SearchArgs{});
+      threadResults.emplace(curThread.get_id(), -1);
+      pthread_setname_np(curThread.native_handle(), "cache_srch_wrkr");
+    }
+  }
+
+  ~StringSlider() {
+    stopWorkers = true;
+    runWorkers = true;
+    runWorkers.notify_all();
+
+    for (auto &w : workingThreads) {
+      if (w.joinable()) {
+        w.join();
+      }
+    }
+  }
 
   std::string::iterator FindString(std::string_view str) {
     if (str.size() > buffer.size()) [[unlikely]] {
@@ -49,47 +175,33 @@ public:
     }
     auto searcher = std::boyer_moore_horspool_searcher(str.begin(), str.end());
 
-    if (size_t bSize = buffer.size(); bSize > 1'000'000) {
+    if (size_t bSize = buffer.size(); allowThreads && bSize > 1'000'000) {
       const size_t numThreads = workingThreads.size();
       size_t splitPoint = bSize / numThreads;
       size_t chunkBegin = 0;
 
-      for (size_t i = 0; i < numThreads; ++i) {
-        workingThreads[i] =
-            std::async(std::launch::async, [=, &buffer = buffer] {
-              std::string_view item;
-              if (i + 1 == numThreads) {
-                item = std::string_view(buffer.data() + chunkBegin,
-                                        buffer.end().operator->());
-              } else {
-                item = std::string_view(buffer.data() + chunkBegin,
-                                        splitPoint + str.size());
-              }
-
-              auto found = std::search(item.begin(), item.end(), searcher);
-              int64 offset = -1;
-
-              if (found != item.end()) {
-                offset = std::distance(const_cast<const char *>(buffer.data()),
-                                       &*found);
-              }
-
-              return offset;
-            });
+      for (size_t i = 0; i < numThreads; i++) {
+        threadArgs.at(workingThreads.at(i).get_id()) = SearchArgs{
+            .chunkBegin = chunkBegin,
+            .splitPoint = splitPoint,
+            .str = str,
+            .searcher = &searcher,
+            .endThread = i + 1 == numThreads,
+        };
         chunkBegin += splitPoint;
       }
 
-      int64 offset = -1;
+      // PrintInfo("Notifying workers");
+      finishedSearch = false;
+      runWorkers.wait(true);
+      runWorkers = true;
+      runWorkers.notify_all();
+      // PrintInfo("Waiting for workers");
+      finishedSearch.wait(false);
+      // PrintInfo("Search done");
 
-      for (auto &wt : workingThreads) {
-        wt.wait();
-        if (int64 off = wt.get(); off >= 0 && offset < 0) {
-          offset = off;
-        }
-      }
-
-      if (offset >= 0) {
-        return std::next(buffer.begin(), offset);
+      if (resultOffset >= 0) {
+        return std::next(buffer.begin(), resultOffset);
       }
 
       return buffer.end();
@@ -222,8 +334,9 @@ struct CacheGeneratorImpl {
   std::multiset<FinalEntry> totalCache;
   HybridLeafGen root{};
   std::vector<std::vector<HybridLeafGen>> levels;
-  StringSlider slider;
-  StringSlider sliderTiny;
+  std::atomic_bool allowThreads;
+  StringSlider slider{allowThreads};
+  StringSlider sliderTiny{allowThreads};
   size_t maxPathSize = 0;
 
   void AddFile(std::string_view fileName, size_t offset, size_t size) {
@@ -297,7 +410,8 @@ struct CacheGeneratorImpl {
     AddFinal(*leaf);
   }
 
-  void Write(BinWritterRef wr, CacheBaseHeader &hdr) {
+  void Write(BinWritterRef wr, CacheBaseHeader &hdr,
+             DetailedProgressBar *progress) {
     hdr.numFiles = totalCache.size();
     hdr.numLevels = levels.size() + 1;
     hdr.maxPathSize = maxPathSize;
@@ -306,17 +420,27 @@ struct CacheGeneratorImpl {
     wr.WriteContainer(slider.buffer);
     wr.ApplyPadding();
 
+    if (progress) {
+      progress->ItemCount(totalCache.size() + levels.size());
+    }
+
     const int32 entriesOffset = (wr.Tell() - ENTRIES_OFFSET) / 4;
     int32 rootOffset;
 
     for (auto &f : totalCache) {
       f.Write(wr);
+      if (progress) {
+        (*progress)++;
+      }
     }
 
     {
       std::vector<size_t> childrenOffsets;
 
       for (int64 l = levels.size() - 1; l >= 0; l--) {
+        if (progress) {
+          (*progress)++;
+        }
         std::vector<size_t> newChildrenOffsets;
 
         for (auto &l : levels.at(l)) {
@@ -343,10 +467,117 @@ struct CacheGeneratorImpl {
   }
 };
 
+struct WALThread {
+  std::string walFile;
+  std::ofstream walStreamIn;
+  std::ifstream walStreamOut;
+  std::atomic_size_t sharedCounter;
+  std::atomic_bool isDone;
+  std::atomic<CounterLine *> totalCount{nullptr};
+  CounterLine *totalCountOwned{nullptr};
+  CacheGeneratorImpl generator;
+  std::promise<void> state;
+  std::future<void> exception;
+
+  WALThread()
+      : walFile(RequestTempFile()), walStreamIn(walFile), walStreamOut(walFile),
+        exception(state.get_future()) {
+    if (walStreamIn.fail()) {
+      throw std::runtime_error("Failed to create wal file.");
+    }
+    if (walStreamOut.fail()) {
+      throw std::runtime_error("Failed to open wal file.");
+    }
+  }
+
+  WALThread(WALThread &&) = delete;
+  WALThread(const WALThread &) = delete;
+
+  void Loop() {
+    size_t lastOffset = 0;
+
+    while (!isDone || sharedCounter > 0) {
+      if (sharedCounter == 0) {
+        std::this_thread::sleep_for(std::chrono::milliseconds(5));
+        continue;
+      }
+
+      if (!totalCountOwned && totalCount) {
+        totalCountOwned = totalCount;
+      }
+
+      std::string curData;
+      if (std::getline(walStreamOut, curData).eof()) {
+        std::this_thread::sleep_for(std::chrono::milliseconds(5));
+        walStreamOut.clear();
+        walStreamOut.seekg(lastOffset);
+        continue;
+      }
+
+      lastOffset = walStreamOut.tellg();
+
+      char path[0x1000]{};
+      size_t zipOffset;
+      size_t fileSize;
+      std::sscanf(curData.c_str(), "%[^;];%zx;%zx", path, &zipOffset,
+                  &fileSize);
+      sharedCounter--;
+      generator.AddFile(path, zipOffset, fileSize);
+
+      if (totalCountOwned) {
+        (*totalCountOwned)++;
+      }
+
+      if (auto curException = std::current_exception(); curException) {
+        state.set_exception(curException);
+        std::terminate();
+      }
+    }
+
+    state.set_value();
+  }
+};
+
+CacheGenerator::CacheGenerator()
+    : workThread(std::make_unique<WALThread>()),
+      walThread([&] { workThread->Loop(); }) {
+  pthread_setname_np(walThread.native_handle(), "cache_wal");
+}
+
 CacheGenerator::~CacheGenerator() = default;
-CacheGenerator::CacheGenerator() : pi(std::make_unique<CacheGeneratorImpl>()) {}
+
 void CacheGenerator::AddFile(std::string_view fileName, size_t zipOffset,
                              size_t fileSize) {
-  pi->AddFile(fileName, zipOffset, fileSize);
+  workThread->walStreamIn << fileName << ';' << std::hex << zipOffset << ';'
+                          << fileSize << '\n';
+  if (workThread->walStreamIn.fail()) {
+    throw std::runtime_error("Failed to add file to WAL stream");
+  }
+  workThread->sharedCounter++;
 }
-void CacheGenerator::Write(BinWritterRef wr) { pi->Write(wr, meta); }
+
+void CacheGenerator::WaitAndWrite(BinWritterRef wr) {
+  workThread->isDone = true;
+  workThread->generator.allowThreads = true;
+  es::Dispose(workThread->walStreamIn);
+  DetailedProgressBar *prog = nullptr;
+
+  if (size_t count = workThread->sharedCounter; count > 10) {
+    prog = AppendNewLogLine<DetailedProgressBar>("Cache: ");
+    prog->ItemCount(count);
+    workThread->totalCount = prog;
+  }
+
+  if (workThread->exception.valid()) {
+    workThread->exception.get();
+  }
+
+  if (walThread.joinable()) {
+    walThread.join();
+  }
+
+  es::Dispose(workThread->walStreamOut);
+  std::remove(workThread->walFile.c_str());
+
+  workThread->generator.Write(wr, meta, prog);
+}

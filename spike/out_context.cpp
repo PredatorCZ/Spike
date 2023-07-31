@@ -92,7 +92,7 @@ void ZIPExtactContext::FinishZIP(cache_begin_cb cacheBeginCB) {
     cacheBeginCB();
     cache->meta.zipSize = records.Tell();
     BinWritter cacheWr(outputFile + ".cache");
-    cache->Write(cacheWr);
+    cache->WaitAndWrite(cacheWr);
     records.Seek(cache->meta.zipCheckupOffset);
     records.Write(cache->meta);
   }
@@ -199,6 +199,9 @@ inline std::tm localtime(std::time_t t) {
 }
 
 void ZIPExtactContext::NewFile(const std::string &path) {
+  if (path.empty()) [[unlikely]] {
+    throw std::runtime_error("NewFile path is empty");
+  }
   AFileInfo pathInfo(path);
   auto pathSv = pathInfo.GetFullPath();
   if (!curFileName.empty()) {
@@ -255,6 +258,9 @@ void ZIPExtactContext::GenerateFolders() {
 
 void IOExtractContext::NewFile(const std::string &path) {
   Close_();
+  if (path.empty()) [[unlikely]] {
+    throw std::runtime_error("NewFile path is empty");
+  }
   AFileInfo cfleWrap(path);
   std::string cfle(cfleWrap.GetFullPath());
   Open(outDir + cfle);
@@ -478,7 +484,7 @@ void ZIPMerger::FinishMerge(cache_begin_cb cacheBeginCB) {
     cacheBeginCB();
     cache.meta.zipSize = records.Tell();
     BinWritter cacheWr(outFile + ".cache");
-    cache.Write(cacheWr);
+    cache.WaitAndWrite(cacheWr);
     records.Seek(cache.meta.zipCheckupOffset);
     records.Write(cache.meta);
   }

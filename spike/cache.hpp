@@ -21,6 +21,7 @@
 #include "datas/supercore.hpp"
 #include <memory>
 #include <string_view>
+#include <thread>
 #include <variant>
 
 struct CacheGeneratorImpl;
@@ -40,15 +41,19 @@ struct CacheBaseHeader {
   uint64 zipCheckupOffset;
 };
 
+struct WALThread;
+
 struct CacheGenerator {
   CacheGenerator();
   ~CacheGenerator();
   void AddFile(std::string_view fileName, size_t zipOffset, size_t fileSize);
-  void Write(BinWritterRef wr);
+  void WaitAndWrite(BinWritterRef wr);
   CacheBaseHeader meta{};
 
 private:
-  std::unique_ptr<CacheGeneratorImpl> pi;
+  friend class WALThread;
+  std::unique_ptr<WALThread> workThread;
+  std::thread walThread;
 };
 
 struct ZipEntry {

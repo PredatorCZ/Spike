@@ -24,10 +24,6 @@
 #include <thread>
 #include <vector>
 
-#if defined(_MSC_VER) || defined(__MINGW64__)
-#define USEWIN
-#endif
-
 const size_t nextTickMS = 100;
 
 const char8_t *loopchars[] = {
@@ -229,6 +225,7 @@ void InitConsole() {
 #endif
   es::print::AddQueuer(ReceiveQueue);
   logger = std::thread{MakeLogger};
+  pthread_setname_np(logger.native_handle(), "console_logger");
   auto terminate = [](int sig) {
     TerminateConsoleDontWait();
     std::exit(sig);
