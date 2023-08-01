@@ -4,6 +4,8 @@ set(CMAKE_CXX_STANDARD 23)
 project(Spike VERSION 2.0)
 set(CMAKE_INSTALL_RPATH "$ORIGIN/lib")
 
+include(targetex)
+
 build_target(
   NAME
   spike
@@ -32,7 +34,8 @@ build_target(
   START_YEAR
   2021)
 
-install(TARGETS spike RUNTIME DESTINATION $<IF:$<BOOL:${UNIX}>,.,bin>)
+
+install(TARGETS spike RUNTIME DESTINATION $<IF:$<AND:$<BOOL:${UNIX}>,$<NOT:$<BOOL:${SPIKE_NODOT}>>>,.,bin>)
 
 if(NOT (WIN32 OR MINGW))
   target_link_libraries(spike dl)
