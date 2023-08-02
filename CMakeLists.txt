@@ -35,6 +35,8 @@ if(${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_CURRENT_SOURCE_DIR})
   add_subdirectory(test)
   enable_testing()
   add_subdirectory(bin ${CMAKE_SOURCE_DIR}/bin)
+else()
+  set(PreCore_VERSION ${PreCore_VERSION} PARENT_SCOPE)
 endif()
 
 add_subdirectory(3rd_party/glm)
