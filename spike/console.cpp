@@ -21,6 +21,7 @@
 #include "datas/tchar.hpp"
 #include <algorithm>
 #include <csignal>
+#include <mutex>
 #include <thread>
 #include <vector>
 
@@ -113,31 +114,47 @@ void LoadingBar::PrintLine() {
   innerTick += nextTickMS;
 }
 
-static std::atomic_uint8_t pauseLogger{0};
+struct LineMsg {
+  std::unique_ptr<LogLine> newLine;
+  LogLine *line = nullptr;
+  bool after = false;
+
+  LineMsg(std::unique_ptr<LogLine> &&item) : newLine(std::move(item)) {}
+  LineMsg(std::unique_ptr<LogLine> &&item, LogLine *point, bool after_)
+      : newLine(std::move(item)), line(point), after(after_) {}
+  LineMsg(LogLine *point) : line(point) {}
+  LineMsg(LogLine *point, bool release) : line(point), after(release) {}
+};
+
 static std::vector<es::print::Queuer> messageQueues[2];
-static std::vector<std::unique_ptr<LogLine>> lineQueue;
-static std::atomic<bool> messageQueueOrder;
+static std::vector<std::unique_ptr<LogLine>> lineStack;
+static std::vector<LineMsg> lineQueue[2];
+static std::atomic_bool currentlyUsedMessageQueue;
+static std::atomic_bool currentlyUsedLineQueue;
+static std::atomic_bool stopLogger;
+static std::atomic_bool eraseAllLines;
 static std::thread logger;
 static std::atomic_uint8_t printDetail{0};
 static std::atomic_uint64_t newPrintDetailSince{0};
 
 void ReceiveQueue(const es::print::Queuer &que) {
-  messageQueues[messageQueueOrder].push_back(que);
+  messageQueues[currentlyUsedMessageQueue].push_back(que);
 }
 
 void MakeLogger() {
   size_t innerTick = 0;
-  messageQueueOrder = false;
+  currentlyUsedMessageQueue = false;
+  currentlyUsedLineQueue = false;
   bool mustClear = false;
 
-  while (true) {
+  while (!stopLogger) {
     if (mustClear) {
       es::Print("\033[J");
       mustClear = false;
     }
 
-    if (bool mqo = messageQueueOrder; !messageQueues[mqo].empty()) {
-      messageQueueOrder = !mqo;
+    if (bool mqo = currentlyUsedMessageQueue; !messageQueues[mqo].empty()) {
+      currentlyUsedMessageQueue = !mqo;
       uint8 fullDetail = printDetail;
       uint64 newDetailSince = newPrintDetailSince.exchange(0);
       size_t curQue = 0;
@@ -182,22 +199,47 @@ void MakeLogger() {
       messageQueues[mqo].clear();
     }
 
-    if (uint8 state = pauseLogger; state || lineQueue.empty()) {
-      if (state > 1) {
-        break;
-      } else {
-        std::this_thread::sleep_for(std::chrono::milliseconds(nextTickMS));
-        innerTick += nextTickMS;
-        continue;
-      }
+    if (eraseAllLines) {
+      lineQueue[0].clear();
+      lineQueue[1].clear();
+      lineStack.clear();
+      eraseAllLines = false;
     }
 
-    for (auto &l : lineQueue) {
+    if (bool lqo = currentlyUsedLineQueue; !lineQueue[lqo].empty()) {
+      currentlyUsedLineQueue = !lqo;
+
+      for (auto &l : lineQueue[lqo]) {
+        if (l.line) {
+          if (l.newLine) {
+            auto found = std::find_if(
+                lineStack.begin(), lineStack.end(),
+                [&](auto &item_) { return item_.get() == l.line; });
+            lineStack.insert(std::next(found, l.after), std::move(l.newLine));
+          } else {
+            if (l.after) {
+              l.line->PrintLine();
+              es::Print("\n");
+            }
+
+            lineStack.erase(std::find_if(
+                lineStack.begin(), lineStack.end(),
+                [&](auto &item_) { return item_.get() == l.line; }));
+          }
+        } else {
+          lineStack.emplace_back(std::move(l.newLine));
+        }
+      }
+
+      lineQueue[lqo].clear();
+    }
+
+    for (auto &l : lineStack) {
       l->PrintLine();
       es::Print("\n");
     }
 
-    for (size_t i = 0; i < lineQueue.size(); i++) {
+    for (size_t i = 0; i < lineStack.size(); i++) {
       es::Print("\033[A");
     }
 
@@ -209,20 +251,17 @@ void MakeLogger() {
 }
 
 void TerminateConsoleDontWait() {
-  pauseLogger = 2;
+  eraseAllLines = true;
+  stopLogger = true;
   if (logger.joinable()) {
     logger.join();
   }
 
-#ifdef USEWIN
   es::Print("\033[?25h"); // Enable cursor
-#endif
 }
 
 void InitConsole() {
-#ifdef USEWIN
   es::Print("\033[?25l"); // Disable cursor
-#endif
   es::print::AddQueuer(ReceiveQueue);
   logger = std::thread{MakeLogger};
   pthread_setname_np(logger.native_handle(), "console_logger");
@@ -244,40 +283,33 @@ void TerminateConsole() {
 }
 
 void ConsolePrintDetail(uint8 detail) {
-  newPrintDetailSince = messageQueues[messageQueueOrder].size();
+  newPrintDetailSince = messageQueues[currentlyUsedMessageQueue].size();
   uint8 oldDetail = printDetail;
   printDetail = detail | oldDetail << 4;
 }
 
-static ElementAPI EAPI;
-
 void ElementAPI::Append(std::unique_ptr<LogLine> &&item) {
-  lineQueue.emplace_back(std::move(item));
+  lineQueue[currentlyUsedLineQueue].emplace_back(std::move(item));
 }
 
 void ElementAPI::Remove(LogLine *item) {
-  lineQueue.erase(
-      std::find_if(lineQueue.begin(), lineQueue.end(),
-                   [&](auto &item_) { return item_.get() == item; }));
+  lineQueue[currentlyUsedLineQueue].emplace_back(item);
 }
 
 void ElementAPI::Release(LogLine *line) {
-  line->PrintLine();
-  es::Print("\n");
-  Remove(line);
+  lineQueue[currentlyUsedLineQueue].emplace_back(line, true);
 }
 
-void ElementAPI::Clean() { lineQueue.clear(); }
+void ElementAPI::Clean() { eraseAllLines = true; }
 
 void ElementAPI::Insert(std::unique_ptr<LogLine> &&item, LogLine *where,
                         bool after) {
-  auto found = std::find_if(lineQueue.begin(), lineQueue.end(),
-                            [&](auto &item_) { return item_.get() == where; });
-  lineQueue.insert(std::next(found, after), std::move(item));
+  lineQueue[currentlyUsedLineQueue].emplace_back(std::move(item), where, after);
 }
 
 void ModifyElements_(element_callback cb) {
-  pauseLogger = true;
+  static std::mutex accessMutex;
+  std::lock_guard lg(accessMutex);
+  static ElementAPI EAPI;
   cb(EAPI);
-  pauseLogger = false;
 }
