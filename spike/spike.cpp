@@ -480,6 +480,13 @@ int _tmain(int argc, TCHAR *argv[]) {
   int retVal = Main(argc, argv);
 
   CleanCurrentTempStorage();
+
+#ifndef NDEBUG
+  auto cacheStats = CacheGenerator::GlobalMetrics();
+  PrintInfo("Cache search hits: ", cacheStats.numSearchHits,
+            " search misses: ", cacheStats.numSearchMisses);
+  std::this_thread::sleep_for(std::chrono::milliseconds(100));
+#endif
   TerminateConsole();
   return retVal;
 }

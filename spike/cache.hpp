@@ -50,6 +50,12 @@ struct CacheGenerator {
   void WaitAndWrite(BinWritterRef wr);
   CacheBaseHeader meta{};
 
+  struct Metrics {
+    size_t numSearchHits;
+    size_t numSearchMisses;
+  };
+  static Metrics GlobalMetrics();
+
 private:
   friend class WALThread;
   std::unique_ptr<WALThread> workThread;

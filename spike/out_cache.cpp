@@ -33,6 +33,9 @@
 #include <string>
 #include <vector>
 
+static std::atomic_size_t searchHitCount;
+static std::atomic_size_t searchMissCount;
+
 struct StringSlider {
   std::string buffer;
 
@@ -90,14 +93,17 @@ private:
   int64 resultOffset = -1;
 
   std::atomic_bool &allowThreads;
+  bool doMetrics = false;
+  size_t searchHitCount = 0;
+  size_t searchMissCount = 0;
 
 public:
-  StringSlider(std::atomic_bool &allowThreads)
+  StringSlider(std::atomic_bool &allowThreads, bool metrics)
       : workersDone{&threadResults, &finishedSearch, &resultOffset},
         workerSync(std::thread::hardware_concurrency(), workersDone),
         workersReadyCb{&runWorkers},
         workersReady(std::thread::hardware_concurrency(), workersReadyCb),
-        allowThreads(allowThreads) {
+        allowThreads(allowThreads), doMetrics(metrics) {
     const size_t numThreads = std::thread::hardware_concurrency();
 
     auto SearcherThread = [this, numThreads] {
@@ -162,6 +168,11 @@ public:
         w.join();
       }
     }
+
+    if (doMetrics) {
+      ::searchHitCount += this->searchHitCount;
+      ::searchMissCount += this->searchMissCount;
+    }
   }
 
   std::string::iterator FindString(std::string_view str) {
@@ -214,10 +225,12 @@ public:
     auto found = FindString(str);
 
     if (found == buffer.end()) {
+      searchMissCount++;
       // todo add tail compare?
       buffer.append(str.data(), str.size());
       return buffer.size() - str.size();
     } else {
+      searchHitCount++;
       return std::distance(buffer.begin(), found);
     }
   }
@@ -335,8 +348,8 @@ struct CacheGeneratorImpl {
   HybridLeafGen root{};
   std::vector<std::vector<HybridLeafGen>> levels;
   std::atomic_bool allowThreads;
-  StringSlider slider{allowThreads};
-  StringSlider sliderTiny{allowThreads};
+  StringSlider slider{allowThreads, true};
+  StringSlider sliderTiny{allowThreads, false};
   size_t maxPathSize = 0;
 
   void AddFile(std::string_view fileName, size_t offset, size_t size) {
@@ -562,7 +575,7 @@ void CacheGenerator::WaitAndWrite(BinWritterRef wr) {
   es::Dispose(workThread->walStreamIn);
   DetailedProgressBar *prog = nullptr;
 
-  if (size_t count = workThread->sharedCounter; count > 10) {
+  if (size_t count = workThread->sharedCounter; count > 1000) {
     prog = AppendNewLogLine<DetailedProgressBar>("Cache: ");
     prog->ItemCount(count);
     workThread->totalCount = prog;
@@ -580,4 +593,12 @@ void CacheGenerator::WaitAndWrite(BinWritterRef wr) {
   std::remove(workThread->walFile.c_str());
 
   workThread->generator.Write(wr, meta, prog);
+
+  if (prog) {
+    RemoveLogLines(prog);
+  }
+}
+
+CacheGenerator::Metrics CacheGenerator::GlobalMetrics() {
+  return {searchHitCount, searchMissCount};
 }
