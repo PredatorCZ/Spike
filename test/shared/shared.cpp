@@ -1,6 +1,6 @@
-#include "datas/reflector.hpp"
-#include "datas/stat.hpp"
-#include "datas/unit_testing.hpp"
+#include "spike/io/stat.hpp"
+#include "spike/reflect/reflector.hpp"
+#include "spike/util/unit_testing.hpp"
 
 struct SimpleStruct;
 

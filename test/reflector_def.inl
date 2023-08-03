@@ -1,11 +1,11 @@
 #pragma once
-#include "datas/bitfield.hpp"
-#include "datas/endian.hpp"
-#include "datas/flags.hpp"
-#include "datas/float.hpp"
-#include "datas/reflector.hpp"
-#include "datas/unit_testing.hpp"
-#include "datas/vectors_simd.hpp"
+#include "spike/reflect/reflector.hpp"
+#include "spike/type/bitfield.hpp"
+#include "spike/type/flags.hpp"
+#include "spike/type/float.hpp"
+#include "spike/type/vectors_simd.hpp"
+#include "spike/util/endian.hpp"
+#include "spike/util/unit_testing.hpp"
 
 MAKE_ENUM(ENUMSCOPE(class EnumWrap00, EnumWrap00), EMEMBER(E1), EMEMBER(E2),
           EMEMBERVAL(E3, 7));

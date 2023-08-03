@@ -1,8 +1,8 @@
-#include "datas/matrix44.hpp"
-#include "uni/list_vector.hpp"
-#include "uni/python/pymotion.hpp"
-#include "uni/python/pyskeleton.hpp"
-#include "uni/rts.hpp"
+#include "python/uni/motion.hpp"
+#include "python/uni/skeleton.hpp"
+#include "spike/type/matrix44.hpp"
+#include "spike/uni/list_vector.hpp"
+#include "spike/uni/rts.hpp"
 #include <Python.h>
 
 class BoneMock : public uni::Bone {

@@ -2,8 +2,8 @@
 #include "reflector_decl.inl"
 #include "reflector_def.inl"
 
-#include "../datas/binreader.hpp"
-#include "../datas/binwritter.hpp"
+#include "spike/io/binreader.hpp"
+#include "spike/io/binwritter.hpp"
 
 template <class C> int test_class(const reflectorStatic *input) {
   auto orig = GetReflectedClass<C>();

@@ -42,7 +42,7 @@ jobs:
           sudo apt install g++-12
           mkdir ${{github.workspace}}/build
           cd ${{github.workspace}}/build
-          cmake -DCMAKE_BUILD_TYPE=$BUILD_TYPE -DUSE_GCOV=$USE_GCOV -DCMAKE_INSTALL_PREFIX=${{github.workspace}} -DCMAKE_INSTALL_RPATH=${{github.workspace}}/lib ..
+          cmake -DCMAKE_BUILD_TYPE=$BUILD_TYPE -DUSE_GCOV=$USE_GCOV -DCLI=TRUE -DGLTF=TRUE -DCMAKE_INSTALL_PREFIX=${{github.workspace}} -DCMAKE_INSTALL_RPATH=${{github.workspace}}/lib ..
 
       - name: Build
         working-directory: ${{github.workspace}}/build
@@ -75,7 +75,7 @@ jobs:
           choco install ninja
           mkdir ${{github.workspace}}/build
           cd ${{github.workspace}}/build
-          cmake -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=${{github.workspace}} ..
+          cmake -G Ninja -DCMAKE_BUILD_TYPE=Release -DCLI=TRUE -DGLTF=TRUE -DCMAKE_INSTALL_PREFIX=${{github.workspace}} ..
         env:
           CC: clang
           CXX: clang++

@@ -1,8 +1,9 @@
-#include "../datas/matrix44.hpp"
-#include "../datas/unit_testing.hpp"
+#include "spike/type/matrix44.hpp"
+#include "spike/util/unit_testing.hpp"
 
 int test_matrix44_00() {
-  es::Matrix44 mtx({1, 2, 3, 0}, {5, 6, 7, 0}, {9, 10, 11, 0}, {13, 14, 15, 16});
+  es::Matrix44 mtx({1, 2, 3, 0}, {5, 6, 7, 0}, {9, 10, 11, 0},
+                   {13, 14, 15, 16});
   mtx.Transpose();
 
   TEST_EQUAL(mtx.r1(), Vector4A16(1, 5, 9, 0));
@@ -59,8 +60,8 @@ int test_matrix44_02() {
   TEST_EQUAL(rotated, Vector4A16(0.1587f, -0.5066f, 1.6486f, 1.f));
 
   mtx = es::Matrix44({0.353041, 0.418703, 0.83669, 0.f},
-                   {-0.933951, 0.21091, 0.288535, 0.f},
-                   {-0.0556561, -0.883292, 0.465508, 0.f},
-                   {-19.9345, 20.1798, -7.52409, 1.f});
+                     {-0.933951, 0.21091, 0.288535, 0.f},
+                     {-0.0556561, -0.883292, 0.465508, 0.f},
+                     {-19.9345, 20.1798, -7.52409, 1.f});
   return 0;
 }

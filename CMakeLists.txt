@@ -1,5 +1,5 @@
 ﻿cmake_minimum_required(VERSION 3.12)
-project(PreCore VERSION 7)
+project(Spike VERSION 7)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED TRUE)
@@ -14,126 +14,87 @@ elseif(${CMAKE_CXX_COMPILER_ID} MATCHES "Clang")
   endif()
 endif()
 
-set(PRECORE_SOURCE_DIR
+set(SPIKE_SOURCE_DIR
     ${CMAKE_CURRENT_SOURCE_DIR}
     CACHE STRING "")
 set(CMAKE_MODULE_PATH
-    ${PRECORE_SOURCE_DIR}/cmake;${CMAKE_MODULE_PATH}
+    ${SPIKE_SOURCE_DIR}/cmake;${CMAKE_MODULE_PATH}
     CACHE STRING "")
 set(OBJECTS_PID
     OFF
     CACHE BOOL "")
+set(CLI
+    OFF
+    CACHE BOOL "")
+set(APP_OBJECTS
+    OFF
+    CACHE BOOL "")
+set(GLTF
+    OFF
+    CACHE BOOL "")
+
+if(CLI)
+  set(APP_OBJECTS TRUE)
+endif()
+
 
 if(USE_GCOV)
   message("Compiling with GCOV.")
 endif()
 
-# TESTING
 if(${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_CURRENT_SOURCE_DIR})
-  set(SPIKE_NODOT TRUE)
-  add_subdirectory(spike)
-  add_subdirectory(test)
-  enable_testing()
-  add_subdirectory(bin ${CMAKE_SOURCE_DIR}/bin)
+  set(SPIKE_STANDALONE TRUE)
 else()
-  set(PreCore_VERSION ${PreCore_VERSION} PARENT_SCOPE)
+  set(SPIKE_STANDALONE FALSE PARENT_SCOPE)
 endif()
 
 add_subdirectory(3rd_party/glm)
-add_subdirectory(3rd_party/pugixml)
 
 # INTERFACE
-add_library(precore-interface INTERFACE)
-target_include_directories(precore-interface INTERFACE ${PRECORE_SOURCE_DIR})
-target_link_libraries(precore-interface INTERFACE glm::glm)
+add_library(spike-interface INTERFACE)
+target_include_directories(spike-interface INTERFACE include)
+target_link_libraries(spike-interface INTERFACE glm::glm)
 target_compile_definitions(
   glm INTERFACE GLM_FORCE_DEFAULT_ALIGNED_GENTYPES GLM_FORCE_INTRINSICS
                 GLM_FORCE_EXPLICIT_CTOR)
 
 if(USE_GCOV)
-  target_link_options(precore-interface INTERFACE --coverage)
+  target_link_options(spike-interface INTERFACE --coverage)
   if(${CMAKE_CXX_COMPILER_ID} MATCHES "GNU")
-    target_compile_options(precore-interface INTERFACE -fprofile-arcs
-                                                       -ftest-coverage)
+    target_compile_options(spike-interface INTERFACE -fprofile-arcs
+                                                     -ftest-coverage)
   elseif(${CMAKE_CXX_COMPILER_ID} MATCHES "Clang")
-    target_compile_options(precore-interface INTERFACE -fprofile-instr-generate
-                                                       -fcoverage-mapping)
+    target_compile_options(spike-interface INTERFACE -fprofile-instr-generate
+                                                     -fcoverage-mapping)
   endif()
 
 endif()
 
-target_compile_options(precore-interface INTERFACE -msse4 -Wno-invalid-offsetof
-                                                   -fno-rtti)
+target_compile_options(spike-interface INTERFACE -msse4 -Wno-invalid-offsetof
+                                                 -fno-rtti)
 if(WIN32)
   target_compile_definitions(
-    precore-interface
+    spike-interface
     INTERFACE _SILENCE_CXX17_CODECVT_HEADER_DEPRECATION_WARNING)
     # Increase stack size from 1MB to 8MB
-    target_link_options(precore-interface INTERFACE -Wl,/stack:8388608)
+    target_link_options(spike-interface INTERFACE -Wl,/stack:8388608)
 endif()
 
 if(NOT WIN32 OR MINGW)
   set(THREADS_PREFER_PTHREAD_FLAG TRUE)
   find_package(Threads REQUIRED)
-  target_link_libraries(precore-interface INTERFACE Threads::Threads)
+  target_link_libraries(spike-interface INTERFACE Threads::Threads)
 endif()
 
-set(PC_SOURCES
-    datas/encrypt/blowfish.cpp
-    datas/crc32.cpp
-    datas/directory_scanner.cpp
-    datas/master_printer.cpp
-    datas/matrix44.cpp
-    datas/reflector_io.cpp
-    datas/reflector_xml.cpp
-    datas/reflector.cpp
-    datas/stat.cpp
-    uni/uni.cpp
-    uni/uni_format.cpp)
-
-# OBJECTS
-if(NOT NO_OBJECTS)
-  add_library(precore-objects OBJECT ${PC_SOURCES})
-  target_link_libraries(precore-objects pugixml-interface precore-interface)
-  set_target_properties(precore-objects PROPERTIES POSITION_INDEPENDENT_CODE
-                                                   ${OBJECTS_PID})
-  target_compile_options(precore-objects PRIVATE -fvisibility=hidden)
+# TESTING
+if(SPIKE_STANDALONE)
+  add_subdirectory(test)
+  enable_testing()
+  add_subdirectory(bin ${CMAKE_SOURCE_DIR}/bin)
 endif()
 
-if(BUILD_SHARED_LIBS)
-  add_library(precore SHARED ${PC_SOURCES})
-  target_link_libraries(precore PUBLIC precore-interface pugixml)
-
-  target_compile_definitions(
-    precore
-    PRIVATE PC_EXPORT
-    INTERFACE PC_IMPORT)
-
-  target_compile_options(precore PUBLIC -fvisibility=hidden)
-
-  if(MINGW)
-    target_compile_options(precore PUBLIC -municode -fexcess-precision=fast)
-    target_compile_definitions(precore PUBLIC UNICODE _UNICODE)
-  endif()
-
-  if(WIN32 OR MINGW)
-    set_target_properties(precore PROPERTIES SUFFIX ${PROJECT_VERSION_MAJOR}.dll
-                                             PREFIX "")
-  else()
-    set_target_properties(precore PROPERTIES VERSION ${PROJECT_VERSION}
-                                             SOVERSION ${PROJECT_VERSION_MAJOR})
-  endif()
-
-  if(MINGW)
-    target_link_libraries(precore
-                          -Wl,--strip-all,--discard-all,--exclude-all-symbols)
-  endif()
-
-  install(
-    TARGETS precore
-    LIBRARY NAMELINK_SKIP DESTINATION $<IF:$<BOOL:${MINGW}>,bin,lib>
-    RUNTIME DESTINATION bin)
-endif()
+add_subdirectory(3rd_party/pugixml)
+add_subdirectory(src)
 
 function(install_mingw_lib libname)
   file(GLOB foundfile /usr/lib/gcc/x86_64-w64-mingw32/*-posix/${libname})

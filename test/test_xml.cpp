@@ -1,10 +1,10 @@
-#include "datas/binreader.hpp"
-#include "datas/reflector_io.hpp"
-#include "datas/reflector_xml.hpp"
-#include "datas/stat.hpp"
-#include "datas/unit_testing.hpp"
 #include "pugixml.hpp"
 #include "reflector_def.inl"
+#include "spike/io/binreader.hpp"
+#include "spike/io/stat.hpp"
+#include "spike/reflect/reflector_io.hpp"
+#include "spike/reflect/reflector_xml.hpp"
+#include "spike/util/unit_testing.hpp"
 
 int test_reflector_xml_v1() {
   BinReader mrd("reflected.bin");

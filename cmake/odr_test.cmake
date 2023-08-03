@@ -20,9 +20,9 @@ function(test_odr)
   foreach(header_file ${CORE_SOURCE_FILES})
     string(REGEX REPLACE "[/\\]" "-" source_file ${header_file})
     get_filename_component(source_file ${source_file} NAME_WE)
-    configure_file(${PRECORE_SOURCE_DIR}/cmake/odr.tmpl
+    configure_file(${SPIKE_SOURCE_DIR}/cmake/odr.tmpl
                    ${CMAKE_CURRENT_BINARY_DIR}/test_odr/${source_file}.1.odr.cpp)
-    configure_file(${PRECORE_SOURCE_DIR}/cmake/odr.tmpl
+    configure_file(${SPIKE_SOURCE_DIR}/cmake/odr.tmpl
                    ${CMAKE_CURRENT_BINARY_DIR}/test_odr/${source_file}.2.odr.cpp)
   endforeach()
 

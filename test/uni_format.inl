@@ -1,6 +1,6 @@
-#include "../datas/unit_testing.hpp"
-#include "../uni/format.hpp"
-#include "datas/vectors_stream.hpp"
+#include "spike/io/vectors.hpp"
+#include "spike/uni/format.hpp"
+#include "spike/util/unit_testing.hpp"
 
 using namespace uni;
 

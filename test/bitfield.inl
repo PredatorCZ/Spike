@@ -1,6 +1,6 @@
-#include "../datas/bitfield.hpp"
-#include "../datas/endian.hpp"
-#include "../datas/unit_testing.hpp"
+#include "spike/type/bitfield.hpp"
+#include "spike/util/endian.hpp"
+#include "spike/util/unit_testing.hpp"
 
 int test_bf_00() {
   using member0 = BitMemberDecl<0, 2>;

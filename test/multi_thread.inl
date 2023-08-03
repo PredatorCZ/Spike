@@ -1,5 +1,5 @@
-#include "../datas/multi_thread.hpp"
-#include "../datas/unit_testing.hpp"
+#include "spike/util/multi_thread.hpp"
+#include "spike/util/unit_testing.hpp"
 #include <atomic>
 #include <random>
 

@@ -1,4 +1,4 @@
-#include "datas/stat.hpp"
+#include "spike/io/stat.hpp"
 #include "reflector.inl"
 #include "reflector_bindump.inl"
 #include "reflector_extended.inl"

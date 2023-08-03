@@ -1,6 +1,6 @@
-#include "datas/encrypt/blowfish2.h"
-#include "datas/stat.hpp"
-#include "datas/unit_testing.hpp"
+#include "spike/crypto/blowfish2.h"
+#include "spike/io/stat.hpp"
+#include "spike/util/unit_testing.hpp"
 #include <cstring>
 
 using namespace std::string_view_literals;

@@ -1,7 +1,7 @@
-#include "../datas/binwritter.hpp"
-#include "../datas/binreader.hpp"
 #include "reflector_io.inl"
-#include "../datas/except.hpp"
+#include "spike/except.hpp"
+#include "spike/io/binreader.hpp"
+#include "spike/io/binwritter.hpp"
 
 int test_binwritter(const reflClass &data) {
   BinWritter mwr("testFile.le");

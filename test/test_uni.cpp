@@ -1,4 +1,4 @@
-#include "datas/stat.hpp"
+#include "spike/io/stat.hpp"
 #include "uni_format.inl"
 
 int main() {

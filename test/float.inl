@@ -1,5 +1,5 @@
-#include "../datas/float.hpp"
-#include "../datas/unit_testing.hpp"
+#include "spike/type/float.hpp"
+#include "spike/util/unit_testing.hpp"
 #include <cmath>
 
 int test_float_00() {

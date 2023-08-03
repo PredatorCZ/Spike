@@ -1,5 +1,5 @@
-#include "../datas/flags.hpp"
-#include "../datas/unit_testing.hpp"
+#include "spike/type/flags.hpp"
+#include "spike/util/unit_testing.hpp"
 
 constexpr auto flgtest00 = es::Flags<uint8>(1, 2);
 

@@ -1,5 +1,5 @@
-#include "../datas/base_128.hpp"
-#include "../datas/unit_testing.hpp"
+#include "spike/type/base_128.hpp"
+#include "spike/util/unit_testing.hpp"
 #include <sstream>
 
 int test_base128() {

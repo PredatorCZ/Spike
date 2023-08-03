@@ -158,14 +158,14 @@ function(build_target)
   string(APPEND TARGET_COPYRIGHT "${_TARGET_DATE_YYYY} ")
 
   if(NOT _arg_NO_VERINFO AND CMAKE_RC_COMPILER)
-    configure_file(${PRECORE_SOURCE_DIR}/cmake/verinfo.rc.tmpl
+    configure_file(${SPIKE_SOURCE_DIR}/cmake/verinfo.rc.tmpl
                    ${PROJECT_BINARY_DIR}/${_arg_NAME}_/verinfo.rc)
     target_sources(${_arg_NAME}
                    PRIVATE ${PROJECT_BINARY_DIR}/${_arg_NAME}_/verinfo.rc)
   endif()
 
   if(NOT _arg_NO_PROJECT_H)
-    configure_file(${PRECORE_SOURCE_DIR}/cmake/project.h.tmpl
+    configure_file(${SPIKE_SOURCE_DIR}/cmake/project.h.tmpl
                    ${PROJECT_BINARY_DIR}/${_arg_NAME}_/project.h)
     target_include_directories(${_arg_NAME}
                                PRIVATE ${PROJECT_BINARY_DIR}/${_arg_NAME}_)
@@ -199,7 +199,7 @@ function(build_target)
 
     if(WIN32 OR MINGW)
       get_target_property(spike_exec spike OUTPUT_NAME)
-      configure_file(${PRECORE_SOURCE_DIR}/cmake/spike.tmpl
+      configure_file(${SPIKE_SOURCE_DIR}/cmake/spike.tmpl
                      ${PROJECT_BINARY_DIR}/${_arg_NAME}_/spike.runner)
 
       install(

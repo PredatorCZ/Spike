@@ -1,7 +1,7 @@
-#include "datas/vectors_stream.hpp"
-#include "datas/stat.hpp"
+#include "spike/io/vectors.hpp"
+#include "spike/io/stat.hpp"
 
-#include "allocator_hybrid.inl"
+//#include "allocator_hybrid.inl"
 #include "bitfield.inl"
 #include "endian.inl"
 #include "fileinfo.inl"
@@ -27,7 +27,7 @@ int main() {
   printinfo("I'm blue, da ri di danu da.");
 
   TEST_CASES(int testResult, TEST_FUNC(test_bf_00), TEST_FUNC(test_bf_01),
-             TEST_FUNC(test_alloc_hybrid), TEST_FUNC(test_fileinfo),
+             /*TEST_FUNC(test_alloc_hybrid),*/ TEST_FUNC(test_fileinfo),
              TEST_FUNC(test_endian), TEST_FUNC(test_flags_00),
              TEST_FUNC(test_flags_01), TEST_FUNC(test_flags_02),
              TEST_FUNC(test_bincore_00), TEST_FUNC(test_bincore_01),

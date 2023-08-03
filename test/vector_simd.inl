@@ -1,5 +1,5 @@
-#include "../datas/vectors_simd.hpp"
-#include "../datas/unit_testing.hpp"
+#include "spike/type/vectors_simd.hpp"
+#include "spike/util/unit_testing.hpp"
 
 int test_vector_simd_00() {
   Vector4A16 vc0;

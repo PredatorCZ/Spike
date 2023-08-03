@@ -5,11 +5,11 @@ build_target(
   APP
   SOURCES
   test_cache.cpp
-  ${PRECORE_SOURCE_DIR}/spike/out_cache.cpp
-  ${PRECORE_SOURCE_DIR}/spike/in_cache.cpp
-  ${PRECORE_SOURCE_DIR}/spike/console.cpp
+  ${SPIKE_SOURCE_DIR}/src/app/out_cache.cpp
+  ${SPIKE_SOURCE_DIR}/src/app/in_cache.cpp
+  ${SPIKE_SOURCE_DIR}/src/cli/console.cpp
   LINKS
-  precore
+  spike
   NO_PROJECT_H
   NO_VERINFO)
 

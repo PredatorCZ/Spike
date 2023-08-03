@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.12)
-project(PreCore-test)
+project(Spike-test)
 enable_testing()
 
 add_test(test_base test_base)

@@ -1,5 +1,5 @@
-#include "../datas/unit_testing.hpp"
-#include "../datas/endian.hpp"
+#include "spike/util/unit_testing.hpp"
+#include "spike/util/endian.hpp"
 
 struct endianTest {
     uint16 item0;

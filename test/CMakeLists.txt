@@ -10,14 +10,16 @@ set(NO_OBJECTS
 
 test_odr(
   PATHS
-  ${PROJECT_SOURCE_DIR}/datas
+  ${PROJECT_SOURCE_DIR}/include
   EXCLUDE
   pugiex.hpp
   reflector_xml.hpp
+  gltf.h
+  gltf.hpp
   python
-  encrypt)
+)
 
-target_link_libraries(test_odr precore)
+target_link_libraries(test_odr spike)
 
 build_target(
   NAME
@@ -27,7 +29,7 @@ build_target(
   SOURCES
   test_base.cpp
   LINKS
-  precore
+  spike
   NO_PROJECT_H
   NO_VERINFO)
 
@@ -39,7 +41,7 @@ build_target(
   SOURCES
   test_reflector.cpp
   LINKS
-  precore
+  spike
   NO_PROJECT_H
   NO_VERINFO)
 
@@ -51,7 +53,7 @@ build_target(
   SOURCES
   test_uni.cpp
   LINKS
-  precore
+  spike
   NO_PROJECT_H
   NO_VERINFO)
 
@@ -63,7 +65,7 @@ build_target(
   SOURCES
   test_app.cpp
   LINKS
-  precore
+  spike
   NO_PROJECT_H
   NO_VERINFO)
 
@@ -72,9 +74,9 @@ if(NOT MINGW AND RELEASEVER)
 
   if(Python3_FOUND)
     python3_add_library(test_unipy MODULE test_unipy.cpp
-                        ${PRECORE_SOURCE_DIR}/uni/python/uni_python.cpp)
+                        ${SPIKE_SOURCE_DIR}/src/uni_python.cpp)
 
-    target_link_libraries(test_unipy PRIVATE precore)
+    target_link_libraries(test_unipy PRIVATE spike)
     install(TARGETS test_unipy LIBRARY DESTINATION bin)
     install(FILES test_uni.py DESTINATION bin)
   endif()
@@ -88,7 +90,7 @@ build_target(
   SOURCES
   test_xml.cpp
   LINKS
-  precore
+  spike
   NO_PROJECT_H
   NO_VERINFO)
 
@@ -100,7 +102,7 @@ build_target(
   SOURCES
   test_blowfish.cpp
   LINKS
-  precore
+  spike
   NO_PROJECT_H
   NO_VERINFO)
 

@@ -1,7 +1,7 @@
-#include "datas/directory_scanner.hpp"
-#include "datas/stat.hpp"
-#include "datas/supercore.hpp"
-#include "datas/unit_testing.hpp"
+#include "spike/io/directory_scanner.hpp"
+#include "spike/io/stat.hpp"
+#include "spike/util/supercore.hpp"
+#include "spike/util/unit_testing.hpp"
 #include <algorithm>
 
 using namespace std::string_view_literals;
@@ -13,9 +13,9 @@ int test_dirscan() {
   const auto &fnd = sc.Files();
 
   TEST_NOT_CHECK(
-      es::IsEnd(fnd, std::find(fnd.begin(), fnd.end(), "uni/skeleton.hpp")));
+      es::IsEnd(fnd, std::find(fnd.begin(), fnd.end(), "include/spike/uni/skeleton.hpp")));
   TEST_NOT_CHECK(
-      es::IsEnd(fnd, std::find(fnd.begin(), fnd.end(), "datas/reflector.hpp")));
+      es::IsEnd(fnd, std::find(fnd.begin(), fnd.end(), "include/spike/reflect/reflector.hpp")));
   TEST_NOT_CHECK(
       es::IsEnd(fnd, std::find(fnd.begin(), fnd.end(), "test/test_app.cpp")));
   TEST_NOT_CHECK(
@@ -28,9 +28,9 @@ int test_dirscan() {
   sc.Scan("");
 
   TEST_CHECK(
-      es::IsEnd(fnd, std::find(fnd.begin(), fnd.end(), "uni/skeleton.hpp")));
+      es::IsEnd(fnd, std::find(fnd.begin(), fnd.end(), "include/spike/uni/skeleton.hpp")));
   TEST_CHECK(
-      es::IsEnd(fnd, std::find(fnd.begin(), fnd.end(), "datas/reflector.hpp")));
+      es::IsEnd(fnd, std::find(fnd.begin(), fnd.end(), "include/spike/reflect/reflector.hpp")));
   TEST_NOT_CHECK(
       es::IsEnd(fnd, std::find(fnd.begin(), fnd.end(), "test/test_app.cpp")));
   TEST_CHECK(es::IsEnd(fnd, std::find(fnd.begin(), fnd.end(), ".gitignore")));

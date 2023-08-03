@@ -1,7 +1,7 @@
 #pragma once
-#include "../datas/bitfield.hpp"
-#include "../datas/reflector_io.hpp"
-#include "../datas/unit_testing.hpp"
+#include "spike/reflect/reflector_io.hpp"
+#include "spike/type/bitfield.hpp"
+#include "spike/util/unit_testing.hpp"
 
 using namespace std::string_view_literals;
 using namespace es::jenhash_literals;

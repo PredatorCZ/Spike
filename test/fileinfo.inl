@@ -1,5 +1,5 @@
-#include "../datas/fileinfo.hpp"
-#include "../datas/unit_testing.hpp"
+#include "spike/io/fileinfo.hpp"
+#include "spike/util/unit_testing.hpp"
 
 int test_fileinfo() {
   AFileInfo fleinf("/home\\user/GitHub\\PreCore/build/DartConfiguration.tcl");
@@ -25,7 +25,9 @@ int test_fileinfo() {
 
   auto caughtBranch = fleinf.CatchBranch("C:/Program Data/home/user/GitHub/");
 
-  TEST_EQUAL(caughtBranch, "C:/Program Data/home/user/GitHub/PreCore/build/DartConfiguration.tcl");
+  TEST_EQUAL(
+      caughtBranch,
+      "C:/Program Data/home/user/GitHub/PreCore/build/DartConfiguration.tcl");
 
   fleinf.Load("/home\\user/GitHub\\PreCore/build/.tcl");
 
