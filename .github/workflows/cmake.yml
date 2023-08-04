@@ -52,19 +52,36 @@ jobs:
         working-directory: ${{github.workspace}}/build
         run: ctest --output-on-failure
 
-      - name: Upload coverage report
+      - name: Install coverage parser
         working-directory: ${{github.workspace}}
         if: ${{matrix.use-gcov == true}}
-        env:
-          COVERALLS_REPO_TOKEN: ${{ secrets.CoverallsToken }}
         run: |
           sudo apt install python3-setuptools python3-idna python3-requests python3-urllib3
           git clone https://github.com/PredatorCZ/cpp-coveralls.git
           pushd cpp-coveralls
           sudo python3 setup.py install
           popd
-          export COVERALLS_SERVICE_NAME="github-actions-ci"
-          coveralls -E ".*/build/.*.[ch]((pp)|(c)|(xx))?$" -e classgen -e gltf -e test -e datas/unit_testing.hpp -e 3rd_party -e formats --gcov-options '\-lpb' > /dev/null
+
+      - name: Upload coverage report
+        working-directory: ${{github.workspace}}
+        if: ${{matrix.use-gcov == true}}
+        env:
+          COVERALLS_REPO_TOKEN: ${{ secrets.CoverallsToken }}
+          COVERALLS_SERVICE_NAME: github-actions-ci
+        run: >
+          coveralls --gcov gcov-12
+          -E ".*/build/.*.[ch]((pp)|(c)|(xx))?$"
+          -e classgen -e gltf -e test
+          -e 3rd_party
+          -e include/spike/util/unit_testing.hpp
+          -e include/spike/format
+          -e include/spike/gltf
+          -e include/spike/gpu
+          -e include/spike/app_context.hpp
+          -e include/spike/classgen.hpp
+          -e include/spike/gltf.hpp
+          -e src/gltf
+          --gcov-options '\-lpb' > /dev/null
 
   build-widle:
     runs-on: windows-2022
