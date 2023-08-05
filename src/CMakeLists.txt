@@ -65,5 +65,5 @@ if(APP_OBJECTS)
 endif()
 
 if(CLI)
-  add_subdirectory(cli)
+  add_subdirectory(cli ${CMAKE_BINARY_DIR}/spike)
 endif()

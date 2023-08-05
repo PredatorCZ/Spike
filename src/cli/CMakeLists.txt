@@ -23,5 +23,5 @@ build_target(
 install(TARGETS spike_cli RUNTIME DESTINATION $<IF:$<AND:$<BOOL:${UNIX}>,$<NOT:$<BOOL:${SPIKE_NODOT}>>>,.,bin>)
 
 function(add_spike_subdir name_)
-  add_subdirectory(${name_} ${Spike_BINARY_DIR}/${name_})
+  add_subdirectory(${name_} ${SpikeCLI_BINARY_DIR}/${name_})
 endfunction()
