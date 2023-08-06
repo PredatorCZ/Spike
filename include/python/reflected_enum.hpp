@@ -1,5 +1,5 @@
 /*  Reflected Enum Python binding
-    Copyright 2020-2022 Lukas Cone
+    Copyright 2020-2023 Lukas Cone
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -15,8 +15,10 @@
 */
 
 #pragma once
-#include "../internal/reflector_enum.hpp"
+#include "spike/reflect/detail/reflector_enum.hpp"
 #include <Python.h>
+#include <algorithm>
+
 #pragma GCC diagnostic ignored "-Wmissing-field-initializers"
 
 template <class E, const char *const doc = nullptr> struct ReflectedEnumPy {
