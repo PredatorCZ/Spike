@@ -415,7 +415,7 @@ struct DDS : DDS_Header, DDS_PixelFormat, DDS_HeaderEnd, DDS_HeaderDX10 {
 
     DDS_PixelFormat &tformat = static_cast<DDS_PixelFormat &>(*this);
 
-    if (tformat == DDSFormat_DX10) {
+    if (tformat.fourCC == DDSFormat_DX10.fourCC) {
       bpp = _bpps[dxgiFormat];
     } else {
       switch (fourCC) {
@@ -461,8 +461,18 @@ struct DDS : DDS_Header, DDS_PixelFormat, DDS_HeaderEnd, DDS_HeaderDX10 {
 
   struct Mips {
     static const uint32 maxMips = 15;
+    // Size of one 2D plane
     uint32 sizes[maxMips];
+
+    // Offset for mipmap
     uint32 offsets[maxMips];
+
+    // Number of 2D planes within single mipmap
+    // Used for volumetrics
+    uint16 numSlices[maxMips];
+
+    // Total size of mipmap chain
+    uint32 frameStride;
   };
 
   uint32 ComputeBufferSize(Mips &dOut) const {
@@ -472,37 +482,54 @@ struct DDS : DDS_Header, DDS_PixelFormat, DDS_HeaderEnd, DDS_HeaderDX10 {
     uint32 _mipCount = mipMapCount ? mipMapCount : 1;
     uint32 _width = width;
     uint32 _height = height;
-    uint32 _depth = 0;
+    uint32 _depth = 1;
+    uint32 _arraySize = std::max(arraySize, 1U);
+    uint32 _numFaces = 0;
 
     if (caps01 == Caps01Flags_CubeMap) {
       if (caps01 == Caps01Flags_CubeMap_NegativeX) {
-        _depth += 1;
+        _numFaces += 1;
       }
       if (caps01 == Caps01Flags_CubeMap_NegativeY) {
-        _depth += 1;
+        _numFaces += 1;
       }
       if (caps01 == Caps01Flags_CubeMap_NegativeZ) {
-        _depth += 1;
+        _numFaces += 1;
       }
       if (caps01 == Caps01Flags_CubeMap_PositiveX) {
-        _depth += 1;
+        _numFaces += 1;
       }
       if (caps01 == Caps01Flags_CubeMap_NegativeY) {
-        _depth += 1;
+        _numFaces += 1;
       }
       if (caps01 == Caps01Flags_CubeMap_NegativeZ) {
-        _depth += 1;
+        _numFaces += 1;
       }
     } else if (caps01 == Caps01Flags_Volume || flags == Flags_Depth) {
       _depth = depth;
-    } else {
-      _depth = 1;
     }
+
+    _numFaces = std::max(1U, _numFaces);
 
     uint32 fullBuffer = 0;
     bool useBlockCompression = false;
 
-    if (dxgiFormat) {
+    switch (fourCC) {
+    case CompileFourCC("DXT1"):
+    case CompileFourCC("DXT2"):
+    case CompileFourCC("DXT3"):
+    case CompileFourCC("DXT4"):
+    case CompileFourCC("DXT5"):
+    case CompileFourCC("BC4U"):
+    case CompileFourCC("ATI1"):
+    case CompileFourCC("BC4S"):
+    case CompileFourCC("BC5U"):
+    case CompileFourCC("ATI2"):
+    case CompileFourCC("BC5S"):
+      useBlockCompression = true;
+      break;
+
+    case DDSFormat_DX10.fourCC: {
       switch (dxgiFormat) {
       case DXGI_FORMAT_BC1_UNORM:
       case DXGI_FORMAT_BC1_UNORM_SRGB:
@@ -523,42 +550,37 @@ struct DDS : DDS_Header, DDS_PixelFormat, DDS_HeaderEnd, DDS_HeaderDX10 {
       default:
         break;
       }
-    } else {
-      switch (fourCC) {
-      case CompileFourCC("DXT1"):
-      case CompileFourCC("DXT2"):
-      case CompileFourCC("DXT3"):
-      case CompileFourCC("DXT4"):
-      case CompileFourCC("DXT5"):
-      case CompileFourCC("BC4U"):
-      case CompileFourCC("ATI1"):
-      case CompileFourCC("BC4S"):
-      case CompileFourCC("BC5U"):
-      case CompileFourCC("ATI2"):
-      case CompileFourCC("BC5S"):
-        useBlockCompression = true;
-        break;
-      default:
-        break;
-      }
+    }
+    default:
+      break;
     }
 
     for (uint32 m = 0; m < _mipCount; m++) {
-      uint32 __width = _width, __height = _height;
+      uint32 __width = _width;
+      uint32 __height = _height;
 
-      if (useBlockCompression && (__width * __height < 16)) {
-        __width = 4;
-        __height = 4;
+      if (useBlockCompression) {
+        __width = std::max(__width, 4U);
+        __height = std::max(__height, 4U);
+      } else {
+        __width = std::max(__width, 1U);
+        __height = std::max(__height, 1U);
       }
 
-      dOut.sizes[m] = _depth * ((__width * __height * bpp) + 7) / 8;
+      _depth = std::max(1U, _depth);
+
+      dOut.sizes[m] = ((__width * __height * bpp) + 7) / 8;
+      dOut.numSlices[m] = _depth;
       dOut.offsets[m] = fullBuffer;
-      fullBuffer += dOut.sizes[m];
+      fullBuffer += dOut.sizes[m] * _depth;
       _width /= 2;
       _height /= 2;
+      _depth /= 2;
     }
 
-    return fullBuffer;
+    dOut.frameStride = fullBuffer;
+
+    return fullBuffer * _arraySize * _numFaces;
   }
 
   int FromLegacy() {
