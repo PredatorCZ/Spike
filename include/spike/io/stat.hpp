@@ -17,8 +17,8 @@
 
 #pragma once
 #include "fileinfo.hpp"
-#include "spike/type/unicode.hpp"
 #include "spike/util/settings.hpp"
+#include "spike/util/unicode.hpp"
 #include <set>
 
 enum FileType_e {

@@ -15,7 +15,7 @@
 */
 
 #pragma once
-#include "spike/util/supercore.hpp"
+#include "supercore.hpp"
 #include <codecvt>
 #include <locale>
 #include <string>

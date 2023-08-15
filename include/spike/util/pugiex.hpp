@@ -23,7 +23,7 @@
 #include "spike/except.hpp"
 #include "spike/reflect/reflector.hpp"
 #include "spike/type/flags.hpp"
-#include "spike/type/unicode.hpp"
+#include "spike/util/unicode.hpp"
 #include <algorithm>
 #include <string_view>
 #include <vector>

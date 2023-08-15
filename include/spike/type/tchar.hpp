@@ -1,6 +1,6 @@
 /*  TCHAR handles
 
-    Copyright 2018-2021 Lukas Cone
+    Copyright 2018-2023 Lukas Cone
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -16,7 +16,7 @@
 */
 
 #pragma once
-#include "unicode.hpp"
+#include "spike/util/unicode.hpp"
 
 #if defined(_MSC_VER) || defined(__MINGW64__)
 #include <tchar.h>

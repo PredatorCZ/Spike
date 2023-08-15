@@ -17,7 +17,7 @@
 
 #pragma once
 #include "../bincore_fwd.hpp"
-#include "spike/type/unicode.hpp"
+#include "spike/util/unicode.hpp"
 
 constexpr std::ios_base::openmode MakeOpenMode(BinCoreOpenMode mode) {
   std::ios_base::openmode retVal{};
