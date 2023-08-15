@@ -36,10 +36,9 @@ void DecodeBC3Block(const char *data, char *obuffer, uint32 w, uint32 h,
                     uint32 width);
 
 inline void DecodeRGB565Block(const char *data, Vector &color) {
-  const short &col = reinterpret_cast<const short &>(*data);
-  color.X = (col & 0x1f) * (1.0f / 31.0f);
-  color.Y = ((col & 0x7e0) >> 5) * (1.0f / 63.0f);
-  color.Z = ((col & 0xf800) >> 11) * (1.0f / 31.0f);
+  uint16 col = reinterpret_cast<const uint16 &>(*data);
+  color =
+      UCVector(col << 3, (col >> 3) & 0xFC, (col >> 8) & 0xF8).Convert<float>();
 }
 
 inline void ComputeBC5Blue(char *buffer, uint32 size) {

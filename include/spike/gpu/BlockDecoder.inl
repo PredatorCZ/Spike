@@ -29,67 +29,18 @@ inline void _DecodeBC1Block(const char *data, char *obuffer, uint32 w, uint32 h,
   width *= 4;
 
   UCVector colors[4] = {
-      (color1 * 255.f).Convert<uint8>(),
-      (color2 * 255.f).Convert<uint8>(),
-      ((((color1 * (2.0f / 3.0f)) + (color2 * (1.0f / 3.0f)))) * 255.f)
-          .Convert<uint8>(),
-      ((((color1 * (1.0f / 3.0f)) + (color2 * (2.0f / 3.0f)))) * 255.f)
-          .Convert<uint8>(),
+      color1.Convert<uint8>(),
+      color2.Convert<uint8>(),
+      ((color1 * (2.0f / 3.0f)) + (color2 * (1.0f / 3.0f))).Convert<uint8>(),
+      ((color1 * (1.0f / 3.0f)) + (color2 * (2.0f / 3.0f))).Convert<uint8>(),
   };
 
   for (int row = 0; row < 4; row++) {
-    reinterpret_cast<UCVector &>(
-        *(obuffer + ((h + row) * width + w) * pixeloffset)) = colors[*data & 3];
-    reinterpret_cast<UCVector &>(
-        *(obuffer + ((h + row) * width + w + 1) * pixeloffset)) =
-        colors[(*data & 0xc) >> 2];
-    reinterpret_cast<UCVector &>(
-        *(obuffer + ((h + row) * width + w + 2) * pixeloffset)) =
-        colors[(*data & 0x30) >> 4];
-    reinterpret_cast<UCVector &>(
-        *(obuffer + ((h + row) * width + w + 3) * pixeloffset)) =
-        colors[(*data & 0xc0) >> 6];
-    data++;
-  }
-}
-
-inline void _DecodeBC1BlockA(const char *data, char *obuffer, uint32 w,
-                             uint32 h, uint32 width,
-                             const uint32 pixeloffset = 4) {
-  Vector color1, color2;
-  UCVector colors[4];
-  DecodeRGB565Block(data, color1);
-  const uint16 &cl1 = reinterpret_cast<const uint16 &>(*data);
-  data += 2;
-  DecodeRGB565Block(data, color2);
-  const uint16 &cl2 = reinterpret_cast<const uint16 &>(*data);
-  data += 2;
-  h *= 4;
-  w *= 4;
-  width *= 4;
-
-  *colors = (color1 * 255.f).Convert<uint8>();
-  *(colors + 1) = (color2 * 255.f).Convert<uint8>();
-  bool usealpha = false;
-
-  if (cl1 > cl2) {
-    *(colors + 2) =
-        ((((color1 * (2.0f / 3.0f)) + (color2 * (1.0f / 3.0f)))) * 255.f)
-            .Convert<uint8>();
-    *(colors + 3) =
-        ((((color1 * (1.0f / 3.0f)) + (color2 * (2.0f / 3.0f)))) * 255.f)
-            .Convert<uint8>();
-  } else {
-    *(colors + 2) = ((color1 + color2) * 127.f).Convert<uint8>();
-    *(colors + 3) = *(colors + 2);
-    usealpha = true;
-  }
-
-  for (int row = 0; row < 4; row++) {
-    const uint32 d1 = *data & 3;
-    const uint32 d2 = (*data & 0xc) >> 2;
-    const uint32 d3 = (*data & 0x30) >> 4;
-    const uint32 d4 = (*data & 0xc0) >> 6;
+    const uint8 udata = *data++;
+    const uint8 d1 = udata & 3;
+    const uint8 d2 = (udata >> 2) & 3;
+    const uint8 d3 = (udata >> 4) & 3;
+    const uint8 d4 = udata >> 6;
 
     reinterpret_cast<UCVector &>(
         *(obuffer + ((h + row) * width + w) * pixeloffset)) = colors[d1];
@@ -99,22 +50,60 @@ inline void _DecodeBC1BlockA(const char *data, char *obuffer, uint32 w,
         *(obuffer + ((h + row) * width + w + 2) * pixeloffset)) = colors[d3];
     reinterpret_cast<UCVector &>(
         *(obuffer + ((h + row) * width + w + 3) * pixeloffset)) = colors[d4];
-    data++;
+  }
+}
 
-    if (usealpha) {
-      reinterpret_cast<uint8 &>(
-          *(obuffer + 3 + ((h + row) * width + w) * pixeloffset)) =
-          d1 == 3 ? 0 : 0xff;
-      reinterpret_cast<uint8 &>(
-          *(obuffer + 3 + ((h + row) * width + w + 1) * pixeloffset)) =
-          d2 == 3 ? 0 : 0xff;
-      reinterpret_cast<uint8 &>(
-          *(obuffer + 3 + ((h + row) * width + w + 2) * pixeloffset)) =
-          d3 == 3 ? 0 : 0xff;
-      reinterpret_cast<uint8 &>(
-          *(obuffer + 3 + ((h + row) * width + w + 3) * pixeloffset)) =
-          d4 == 3 ? 0 : 0xff;
-    }
+inline void _DecodeBC1BlockA(const char *data, char *obuffer, uint32 w,
+                             uint32 h, uint32 width,
+                             const uint32 pixeloffset = 4) {
+  Vector color0;
+  Vector color1;
+  DecodeRGB565Block(data, color0);
+  uint16 cl0 = reinterpret_cast<const uint16 &>(*data);
+  data += 2;
+  DecodeRGB565Block(data, color1);
+  uint16 cl1 = reinterpret_cast<const uint16 &>(*data);
+  data += 2;
+  h *= 4;
+  w *= 4;
+  width *= 4;
+
+  bool usealpha = false;
+  UCVector colors[4]{
+      color0.Convert<uint8>(),
+      color1.Convert<uint8>(),
+  };
+
+  if (cl0 > cl1) {
+    colors[2] =
+        ((color0 * (2.0f / 3.0f)) + (color1 * (1.0f / 3.0f))).Convert<uint8>();
+    colors[3] =
+        ((color0 * (1.0f / 3.0f)) + (color1 * (2.0f / 3.0f))).Convert<uint8>();
+  } else {
+    colors[2] = ((color0 + color1) * 0.5f).Convert<uint8>();
+    colors[3] = colors[2];
+    usealpha = true;
+  }
+
+  for (int row = 0; row < 4; row++) {
+    const uint8 udata = *data++;
+    const uint8 d1 = udata & 3;
+    const uint8 d2 = (udata >> 2) & 3;
+    const uint8 d3 = (udata >> 4) & 3;
+    const uint8 d4 = udata >> 6;
+
+    auto &v0 = reinterpret_cast<UCVector4 &>(
+        *(obuffer + ((h + row) * width + w) * pixeloffset)) = colors[d1];
+    v0.w = usealpha && d1 == 3 ? 0 : 0xff;
+    auto &v1 = reinterpret_cast<UCVector4 &>(
+        *(obuffer + ((h + row) * width + w + 1) * pixeloffset)) = colors[d2];
+    v1.w = usealpha && d2 == 3 ? 0 : 0xff;
+    auto &v2 = reinterpret_cast<UCVector4 &>(
+        *(obuffer + ((h + row) * width + w + 2) * pixeloffset)) = colors[d3];
+    v2.w = usealpha && d3 == 3 ? 0 : 0xff;
+    auto &v3 = reinterpret_cast<UCVector4 &>(
+        *(obuffer + ((h + row) * width + w + 3) * pixeloffset)) = colors[d4];
+    v3.w = usealpha && d4 == 3 ? 0 : 0xff;
   }
 }
 
