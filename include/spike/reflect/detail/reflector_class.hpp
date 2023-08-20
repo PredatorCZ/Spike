@@ -16,8 +16,8 @@
 */
 
 #pragma once
-#include "spike/util/settings.hpp"
 #include "reflector_type.hpp"
+#include "spike/util/settings.hpp"
 #include <map>
 
 #ifdef REF_EXPORT
@@ -185,7 +185,7 @@ template <class C> class InvokeGuard;
     return #__VA_ARGS__;                                                       \
   }                                                                            \
   template <>                                                                  \
-  const reflectorStatic REF_EXPORT_ *GetReflectedClass<__VA_ARGS__>() {         \
+  const reflectorStatic REF_EXPORT_ *GetReflectedClass<__VA_ARGS__>() {        \
     using class_type = __VA_ARGS__;                                            \
     static const reflectorStatic reflectedClass {                              \
       std::add_pointer_t<class_type>{nullptr}, #__VA_ARGS__,
@@ -211,7 +211,10 @@ template <class C> class InvokeGuard;
       std::add_pointer_t<enum_type>{nullptr}, #__VA_ARGS__,
 
 #define ENUM_MEMBER(type)                                                      \
-  EnumProxy { #type, static_cast < uint64>(enum_type::type) }
+  EnumProxy { #type, static_cast<uint64>(enum_type::type) }
+
+#define ENUM_MEMBERDESC(type, desc)                                            \
+  EnumProxy { #type, static_cast<uint64>(enum_type::type), desc }
 
 // internal, do not use
 #define END_ENUMERATION(...)                                                   \
