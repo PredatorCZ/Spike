@@ -81,7 +81,7 @@ function(build_target)
 
   if(_arg_VERSION)
     include(version)
-    module_version(${_arg_NAME} ${_arg_VERSION})
+    target_version(${_arg_NAME} ${_arg_VERSION} SKMODULE)
   endif()
 
   if(DEFINED PROJECT_VERSION)
