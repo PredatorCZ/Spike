@@ -19,6 +19,11 @@ add_test(
   COMMAND bin/test_spike_cache
   WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/..)
 
+add_test(
+  NAME test_spike_texel
+  COMMAND ${PROJECT_SOURCE_DIR}/test_spike_texel
+  WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/../test/spike)
+
 add_dependencies(test_xml test_reflector)
 
 if(NOT MINGW)

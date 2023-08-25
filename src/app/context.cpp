@@ -72,7 +72,8 @@ REFLECT(CLASS(MainAppConfFriend),
         MEMBER(verbosity, "v",
                ReflDesc{"Prints more information per level.", "MAX:3"}),
         MEMBERNAME(extractSettings, "extract-settings"),
-        MEMBERNAME(compressSettings, "compress-settings"))
+        MEMBERNAME(compressSettings, "compress-settings"),
+        MEMBERNAME(texelSettings, "texel-settings"))
 
 REFLECT(CLASS(CLISettings),
         MEMBERNAME(out, "output-directory",
@@ -99,6 +100,49 @@ REFLECT(
     MEMBERNAME(minFileSize, "min-file-size", "m",
                ReflDesc{"Files that are smaller than specified size won't be "
                         "compressed."}), );
+
+REFLECT(ENUMERATION(CubemapFace), ENUM_MEMBER(NONE), ENUM_MEMBER(Right),
+        ENUM_MEMBER(Left), ENUM_MEMBER(Up), ENUM_MEMBER(Down),
+        ENUM_MEMBER(Front), ENUM_MEMBER(Back));
+
+REFLECT(
+    ENUMERATION(TexelContextFormat),
+    ENUM_MEMBERDESC(
+        DDS_Legacy,
+        R"(Use legacy dds container but decode to uncompressed formats if necessary
+Supported legacy formats:
+  BC1, BC2, BC3, Grayscale, RGB8, RGBA8, RGB565, RGBA4
+Other formats will be converted to 8bit channeled format like:
+  BC4 -> Grayscale
+  BC5 -> RGX8
+  BC7 -> RGBA8 or RGB8
+Support for mipmaps, cubemaps, volumetrics
+snorm will be converted to unorm)"),
+    ENUM_MEMBERDESC(DDS,
+                    R"(dds, data format is unchanged
+PVRTC and ETC will be converted to RGBA8
+Support for mipmaps, cubemaps, arrays, volumetrics)"),
+    ENUM_MEMBERDESC(QOI_BMP,
+                    R"(Decode to Quite OK Image format.
+Only for RGX, RGB and RGBA
+2 channels will be converted to RGX8
+Decode to BMP for P8, P4, Grayscale,
+No mipmap support)"),
+    ENUM_MEMBERDESC(QOI,
+                    R"(Decode to Quite OK Image format.
+Normal formats RGB and RGBA are kept instact
+2 channels will be converted to RGX8
+8bit (P8) and 4bit (P4) palletes will be expanded to RGB or RGBA
+Grayscale will be expanded to RGB
+No mipmap support)"));
+
+REFLECT(CLASS(TexelConf),
+        MEMBERNAME(outputFormat, "output-format",
+                   ReflDesc{"Specify output format for images"}),
+        MEMBERNAME(cubemapToEquirectangular, "single-cube",
+                   ReflDesc{"Convert cubemaps into equirectangular layout"}),
+        MEMBERNAME(processMipMaps, "process-mipmaps",
+                   ReflDesc{"Save only largest mipmap for each mipmap chain"}))
 
 struct ReflectedInstanceFriend : ReflectedInstance {
   const reflectorStatic *Refl() const { return rfStatic; }
@@ -298,6 +342,11 @@ static auto &CompressSettings() {
   return reinterpret_cast<ReflectorFriend &>(wrap);
 }
 
+static auto &TexelSettings() {
+  static ReflectorWrap<TexelConf> wrap(mainSettings.texelSettings);
+  return reinterpret_cast<ReflectorFriend &>(wrap);
+}
+
 static auto &CliSettings() {
   static ReflectorWrap<CLISettings> wrap(cliSettings);
   return reinterpret_cast<ReflectorFriend &>(wrap);
@@ -328,35 +377,21 @@ int APPContext::ApplySetting(std::string_view key, std::string_view value) {
   JenHash keyHash(key);
   ReflectorFriend *refl = nullptr;
   const ReflType *rType = nullptr;
-  if (info->settings) {
+  static ReflectorFriend *settings[]{
+      /**/ //
+      &Settings(),
+      &MainSettings(),
+      &CliSettings(),
+      &TexelSettings(),
+      &ExtractSettings(),
+      &CompressSettings(),
+  };
+
+  for (auto s : settings) {
     rType = Settings().GetReflectedType(keyHash);
-  }
-
-  if (rType) {
-    refl = &Settings();
-  } else {
-    rType = MainSettings().GetReflectedType(keyHash);
-
     if (rType) {
-      refl = &MainSettings();
-    } else {
-      rType = CliSettings().GetReflectedType(keyHash);
-
-      if (rType) {
-        refl = &CliSettings();
-      } else if (ProcessFile) {
-        rType = ExtractSettings().GetReflectedType(keyHash);
-
-        if (rType) {
-          refl = &ExtractSettings();
-        }
-      } else if (NewArchive) {
-        rType = CompressSettings().GetReflectedType(keyHash);
-
-        if (rType) {
-          refl = &CompressSettings();
-        }
-      }
+      refl = s;
+      break;
     }
   }
 
@@ -389,6 +424,7 @@ void APPContext::PrintCLIHelp() const {
   };
 
   printStuff(::RTTI(MainSettings()));
+  printStuff(::RTTI(TexelSettings()));
 
   if (ProcessFile) {
     printStuff(::RTTI(ExtractSettings()));
@@ -451,8 +487,24 @@ void DumpTypeMD(std::ostream &out, const ReflectorFriend &info,
 
         for (size_t e = 0; e < refEnum->numMembers; e++) {
           gi() << "- " << refEnum->names[e];
-          if (refEnum->descriptions[e]) {
-            out << ": " << refEnum->descriptions[e] << "\n\n";
+          if (std::string_view desc(refEnum->descriptions[e]);
+              desc.size() > 0) {
+            size_t curLine = 0;
+            size_t nextLine = desc.find('\n');
+            out << ':';
+
+            if (nextLine != desc.npos) {
+              out << '\n';
+              while (nextLine != desc.npos) {
+                gi() << desc.substr(curLine, nextLine + 1 - curLine);
+                curLine = nextLine + 1;
+                nextLine = desc.find('\n', curLine);
+              }
+            } else {
+              out << ' ' << desc << "\n\n";
+            }
+
+            out << "\n\n";
           } else {
             out << ", "
                 << "\n\n";
@@ -570,6 +622,7 @@ void APPContext::CreateLog() {
   };
 
   PrintStuff(MainSettings());
+  PrintStuff(TexelSettings());
   if (ProcessFile) {
     PrintStuff(ExtractSettings());
   } else if (NewArchive) {
@@ -631,7 +684,25 @@ void GetHelp(std::ostream &str, const reflectorStatic *ref, size_t level = 1) {
         for (size_t e = 0; e < refEnum->numMembers; e++) {
           fillIndent(2) << refEnum->names[e];
           if (refEnum->descriptions[e]) {
-            str << ": " << refEnum->descriptions[e] << std::endl;
+            if (std::string_view desc(refEnum->descriptions[e]);
+                desc.size() > 0) {
+              size_t curLine = 0;
+              size_t nextLine = desc.find('\n');
+              str << ':';
+
+              if (nextLine != desc.npos) {
+                str << '\n';
+                while (nextLine != desc.npos) {
+                  fillIndent(3) << desc.substr(curLine, nextLine + 1 - curLine);
+                  curLine = nextLine + 1;
+                  nextLine = desc.find('\n', curLine);
+                }
+              } else {
+                str << ' ' << desc << std::endl;
+              }
+
+              str << std::endl;
+            }
           } else {
             str << ", " << std::endl;
           }

@@ -32,6 +32,8 @@
 class ReflectorFriend;
 struct AppContextStream;
 struct AppContextFoundStream;
+struct NewTexelContext;
+struct NewTexelContextCreate;
 
 struct ExtractConf {
   bool makeZIP = true;
@@ -55,7 +57,7 @@ protected:
 };
 
 struct AppInfo_s {
-  static constexpr uint32 CONTEXT_VERSION = 5;
+  static constexpr uint32 CONTEXT_VERSION = 6;
   uint32 contextVersion = CONTEXT_VERSION;
   // No RequestFile or FindFile is being called
   bool filteredLoad = false;
@@ -71,10 +73,18 @@ struct AppInfo_s {
 struct AppExtractContext {
   virtual ~AppExtractContext() = default;
   virtual void NewFile(const std::string &path) = 0;
+
+  // Calling this after NewImage or SendRasterData without calling NewFile
+  // before, will write data to image instead, thus it's undefined behavior
   virtual void SendData(std::string_view data) = 0;
+
   virtual bool RequiresFolders() const = 0;
   virtual void AddFolderPath(const std::string &path) = 0;
   virtual void GenerateFolders() = 0;
+
+  // Will invalidate previous NewImage or NewFile calls
+  virtual NewTexelContext *NewImage(const std::string &path,
+                                    NewTexelContextCreate ctx) = 0;
 };
 
 // Every call is multi-threaded
@@ -111,12 +121,156 @@ struct NewFileContext {
   size_t delimiter = 0;
 };
 
+enum class TexelInputFormatType : uint8 {
+  INVALID = 0,
+  RGBA16 = 10,
+  RGB10A2 = 24,
+  RGBA8 = 28,
+  RGB8 = 88,
+  RG8 = 49,
+  R8 = 61,
+  RGB9E5 = 67,
+  BC1 = 71,
+  BC2 = 74,
+  BC3 = 77,
+  BC4 = 80,
+  BC5 = 83,
+  BC6 = 95,
+  BC7 = 98,
+  RGBA4 = 115,
+  R5G6B5 = 85,
+  RGB5A1 = 86,
+  P8 = 113,
+  P4 = 214,
+  PVRTC4 = 200,
+  PVRTC2 = 201,
+  ETC1 = 202,
+};
+
+enum class TexelSwizzle : uint8 { Red, Green, Blue, Alpha, Black, White };
+
+enum class TexelTile : uint8 {
+  Linear,
+  Morton,
+  MortonForcePow2,
+  NX,
+  PS2,
+  Custom,
+};
+
+struct TileBase {
+  virtual uint32 get(uint32) const = 0;
+  virtual void reset(uint32, uint32, uint32) = 0;
+};
+
+struct TexelInputFormat {
+  TexelInputFormatType type;
+  TexelSwizzle swizzle[4]{TexelSwizzle::Red, TexelSwizzle::Green,
+                          TexelSwizzle::Blue, TexelSwizzle::Alpha};
+  TexelTile tile = TexelTile::Linear;
+  // Derive Z (blue) from 2 channel ts normal map
+  // This does nothing for dds formats
+  bool deriveZNormal = true;
+  // Texel values are in SNORM [-1, 1]
+  bool snorm = false;
+  bool srgb = false;
+  bool premultAlpha = false;
+};
+
+enum class CubemapFace : uint8 {
+  NONE,
+  Right,
+  Left,
+  Up,
+  Down,
+  Front,
+  Back,
+};
+
+// Computing data layout:
+//  for each a in array:
+//    group_addr = groupSize * a
+//
+//    if it's a cubemap:
+//      for each f in faces:
+//        cube_addr = group_addr + mipGroupSize * f
+//        for each m in mipmaps:
+//          data_addr = cube_addr + mipOffsets[m]
+//          data_size = mipSizes[m]
+//
+//    else:
+//      for each m in mipmaps:
+//          data_addr = group_addr + mipOffsets[m]
+//          data_size = mipSizes[m]
+struct TexelDataLayout {
+  // SIze of the entire group,
+  // this can be cubemap faces and their mipmaps,
+  // 2d and volumetric mipmap chain
+  // Useful as data stride for texture arrays
+  uint32 groupSize;
+  // Size of the entire mipmap group
+  // Mostly same as groupSize except for cubemaps
+  uint32 mipGroupSize;
+  static const size_t MAX_MIPS = 15;
+  // Offset for each mipmap relative to offset of the first mipmap
+  // For volumetrics it also includes depth data
+  uint32 mipOffsets[MAX_MIPS];
+  // Size of each 2d/3d mipmap
+  // For volumetrics data may be slices of 2d planes or not,
+  // that's why it includes data size with depth in mind
+  uint32 mipSizes[MAX_MIPS];
+};
+
+struct TexelInputLayout {
+  uint8 mipMap = 0;
+  // For cubemaps
+  CubemapFace face = CubemapFace::NONE;
+  // For texture arrays or volumetrics
+  uint16 layer = 0;
+};
+
+struct NewTexelContextCreate {
+  uint16 width;
+  uint16 height;
+  TexelInputFormat baseFormat;
+  // Depth for volumetrics or num items for arrays
+  uint16 depth = 1;
+  uint8 numMipmaps = 1;
+  // For cubemap, should be 6, -1 is for equirectangular map
+  int8 numFaces = 0;
+
+  uint32 arraySize = 1;
+
+  // Custom address calculator
+  TileBase *customTile = nullptr;
+
+  // When set, process input data immediately
+  // Data are treated as traditional layout described above TexelDataLayout
+  // class, otherwise SendRasterData must be called for each face, mipmap and
+  // layer
+  const void *data = nullptr;
+};
+
+struct NewTexelContext {
+  virtual ~NewTexelContext() = default;
+  virtual void SendRasterData(const void *data, TexelInputLayout layout = {},
+                              TexelInputFormat *formatOverrides = nullptr) = 0;
+  virtual bool ShouldDoMipmaps() = 0;
+
+  // Some better APIs support different format per mipmap
+  // so typeOverrides is here to rectify correct layout data
+  virtual TexelDataLayout ComputeTraditionalDataLayout(
+      TexelInputFormatType typeOverrides[TexelDataLayout::MAX_MIPS] =
+          nullptr) = 0;
+};
+
 struct AppContext : AppContextLocator {
   // Path to currently processed file within current filesystem
   AFileInfo workingFile;
   virtual std::istream &GetStream() = 0;
   virtual std::string GetBuffer(size_t size = -1, size_t begin = 0) = 0;
-  // Creates context for extraction, can be called only once per context
+  // Creates context for extraction, can be created only once per context
+  // Subsequent calls will return already created context
   virtual AppExtractContext *ExtractContext() = 0;
   // Create new file in system's filesystem
   // Provides single interfce, calling it mutiple times within the same context
@@ -125,11 +279,20 @@ struct AppContext : AppContextLocator {
   // path can be relative, use with workingFile
   virtual NewFileContext NewFile(const std::string &path) = 0;
 
+  // Create new image in system's filesystem
+  // Provides single interfce, calling it mutiple times within the same context
+  // will cause to close previous context
+  // To make mutiple images in single context, use ExtractContext() instead.
+  // path can be relative, use with workingFile, or null will use workingFile
+  // Return value is nullptr if data are provided within NewTexelContextCreate
+  virtual NewTexelContext *NewImage(NewTexelContextCreate ctx,
+                                    const std::string *path = nullptr) = 0;
+
   virtual AppExtractContext *ExtractContext(std::string_view name) = 0;
 
   template <class C> void GetType(C &out, size_t offset = 0) {
     auto buffer = GetBuffer(sizeof(C), offset);
-    memcpy(&out, buffer.data(), buffer.size());
+    memcpy(static_cast<void *>(&out), buffer.data(), buffer.size());
   }
 };
 

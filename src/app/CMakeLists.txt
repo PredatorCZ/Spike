@@ -14,13 +14,16 @@ build_target(
   DEFINITIONS
   MAIN_APP
   SOURCES
-  out_context.cpp
-  in_context.cpp
-  context.cpp
-  out_cache.cpp
-  in_cache.cpp
-  tmp_storage.cpp
   batch.cpp
+  context.cpp
+  in_cache.cpp
+  in_context.cpp
+  out_cache.cpp
+  out_context.cpp
+  pvr_decompress.cpp
+  bc7decomp.c
+  texel.cpp
+  tmp_storage.cpp
   NO_PROJECT_H
   NO_VERINFO
 )

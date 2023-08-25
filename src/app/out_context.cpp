@@ -18,6 +18,7 @@
 
 #include "spike/app/out_context.hpp"
 #include "spike/app/console.hpp"
+#include "spike/app/texel.hpp"
 #include "spike/crypto/crc32.hpp"
 #include "spike/format/ZIP_istream.inl"
 #include "spike/format/ZIP_ostream.inl"
@@ -255,6 +256,19 @@ void ZIPExtactContext::GenerateFolders() {
       "GenerateFolders not supported, use RequiresFolders to check.");
 }
 
+NewTexelContext *ZIPExtactContext::NewImage(const std::string &path,
+                                            NewTexelContextCreate ctx) {
+  auto newCtx = CreateTexelContext(ctx, this, path);
+
+  if (texelContext) {
+    static_cast<NewTexelContextImpl *>(texelContext.get())->Finish();
+  }
+
+  texelContext = std::move(newCtx);
+
+  return texelContext.get();
+}
+
 void IOExtractContext::NewFile(const std::string &path) {
   Close_();
   if (path.empty()) [[unlikely]] {
@@ -293,6 +307,19 @@ void IOExtractContext::GenerateFolders() {
   }
 
   folderTree.clear();
+}
+
+NewTexelContext *IOExtractContext::NewImage(const std::string &path,
+                                            NewTexelContextCreate ctx) {
+  auto newCtx = CreateTexelContext(ctx, this, path);
+
+  if (texelContext) {
+    static_cast<NewTexelContextImpl *>(texelContext.get())->Finish();
+  }
+
+  texelContext = std::move(newCtx);
+
+  return texelContext.get();
 }
 
 static std::mutex ZIPLock;

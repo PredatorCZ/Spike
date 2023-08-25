@@ -18,6 +18,7 @@
 
 #include "spike/app/context.hpp"
 #include "spike/app/out_context.hpp"
+#include "spike/app/texel.hpp"
 #include "spike/app/tmp_storage.hpp"
 #include "spike/format/ZIP_istream.inl"
 #include "spike/io/binreader.hpp"
@@ -52,6 +53,21 @@ const std::vector<std::string> &ZIPIOContext::SupplementalFiles() {
 }
 
 struct AppContextShareImpl : AppContextShare {
+  NewTexelContext *NewImage(NewTexelContextCreate ctx,
+                            const std::string *path) override {
+    if (texelContext) {
+      texelContext->Finish();
+    }
+
+    texelContext = CreateTexelContext(ctx, this);
+
+    if (path) {
+      texelContext->pathOverride.Load(*path);
+    }
+
+    return texelContext.get();
+  }
+
   NewFileContext NewFile(const std::string &path) override {
     std::string filePath;
     size_t delimeter = 0;
@@ -119,9 +135,16 @@ struct AppContextShareImpl : AppContextShare {
            std::string(workingFile.GetFullPath());
   }
 
+  ~AppContextShareImpl() {
+    if (texelContext) {
+      texelContext->Finish();
+    }
+  }
+
   BinWritter outFile;
   AFileInfo basePath;
   std::vector<std::string_view> basePathParts;
+  std::unique_ptr<NewTexelContextImpl> texelContext;
 };
 
 struct SimpleIOContext : AppContextShareImpl {

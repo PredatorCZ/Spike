@@ -1,12 +1,11 @@
 #include "spike/app/cache.hpp"
 #include "spike/app/console.hpp"
+#include "spike/app/tmp_storage.hpp"
 #include "spike/io/binwritter.hpp"
 #include "spike/io/directory_scanner.hpp"
 #include "spike/io/stat.hpp"
 #include "spike/util/supercore.hpp"
 #include "spike/util/unit_testing.hpp"
-
-std::string RequestTempFile() { return "wal_file"; }
 
 int test_dirscan() {
   DirectoryScanner sc;
@@ -51,6 +50,11 @@ int main() {
   setlocale(LC_NUMERIC, "en-US");
   es::SetupWinApiConsole();
   es::print::AddPrinterFunction(es::Print);
+  InitTempStorage();
+
+  struct S {
+    ~S() { CleanCurrentTempStorage(); }
+  } s;
 
   printline("Printed some line into console and logger.");
 

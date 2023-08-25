@@ -41,6 +41,8 @@ struct ZIPExtactContext : AppExtractContext {
   bool RequiresFolders() const override;
   void AddFolderPath(const std::string &path) override;
   void GenerateFolders() override;
+  NewTexelContext *NewImage(const std::string &path,
+                            NewTexelContextCreate ctx) override;
   using cache_begin_cb = void (*)();
   void FinishZIP(cache_begin_cb cacheBeginCB);
 
@@ -60,6 +62,7 @@ private:
   std::string curFileName;
   std::optional<CacheGenerator> cache;
   std::vector<uint64> fileOffsets;
+  std::unique_ptr<NewTexelContext> texelContext;
   void FinishFile(bool final = false);
 };
 
@@ -87,6 +90,7 @@ struct IOExtractContext : AppExtractContext, BinWritter {
   std::string outDir;
   std::set<std::string> folderTree;
   std::function<void()> forEachFile;
+  std::unique_ptr<NewTexelContext> texelContext;
 
   IOExtractContext(const std::string &outDir_) : outDir(outDir_) {}
 
@@ -95,4 +99,6 @@ struct IOExtractContext : AppExtractContext, BinWritter {
   bool RequiresFolders() const override;
   void AddFolderPath(const std::string &path) override;
   void GenerateFolders() override;
+  NewTexelContext *NewImage(const std::string &path,
+                            NewTexelContextCreate ctx) override;
 };

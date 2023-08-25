@@ -17,7 +17,7 @@
 
 #pragma once
 #include "cache.hpp"
-#include "spike/app_context.hpp"
+#include "spike/app/texel.hpp"
 #include "spike/crypto/jenkinshash.hpp"
 #include "spike/util/pugi_fwd.hpp"
 #include <map>
@@ -31,6 +31,7 @@ class ReflectorFriend;
 struct MainAppConfFriend : MainAppConf {
   using MainAppConf::extractSettings;
   using MainAppConf::generateLog;
+  TexelConf texelSettings;
 };
 
 extern struct MainAppConfFriend mainSettings;

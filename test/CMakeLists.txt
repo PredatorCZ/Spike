@@ -111,4 +111,6 @@ add_subdirectory(shared)
 install(TARGETS test_base test_app test_blowfish test_reflector test_uni
                 test_xml RUNTIME DESTINATION bin)
 
-add_subdirectory(spike)
+if(APP_OBJECTS)
+  add_subdirectory(spike)
+endif()
