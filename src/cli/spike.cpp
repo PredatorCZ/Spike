@@ -330,6 +330,7 @@ int Main(int argc, TCHAR *argv[]) {
   AFileInfo appLocation(std::to_string(*argv));
   std::string appFolder(appLocation.GetFolder());
   std::string appName(appLocation.GetFilename());
+  es::SetDllRunPath(appFolder + "lib");
 
   if (argc < 2) {
     printwarning(

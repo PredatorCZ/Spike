@@ -214,7 +214,7 @@ function(build_target)
     install(
       TARGETS ${_arg_NAME}
       LIBRARY DESTINATION $<IF:$<BOOL:${UNIX}>,modules,lib>
-      RUNTIME DESTINATION bin)
+      RUNTIME DESTINATION bin/modules)
   endif()
 
   if(${_is_python_module})

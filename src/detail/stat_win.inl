@@ -79,6 +79,15 @@ void SetupWinApiConsole() {
   SetCurrentConsoleFontEx(consoleHandle, false, &infoEx);
 }
 
+void SetDllRunPath(const std::string &path) {
+#ifdef UNICODE
+  auto cvted = es::ToUTF1632(path);
+  SetDllDirectoryW(cvted.data());
+#else
+  SetDllDirectoryA(path.data());
+#endif
+}
+
 MappedFile::MappedFile(const std::string &path, size_t allocSize) {
   auto cvted = es::ToUTF1632(path);
   auto accessFlags = GENERIC_READ | (allocSize ? GENERIC_WRITE : 0);
@@ -113,8 +122,7 @@ void MappedFile::ReserveFileSize(size_t newSize) {
 
   auto mappingFlags = newSize ? PAGE_READWRITE : PAGE_READONLY;
 
-  HANDLE mapping =
-      CreateFileMapping(hdl, NULL, mappingFlags, 0, newSize, NULL);
+  HANDLE mapping = CreateFileMapping(hdl, NULL, mappingFlags, 0, newSize, NULL);
 
   if (!mapping) {
     auto errCode = GetLastError();

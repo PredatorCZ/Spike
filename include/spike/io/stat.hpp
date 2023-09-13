@@ -46,6 +46,7 @@ void RemoveFile(const std::string &path);
 // Setup stdout handle to support utf8 and virtual env
 // Win only
 void MKDIR_EXTERN_ SetupWinApiConsole();
+void MKDIR_EXTERN_ SetDllRunPath(const std::string &folder);
 
 struct MappedFile {
   void *data = nullptr;
@@ -104,6 +105,7 @@ inline void RemoveFile(const std::string &path) {
 }
 
 inline void SetupWinApiConsole() {}
+inline void SetDllRunPath(const std::string &) {}
 } // namespace es
 #else
 namespace es {
