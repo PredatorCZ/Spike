@@ -19,6 +19,16 @@ build_target(
   START_YEAR
   2021)
 
+target_compile_options(spike_cli PRIVATE -fvisibility=hidden)
+
+if(NOT BUILD_SHARED_LIBS)
+  target_link_libraries(spike_cli spike-objects pugixml-objects -rdynamic)
+  set_target_properties(spike_cli PROPERTIES ENABLE_EXPORTS ON)
+
+  if(GLTF)
+    target_link_libraries(spike_cli gltf-objects)
+  endif()
+endif()
 
 install(TARGETS spike_cli RUNTIME DESTINATION $<IF:$<AND:$<BOOL:${UNIX}>,$<NOT:$<BOOL:${SPIKE_NODOT}>>>,.,bin>)
 

@@ -198,7 +198,10 @@ function(build_target)
                  NO_SONAME TRUE)
 
     if(WIN32 OR MINGW)
-      get_target_property(spike_exec spike OUTPUT_NAME)
+      if(NOT BUILD_SHARED_LIBS)
+        target_link_libraries(${_arg_NAME} spike_cli)
+      endif()
+      get_target_property(spike_exec spike_cli OUTPUT_NAME)
       configure_file(${SPIKE_SOURCE_DIR}/cmake/spike.tmpl
                      ${PROJECT_BINARY_DIR}/${_arg_NAME}_/spike.runner)
 

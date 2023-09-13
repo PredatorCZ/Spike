@@ -12,7 +12,17 @@ if((NOT NO_OBJECTS) OR PUGI_STATIC_LIB)
   target_link_libraries(pugixml-objects PUBLIC pugixml-interface)
   set_target_properties(pugixml-objects PROPERTIES POSITION_INDEPENDENT_CODE
                                                    ${OBJECTS_PID})
-  target_compile_options(pugixml-objects PRIVATE -fvisibility=hidden)
+
+  list(FIND EXPOSE_SYMBOLS pugixml found_index)
+
+  if(found_index LESS 0)
+    target_compile_options(pugixml-objects PRIVATE -fvisibility=hidden)
+  elseif(WIN32)
+    target_compile_definitions(
+      pugixml-objects
+      INTERFACE PUGIXML_API=__declspec\(dllimport\)
+      PRIVATE PUGIXML_API=__declspec\(dllexport\))
+  endif()
 endif()
 
 if(PUGI_STATIC_LIB)

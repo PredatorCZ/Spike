@@ -19,6 +19,7 @@ if(NOT NO_OBJECTS)
   set_target_properties(spike-objects PROPERTIES POSITION_INDEPENDENT_CODE
                                                  ${OBJECTS_PID})
   target_compile_options(spike-objects PRIVATE -fvisibility=hidden)
+  target_expose_defs(spike PC_EXPORT PC_IMPORT)
 endif()
 
 if(BUILD_SHARED_LIBS)

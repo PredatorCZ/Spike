@@ -37,6 +37,15 @@ if(CLI)
   set(APP_OBJECTS TRUE)
 endif()
 
+function(target_expose_defs target export_def import_def)
+  list(FIND EXPOSE_SYMBOLS ${target} found_index)
+
+  if(found_index GREATER -1)
+    target_compile_definitions(${target}-interface INTERFACE ${import_def})
+    target_compile_definitions(${target}-objects PRIVATE ${export_def})
+  endif()
+endfunction()
+
 
 if(USE_GCOV)
   message("Compiling with GCOV.")

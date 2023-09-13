@@ -11,6 +11,8 @@ if(NOT NO_OBJECTS)
   set_target_properties(gltf-objects PROPERTIES POSITION_INDEPENDENT_CODE
                                                 ${OBJECTS_PID})
   target_compile_options(gltf-objects PRIVATE -fvisibility=hidden)
+
+  target_expose_defs(gltf GLTF_EXPORT GLTF_IMPORT)
 endif()
 
 if (BUILD_SHARED_LIBS)
