@@ -79,8 +79,7 @@ if(USE_GCOV)
 
 endif()
 
-target_compile_options(spike-interface INTERFACE -msse4 -Wno-invalid-offsetof
-                                                 -fno-rtti)
+target_compile_options(spike-interface INTERFACE -msse4 $<$<COMPILE_LANGUAGE:CXX>:-Wno-invalid-offsetof -fno-rtti>)
 if(WIN32)
   target_compile_definitions(
     spike-interface

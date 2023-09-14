@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.4)
+cmake_minimum_required(VERSION 3.9)
 project(gltf VERSION 1)
 set(CMAKE_CXX_STANDARD 20)
 

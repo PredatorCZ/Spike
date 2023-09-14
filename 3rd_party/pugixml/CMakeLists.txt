@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.4)
+cmake_minimum_required(VERSION 3.9)
 project(pugixml VERSION 1.11)
 set(CMAKE_CXX_STANDARD 11)
 
