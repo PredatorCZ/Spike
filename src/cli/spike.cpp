@@ -223,9 +223,15 @@ void PackModeBatch(Batch &batch) {
   };
 
   batch.forEachFile = [payload](AppContextShare *iCtx) {
-    payload->archiveContext->SendFile(
-        iCtx->workingFile.GetFullPath().substr(payload->folderPath.size() + 1),
-        iCtx->GetStream());
+    if (iCtx->workingFile.GetFullPath().starts_with(payload->folderPath)) {
+      int notSlash = !payload->folderPath.ends_with('/');
+      payload->archiveContext->SendFile(iCtx->workingFile.GetFullPath().substr(
+                                            payload->folderPath.size() + notSlash),
+                                        iCtx->GetStream());
+    } else {
+      payload->archiveContext->SendFile(iCtx->workingFile.GetFullPath(),
+                                        iCtx->GetStream());
+    }
     (*payload->progBar)++;
   };
 
