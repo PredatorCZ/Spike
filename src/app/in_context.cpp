@@ -318,8 +318,8 @@ std::string SimpleIOContext::GetBuffer(size_t size, size_t begin) {
   mainFile.Push();
   mainFile.Seek(begin);
   std::string buffer;
-  mainFile.ReadContainer(buffer,
-                         size == size_t(-1) ? mainFile.GetSize() : size);
+  mainFile.ReadContainer(
+      buffer, size == size_t(-1) ? (mainFile.GetSize() - begin) : size);
   mainFile.Pop();
 
   return buffer;
@@ -366,7 +366,8 @@ struct ZIPIOContextInstance : AppContextShareImpl {
     rd.Push();
     rd.Seek(begin);
     std::string buffer;
-    rd.ReadContainer(buffer, size == size_t(-1) ? rd.GetSize() : size);
+    rd.ReadContainer(buffer,
+                     size == size_t(-1) ? (rd.GetSize() - begin) : size);
     rd.Pop();
     return buffer;
   }
