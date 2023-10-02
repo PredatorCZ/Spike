@@ -17,24 +17,23 @@
 */
 
 #pragma once
-#include "spike/type/detail/sc_type.hpp"
 #include <string_view>
 
 struct JenTriplet_ {
-  uint32 a, b, c;
+  uint32_t a, b, c;
 
-  constexpr static uint32 Setup_(uint32 len, uint32 seed) {
-    return 0xdeadbeef + (len << 2) + seed;
+  constexpr static uint32_t Setup_(uint32_t len, uint32_t seed) {
+    return 0xdeadbeef + len + seed;
   }
 
-  constexpr static uint32 JenRotate(uint32 num, uint32 by) {
+  constexpr static uint32_t JenRotate(uint32_t num, uint32_t by) {
     return (num << by) | (num >> (32 - by));
   }
 
-  constexpr JenTriplet_(uint32 len, uint32 seed)
+  constexpr JenTriplet_(uint32_t len, uint32_t seed)
       : a(Setup_(len, seed)), b(Setup_(len, seed)), c(Setup_(len, seed)) {}
 
-  constexpr JenTriplet_(uint32 a_, uint32 b_, uint32 c_)
+  constexpr JenTriplet_(uint32_t a_, uint32_t b_, uint32_t c_)
       : a(a_), b(b_), c(c_) {}
 
   constexpr JenTriplet_() : a(), b(), c() {}
@@ -85,32 +84,32 @@ struct JenTriplet_ {
   }
 };
 
-constexpr uint32 JenMutateKey_(std::string_view input, size_t offset) {
-  uint32 ck0 = offset >= input.size() ? 0 : static_cast<uint8>(input[offset++]);
-  uint32 ck1 = offset >= input.size() ? 0 : static_cast<uint8>(input[offset++]);
-  uint32 ck2 = offset >= input.size() ? 0 : static_cast<uint8>(input[offset++]);
-  uint32 ck3 = offset >= input.size() ? 0 : static_cast<uint8>(input[offset++]);
+constexpr uint32_t JenMutateKey_(std::string_view input, size_t offset) {
+  uint32_t ck0 = offset >= input.size() ? 0 : static_cast<uint8_t>(input[offset++]);
+  uint32_t ck1 = offset >= input.size() ? 0 : static_cast<uint8_t>(input[offset++]);
+  uint32_t ck2 = offset >= input.size() ? 0 : static_cast<uint8_t>(input[offset++]);
+  uint32_t ck3 = offset >= input.size() ? 0 : static_cast<uint8_t>(input[offset++]);
   return ck0 | (ck1 << 8) | (ck2 << 16) | (ck3 << 24);
 }
 
-constexpr uint32 JenkinsHash3_(std::string_view input, uint32 seed = 0) {
-  size_t numRKeys = input.size() / sizeof(uint32);
-  if (input.size() % sizeof(uint32)) {
-    numRKeys++;
-  }
-
-  JenTriplet_ cTrip(numRKeys, seed);
+constexpr uint32_t JenkinsHash3_(std::string_view input, uint32_t seed = 0) {
+  JenTriplet_ cTrip(input.size(), seed);
 
   for (size_t k = 0; k < std::max(input.size(), size_t(12)) - 12; k += 12) {
-    uint32 k0 = JenMutateKey_(input, k);
-    uint32 k1 = JenMutateKey_(input, k + 4);
-    uint32 k2 = JenMutateKey_(input, k + 8);
+    uint32_t k0 = JenMutateKey_(input, k);
+    uint32_t k1 = JenMutateKey_(input, k + 4);
+    uint32_t k2 = JenMutateKey_(input, k + 8);
     JenTriplet_ trip(k0, k1, k2);
     cTrip += trip;
     cTrip.Mix();
   }
 
-  size_t lastKeys = input.size() == 12 ? 12 : input.size() % 12;
+  size_t lastKeys = input.size() % 12;
+
+  if (input.size() > 0 && lastKeys == 0) {
+    lastKeys = 12;
+  }
+
   JenTriplet_ lastTrip;
 
   if (lastKeys > 8) {
@@ -139,7 +138,7 @@ struct JenHash3 {
   constexpr JenHash3() : value_() {}
   constexpr JenHash3(JenHash3 &&) = default;
   constexpr JenHash3(const JenHash3 &) = default;
-  constexpr explicit JenHash3(uint32 in) : value_(in) {}
+  constexpr explicit JenHash3(uint32_t in) : value_(in) {}
   template <size_t n>
   constexpr JenHash3(const char (&input)[n])
       : value_(JenkinsHash3_({input, n - 1})) {}
@@ -148,19 +147,19 @@ struct JenHash3 {
   constexpr JenHash3 &operator=(const JenHash3 &) = default;
   constexpr JenHash3 &operator=(JenHash3 &&) = default;
 
-  constexpr operator uint32() const { return value_; }
+  constexpr operator uint32_t() const { return value_; }
 
 private:
-  uint32 value_;
+  uint32_t value_;
 };
 
 static_assert(JenHash3("ahoj") == 0xE915A979, "JenHash3 failed.");
-static_assert(JenHash3("nazdar") == 0xB5CCCEA9, "JenHash3 failed.");
-static_assert(JenHash3("seeyalater") == 0xFDFDC894, "JenHash3 failed.");
-static_assert(JenHash3("A very big thingy") == 0x6C4F45E7, "JenHash3 failed.");
+static_assert(JenHash3("nazdar") == 0xF5FDF04A, "JenHash3 failed.");
+static_assert(JenHash3("seeyalater") == 0xE886430B, "JenHash3 failed.");
+static_assert(JenHash3("A very big thingy") == 0x8C19469A, "JenHash3 failed.");
 
 namespace es::jenhash_literals {
-inline constexpr JenHash3 operator""_jh3(const char *str, size_t len) noexcept {
+constexpr JenHash3 operator""_jh3(const char *str, size_t len) noexcept {
   return JenHash3{{str, len}};
 }
 } // namespace es::jenhash_literals
