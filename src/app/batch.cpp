@@ -205,6 +205,7 @@ void Batch::AddFile(std::string path) {
       auto barData = static_cast<ScanningFoldersBar *>(data);
       barData->Update(numFolders, numFiles, foundFiles);
     };
+    scanner.Clear();
     scanner.Scan(path);
     scanBar->Finish();
     if (keepFinishLines) {
