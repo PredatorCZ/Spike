@@ -22,7 +22,8 @@ struct WAVEGenericHeader {
   uint32 id;
   uint32 chunkSize;
 
-  WAVEGenericHeader(uint32 type, uint32 chSize = 0) : id(type), chunkSize(chSize) {}
+  WAVEGenericHeader(uint32 type, uint32 chSize = 0)
+      : id(type), chunkSize(chSize) {}
 
   WAVEGenericHeader *Next() {
     return reinterpret_cast<WAVEGenericHeader *>(
@@ -105,33 +106,37 @@ struct WAVE_fact : WAVEGenericHeader {
 
 struct WAVE_smpl : WAVEGenericHeader {
   struct SampleLoop {
-    enum Type {
-      TYPE_LOOP_FORWARD,
-      TYPE_LOOP_ALTERNATE,
-      TYPE_LOOP_BACKWARD
-    };
+    enum Type { TYPE_LOOP_FORWARD, TYPE_LOOP_ALTERNATE, TYPE_LOOP_BACKWARD };
 
     uint32 id;
     Type type;
-    uint32 start,
-      end,
-      fraction,
-      playCount;
+    uint32 start;
+    uint32 end;
+    uint32 fraction;
+    uint32 playCount;
   };
 
   static constexpr uint32 ID = CompileFourCC("smpl");
 
-  uint32 manufacturer,
-    product,
-    samplePeriod,
-    MIDIUnityNote,
-    MIDIPitchFraction,
-    SMPTEFormat,
-    SMPTEOffset,
-    numSampleLoops,
-    sampleLoopsSize;
+  uint32 manufacturer;
+  uint32 product;
+  uint32 samplePeriod;
+  uint32 MIDIUnityNote;
+  uint32 MIDIPitchFraction;
+  uint32 SMPTEFormat;
+  uint32 SMPTEOffset;
+  uint32 numSampleLoops;
+  uint32 sampleLoopsSize;
 
-    SampleLoop *GetSampleLoops() {return reinterpret_cast<SampleLoop*>(this + 1);}
+  SampleLoop *GetSampleLoops() {
+    return reinterpret_cast<SampleLoop *>(this + 1);
+  }
+};
+
+struct WAVE_seek : WAVEGenericHeader {
+  static constexpr uint32 ID = CompileFourCC("seek");
+
+  uint32 value;
 };
 
 static inline bool IsValidWaveChunk(const WAVEGenericHeader &hdr) {
@@ -140,6 +145,7 @@ static inline bool IsValidWaveChunk(const WAVEGenericHeader &hdr) {
   case WAVE_data::ID:
   case WAVE_fact::ID:
   case WAVE_smpl::ID:
+  case WAVE_seek::ID:
     return true;
 
   default:
