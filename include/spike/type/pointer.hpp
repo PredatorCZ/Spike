@@ -86,6 +86,10 @@ public:
     return 1;
   }
 
+  void FixupRelative(const char *root) {
+    rawPtr = root + varPtr;
+  }
+
   void Swap();
 };
 
