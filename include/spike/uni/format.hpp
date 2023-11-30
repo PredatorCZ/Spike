@@ -89,18 +89,18 @@ struct FormatDescr {
 
 class FormatCodec {
 public:
-  typedef std::vector<IVector4A16> ivec;
-  typedef std::vector<Vector4A16> fvec;
+  typedef std::vector<mint32x4a16> ivec;
+  typedef std::vector<mreal32x4a16> fvec;
 
   // Samples single integer value
   // exceptions:
   //             runtime_error for incorrect call (format isn't int)
-  virtual void PC_EXTERN GetValue(IVector4A16 &out, const char *input) const;
+  virtual void PC_EXTERN GetValue(mint32x4a16 &out, const char *input) const;
 
   // Samples single float value
   // exceptions:
   //             runtime_error for incorrect call (format is int)
-  virtual void PC_EXTERN GetValue(Vector4A16 &out, const char *input) const;
+  virtual void PC_EXTERN GetValue(mreal32x4a16 &out, const char *input) const;
 
   // Samples an array of values
   // count: if 0, count will be taken from 'out.size()'

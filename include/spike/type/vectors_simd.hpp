@@ -70,10 +70,10 @@ public:
   V4SimdFltType(value_type x, value_type y, value_type z, value_type w) {
     _data = _mm_set_ps(w, z, y, x);
   }
-  V4SimdFltType(const Vector &input, float w) {
+  V4SimdFltType(real32x3 &input, float w) {
     _data = _mm_set_ps(w, input.Z, input.Y, input.X);
   }
-  V4SimdFltType(const Vector4 &input) {
+  V4SimdFltType(real32x4 &input) {
     _data = _mm_set_ps(input.W, input.Z, input.Y, input.X);
   }
 
@@ -141,12 +141,15 @@ public:
 
   operator V4SimdIntType() const;
 
-  template <typename T> V4ScalarType<T> Convert() const {
-    return V4ScalarType<T>(static_cast<T>(X), static_cast<T>(Y),
-                           static_cast<T>(Z), static_cast<T>(W));
+  template <typename T> V4ScalarType<mut<T>> Convert() const {
+    using mtype = mut<T>;
+    return {static_cast<mtype>(X), static_cast<mtype>(Y), static_cast<mtype>(Z),
+            static_cast<mtype>(W)};
   }
 
-  bool operator==(vec_cref input) const { return Compare(input._data, _data) == 0xF; }
+  bool operator==(vec_cref input) const {
+    return Compare(input._data, _data) == 0xF;
+  }
   bool operator!=(vec_cref input) const { return !(*this == input); }
 
   bool operator<(vec_cref input) const {
@@ -156,10 +159,12 @@ public:
     return _mm_movemask_ps(_mm_cmpgt_ps(_data, input._data)) == 0xF;
   }
   bool operator<=(vec_cref input) const {
-    return (_mm_movemask_ps(_mm_cmplt_ps(_data, input._data)) | Compare(_data, input._data)) == 0xF;
+    return (_mm_movemask_ps(_mm_cmplt_ps(_data, input._data)) |
+            Compare(_data, input._data)) == 0xF;
   }
   bool operator>=(vec_cref input) const {
-    return (_mm_movemask_ps(_mm_cmpgt_ps(_data, input._data)) | Compare(_data, input._data)) == 0xF;
+    return (_mm_movemask_ps(_mm_cmpgt_ps(_data, input._data)) |
+            Compare(_data, input._data)) == 0xF;
   }
 
   bool operator<(value_type input) const { return *this < vector(input); }
@@ -212,9 +217,7 @@ public:
     return *this / len;
   }
 
-  vec_ref Normalize() {
-    return *this = Normalized();
-  }
+  vec_ref Normalize() { return *this = Normalized(); }
 
   vector QConjugate() const {
     return *this * vector(-1.0f, -1.0f, -1.0f, 1.0f);
@@ -242,7 +245,8 @@ template <class eType> class alignas(16) V4SimdIntType_t {
   using vec_cref = const vector &;
 
 public:
-  using value_type = eType;
+  using value_type_const = eType;
+  using value_type = mut<eType>;
   using store_type = __m128i;
 
   union {
@@ -326,9 +330,10 @@ public:
   vec_ref operator<<=(value_type input) { return *this = *this << input; }
   vec_ref operator>>=(value_type input) { return *this = *this >> input; }
 
-  template <typename T> V4ScalarType<T> Convert() const {
-    return V4ScalarType<T>(static_cast<T>(X), static_cast<T>(Y),
-                           static_cast<T>(Z), static_cast<T>(W));
+  template <typename T> V4ScalarType<mut<T>> Convert() const {
+    using mtype = mut<T>;
+    return {static_cast<mtype>(X), static_cast<mtype>(Y), static_cast<mtype>(Z),
+            static_cast<mtype>(W)};
   }
 
   bool operator==(vec_cref input) const {

@@ -209,19 +209,19 @@ static const uint32 BF_SBOXES[] = {
 
 class BlowfishContext {
 public:
-  uint32 pboxes[BF_NUMPBOXES];
-  uint32 sboxes[BF_NUMSBOXES];
-  mutable uint64 eVector;
+  muint32 pboxes[BF_NUMPBOXES];
+  muint32 sboxes[BF_NUMSBOXES];
+  mutable muint64 eVector;
 
-  virtual void EncodeBlock(uint64 &block) const;
-  virtual void DecodeBlock(uint64 &block) const;
+  virtual void EncodeBlock(muint64 &block) const;
+  virtual void DecodeBlock(muint64 &block) const;
   virtual ~BlowfishContext() = default;
   void CreateVector();
 };
 
 union BFDataChunk {
-  uint32 d;
-  uint8 b[4];
+  muint32 d;
+  muint8 b[4];
 };
 
 struct BFBlockChunk {
@@ -229,7 +229,7 @@ struct BFBlockChunk {
   BFDataChunk val1;
 };
 
-void BlowfishContext::EncodeBlock(uint64 &block) const {
+void BlowfishContext::EncodeBlock(muint64 &block) const {
   auto &values = reinterpret_cast<BFBlockChunk &>(block);
   BFDataChunk &_val0 = values.val0;
   BFDataChunk &_val1 = values.val1;
@@ -256,7 +256,7 @@ void BlowfishContext::EncodeBlock(uint64 &block) const {
   std::swap(_val0, _val1);
 }
 
-void BlowfishContext::DecodeBlock(uint64 &block) const {
+void BlowfishContext::DecodeBlock(muint64 &block) const {
   auto &values = reinterpret_cast<BFBlockChunk &>(block);
   BFDataChunk &_val0 = values.val0;
   BFDataChunk &_val1 = values.val1;
@@ -284,7 +284,7 @@ void BlowfishContext::DecodeBlock(uint64 &block) const {
 }
 
 void BlowfishContext::CreateVector() {
-  std::uniform_int_distribution<uint64> rd;
+  std::uniform_int_distribution<muint64> rd;
   std::default_random_engine re;
   eVector = rd(re);
 }
@@ -349,7 +349,7 @@ size_t CheckInputs(const char *buffer, size_t size) {
 
 void BlowfishEncoder::EncodeECB(char *buffer, size_t size) const {
   const size_t numblocks = CheckInputs(buffer, size);
-  uint64 *curBuffer = reinterpret_cast<uint64 *>(buffer);
+  muint64 *curBuffer = reinterpret_cast<muint64 *>(buffer);
 
   for (size_t b = 0; b < numblocks; b++) {
     pi->EncodeBlock(curBuffer[b]);
@@ -358,7 +358,7 @@ void BlowfishEncoder::EncodeECB(char *buffer, size_t size) const {
 
 void BlowfishEncoder::DecodeECB(char *buffer, size_t size) const {
   const size_t numblocks = CheckInputs(buffer, size);
-  uint64 *curBuffer = reinterpret_cast<uint64 *>(buffer);
+  muint64 *curBuffer = reinterpret_cast<muint64 *>(buffer);
 
   for (size_t b = 0; b < numblocks; b++) {
     pi->DecodeBlock(curBuffer[b]);
@@ -367,8 +367,8 @@ void BlowfishEncoder::DecodeECB(char *buffer, size_t size) const {
 
 void BlowfishEncoder::EncodeCBC(char *buffer, size_t size) const {
   const size_t numblocks = CheckInputs(buffer, size);
-  uint64 currentVector = pi->eVector;
-  uint64 *curBuffer = reinterpret_cast<uint64 *>(buffer);
+  muint64 currentVector = pi->eVector;
+  muint64 *curBuffer = reinterpret_cast<muint64 *>(buffer);
 
   for (size_t b = 0; b < numblocks; b++) {
     auto &chunk = curBuffer[b];
@@ -380,9 +380,9 @@ void BlowfishEncoder::EncodeCBC(char *buffer, size_t size) const {
 
 void BlowfishEncoder::DecodeCBC(char *buffer, size_t size) const {
   const size_t numblocks = CheckInputs(buffer, size);
-  uint64 currentVector = pi->eVector;
-  uint64 lastVector = 0;
-  uint64 *curBuffer = reinterpret_cast<uint64 *>(buffer);
+  muint64 currentVector = pi->eVector;
+  muint64 lastVector = 0;
+  muint64 *curBuffer = reinterpret_cast<muint64 *>(buffer);
 
   for (size_t b = 0; b < numblocks; b++) {
     auto &chunk = curBuffer[b];
@@ -395,9 +395,9 @@ void BlowfishEncoder::DecodeCBC(char *buffer, size_t size) const {
 
 void BlowfishEncoder::EncodePCBC(char *buffer, size_t size) const {
   const size_t numblocks = CheckInputs(buffer, size);
-  uint64 currentVector = pi->eVector;
-  uint64 lastVector = 0;
-  uint64 *curBuffer = reinterpret_cast<uint64 *>(buffer);
+  muint64 currentVector = pi->eVector;
+  muint64 lastVector = 0;
+  muint64 *curBuffer = reinterpret_cast<muint64 *>(buffer);
 
   for (size_t b = 0; b < numblocks; b++) {
     auto &chunk = curBuffer[b];
@@ -410,9 +410,9 @@ void BlowfishEncoder::EncodePCBC(char *buffer, size_t size) const {
 
 void BlowfishEncoder::DecodePCBC(char *buffer, size_t size) const {
   const size_t numblocks = CheckInputs(buffer, size);
-  uint64 currentVector = pi->eVector;
-  uint64 lastVector = 0;
-  uint64 *curBuffer = reinterpret_cast<uint64 *>(buffer);
+  muint64 currentVector = pi->eVector;
+  muint64 lastVector = 0;
+  muint64 *curBuffer = reinterpret_cast<muint64 *>(buffer);
 
   for (size_t b = 0; b < numblocks; b++) {
     auto &chunk = curBuffer[b];
@@ -425,8 +425,8 @@ void BlowfishEncoder::DecodePCBC(char *buffer, size_t size) const {
 
 void BlowfishEncoder::EncodeCFB(char *buffer, size_t size) const {
   const size_t numblocks = CheckInputs(buffer, size);
-  uint64 currentVector = pi->eVector;
-  uint64 *curBuffer = reinterpret_cast<uint64 *>(buffer);
+  muint64 currentVector = pi->eVector;
+  muint64 *curBuffer = reinterpret_cast<muint64 *>(buffer);
 
   for (size_t b = 0; b < numblocks; b++) {
     auto &chunk = curBuffer[b];
@@ -438,9 +438,9 @@ void BlowfishEncoder::EncodeCFB(char *buffer, size_t size) const {
 
 void BlowfishEncoder::DecodeCFB(char *buffer, size_t size) const {
   const size_t numblocks = CheckInputs(buffer, size);
-  uint64 currentVector = pi->eVector;
-  uint64 lastVector = 0;
-  uint64 *curBuffer = reinterpret_cast<uint64 *>(buffer);
+  muint64 currentVector = pi->eVector;
+  muint64 lastVector = 0;
+  muint64 *curBuffer = reinterpret_cast<muint64 *>(buffer);
 
   for (size_t b = 0; b < numblocks; b++) {
     auto &chunk = curBuffer[b];
@@ -453,9 +453,9 @@ void BlowfishEncoder::DecodeCFB(char *buffer, size_t size) const {
 
 void BlowfishEncoder::EncodeOFB(char *buffer, size_t size) const {
   const size_t numblocks = CheckInputs(buffer, size);
-  uint64 currentVector = pi->eVector;
-  uint64 lastVector = 0;
-  uint64 *curBuffer = reinterpret_cast<uint64 *>(buffer);
+  muint64 currentVector = pi->eVector;
+  muint64 lastVector = 0;
+  muint64 *curBuffer = reinterpret_cast<muint64 *>(buffer);
 
   for (size_t b = 0; b < numblocks; b++) {
     auto &chunk = curBuffer[b];
@@ -468,8 +468,8 @@ void BlowfishEncoder::EncodeOFB(char *buffer, size_t size) const {
 
 void BlowfishEncoder::DecodeOFB(char *buffer, size_t size) const {
   const size_t numblocks = CheckInputs(buffer, size);
-  uint64 currentVector = pi->eVector;
-  uint64 *curBuffer = reinterpret_cast<uint64 *>(buffer);
+  muint64 currentVector = pi->eVector;
+  muint64 *curBuffer = reinterpret_cast<muint64 *>(buffer);
 
   for (size_t b = 0; b < numblocks; b++) {
     auto &chunk = curBuffer[b];
@@ -483,7 +483,7 @@ void BlowfishEncoder::SetKey(std::string_view key) {
     pi->CreateVector();
   }
 
-  uint64 lastblock = 0;
+  muint64 lastblock = 0;
 
   memcpy(pi->sboxes, BF_SBOXES, BF_NUMSBOXES * 4);
   auto inKey = key.data();
@@ -501,13 +501,13 @@ void BlowfishEncoder::SetKey(std::string_view key) {
 
   for (int i = 0; i < BF_NUMPBOXES; i += 2) {
     pi->EncodeBlock(lastblock);
-    pi->pboxes[i] = static_cast<uint32>(lastblock);
+    pi->pboxes[i] = lastblock;
     pi->pboxes[i + 1] = *(reinterpret_cast<uint32 *>(&lastblock) + 1);
   }
 
   for (int i = 0; i < BF_NUMSBOXES; i += 2) {
     pi->EncodeBlock(lastblock);
-    pi->sboxes[i] = static_cast<uint32>(lastblock);
+    pi->sboxes[i] = lastblock;
     pi->sboxes[i + 1] = *(reinterpret_cast<uint32 *>(&lastblock) + 1);
   }
 }
@@ -519,13 +519,13 @@ void BlowfishEncoder::SetKey(std::string_view key) {
 #define _BF_SBKEY(_item, _id) sboxes[(_id * 256) + _item.b[_id]]
 
 class BlowfishContext2 : public BlowfishContext {
-  void EncodeBlock(uint64 &block) const override;
-  void DecodeBlock(uint64 &block) const override;
+  void EncodeBlock(muint64 &block) const override;
+  void DecodeBlock(muint64 &block) const override;
 };
 
 BlowfishEncoder2::BlowfishEncoder2() : BlowfishEncoder(new BlowfishContext2) {}
 
-void BlowfishContext2::EncodeBlock(uint64 &block) const {
+void BlowfishContext2::EncodeBlock(muint64 &block) const {
   auto &values = reinterpret_cast<BFBlockChunk &>(block);
   BFDataChunk &_val0 = values.val0;
   BFDataChunk &_val1 = values.val1;
@@ -552,7 +552,7 @@ void BlowfishContext2::EncodeBlock(uint64 &block) const {
   std::swap(_val0, _val1);
 }
 
-void BlowfishContext2::DecodeBlock(uint64 &block) const {
+void BlowfishContext2::DecodeBlock(muint64 &block) const {
   auto &values = reinterpret_cast<BFBlockChunk &>(block);
   BFDataChunk &_val0 = values.val0;
   BFDataChunk &_val1 = values.val1;
@@ -584,7 +584,7 @@ void BlowfishEncoder2::SetKey(std::string_view key) {
     pi->CreateVector();
   }
 
-  uint64 lastblock = 0;
+  muint64 lastblock = 0;
 
   memcpy(pi->sboxes, BF_SBOXES, BF_NUMSBOXES * 4);
   auto inKey = key.data();
@@ -602,13 +602,13 @@ void BlowfishEncoder2::SetKey(std::string_view key) {
 
   for (int i = 0; i < BF_NUMPBOXES; i += 2) {
     pi->EncodeBlock(lastblock);
-    pi->pboxes[i] = static_cast<uint32>(lastblock);
+    pi->pboxes[i] = lastblock;
     pi->pboxes[i + 1] = *(reinterpret_cast<uint32 *>(&lastblock) + 1);
   }
 
   for (int i = 0; i < BF_NUMSBOXES; i += 2) {
     pi->EncodeBlock(lastblock);
-    pi->sboxes[i] = static_cast<uint32>(lastblock);
+    pi->sboxes[i] = lastblock;
     pi->sboxes[i + 1] = *(reinterpret_cast<uint32 *>(&lastblock) + 1);
   }
 }

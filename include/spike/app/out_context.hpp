@@ -61,7 +61,7 @@ private:
   size_t curFileSize = 0;
   std::string curFileName;
   std::optional<CacheGenerator> cache;
-  std::vector<uint64> fileOffsets;
+  std::vector<muint64> fileOffsets;
   std::unique_ptr<NewTexelContext> texelContext;
   void FinishFile(bool final = false);
 };

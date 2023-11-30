@@ -22,24 +22,24 @@
 namespace es {
 class Matrix44 {
 public:
-  Vector4A16 v[4];
+  mreal32x4a16 v[4];
   PC_EXTERN Matrix44();
-  Matrix44(const Vector4A16 &row1, const Vector4A16 &row2,
-           const Vector4A16 &row3)
+  Matrix44(real32x4a16 &row1, real32x4a16 &row2,
+           real32x4a16 &row3)
       : v{row1, row2, row3, {0, 0, 0, 1}} {}
-  Matrix44(const Vector4A16 &row1, const Vector4A16 &row2,
-           const Vector4A16 &row3, const Vector4A16 &row4)
+  Matrix44(real32x4a16 &row1, real32x4a16 &row2,
+           real32x4a16 &row3, real32x4a16 &row4)
       : v{row1, row2, row3, row4} {}
-  PC_EXTERN Matrix44(const Vector4A16 &quat);
-  Matrix44(const Vector4A16 *rows) : v{rows[0], rows[1], rows[2], rows[3]} {}
+  PC_EXTERN Matrix44(real32x4a16 &quat);
+  Matrix44(real32x4a16 *rows) : v{rows[0], rows[1], rows[2], rows[3]} {}
 
   void PC_EXTERN MakeIdentity();
-  void PC_EXTERN Decompose(Vector4A16 &position, Vector4A16 &rotation,
-                           Vector4A16 &scale) const;
-  void PC_EXTERN Compose(const Vector4A16 &position, const Vector4A16 &rotation,
-                         const Vector4A16 &scale);
-  void PC_EXTERN FromQuat(const Vector4A16 &q);
-  Vector4A16 PC_EXTERN ToQuat() const;
+  void PC_EXTERN Decompose(mreal32x4a16 &position, mreal32x4a16 &rotation,
+                           mreal32x4a16 &scale) const;
+  void PC_EXTERN Compose(real32x4a16 &position, real32x4a16 &rotation,
+                         real32x4a16 &scale);
+  void PC_EXTERN FromQuat(real32x4a16 &q);
+  real32x4a16 PC_EXTERN ToQuat() const;
   // Transpose 3x3
   void PC_EXTERN Transpose();
   // Transpose 4x4
@@ -47,20 +47,20 @@ public:
 
   Matrix44 &operator*=(const Matrix44 &right) { return *this = *this * right; }
 
-  const Vector4A16 &operator[](size_t index) const { return v[index]; }
-  Vector4A16 &operator[](size_t index) { return v[index]; }
+  real32x4a16 &operator[](size_t index) const { return v[index]; }
+  mreal32x4a16 &operator[](size_t index) { return v[index]; }
 
-  const Vector4A16 &r1() const { return v[0]; }
-  const Vector4A16 &r2() const { return v[1]; }
-  const Vector4A16 &r3() const { return v[2]; }
-  const Vector4A16 &r4() const { return v[3]; }
-  Vector4A16 &r1() { return v[0]; }
-  Vector4A16 &r2() { return v[1]; }
-  Vector4A16 &r3() { return v[2]; }
-  Vector4A16 &r4() { return v[3]; }
+  real32x4a16 &r1() const { return v[0]; }
+  real32x4a16 &r2() const { return v[1]; }
+  real32x4a16 &r3() const { return v[2]; }
+  real32x4a16 &r4() const { return v[3]; }
+  mreal32x4a16 &r1() { return v[0]; }
+  mreal32x4a16 &r2() { return v[1]; }
+  mreal32x4a16 &r3() { return v[2]; }
+  mreal32x4a16 &r4() { return v[3]; }
 
   Matrix44 PC_EXTERN operator*(const Matrix44 &right) const;
-  friend Vector4A16 PC_EXTERN operator*(const Vector4A16 &point,
+  friend real32x4a16 PC_EXTERN operator*(real32x4a16 &point,
                                         const Matrix44 &mtx);
   Matrix44 PC_EXTERN operator-() const;
 

@@ -26,7 +26,7 @@ using namespace uni;
 // Huge gamble, but there is no better way. (for C++14)
 // TODO: maybe use std::any for C++17
 class variant {
-  mutable uint64 vtdata;
+  mutable muint64 vtdata;
 
 public:
   template <FormatType ftype, DataType dtype>
@@ -80,11 +80,11 @@ static const std::unordered_map<FormatDescr, variant> registry = {
     MakePair<FormatType::UFLOAT, DataType::R11G11B10>(),
 };
 
-void FormatCodec::GetValue(IVector4A16 &, const char *) const {
+void FormatCodec::GetValue(mint32x4a16 &, const char *) const {
   throw std::runtime_error("Invalid call for uni::format codec!");
 }
 
-void FormatCodec::GetValue(Vector4A16 &, const char *) const {
+void FormatCodec::GetValue(mreal32x4a16 &, const char *) const {
   throw std::runtime_error("Invalid call for uni::format codec!");
 }
 

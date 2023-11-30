@@ -22,11 +22,11 @@
 
 struct Fixups {
   struct Fixup {
-    uint32 ptr, destination;
+    muint32 ptr, destination;
   };
 
   std::vector<Fixup> fixups;
-  uint32 fixupIter = 0;
+  muint32 fixupIter = 0;
   BinWritterRef ref;
 
   Fixups(BinWritterRef _ref) : ref(_ref){};
@@ -56,7 +56,7 @@ struct ReflectorIOHeader {
   static constexpr uint32 ID = CompileFourCC("RFDB");
   static constexpr uint32 VERSION = 3000;
 
-  uint32 id, version, numClasses, numEnums, enumsOffset, bufferSize;
+  muint32 id, version, numClasses, numEnums, enumsOffset, bufferSize;
 
   ReflectorIOHeader() : id(ID), version(VERSION) {}
 };
@@ -86,7 +86,7 @@ struct reflectorStatic_io {
     if (typeAliases) {
       auto castedBase = reinterpret_cast<uintptr_t *>(typeAliases);
       auto casted = &*castedBase;
-      for (uint32 i = 0; i < nTypes; i++) {
+      for (muint32 i = 0; i < nTypes; i++) {
         if (casted[i]) {
           casted[i] += base;
         }
@@ -96,7 +96,7 @@ struct reflectorStatic_io {
     if (typeNames) {
       auto castedBase = reinterpret_cast<uintptr_t *>(typeNames);
       auto casted = &*castedBase;
-      for (uint32 i = 0; i < nTypes; i++) {
+      for (muint32 i = 0; i < nTypes; i++) {
         if (casted[i]) {
           casted[i] += base;
         }
@@ -111,7 +111,7 @@ struct reflectorStatic_io {
 
       auto casted = reinterpret_cast<Desc *>(typeDescs);
 
-      for (uint32 t = 0; t < nTypes; t++) {
+      for (muint32 t = 0; t < nTypes; t++) {
         auto &item = casted[t];
         fixupmore(item.data1, item.data2);
       }
@@ -143,7 +143,7 @@ struct ReflectedEnum_io {
     if (names) {
       auto castedBase = reinterpret_cast<uintptr_t *>(names);
       auto casted = &*castedBase;
-      for (uint32 i = 0; i < numMembers; i++) {
+      for (muint32 i = 0; i < numMembers; i++) {
         if (casted[i]) {
           casted[i] += base;
         }
@@ -153,7 +153,7 @@ struct ReflectedEnum_io {
     if (descriptions) {
       auto castedBase = reinterpret_cast<uintptr_t *>(descriptions);
       auto casted = &*castedBase;
-      for (uint32 i = 0; i < numMembers; i++) {
+      for (muint32 i = 0; i < numMembers; i++) {
         if (casted[i]) {
           casted[i] += base;
         }
@@ -183,7 +183,7 @@ int ReflectorIO::Load(BinReaderRef rd) {
       reinterpret_cast<reflectorStatic_io *>(&data[0]);
   const uintptr_t bufferStart = reinterpret_cast<uintptr_t>(classesStart);
 
-  for (uint32 c = 0; c < hdr.numClasses; c++) {
+  for (muint32 c = 0; c < hdr.numClasses; c++) {
     classesStart[c].Fixup(bufferStart);
 
     classes.push_back(
@@ -193,7 +193,7 @@ int ReflectorIO::Load(BinReaderRef rd) {
   ReflectedEnum_io *enumsIter =
       reinterpret_cast<ReflectedEnum_io *>(&data[0] + hdr.enumsOffset);
 
-  for (uint32 c = 0; c < hdr.numEnums; c++) {
+  for (muint32 c = 0; c < hdr.numEnums; c++) {
     enumsIter[c].Fixup(bufferStart);
     enums.push_back(reinterpret_cast<const ReflectedEnum *>(enumsIter + c));
   }
@@ -255,7 +255,7 @@ int ReflectorIO::Save(BinWritterRef wr) {
   for (auto i : classes) {
     itemFixups.FixupDestination();
 
-    for (uint32 r = 0; r < i->nTypes; r++) {
+    for (muint32 r = 0; r < i->nTypes; r++) {
       wr.Write(i->types[r]);
     }
   }
@@ -264,7 +264,7 @@ int ReflectorIO::Save(BinWritterRef wr) {
     if (i->typeAliasHashes) {
       aliasHashesFixups.FixupDestination();
 
-      for (uint32 r = 0; r < i->nTypes; r++) {
+      for (muint32 r = 0; r < i->nTypes; r++) {
         wr.Write(i->typeAliasHashes[r]);
       }
     }
@@ -275,7 +275,7 @@ int ReflectorIO::Save(BinWritterRef wr) {
       wr.ApplyPadding(8);
       itemStringsFixups.FixupDestination();
 
-      for (uint32 r = 0; r < i->nTypes; r++) {
+      for (muint32 r = 0; r < i->nTypes; r++) {
         if (i->typeNames[r]) {
           itemStringsFixups.AddPointer();
         }
@@ -289,7 +289,7 @@ int ReflectorIO::Save(BinWritterRef wr) {
       wr.ApplyPadding(8);
       aliasesFixups.FixupDestination();
 
-      for (uint32 r = 0; r < i->nTypes; r++) {
+      for (muint32 r = 0; r < i->nTypes; r++) {
         if (i->typeAliases[r]) {
           aliasesFixups.AddPointer();
         }
@@ -302,7 +302,7 @@ int ReflectorIO::Save(BinWritterRef wr) {
     if (i->typeDescs) {
       descsFixups.FixupDestination();
 
-      for (uint32 r = 0; r < i->nTypes; r++) {
+      for (muint32 r = 0; r < i->nTypes; r++) {
         if (i->typeDescs[r].part1) {
           descsFixups.AddPointer();
         }
@@ -320,7 +320,7 @@ int ReflectorIO::Save(BinWritterRef wr) {
 
   for (auto i : classes) {
     if (i->typeNames) {
-      for (uint32 r = 0; r < i->nTypes; r++) {
+      for (muint32 r = 0; r < i->nTypes; r++) {
         if (i->typeNames[r]) {
           itemStringsFixups.FixupDestination();
           wr.WriteT(i->typeNames[r]);
@@ -329,7 +329,7 @@ int ReflectorIO::Save(BinWritterRef wr) {
     }
 
     if (i->typeAliases) {
-      for (uint32 r = 0; r < i->nTypes; r++) {
+      for (muint32 r = 0; r < i->nTypes; r++) {
         if (!i->typeAliases[r]) {
           continue;
         }
@@ -340,7 +340,7 @@ int ReflectorIO::Save(BinWritterRef wr) {
     }
 
     if (i->typeDescs) {
-      for (uint32 r = 0; r < i->nTypes; r++) {
+      for (muint32 r = 0; r < i->nTypes; r++) {
         if (i->typeDescs[r].part1) {
           descsFixups.FixupDestination();
           wr.WriteT(i->typeDescs[r].part1);
@@ -481,7 +481,7 @@ static int WriteDataItem(const Reflector &ri, BinWritterRef wr,
   case REFType::Array:
   case REFType::ArrayClass:
   case REFType::Vector: {
-    for (uint32 i = 0; i < type.asArray.numItems; i++) {
+    for (muint32 i = 0; i < type.asArray.numItems; i++) {
       if (WriteDataItem(ri, wr, objAddr + (type.asArray.stride * i),
                         type.asArray, type.index, i))
         return 2;
@@ -582,7 +582,7 @@ static int LoadDataItem(Reflector &ri, BinReaderRef rd, char *objAddr,
   case REFType::Array:
   case REFType::ArrayClass:
   case REFType::Vector: {
-    for (uint32 i = 0; i < type.asArray.numItems; i++) {
+    for (muint32 i = 0; i < type.asArray.numItems; i++) {
       if (LoadDataItem(ri, rd, objAddr + (type.asArray.stride * i),
                        type.asArray, type.index, i))
         return 2;
@@ -625,7 +625,7 @@ static int LoadClass(ReflectedInstanceFriend inst, BinReaderRef rd) {
 
   int errType = 0;
 
-  for (uint32 i = 0; i < numItems; i++) {
+  for (muint32 i = 0; i < numItems; i++) {
     BinReaderRef rf(rd);
     JenHash valueNameHash;
     buint128 valueChunkSize;

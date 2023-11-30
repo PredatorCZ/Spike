@@ -20,7 +20,7 @@
 #include "spike/io/binwritter_stream.hpp"
 
 struct bint128 {
-  int64 value;
+  mint64 value;
 
   bint128(int64 in) : value(in) {}
   bint128() : value(0) {}
@@ -30,7 +30,7 @@ struct bint128 {
   int64 Read(BinReaderRef rd) {
     value = 0;
     for (size_t id = 0; id < 9; id++) {
-      uint8 cNum;
+      muint8 cNum;
       rd.Read(cNum);
 
       if (id < 8) {
@@ -56,8 +56,8 @@ struct bint128 {
     // there shouldn't be a sign flag for values lower than
     // -72'057'594'037'927'936
     bool sign = value < 0 && !(~(value >> 56));
-    uint64 valueCopy = sign ? ~value : value;
-    uint8 lastValue = 0;
+    muint64 valueCopy = sign ? ~value : value;
+    muint8 lastValue = 0;
     size_t lastIndex = 0;
 
     while (true) {
@@ -87,7 +87,7 @@ struct bint128 {
 };
 
 struct buint128 {
-  uint64 value;
+  muint64 value;
 
   buint128(uint64 in) : value(in) {}
   buint128() : value(0) {}
@@ -97,7 +97,7 @@ struct buint128 {
   uint64 Read(BinReaderRef rd) {
     value = 0;
     for (size_t id = 0; id < 9; id++) {
-      uint8 cNum;
+      muint8 cNum;
       rd.Read(cNum);
 
       if (id == 8) {
@@ -115,7 +115,7 @@ struct buint128 {
   }
 
   void Write(BinWritterRef wr) const {
-    uint64 valueCopy = value;
+    muint64 valueCopy = value;
     size_t index = 0;
 
     while (true) {

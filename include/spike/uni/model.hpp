@@ -23,8 +23,8 @@
 namespace uni {
 struct RTSValue;
 struct BBOX {
-  Vector4A16 min;
-  Vector4A16 max;
+  real32x4a16 min;
+  real32x4a16 max;
 };
 
 class PrimitiveDescriptor : public Base {

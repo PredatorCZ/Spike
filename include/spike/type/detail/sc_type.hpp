@@ -16,16 +16,52 @@
 */
 
 #pragma once
+#include <stdint.h>
 
-typedef unsigned long long uint64;
-typedef unsigned int uint32;
-typedef unsigned short uint16;
-typedef unsigned char uint8;
+using muint64 = uint64_t;
+using muint32 = uint32_t;
+using muint16 = uint16_t;
+using muint8 = uint8_t;
 
-typedef long long int64;
-typedef int int32;
-typedef short int16;
-typedef char int8;
+using mint64 = int64_t;
+using mint32 = int32_t;
+using mint16 = int16_t;
+using mint8 = int8_t;
+
+using mreal32 = float;
+using mreal64 = double;
+
+using mintmax = intmax_t;
+using msize = uintmax_t;
+
+using uint64 = const uint64_t;
+using uint32 = const uint32_t;
+using uint16 = const uint16_t;
+using uint8 = const uint8_t;
+
+using int64 = const int64_t;
+using int32 = const int32_t;
+using int16 = const int16_t;
+using int8 = const int8_t;
+
+using real32 = const float;
+using real64 = const double;
+
+using intmax = const intmax_t;
+using size = const uintmax_t;
+
+using bytes = const char *;
+using mbytes = char *;
+
+template <class C> struct rm_const_ {
+  using type = C;
+};
+
+template <class C> struct rm_const_<const C> {
+  using type = C;
+};
+
+template <class C> using mut = rm_const_<C>::type;
 
 static_assert(sizeof(uint64) == 8, "Unexpected integer size!");
 static_assert(sizeof(uint32) == 4, "Unexpected integer size!");

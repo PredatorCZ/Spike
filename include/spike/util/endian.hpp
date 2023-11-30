@@ -25,16 +25,16 @@ namespace {
 
 template <class C> C _fbswap(C);
 
-template <> constexpr uint16 _fbswap(uint16 input) {
+template <> constexpr muint16 _fbswap(muint16 input) {
   return ((input & 0xFF) << 8) | ((input & 0xFF00) >> 8);
 }
 
-template <> constexpr uint32 _fbswap(uint32 input) {
+template <> constexpr muint32 _fbswap(muint32 input) {
   return ((input & 0xFFU) << 24) | ((input & 0xFF00U) << 8) |
          ((input & 0xFF0000U) >> 8) | ((input & 0xFF000000U) >> 24);
 }
 
-template <> constexpr uint64 _fbswap(uint64 input) {
+template <> constexpr muint64 _fbswap(muint64 input) {
   return ((input & 0xFFULL) << 56) | ((input & 0xFF00ULL) << 40) |
          ((input & 0xFF0000ULL) << 24) | ((input & 0xFF000000ULL) << 8) |
          ((input & 0xFF00000000ULL) >> 8) |
@@ -43,14 +43,14 @@ template <> constexpr uint64 _fbswap(uint64 input) {
          ((input & 0xFF00000000000000ULL) >> 56);
 }
 
-static_assert(_fbswap<uint16>(0xabcd) == 0xcdab);
-static_assert(_fbswap<uint32>(0x89abcdef) == 0xefcdab89);
-static_assert(_fbswap<uint64>(0x0123456789abcdef) == 0xefcdab8967452301);
+static_assert(_fbswap<muint16>(0xabcd) == 0xcdab);
+static_assert(_fbswap<muint32>(0x89abcdef) == 0xefcdab89);
+static_assert(_fbswap<muint64>(0x0123456789abcdef) == 0xefcdab8967452301);
 } // namespace
 
 template <IsSwapableArith C> void FByteswapper(C &input, bool) {
-  auto rType = _fbswap(
-      reinterpret_cast<typename es::TypeFromSize<sizeof(C)>::type &>(input));
+  using MType = typename es::TypeFromSize<sizeof(C)>::type;
+  auto rType = _fbswap(reinterpret_cast<MType &>(input));
   memcpy(reinterpret_cast<char *>(&input), &rType, sizeof(input));
 }
 

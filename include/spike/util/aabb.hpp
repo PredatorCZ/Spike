@@ -19,16 +19,16 @@
 #include "spike/type/vectors_simd.hpp"
 
 struct AABBResult {
-  Vector4A16 max;
-  Vector4A16 min;
-  Vector4A16 center;
+  mreal32x4a16 max;
+  mreal32x4a16 min;
+  mreal32x4a16 center;
 };
 
 template <class C> AABBResult GetAABB(const C &points) {
-  Vector4A16 max(-INFINITY), min(INFINITY), center;
+  mreal32x4a16 max(-INFINITY), min(INFINITY), center;
   for (auto &p : points) {
-    max = Vector4A16(_mm_max_ps(max._data, p._data));
-    min = Vector4A16(_mm_min_ps(min._data, p._data));
+    max = real32x4a16(_mm_max_ps(max._data, p._data));
+    min = real32x4a16(_mm_min_ps(min._data, p._data));
   }
   center = (max + min) * 0.5f;
 

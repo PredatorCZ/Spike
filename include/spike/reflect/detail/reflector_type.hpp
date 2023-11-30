@@ -24,22 +24,22 @@
 struct ReflType;
 
 struct ReflTypeFloat {
-  uint8 mantissa;
-  uint8 exponent;
-  uint8 sign : 1;
-  uint8 customFormat : 1;
+  muint8 mantissa;
+  muint8 exponent;
+  muint8 sign : 1;
+  muint8 customFormat : 1;
 };
 
 static_assert(sizeof(ReflTypeFloat) <= 16);
 
 struct ReflTypeClass {
-  uint32 typeHash;
+  muint32 typeHash;
 };
 
 struct ReflTypeArrayBase {
-  uint16 stride;
+  muint16 stride;
   REFType type;
-  uint8 numItems;
+  muint8 numItems;
 };
 
 struct ReflTypeVector : ReflTypeArrayBase {
@@ -58,7 +58,7 @@ static_assert(sizeof(ReflTypeBitField) <= 16);
 
 struct ReflTypeArray : ReflTypeArrayBase {
   union {
-    uint32 raw[2];
+    muint32 raw[2];
     ReflTypeVector asVector;
     ReflTypeBitField asBitfield;
     ReflTypeFloat asFloat;
@@ -72,19 +72,19 @@ static_assert(sizeof(ReflTypeArray) <= 16);
 
 struct ReflType {
   REFType type;
-  uint8 index;
+  muint8 index;
   union {
-    uint16 offset;
+    muint16 offset;
     struct {
-      uint8 position;
-      uint8 size;
+      muint8 position;
+      muint8 size;
     } bit;
   };
   JenHash valueNameHash;
-  uint16 size;
+  muint16 size;
 
   union {
-    uint32 raw[3]{};
+    muint32 raw[3]{};
     ReflTypeVector asVector;
     ReflTypeBitField asBitfield;
     ReflTypeFloat asFloat;

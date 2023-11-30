@@ -75,7 +75,7 @@ public:
   // input -> must have resize(), operator[], value_type, begin(), end()
   template <class _countType = uint32, class _containerClass>
   void ReadContainer(_containerClass &input) const {
-    _countType numElements;
+    mut<_countType> numElements;
     Read(numElements);
     ReadContainer(input, numElements);
   }

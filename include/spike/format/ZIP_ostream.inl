@@ -55,7 +55,7 @@ inline void ZIP64CentralDirLocator::Write(BinWritterRef wr) const {
 inline void ZIP64Extra::Write(BinWritterRef wr) const {
   wr.Write(id);
   wr.Push();
-  uint16 size = 0;
+  muint16 size = 0;
   wr.Write(size);
 
   if (uncompressedSize) {

@@ -38,7 +38,7 @@ FileType_e FileType(const std::string &path) {
 
 namespace es {
 MappedFile::MappedFile(const std::string &path, size_t allocSize) {
-  uint32 mapFlags = PROT_READ;
+  muint32 mapFlags = PROT_READ;
   if (allocSize) {
     mapFlags |= PROT_WRITE;
     fd = open(path.c_str(), O_RDWR | O_CREAT,

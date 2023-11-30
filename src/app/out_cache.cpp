@@ -40,7 +40,7 @@ struct StringSlider {
 
 private:
   std::vector<std::thread> workingThreads;
-  std::map<std::thread::id, int64> threadResults;
+  std::map<std::thread::id, mint64> threadResults;
   struct SearchArgs {
     size_t chunkBegin;
     size_t splitPoint;
@@ -52,9 +52,9 @@ private:
 
   // All threads finished searching, notify main thread and resume ready state
   struct {
-    std::map<std::thread::id, int64> *threadResults;
+    std::map<std::thread::id, mint64> *threadResults;
     std::atomic_bool *finishedSearch;
-    int64 *resultOffset;
+    mint64 *resultOffset;
     void operator()() noexcept {
       // PrintInfo("Processing worker data");
       *resultOffset = -1;
@@ -89,7 +89,7 @@ private:
   std::atomic_bool finishedSearch;
   std::atomic_bool runWorkers;
 
-  int64 resultOffset = -1;
+  mint64 resultOffset = -1;
 
   std::atomic_bool &allowThreads;
   bool doMetrics = false;
@@ -129,7 +129,7 @@ public:
           }
 
           auto found = std::search(item.begin(), item.end(), *args.searcher);
-          int64 offset = -1;
+          mint64 offset = -1;
 
           if (found != item.end()) {
             offset =
@@ -436,8 +436,8 @@ struct CacheGeneratorImpl {
       progress->ItemCount(totalCache.size() + levels.size());
     }
 
-    const int32 entriesOffset = (wr.Tell() - ENTRIES_OFFSET) / 4;
-    int32 rootOffset;
+    int32 entriesOffset = (wr.Tell() - ENTRIES_OFFSET) / 4;
+    mint32 rootOffset;
 
     for (auto &f : totalCache) {
       f.Write(wr);
@@ -449,7 +449,7 @@ struct CacheGeneratorImpl {
     {
       std::vector<size_t> childrenOffsets;
 
-      for (int64 l = levels.size() - 1; l >= 0; l--) {
+      for (mint64 l = levels.size() - 1; l >= 0; l--) {
         if (progress) {
           (*progress)++;
         }

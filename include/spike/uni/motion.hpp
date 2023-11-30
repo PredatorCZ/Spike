@@ -43,7 +43,7 @@ public:
   virtual size_t BoneIndex() const = 0;
   virtual void GetValue(RTSValue &output, float time) const;
   virtual void GetValue(es::Matrix44 &output, float time) const;
-  virtual void GetValue(Vector4A16 &output, float time) const;
+  virtual void GetValue(mreal32x4a16 &output, float time) const;
   virtual void GetValue(float &output, float time) const;
 };
 

@@ -53,7 +53,7 @@ struct MappedFile {
   size_t mappedSize = 0;
   size_t fileSize = 0;
   union {
-    int64 fd = -1;
+    mint64 fd = -1;
     void *hdl;
   };
 

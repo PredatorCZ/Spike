@@ -35,7 +35,7 @@ static_assert(atohLUT[uint8('A')] == 10);
 static_assert(atohLUT[uint8('F')] == 15);
 
 template <size_t n> constexpr uint32 CompileFourCC(const char (&input)[n]) {
-  uint32 retVal = 0;
+  muint32 retVal = 0;
   for (size_t i = 0; i < sizeof(retVal); i++) {
     const uint32 tmp = input[i];
     retVal |= tmp << (8 * i);

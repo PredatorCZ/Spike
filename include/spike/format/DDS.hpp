@@ -223,15 +223,15 @@ struct DDS_Header {
     Flags_Depth = 23,
   };
 
-  uint32 magic = ID;
-  uint32 size = HEADER_SIZE;
+  muint32 magic = ID;
+  muint32 size = HEADER_SIZE;
   es::Flags<Flags> flags{Flags_Caps, Flags_Height, Flags_Width,
                          Flags_PixelFormat};
-  uint32 height, width;
-  uint32 pitchOrLinearSize = 0;
-  uint32 depth = 1;
-  uint32 mipMapCount = 0;
-  uint32 reserved00[11]{};
+  muint32 height, width;
+  muint32 pitchOrLinearSize = 0;
+  muint32 depth = 1;
+  muint32 mipMapCount = 0;
+  muint32 reserved00[11]{};
 };
 
 struct DDS_HeaderEnd {
@@ -254,9 +254,9 @@ struct DDS_HeaderEnd {
 
   es::Flags<Caps00Flags> caps00{Caps00Flags_Texture};
   es::Flags<Caps01Flags> caps01;
-  uint32 caps02 = 0;
-  uint32 caps03 = 0;
-  uint32 reserved01 = 0;
+  muint32 caps02 = 0;
+  muint32 caps03 = 0;
+  muint32 reserved01 = 0;
 };
 
 struct DDS_PixelFormat {
@@ -275,14 +275,14 @@ struct DDS_PixelFormat {
 
   typedef es::Flags<PFFlags> FlagsType;
 
-  uint32 pfSize = PIXELFORMAT_SIZE;
+  muint32 pfSize = PIXELFORMAT_SIZE;
   FlagsType pfFlags;
-  uint32 fourCC = 0;
-  uint32 bpp = 0;
-  uint32 RBitMask = 0;
-  uint32 GBitMask = 0;
-  uint32 BBitMask = 0;
-  uint32 ABitMask = 0;
+  muint32 fourCC = 0;
+  muint32 bpp = 0;
+  muint32 RBitMask = 0;
+  muint32 GBitMask = 0;
+  muint32 BBitMask = 0;
+  muint32 ABitMask = 0;
 
   constexpr DDS_PixelFormat() = default;
   constexpr DDS_PixelFormat(const int _fourCC, uint32 _bpp)
@@ -384,7 +384,7 @@ struct DDS_HeaderDX10 {
   DXGI_FORMAT dxgiFormat = DXGI_FORMAT_UNKNOWN;
   Dimension dimension = Dimension_2D;
   es::Flags<MiscFlag> miscFlag;
-  uint32 arraySize = 1;
+  muint32 arraySize = 1;
   AlphaMode alphaMode = AlphaMode_Unknown;
 
   DDS_HeaderDX10() = default;
@@ -462,17 +462,17 @@ struct DDS : DDS_Header, DDS_PixelFormat, DDS_HeaderEnd, DDS_HeaderDX10 {
   struct Mips {
     static const uint32 maxMips = 15;
     // Size of one 2D plane
-    uint32 sizes[maxMips];
+    muint32 sizes[maxMips];
 
     // Offset for mipmap
-    uint32 offsets[maxMips];
+    muint32 offsets[maxMips];
 
     // Number of 2D planes within single mipmap
     // Used for volumetrics
-    uint16 numSlices[maxMips];
+    muint16 numSlices[maxMips];
 
     // Total size of mipmap chain
-    uint32 frameStride;
+    muint32 frameStride;
   };
 
   uint32 ComputeBufferSize(Mips &dOut) const {
@@ -480,11 +480,11 @@ struct DDS : DDS_Header, DDS_PixelFormat, DDS_HeaderEnd, DDS_HeaderDX10 {
       return 0;
 
     uint32 _mipCount = mipMapCount ? mipMapCount : 1;
-    uint32 _width = width;
-    uint32 _height = height;
-    uint32 _depth = 1;
+    muint32 _width = width;
+    muint32 _height = height;
+    muint32 _depth = 1;
     uint32 _arraySize = std::max(arraySize, 1U);
-    uint32 _numFaces = 0;
+    muint32 _numFaces = 0;
 
     if (caps01 == Caps01Flags_CubeMap) {
       if (caps01 == Caps01Flags_CubeMap_NegativeX) {
@@ -511,7 +511,7 @@ struct DDS : DDS_Header, DDS_PixelFormat, DDS_HeaderEnd, DDS_HeaderDX10 {
 
     _numFaces = std::max(1U, _numFaces);
 
-    uint32 fullBuffer = 0;
+    muint32 fullBuffer = 0;
     bool useBlockCompression = false;
 
     switch (fourCC) {
@@ -555,9 +555,9 @@ struct DDS : DDS_Header, DDS_PixelFormat, DDS_HeaderEnd, DDS_HeaderDX10 {
       break;
     }
 
-    for (uint32 m = 0; m < _mipCount; m++) {
-      uint32 __width = _width;
-      uint32 __height = _height;
+    for (muint32 m = 0; m < _mipCount; m++) {
+      muint32 __width = _width;
+      muint32 __height = _height;
 
       if (useBlockCompression) {
         __width = std::max(__width, 4U);

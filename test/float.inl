@@ -16,7 +16,7 @@ int test_float_00() {
   TEST_CHECK(std::isnan(float16_codec::ToFloat(num3)));
   TEST_EQUAL(float16_codec::ToFloat(num4), -851.5f);
 
-  const Vector4A16 rst =
+  real32x4a16 rst =
       float16_codec::ToVector4(IVector4A16(num0, num1, num2, num4));
 
   TEST_EQUAL(rst.X, 851.5f);

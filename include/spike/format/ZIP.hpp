@@ -73,38 +73,38 @@ using ZIPLocalFlags = es::Flags<ZIPLocalFlag>;
 
 union ZIPDataDescriptor {
   struct {
-    uint32 id;
-    uint32 crc;
-    uint32 compressedSize;
-    uint32 uncompressedSize;
+    muint32 id;
+    muint32 crc;
+    muint32 compressedSize;
+    muint32 uncompressedSize;
   } sig;
   struct {
-    uint32 crc;
-    uint32 compressedSize;
-    uint32 uncompressedSize;
+    muint32 crc;
+    muint32 compressedSize;
+    muint32 uncompressedSize;
   } noSig;
 };
 
 struct ZIPExtraData {
   static constexpr uint32 ID = CompileFourCC("PK\x06\x08");
-  uint32 id;
-  uint32 dataSize;
+  muint32 id;
+  muint32 dataSize;
 };
 
 struct ZIPLocalFile {
   static constexpr uint32 ID = CompileFourCC("PK\x03\x04");
-  uint32 id;
-  uint16 extractVersion;
+  muint32 id;
+  muint16 extractVersion;
   ZIPLocalFlags flags;
   ZIPCompressionMethod compression;
-  uint16 lastModFileTime;
-  uint16 lastModFileDate;
-  uint16 _pad;
-  uint32 crc;
-  uint32 compressedSize;
-  uint32 uncompressedSize;
-  uint16 fileNameSize;
-  uint16 extraFieldSize;
+  muint16 lastModFileTime;
+  muint16 lastModFileDate;
+  muint16 _pad;
+  muint32 crc;
+  muint32 compressedSize;
+  muint32 uncompressedSize;
+  muint16 fileNameSize;
+  muint16 extraFieldSize;
 
   void Read(BinReaderRef rd);
   void Write(BinWritterRef wr) const;
@@ -112,23 +112,23 @@ struct ZIPLocalFile {
 
 struct ZIPFile {
   static constexpr uint32 ID = CompileFourCC("PK\x01\x02");
-  uint32 id;
-  uint16 madeBy;
-  uint16 extractVersion;
+  muint32 id;
+  muint16 madeBy;
+  muint16 extractVersion;
   ZIPLocalFlags flags;
   ZIPCompressionMethod compression;
-  uint16 lastModFileTime;
-  uint16 lastModFileDate;
-  uint32 crc;
-  uint32 compressedSize;
-  uint32 uncompressedSize;
-  uint16 fileNameSize;
-  uint16 extraFieldSize;
-  uint16 fileCommentSize;
-  uint16 diskNumberStart;
-  uint16 internalFileAttrs;
-  uint32 externalFileAttrs;
-  uint32 localHeaderOffset;
+  muint16 lastModFileTime;
+  muint16 lastModFileDate;
+  muint32 crc;
+  muint32 compressedSize;
+  muint32 uncompressedSize;
+  muint16 fileNameSize;
+  muint16 extraFieldSize;
+  muint16 fileCommentSize;
+  muint16 diskNumberStart;
+  muint16 internalFileAttrs;
+  muint32 externalFileAttrs;
+  muint32 localHeaderOffset;
 
   void Read(BinReaderRef rd);
   void Write(BinWritterRef wr) const;
@@ -136,8 +136,8 @@ struct ZIPFile {
 
 struct ZIPSignature {
   static constexpr uint32 ID = CompileFourCC("PK\x05\x05");
-  uint32 id;
-  uint16 dataSize;
+  muint32 id;
+  muint16 dataSize;
 
   void Read(BinReaderRef rd);
   void Write(BinWritterRef wr) const;
@@ -145,14 +145,14 @@ struct ZIPSignature {
 
 struct ZIPCentralDir {
   static constexpr uint32 ID = CompileFourCC("PK\x05\x06");
-  uint32 id;
-  uint16 diskNumber;
-  uint16 startDiskNumber;
-  uint16 numDiskEntries;
-  uint16 numDirEntries;
-  uint32 dirSize;
-  uint32 dirOffset;
-  uint16 commentSize;
+  muint32 id;
+  muint16 diskNumber;
+  muint16 startDiskNumber;
+  muint16 numDiskEntries;
+  muint16 numDirEntries;
+  muint32 dirSize;
+  muint32 dirOffset;
+  muint16 commentSize;
 
   void Read(BinReaderRef rd);
   void Write(BinWritterRef wr) const;
@@ -160,16 +160,16 @@ struct ZIPCentralDir {
 
 struct ZIP64CentralDir {
   static constexpr uint32 ID = CompileFourCC("PK\x06\x06");
-  uint32 id;
-  uint64 dirRecord;
-  uint16 madeBy;
-  uint16 extractVersion;
-  uint32 diskNumber;
-  uint32 startDiskNumber;
-  uint64 numDiskEntries;
-  uint64 numDirEntries;
-  uint64 dirSize;
-  uint64 dirOffset;
+  muint32 id;
+  muint64 dirRecord;
+  muint16 madeBy;
+  muint16 extractVersion;
+  muint32 diskNumber;
+  muint32 startDiskNumber;
+  muint64 numDiskEntries;
+  muint64 numDirEntries;
+  muint64 dirSize;
+  muint64 dirOffset;
 
   void Read(BinReaderRef rd);
   void Write(BinWritterRef wr) const;
@@ -177,22 +177,22 @@ struct ZIP64CentralDir {
 
 struct ZIP64CentralDirLocator {
   static constexpr uint32 ID = CompileFourCC("PK\x06\x07");
-  uint32 id;
-  uint32 diskNumber;
-  uint64 centralDirOffset;
-  uint32 numDisks;
+  muint32 id;
+  muint32 diskNumber;
+  muint64 centralDirOffset;
+  muint32 numDisks;
 
   void Read(BinReaderRef rd);
   void Write(BinWritterRef wr) const;
 };
 
 struct ZIP64Extra {
-  uint16 id = 1;
-  uint16 size;
-  uint64 uncompressedSize = 0;
-  uint64 compressedSize = 0;
-  uint64 localHeaderOffset = 0;
-  uint32 startDiskNumber = 0;
+  muint16 id = 1;
+  muint16 size;
+  muint64 uncompressedSize = 0;
+  muint64 compressedSize = 0;
+  muint64 localHeaderOffset = 0;
+  muint32 startDiskNumber = 0;
 
   void Write(BinWritterRef wr) const;
 };

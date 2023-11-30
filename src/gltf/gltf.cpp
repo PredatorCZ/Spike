@@ -212,14 +212,14 @@ void GLTFModel::WritePositions(gltf::Attributes & attrs, const uni::PrimitiveDes
         {
             acc.componentType = gltf::Accessor::ComponentType::UnsignedShort;
             min *= 0xffff;
-            min = Vector4A16(_mm_round_ps(min._data, _MM_ROUND_NEAREST));
+            min = real32x4a16(_mm_round_ps(min._data, _MM_ROUND_NEAREST));
             max *= 0xffff;
-            max = Vector4A16(_mm_round_ps(max._data, _MM_ROUND_NEAREST));
+            max = real32x4a16(_mm_round_ps(max._data, _MM_ROUND_NEAREST));
 
             for (auto & v : basePosition)
             {
                 v *= 0xffff;
-                v = Vector4A16(_mm_round_ps(v._data, _MM_ROUND_NEAREST));
+                v = real32x4a16(_mm_round_ps(v._data, _MM_ROUND_NEAREST));
                 vertWr.Write(v.Convert<uint16>());
             }
         }
@@ -227,14 +227,14 @@ void GLTFModel::WritePositions(gltf::Attributes & attrs, const uni::PrimitiveDes
         {
             acc.componentType = gltf::Accessor::ComponentType::Short;
             min *= 0x7fff;
-            min = Vector4A16(_mm_round_ps(min._data, _MM_ROUND_NEAREST));
+            min = real32x4a16(_mm_round_ps(min._data, _MM_ROUND_NEAREST));
             max *= 0x7fff;
-            max = Vector4A16(_mm_round_ps(max._data, _MM_ROUND_NEAREST));
+            max = real32x4a16(_mm_round_ps(max._data, _MM_ROUND_NEAREST));
 
             for (auto & v : basePosition)
             {
                 v *= 0x7fff;
-                v = Vector4A16(_mm_round_ps(v._data, _MM_ROUND_NEAREST));
+                v = real32x4a16(_mm_round_ps(v._data, _MM_ROUND_NEAREST));
                 vertWr.Write(v.Convert<int16>());
             }
         }
@@ -245,7 +245,7 @@ void GLTFModel::WritePositions(gltf::Attributes & attrs, const uni::PrimitiveDes
 
         for (auto & v : basePosition)
         {
-            vertWr.Write<Vector>(v);
+            vertWr.Write<real32x3>(v);
         }
     }
 
@@ -296,9 +296,9 @@ void GLTFModel::WriteTexCoord(gltf::Attributes & attrs, const uni::PrimitiveDesc
             for (auto & v : sampled)
             {
                 v *= 0xffff;
-                v = Vector4A16(_mm_round_ps(v._data, _MM_ROUND_NEAREST));
-                USVector4 comp = v.Convert<uint16>();
-                vertWr.Write(USVector2(comp));
+                v = real32x4a16(_mm_round_ps(v._data, _MM_ROUND_NEAREST));
+                uint16x4 comp = v.Convert<uint16>();
+                vertWr.Write(uint16x2(comp));
             }
         }
         else
@@ -308,9 +308,9 @@ void GLTFModel::WriteTexCoord(gltf::Attributes & attrs, const uni::PrimitiveDesc
             for (auto & v : sampled)
             {
                 v *= 0x7fff;
-                v = Vector4A16(_mm_round_ps(v._data, _MM_ROUND_NEAREST));
-                SVector4 comp = v.Convert<int16>();
-                vertWr.Write(SVector2(comp));
+                v = real32x4a16(_mm_round_ps(v._data, _MM_ROUND_NEAREST));
+                int16x4 comp = v.Convert<int16>();
+                vertWr.Write(int16x2(comp));
             }
         }
     }
@@ -320,7 +320,7 @@ void GLTFModel::WriteTexCoord(gltf::Attributes & attrs, const uni::PrimitiveDesc
 
         for (auto & v : sampled)
         {
-            vertWr.Write<Vector2>(v);
+            vertWr.Write<real32x2>(v);
         }
     }
 }
@@ -359,7 +359,7 @@ size_t GLTFModel::WriteNormals8(const uni::PrimitiveDescriptor & d, size_t numVe
 
     for (auto & v : sampled)
     {
-        auto pure = v * Vector4A16(1.f, 1.f, 1.f, 0.f);
+        auto pure = v * real32x4a16(1.f, 1.f, 1.f, 0.f);
         pure.Normalize() *= 0x7f;
         pure = _mm_round_ps(pure._data, _MM_ROUND_NEAREST);
         auto comp = pure.Convert<int8>();
@@ -384,7 +384,7 @@ size_t GLTFModel::WriteNormals16(const uni::PrimitiveDescriptor & d, size_t numV
 
     for (auto & v : sampled)
     {
-        auto pure = v * Vector4A16(1.f, 1.f, 1.f, 0.f);
+        auto pure = v * real32x4a16(1.f, 1.f, 1.f, 0.f);
         pure.Normalize() *= 0x7fff;
         pure = _mm_round_ps(pure._data, _MM_ROUND_NEAREST);
         auto comp = pure.Convert<int16>();
@@ -416,7 +416,7 @@ StripResult StripValues(std::span<float> times, size_t upperLimit, const uni::Mo
 {
     StripResult retval;
     retval.timeIndices.push_back(0);
-    Vector4A16 low, middle, high;
+    mreal32x4a16 low, middle, high;
     tck->GetValue(low, times[0]);
     retval.values.push_back(low);
 
@@ -472,7 +472,7 @@ public:
     {
         return {};
     }
-    void GetValue(Vector4A16 & output, float time) const override
+    void GetValue(mreal32x4a16 & output, float time) const override
     {
         uni::RTSValue value;
         base->GetValue(value, time);
@@ -530,7 +530,7 @@ size_t FindTimeEndIndex(std::span<float> times, float duration)
     return upperLimit;
 }
 
-void BoneInfo::Add(size_t index, Vector4A16 translation, int32 parentIndex)
+void BoneInfo::Add(size_t index, real32x4a16 translation, int32 parentIndex)
 {
     auto boneLen = translation.Length();
     boneLens.emplace(index, boneLen);
@@ -543,13 +543,13 @@ void BoneInfo::Add(size_t index, Vector4A16 translation, int32 parentIndex)
     es::Matrix44 lookupMtx;
     lookupMtx.r1() = translation.Normalized();
     lookupMtx.r2() =
-        lookupMtx.r1() * es::Matrix44(Vector4A16(0, 0, 0.7007, 0.7007));
+        lookupMtx.r1() * es::Matrix44(real32x4a16(0, 0, 0.7007, 0.7007));
     lookupMtx.r3() = lookupMtx.r1().Cross(lookupMtx.r2());
 
     if (lookupMtx.r3().Length() < 0.00001f)
     {
         lookupMtx.r2() =
-            lookupMtx.r1() * es::Matrix44(Vector4A16(0.7007, 0, 0, 0.7007));
+            lookupMtx.r1() * es::Matrix44(real32x4a16(0.7007, 0, 0, 0.7007));
         lookupMtx.r3() = lookupMtx.r1().Cross(lookupMtx.r2());
     }
 
@@ -564,7 +564,7 @@ void VisualizeSkeleton(GLTF & main, const BoneInfo & infos)
 {
     size_t idStreamSlot = 0;
     {
-        static const Vector octa[]{
+        static real32x3 octa[]{
             { 0, 0, 0 },
             { 1, 1, -1 },
             { 1, 1, 1 },
@@ -572,7 +572,7 @@ void VisualizeSkeleton(GLTF & main, const BoneInfo & infos)
             { 1, -1, 1 },
             { 10, 0, 0 },
         };
-        static const uint16 octaIndices[]{
+        static uint16 octaIndices[]{
             0,
             2,
             1,
@@ -662,7 +662,7 @@ void VisualizeSkeleton(GLTF & main, const BoneInfo & infos)
         {
             for (auto t : octa)
             {
-                Vector correctedPos = (t * 0.1f) * tm;
+                real32x3 correctedPos = (t * 0.1f) * tm;
                 vtnStream.wr.Write(correctedPos);
                 uint8 boneId[]{ uint8(remaps.at(id)), 0, 0, 0 };
                 vtnStream.wr.Write(boneId);
@@ -712,7 +712,7 @@ void VisualizeSkeleton(GLTF & main, const BoneInfo & infos)
 
         gltf::Mesh mesh;
         gltf::Skin skin;
-        uint8 localId = 0;
+        muint8 localId = 0;
 
         auto vbStreamSlot = main.NewStream("icovisual-vertices", 4).slot;
         auto & viStream = main.NewStream("icovisual-ibms");
@@ -728,7 +728,7 @@ void VisualizeSkeleton(GLTF & main, const BoneInfo & infos)
         const float avgLen = [&]
         {
             float totalLen = 0;
-            int32 totalItems = 0;
+            mint32 totalItems = 0;
 
             for (auto [id, len] : infos.boneLens)
             {

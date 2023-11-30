@@ -18,8 +18,8 @@
 #include "spike/type/vectors_simd.hpp"
 #include <cstring>
 
-static inline void DecodeRGB565Blocks(const char *data, IVector4A16 &color0,
-                                      IVector4A16 &color1) {
+static inline void DecodeRGB565Blocks(const char *data, Imreal32x4a16 &color0,
+                                      Imreal32x4a16 &color1) {
   const uint32 rawdata = reinterpret_cast<const uint32 &>(*data);
   const auto cl00 = IVector4A16(rawdata);
   const auto cl0 = cl00 * IVector4A16(0x8000000, 0x200000, 0x10000, 0);

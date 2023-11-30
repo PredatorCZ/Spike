@@ -207,18 +207,18 @@ struct TexelDataLayout {
   // this can be cubemap faces and their mipmaps,
   // 2d and volumetric mipmap chain
   // Useful as data stride for texture arrays
-  uint32 groupSize;
+  muint32 groupSize;
   // Size of the entire mipmap group
   // Mostly same as groupSize except for cubemaps
-  uint32 mipGroupSize;
+  muint32 mipGroupSize;
   static const size_t MAX_MIPS = 15;
   // Offset for each mipmap relative to offset of the first mipmap
   // For volumetrics it also includes depth data
-  uint32 mipOffsets[MAX_MIPS];
+  muint32 mipOffsets[MAX_MIPS];
   // Size of each 2d/3d mipmap
   // For volumetrics data may be slices of 2d planes or not,
   // that's why it includes data size with depth in mind
-  uint32 mipSizes[MAX_MIPS];
+  muint32 mipSizes[MAX_MIPS];
 };
 
 struct TexelInputLayout {

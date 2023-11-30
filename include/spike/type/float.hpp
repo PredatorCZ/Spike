@@ -23,26 +23,26 @@ namespace esFloatDetail {
 static float ToFloat(size_t value, size_t _mantissa, size_t EXPONENT_MASK,
                      size_t MANTISSA_MASK, size_t SIGN_MASK, size_t TOTAL_SIZE,
                      size_t EXP_REF) {
-  const IVector4A16 vtored(static_cast<int32>(value));
-  const IVector4A16 mskEMSM(vtored & IVector4A16(EXPONENT_MASK, MANTISSA_MASK,
+  int32x4a16 vtored(static_cast<int32>(value));
+  int32x4a16 mskEMSM(vtored & int32x4a16(EXPONENT_MASK, MANTISSA_MASK,
                                                  SIGN_MASK, MANTISSA_MASK));
-  const IVector4A16 shEMS(mskEMSM * IVector4A16(1 << (23 - _mantissa),
+  int32x4a16 shEMS(mskEMSM * int32x4a16(1 << (23 - _mantissa),
                                                 1 << (23 - _mantissa),
                                                 1 << (32 - TOTAL_SIZE), 1));
   const size_t exponentI = mskEMSM.X;
-  IVector4A16 finResult(shEMS);
+  mint32x4a16 finResult(shEMS);
 
   if (exponentI) {
     if (exponentI == EXPONENT_MASK) {
-      finResult *= IVector4A16(0, 1, 1, 0);
-      finResult += IVector4A16(0x7f800000, 0, 0, 0);
+      finResult *= int32x4a16(0, 1, 1, 0);
+      finResult += int32x4a16(0x7f800000, 0, 0, 0);
     } else {
-      finResult *= IVector4A16(1, 1, 1, 0);
-      finResult += IVector4A16(EXP_REF, 0, 0, 0);
+      finResult *= int32x4a16(1, 1, 1, 0);
+      finResult += int32x4a16(EXP_REF, 0, 0, 0);
     }
   } else {
-    finResult *= IVector4A16(0, 0, 1, 1);
-    finResult += IVector4A16(0x3f000000, 0, 0, 0);
+    finResult *= int32x4a16(0, 0, 1, 1);
+    finResult += int32x4a16(0x3f000000, 0, 0, 0);
   }
 
   const size_t result = _mm_extract_epi32(
@@ -127,73 +127,73 @@ public:
                                     SIGN_MASK, EXPONENT_MASK, EXP_REF);
   }
 
-  static const Vector4A16 _to_ps(IVector4A16 input) {
+  static real32x4a16 _to_ps(mint32x4a16 input) {
     return reinterpret_cast<const __m128 &>(input);
   }
 
-  static const IVector4A16 _to_se(Vector4A16 input) {
+  static int32x4a16 _to_se(mreal32x4a16 input) {
     return reinterpret_cast<const __m128i &>(input);
   }
 
-  static IVector4A16 FromVector4(Vector4A16 value) {
-    const IVector4A16 cvted = _to_se(value);
-    const IVector4A16 shtSign(((cvted & 0x80000000) >> (32 - TOTAL_SIZE)) &
+  static int32x4a16 FromVector4(mreal32x4a16 value) {
+    int32x4a16 cvted = _to_se(value);
+    int32x4a16 shtSign(((cvted & 0x80000000) >> (32 - TOTAL_SIZE)) &
                               SIGN_MASK);
 
-    const IVector4A16 mskExp(cvted & 0x7f800000);
-    const IVector4A16 shtMant(cvted >> (23 - _mantissa));
+    int32x4a16 mskExp(cvted & 0x7f800000);
+    int32x4a16 shtMant(cvted >> (23 - _mantissa));
 
     value += 0.5f;
-    const IVector4A16 cvtedDenorm = _to_se(value);
-    const IVector4A16 mskExpDenorm(cvtedDenorm & 0x7f800000);
+    int32x4a16 cvtedDenorm = _to_se(value);
+    int32x4a16 mskExpDenorm(cvtedDenorm & 0x7f800000);
 
-    const IVector4A16 denormMask(
-        _mm_cmpeq_epi32(mskExpDenorm._data, IVector4A16(0x3f000000)._data));
+    int32x4a16 denormMask(
+        _mm_cmpeq_epi32(mskExpDenorm._data, int32x4a16(0x3f000000)._data));
 
-    const Vector4A16 blendMant(_mm_blendv_ps(_to_ps(shtMant)._data,
+    real32x4a16 blendMant(_mm_blendv_ps(_to_ps(shtMant)._data,
                                              _to_ps(cvtedDenorm)._data,
                                              _to_ps(denormMask)._data));
-    const IVector4A16 maskedMant(_to_se(blendMant) & MANTISSA_MASK);
+    int32x4a16 maskedMant(_to_se(blendMant) & MANTISSA_MASK);
 
-    const IVector4A16 nanMask(
-        _mm_cmpeq_epi32(mskExp._data, IVector4A16(0x7f800000)._data));
+    int32x4a16 nanMask(
+        _mm_cmpeq_epi32(mskExp._data, int32x4a16(0x7f800000)._data));
 
-    const IVector4A16 unRef(((mskExp - EXP_REF) >> (23 - _mantissa)) &
+    int32x4a16 unRef(((mskExp - EXP_REF) >> (23 - _mantissa)) &
                             EXPONENT_MASK);
 
-    const Vector4A16 blendExp0(_mm_blendv_ps(_to_ps(unRef)._data,
+    real32x4a16 blendExp0(_mm_blendv_ps(_to_ps(unRef)._data,
                                              _to_ps(EXPONENT_MASK)._data,
                                              _to_ps(nanMask)._data));
 
-    const Vector4A16 blendExp1(_mm_blendv_ps(
-        blendExp0._data, Vector4A16()._data, _to_ps(denormMask)._data));
+    real32x4a16 blendExp1(_mm_blendv_ps(
+        blendExp0._data, real32x4a16()._data, _to_ps(denormMask)._data));
 
     return _to_se(blendExp1) | maskedMant | shtSign;
   }
 
-  static Vector4A16 ToVector4(IVector4A16 value) {
-    const IVector4A16 exponentI(value & EXPONENT_MASK);
+  static real32x4a16 ToVector4(int32x4a16 value) {
+    int32x4a16 exponentI(value & EXPONENT_MASK);
 
-    const IVector4A16 mantissa((value & MANTISSA_MASK) << (23 - _mantissa));
-    const IVector4A16 sign((value & SIGN_MASK) << (32 - TOTAL_SIZE));
+    int32x4a16 mantissa((value & MANTISSA_MASK) << (23 - _mantissa));
+    int32x4a16 sign((value & SIGN_MASK) << (32 - TOTAL_SIZE));
 
-    const IVector4A16 exponentMask(
-        _mm_cmpeq_epi32(exponentI._data, IVector4A16(EXPONENT_MASK)._data));
+    int32x4a16 exponentMask(
+        _mm_cmpeq_epi32(exponentI._data, int32x4a16(EXPONENT_MASK)._data));
 
-    const IVector4A16 nzResult(((exponentI << (23 - _mantissa)) + EXP_REF) |
+    int32x4a16 nzResult(((exponentI << (23 - _mantissa)) + EXP_REF) |
                                mantissa);
 
     const auto imNANNZ = _mm_blendv_ps(_to_ps(nzResult)._data,
-                                       _to_ps(IVector4A16(0x7f800000))._data,
+                                       _to_ps(int32x4a16(0x7f800000))._data,
                                        _to_ps(exponentMask)._data);
 
-    const IVector4A16 denormMask(
-        _mm_cmpeq_epi32(exponentI._data, IVector4A16()._data));
+    int32x4a16 denormMask(
+        _mm_cmpeq_epi32(exponentI._data, int32x4a16()._data));
 
-    const IVector4A16 denormResult0((value & MANTISSA_MASK) | 0x3f000000);
-    const Vector4A16 denormResult1(_to_ps(denormResult0) - 0.5f);
+    int32x4a16 denormResult0((value & MANTISSA_MASK) | 0x3f000000);
+    real32x4a16 denormResult1(_to_ps(denormResult0) - 0.5f);
 
-    const IVector4A16 finalResult(_to_se(
+    int32x4a16 finalResult(_to_se(
         _mm_blendv_ps(imNANNZ, denormResult1._data, _to_ps(denormMask)._data)));
 
     return _to_ps(finalResult | sign);
@@ -223,10 +223,10 @@ struct VectorR11G11B10_UFLOAT {
   uint32 data;
   typedef esFloat<6, 5, false> codec_type;
 
-  operator Vector4A16() const {
-    const IVector4A16 input0(IVector4A16(data) *
-                             IVector4A16(1 << 21, 1 << 10, 1, 0));
-    const IVector4A16 input1(input0 >> 21);
+  operator real32x4a16() const {
+    int32x4a16 input0(int32x4a16(data) *
+                             int32x4a16(1 << 21, 1 << 10, 1, 0));
+    int32x4a16 input1(input0 >> 21);
 
     return codec_type::ToVector4(input1);
   }

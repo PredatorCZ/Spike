@@ -18,15 +18,15 @@
 #include "spike/type/vectors_simd.hpp"
 #include <Python.h>
 
-inline PyObject *Py_BuildValue(const Vector2 &vec) {
+inline PyObject *Py_BuildValue(rreal32x2 vec) {
   return Py_BuildValue("(ff)", vec.X, vec.Y);
 }
-inline PyObject *Py_BuildValue(const Vector &vec) {
+inline PyObject *Py_BuildValue(rreal32x3 vec) {
   return Py_BuildValue("(fff)", vec.X, vec.Y, vec.Z);
 }
-inline PyObject *Py_BuildValue(const Vector4 &vec) {
+inline PyObject *Py_BuildValue(rreal32x4 vec) {
   return Py_BuildValue("(ffff)", vec.X, vec.Y, vec.Z, vec.W);
 }
-inline PyObject *Py_BuildValue(const Vector4A16 &vec) {
+inline PyObject *Py_BuildValue(real32x4a16 &vec) {
   return Py_BuildValue("(ffff)", vec.X, vec.Y, vec.Z, vec.W);
 }

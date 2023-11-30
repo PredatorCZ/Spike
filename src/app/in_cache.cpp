@@ -25,7 +25,7 @@ template <class C, size_t Align> struct CachePointer {
   static constexpr size_t TYPE_ALIGN = Align;
 
 private:
-  int32 varPtr;
+  mint32 varPtr;
 
 public:
   CachePointer() = default;

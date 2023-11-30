@@ -35,16 +35,16 @@ void DecodeBC5BlockGA(const char *data, char *obuffer, uint32 w, uint32 h,
 void DecodeBC3Block(const char *data, char *obuffer, uint32 w, uint32 h,
                     uint32 width);
 
-inline void DecodeRGB565Block(const char *data, Vector &color) {
+inline void DecodeRGB565Block(const char *data, mreal32x3 &color) {
   uint16 col = reinterpret_cast<const uint16 &>(*data);
   color =
-      UCVector(col << 3, (col >> 3) & 0xFC, (col >> 8) & 0xF8).Convert<float>();
+      uint8x3(col << 3, (col >> 3) & 0xFC, (col >> 8) & 0xF8).Convert<float>();
 }
 
 inline void ComputeBC5Blue(char *buffer, uint32 size) {
-  for (uint32 p = 0; p < size; p += 3) {
-    const Vector2 RG(
-        (reinterpret_cast<UCVector2 *>(buffer + p + 1)->Convert<float>() *
+  for (muint32 p = 0; p < size; p += 3) {
+    real32x2 RG(
+        (reinterpret_cast<uint8x2 *>(buffer + p + 1)->Convert<float>() *
          (2.0f / UCHAR_MAX)) -
         1.f);
 

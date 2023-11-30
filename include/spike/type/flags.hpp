@@ -78,7 +78,7 @@ private:
     return static_cast<ValueType>(1) << static_cast<ValueType>(at);
   }
 
-  ValueType value;
+  mut<ValueType> value;
 };
 } // namespace es
 

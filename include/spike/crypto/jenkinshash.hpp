@@ -26,7 +26,7 @@
 
 template <typename T = uint64>
 constexpr uint32 JenkinsHash_(std::string_view input) {
-  T result = 0;
+  mut<T> result = 0;
 
   for (const auto c : input) {
     const T cChar = static_cast<uint8>(c);
@@ -48,7 +48,7 @@ template <typename I> struct JenHash_t {
   constexpr JenHash_t(JenHash_t &&) = default;
   constexpr JenHash_t(const JenHash_t &) = default;
   constexpr explicit JenHash_t(uint32 in) : value_(in) {}
-  template <size_t n>
+  template <size n>
   constexpr JenHash_t(const char (&input)[n])
       : value_(JenkinsHash_<I>({input, n - 1})) {}
   constexpr JenHash_t(std::string_view input)
@@ -71,19 +71,19 @@ template <typename I> struct JenHash_t {
   constexpr bool operator>(JenHash_t o) const { return o.value_ > value_; }
 
 private:
-  uint32 value_;
+  muint32 value_;
 };
 
 using JenHash = JenHash_t<uint64>;
 using JenHashCannon = JenHash_t<uint32>;
 
 namespace es::jenhash_literals {
-inline constexpr JenHash operator""_jh(const char *str, size_t len) noexcept {
+inline constexpr JenHash operator""_jh(const char *str, size len) noexcept {
   return JenHash{{str, len}};
 }
 
 inline constexpr JenHashCannon operator""_jhc(const char *str,
-                                              size_t len) noexcept {
+                                              size len) noexcept {
   return JenHashCannon{{str, len}};
 }
 } // namespace es::jenhash_literals

@@ -27,7 +27,7 @@ void MotionTrack::GetValue(es::Matrix44 &, float) const {
   throw _uni_::ThrowVoidCall<MotionTrack::TrackType_e, MotionTrack::Matrix>(
       this->TrackType());
 }
-void MotionTrack::GetValue(Vector4A16 &, float) const {
+void MotionTrack::GetValue(mreal32x4a16 &, float) const {
   const auto ttype = this->TrackType();
   throw _uni_::ThrowVoidCall(ttype == MotionTrack::Position ||
                              ttype == MotionTrack::Rotation ||

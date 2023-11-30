@@ -22,19 +22,19 @@
 
 using namespace es;
 
-static const Vector4A16 &AsVec(const glm::vec4 &in) {
-  return reinterpret_cast<const Vector4A16 &>(in);
+static real32x4a16 &AsVec(const glm::vec4 &in) {
+  return reinterpret_cast<real32x4a16 &>(in);
 }
 
-static const Vector4A16 &AsVec(const glm::quat &in) {
-  return reinterpret_cast<const Vector4A16 &>(in);
+static real32x4a16 &AsVec(const glm::quat &in) {
+  return reinterpret_cast<real32x4a16 &>(in);
 }
 
-static const glm::quat &AsQuat(const Vector4A16 &in) {
+static const glm::quat &AsQuat(real32x4a16 &in) {
   return reinterpret_cast<const glm::quat &>(in);
 }
 
-static const glm::vec4 &AsVec(const Vector4A16 &in) {
+static const glm::vec4 &AsVec(real32x4a16 &in) {
   return reinterpret_cast<const glm::vec4 &>(in);
 }
 
@@ -52,19 +52,19 @@ static const glm::mat4 &AsMat4(const Matrix44 &in) {
 
 static_assert(sizeof(glm::mat4) == sizeof(Matrix44));
 static_assert(alignof(glm::mat4) == alignof(Matrix44));
-static_assert(sizeof(glm::vec4) == sizeof(Vector4A16));
-static_assert(alignof(glm::vec4) == alignof(Vector4A16));
-static_assert(sizeof(glm::quat) == sizeof(Vector4A16));
-static_assert(alignof(glm::quat) == alignof(Vector4A16));
+static_assert(sizeof(glm::vec4) == sizeof(real32x4a16));
+static_assert(alignof(glm::vec4) == alignof(real32x4a16));
+static_assert(sizeof(glm::quat) == sizeof(real32x4a16));
+static_assert(alignof(glm::quat) == alignof(real32x4a16));
 
-void Matrix44::Decompose(Vector4A16 &position, Vector4A16 &rotation,
-                         Vector4A16 &scale) const {
+void Matrix44::Decompose(mreal32x4a16 &position, mreal32x4a16 &rotation,
+                         mreal32x4a16 &scale) const {
   position = r4();
   scale.X = r1().Length();
   scale.Y = r2().Length();
   scale.Z = r3().Length();
 
-  if (r1().Dot(Vector4A16(Vector(r2()).Cross(r3()), 0.0f)) < 0)
+  if (r1().Dot(real32x4a16(mreal32x3(r2()).Cross(r3()), 0.0f)) < 0)
     scale *= -1;
 
   Matrix44 tmp(*this);
@@ -74,8 +74,8 @@ void Matrix44::Decompose(Vector4A16 &position, Vector4A16 &rotation,
   rotation = tmp.ToQuat();
 }
 
-void Matrix44::Compose(const Vector4A16 &position, const Vector4A16 &rotation,
-                       const Vector4A16 &scale) {
+void Matrix44::Compose(real32x4a16 &position, real32x4a16 &rotation,
+                       real32x4a16 &scale) {
   FromQuat(rotation);
   r4() = position;
   r4().w = 1.f;
@@ -85,24 +85,24 @@ void Matrix44::Compose(const Vector4A16 &position, const Vector4A16 &rotation,
 }
 
 void Matrix44::MakeIdentity() {
-  r1() = Vector4A16(1.0f, 0.0f, 0.0f, 0.0f);
-  r2() = Vector4A16(0.0f, 1.0f, 0.0f, 0.0f);
-  r3() = Vector4A16(0.0f, 0.0f, 1.0f, 0.0f);
-  r4() = Vector4A16(0.0f, 0.0f, 0.0f, 1.0f);
+  r1() = real32x4a16(1.0f, 0.0f, 0.0f, 0.0f);
+  r2() = real32x4a16(0.0f, 1.0f, 0.0f, 0.0f);
+  r3() = real32x4a16(0.0f, 0.0f, 1.0f, 0.0f);
+  r4() = real32x4a16(0.0f, 0.0f, 0.0f, 1.0f);
 }
 
 Matrix44::Matrix44() { MakeIdentity(); }
 
-Matrix44::Matrix44(const Vector4A16 &quat) {
+Matrix44::Matrix44(real32x4a16 &quat) {
   MakeIdentity();
   FromQuat(quat);
 }
 
-void Matrix44::FromQuat(const Vector4A16 &q) {
+void Matrix44::FromQuat(real32x4a16 &q) {
   *this = AsMat4(glm::mat4_cast(glm::quat(AsQuat(q))));
 }
 
-Vector4A16 Matrix44::ToQuat() const {
+real32x4a16 Matrix44::ToQuat() const {
   auto asQuat = glm::quat_cast(AsMat4(*this));
   return {asQuat.y, asQuat.z, asQuat.w, asQuat.x};
 }
@@ -123,7 +123,7 @@ void Matrix44::TransposeFull() {
 }
 
 namespace es {
-Vector4A16 operator*(const Vector4A16 &point, const es::Matrix44 &mtx) {
+real32x4a16 operator*(real32x4a16 &point, const es::Matrix44 &mtx) {
   auto result = AsVec(point) * AsMat4(mtx);
   return AsVec(result);
 }

@@ -48,7 +48,7 @@ enum class MPType { PREV, MSG, WRN, ERR, INF };
 struct Queuer {
   std::string payload;
   MPType type;
-  uint32 threadId;
+  muint32 threadId;
 };
 
 using queue_func = void (*)(const Queuer &);

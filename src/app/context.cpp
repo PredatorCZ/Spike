@@ -149,7 +149,7 @@ struct ReflectedInstanceFriend : ReflectedInstance {
 };
 
 struct VersionHandler {
-  uint32 versions[4]{};
+  muint32 versions[4]{};
   const std::string *path;
 
   bool operator<(const VersionHandler &other) const {

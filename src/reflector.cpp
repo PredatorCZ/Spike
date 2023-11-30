@@ -65,8 +65,8 @@ template <class T> struct LimitProxy {
 };
 
 template <class type> struct BFTag {
-  type value;
-  BFTag(const type &value_) : value(value_) {}
+  mut<type> value;
+  BFTag(type &value_) : value(value_) {}
   operator type() const { return value; }
 };
 
@@ -86,12 +86,12 @@ static Reflector::ErrorType SetNumber(std::string_view input_, T &output,
                                       ProxyType proxy) {
   std::string input(input_);
   Reflector::ErrorType errType = Reflector::ErrorType::None;
-  const int base =
+  int32 base =
       !input.compare(0, 2, "0x") || !input.compare(0, 3, "-0x") ? 16 : 10;
   if constexpr (std::is_signed_v<T>) {
-    int64 value = 0;
-    const int64 iMin = proxy.iMin;
-    const int64 iMax = proxy.iMax;
+    mint64 value = 0;
+    int64 iMin = proxy.iMin;
+    int64 iMax = proxy.iMax;
     bool OOR = false;
 
     try {
@@ -113,8 +113,8 @@ static Reflector::ErrorType SetNumber(std::string_view input_, T &output,
 
     output = static_cast<T>(value);
   } else {
-    uint64 value = 0;
-    const uint64 iMax = proxy.uMax;
+    muint64 value = 0;
+    uint64 iMax = proxy.uMax;
     bool OOR = false;
 
     try {
@@ -237,7 +237,7 @@ static Reflector::ErrorType SetEnum(std::string_view input, char *objAddr,
     return Reflector::ErrorType::EmptyInput;
   }
 
-  uint64 eValue = 0;
+  muint64 eValue = 0;
 
   try {
     eValue = GetEnumValue(input, hash);
@@ -256,7 +256,7 @@ static Reflector::ErrorType SetEnum(std::string_view input, char *objAddr,
 }
 
 static Reflector::ErrorType FlagFromEnum(std::string_view input, JenHash hash,
-                                         uint64 &fallbackValue,
+                                         muint64 &fallbackValue,
                                          const ReflectedEnum *&fallback) {
   input = es::TrimWhitespace(input);
 
@@ -265,7 +265,7 @@ static Reflector::ErrorType FlagFromEnum(std::string_view input, JenHash hash,
     return Reflector::ErrorType::EmptyInput;
   }
 
-  uint64 cValue = 0;
+  muint64 cValue = 0;
 
   try {
     cValue = GetEnumValue(input, hash, &fallback);
@@ -291,7 +291,7 @@ static Reflector::ErrorType SetEnumFlags(std::string_view input, char *objAddr,
   auto lastIterator = input.data();
   auto inputEnd = input.data() + input.size();
   Reflector::ErrorType errType = Reflector::ErrorType::None;
-  uint64 eValue = 0;
+  muint64 eValue = 0;
   const ReflectedEnum *rEnumFallback = nullptr;
 
   for (auto &c : input) {
@@ -427,11 +427,11 @@ SetReflectedMember(ReflType reflValue, std::string_view value, char *objAddr) {
     case 1:
       return SetNumber(value, *objAddr);
     case 2:
-      return SetNumber(value, *reinterpret_cast<short *>(objAddr));
+      return SetNumber(value, *reinterpret_cast<mint16 *>(objAddr));
     case 4:
-      return SetNumber(value, *reinterpret_cast<int *>(objAddr));
+      return SetNumber(value, *reinterpret_cast<mint32 *>(objAddr));
     case 8:
-      return SetNumber(value, *reinterpret_cast<int64 *>(objAddr));
+      return SetNumber(value, *reinterpret_cast<mint64 *>(objAddr));
     default:
       return Reflector::ErrorType::InvalidDestination;
     }
@@ -439,13 +439,13 @@ SetReflectedMember(ReflType reflValue, std::string_view value, char *objAddr) {
   case REFType::UnsignedInteger: {
     switch (reflValue.size) {
     case 1:
-      return SetNumber(value, *reinterpret_cast<unsigned char *>(objAddr));
+      return SetNumber(value, *reinterpret_cast<muint8 *>(objAddr));
     case 2:
-      return SetNumber(value, *reinterpret_cast<unsigned short *>(objAddr));
+      return SetNumber(value, *reinterpret_cast<muint16 *>(objAddr));
     case 4:
-      return SetNumber(value, *reinterpret_cast<unsigned int *>(objAddr));
+      return SetNumber(value, *reinterpret_cast<muint32 *>(objAddr));
     case 8:
-      return SetNumber(value, *reinterpret_cast<uint64 *>(objAddr));
+      return SetNumber(value, *reinterpret_cast<muint64 *>(objAddr));
     default:
       return Reflector::ErrorType::InvalidDestination;
     }
@@ -476,7 +476,7 @@ SetReflectedMember(ReflType reflValue, std::string_view value, char *objAddr) {
     }
   }
   case REFType::BitFieldMember: {
-    uint64 &output = *reinterpret_cast<uint64 *>(objAddr);
+    muint64 &output = *reinterpret_cast<muint64 *>(objAddr);
     auto doStuff = [&](auto &&insertVal) {
       LimitProxy<std::decay_t<decltype(insertVal)>> proxy{reflValue.bit.size};
       auto err = SetNumber(value, insertVal, proxy);
@@ -533,7 +533,7 @@ SetReflectedMember(ReflType reflValue, std::string_view value, char *objAddr) {
       return err;
     }
     case REFType::Enum: {
-      uint64 bValue;
+      muint64 bValue;
       auto err =
           SetEnum(value, reinterpret_cast<char *>(&bValue),
                   JenHash(reflValue.asBitfield.typeHash), sizeof(bValue));
@@ -756,7 +756,7 @@ PrintEnumValue(JenHash hash, uint64 value,
 }
 
 static std::string PrintEnum(const char *objAddr, JenHash hash, uint16 elSize) {
-  uint64 eValue = 0;
+  muint64 eValue = 0;
 
   memcpy(reinterpret_cast<char *>(&eValue), objAddr, elSize);
 
@@ -765,7 +765,7 @@ static std::string PrintEnum(const char *objAddr, JenHash hash, uint16 elSize) {
 
 static std::string PrintEnumFlags(const char *objAddr, JenHash hash,
                                   uint16 elSize) {
-  uint64 eValue;
+  muint64 eValue;
   const ReflectedEnum *rEnumFallback = nullptr;
   std::string result;
   const size_t numBits = elSize * 8;
@@ -882,7 +882,7 @@ static std::string GetReflectedPrimitive(const char *objAddr, ReflType type) {
     return _tmpBuffer;
   }
   case REFType::BitFieldMember: {
-    uint64 output = *reinterpret_cast<const uint64 *>(objAddr);
+    muint64 output = *reinterpret_cast<uint64 *>(objAddr);
     BitMember bfMember;
     bfMember.size = type.bit.size;
     bfMember.position = type.bit.position;
@@ -914,7 +914,7 @@ static std::string GetReflectedPrimitive(const char *objAddr, ReflType type) {
       break;
     }
 
-    int64 signedOutput = output;
+    mint64 signedOutput = output;
     LimitProxy<BFTag<int64>> limit{type.size};
 
     if (signedOutput & limit.iMin) {
@@ -1014,7 +1014,7 @@ std::string Reflector::GetReflectedValue(size_t id, size_t subID) const {
       return "";
     }
 
-    uint64 eValue;
+    muint64 eValue;
 
     memcpy(reinterpret_cast<char *>(&eValue), objAddr, reflValue.size);
 
@@ -1053,7 +1053,7 @@ std::string Reflector::GetReflectedValue(size_t id, size_t subID,
       return "";
     }
 
-    uint64 eValue;
+    muint64 eValue;
 
     memcpy(reinterpret_cast<char *>(&eValue), objAddr + arr.stride * subID,
            arr.stride);

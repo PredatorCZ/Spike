@@ -219,7 +219,7 @@ struct SimpleIOContext : AppContextShareImpl {
 private:
   BinReader mainFile;
   BinReader streamedFiles[32];
-  uint32 usedFiles = 0;
+  muint32 usedFiles = 0;
   std::unique_ptr<AppExtractContext> ectx;
 };
 
@@ -624,9 +624,9 @@ void ZIPIOContext_impl::Read() {
     throw std::runtime_error("Cannot find ZIP central directory");
   }
 
-  uint64 dirOffset = 0;
-  uint64 numEntries = 0;
-  uint64 dirSize = 0;
+  muint64 dirOffset = 0;
+  muint64 numEntries = 0;
+  muint64 dirSize = 0;
 
   if (curLocator->dirOffset == -1U || curLocator->numDirEntries == uint16(-1) ||
       curLocator->dirSize == -1U) {
@@ -677,7 +677,7 @@ void ZIPIOContext_impl::Read() {
   BinReaderRef localRd(localStreamSpan);
 
   for (size_t d = 0; d < numEntries; d++) {
-    uint32 id;
+    muint32 id;
     rd.Push();
     rd.Read(id);
     rd.Pop();

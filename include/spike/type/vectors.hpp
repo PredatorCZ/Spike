@@ -126,7 +126,7 @@ public:
 
   bool IsSymetrical() const { return *this == vector{Y, X}; }
 
-  template <typename T2> t_Vector2<T2> Convert() const {
+  template <typename T2> t_Vector2<mut<T2>> Convert() const {
     return {static_cast<T2>(X), static_cast<T2>(Y)};
   }
 
@@ -251,7 +251,7 @@ public:
 
   bool IsSymetrical() const { return (X == Y) && (X == Z); }
 
-  template <typename T2> t_Vector<T2> Convert(void) const {
+  template <typename T2> t_Vector<mut<T2>> Convert(void) const {
     return {static_cast<T2>(X), static_cast<T2>(Y), static_cast<T2>(Z)};
   }
 
@@ -364,9 +364,9 @@ public:
 
   bool IsSymetrical() const { return (X == Y) && (X == Z) && (Z == W); }
 
-  template <typename T2> V4ScalarType<T2> Convert() const {
-    return V4ScalarType<T2>(static_cast<T2>(X), static_cast<T2>(Y),
-                            static_cast<T2>(Z), static_cast<T2>(W));
+  template <typename T2> V4ScalarType<mut<T2>> Convert() const {
+    return {static_cast<T2>(X), static_cast<T2>(Y), static_cast<T2>(Z),
+            static_cast<T2>(W)};
   }
 
   int Sign() const { return (X | Y | Z | W) < 0 ? -1 : 1; }

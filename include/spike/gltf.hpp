@@ -157,19 +157,19 @@ struct GLTFModel : GLTF {
   }
 
 private:
-  int32 ibmStream = -1;
-  int32 indexStream = -1;
-  int32 vt12Stream = -1;
-  int32 vt8Stream = -1;
-  int32 vt4Stream = -1;
+  mint32 ibmStream = -1;
+  mint32 indexStream = -1;
+  mint32 vt12Stream = -1;
+  mint32 vt8Stream = -1;
+  mint32 vt4Stream = -1;
 };
 
 namespace gltfutils {
 std::vector<float> GLTF_EXTERN MakeSamples(float sampleRate, float duration);
 
 struct StripResult {
-  std::vector<uint16> timeIndices;
-  std::vector<Vector4A16> values;
+  std::vector<muint16> timeIndices;
+  std::vector<mreal32x4a16> values;
 };
 
 StripResult GLTF_EXTERN StripValues(std::span<float> times, size_t upperLimit,
@@ -187,7 +187,7 @@ struct BoneInfo {
   std::vector<std::pair<size_t, es::Matrix44>> boneLookupTMs;
   std::map<size_t, float> boneLens;
 
-  void GLTF_EXTERN Add(size_t index, Vector4A16 translation,
+  void GLTF_EXTERN Add(size_t index, real32x4a16 translation,
                        int32 parentIndex = -1);
 };
 

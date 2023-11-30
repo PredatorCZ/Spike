@@ -136,16 +136,16 @@ uint32 GetBPT(TexelInputFormatType fmt) {
 TexelDataLayout NewTexelContextImpl::ComputeTraditionalDataLayout(
     TexelInputFormatType *typeOverrides) {
   uint32 mipCount = std::max(ctx.numMipmaps, uint8(1));
-  uint32 width = ctx.width;
-  uint32 height = ctx.height;
-  uint32 depth = std::max(ctx.depth, uint16(1));
+  muint32 width = ctx.width;
+  muint32 height = ctx.height;
+  muint32 depth = std::max(ctx.depth, uint16(1));
   uint32 numFaces = std::max(ctx.numFaces, int8(1));
 
   TexelDataLayout retVal{};
 
-  for (uint32 m = 0; m < mipCount; m++) {
-    uint32 _width = width;
-    uint32 _height = height;
+  for (muint32 m = 0; m < mipCount; m++) {
+    muint32 _width = width;
+    muint32 _height = height;
     TexelInputFormatType type =
         typeOverrides ? typeOverrides[m] : ctx.baseFormat.type;
     uint32 bpt = GetBPT(type);

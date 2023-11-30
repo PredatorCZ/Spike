@@ -20,13 +20,13 @@
 
 namespace uni {
 struct RTSValue {
-  Vector4A16 translation;
-  Vector4A16 rotation;
-  Vector4A16 scale;
+  mreal32x4a16 translation;
+  mreal32x4a16 rotation;
+  mreal32x4a16 scale;
 
   RTSValue()
       : translation(0), rotation(0, 0, 0, 1.f), scale(1.f, 1.f, 1.f, 0) {}
-  RTSValue(const Vector4A16 &pos, const Vector4A16 &rot, const Vector4A16 &scl)
+  RTSValue(real32x4a16 &pos, real32x4a16 &rot, real32x4a16 &scl)
       : translation(pos), rotation(rot), scale(scl) {}
 
   bool operator==(const RTSValue &o) const {

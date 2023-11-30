@@ -30,14 +30,14 @@ struct CacheHeader;
 
 struct CacheBaseHeader {
   static constexpr uint32 ID = CompileFourCC("SPCH");
-  uint32 id = ID;
-  uint8 version = 3;
-  uint8 numLevels;
-  uint16 maxPathSize;
-  uint32 numFiles;
-  uint32 zipCRC;
-  uint64 zipSize;
-  uint64 zipCheckupOffset;
+  muint32 id = ID;
+  muint8 version = 3;
+  muint8 numLevels;
+  muint16 maxPathSize;
+  muint32 numFiles;
+  muint32 zipCRC;
+  muint64 zipSize;
+  muint64 zipCheckupOffset;
 };
 
 struct WALThread;
@@ -62,8 +62,8 @@ private:
 };
 
 struct ZipEntry {
-  uint64 offset;
-  uint64 size = 0;
+  muint64 offset;
+  muint64 size = 0;
 };
 
 enum class ZIPIOEntryType {
