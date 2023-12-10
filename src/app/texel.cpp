@@ -1252,7 +1252,7 @@ struct NewTexelContextDDS : NewTexelContextImpl {
           throw std::logic_error("Expected path");
         }
 
-        ectx->NewFile(std::string(pathOverride.GetFullPath()));
+        ectx->NewFile(std::string(pathOverride.ChangeExtension2("dds")));
         ectx->SendData({reinterpret_cast<const char *>(&dds), size_t(dds.DDS_SIZE)});
         ectx->SendData(yasBuffer);
       } else {
@@ -1415,7 +1415,7 @@ struct NewTexelContextDDSLegacy : NewTexelContextDDS {
           throw std::logic_error("Expected path");
         }
 
-        ectx->NewFile(std::string(pathOverride.GetFullPath()));
+        ectx->NewFile(std::string(pathOverride.ChangeExtension(suffix)));
         ectx->SendData({reinterpret_cast<const char *>(&dds), size_t(dds.LEGACY_SIZE)});
         ectx->SendData(buffar);
       } else {
