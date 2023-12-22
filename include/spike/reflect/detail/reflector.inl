@@ -163,7 +163,7 @@ inline std::string Reflector::GetReflectedValue(JenHash hash) const {
   if (!found)
     return "";
 
-  return GetReflectedValue(found->index);
+  return GetReflectedValue(*found);
 }
 
 inline std::string Reflector::GetReflectedValue(JenHash hash,
@@ -173,7 +173,7 @@ inline std::string Reflector::GetReflectedValue(JenHash hash,
   if (!found)
     return "";
 
-  return GetReflectedValue(found->index, subID);
+  return GetReflectedValue(*found, subID);
 }
 
 inline std::string Reflector::GetReflectedValue(JenHash hash, size_t subID,
@@ -183,7 +183,7 @@ inline std::string Reflector::GetReflectedValue(JenHash hash, size_t subID,
   if (!found)
     return "";
 
-  return GetReflectedValue(found->index, subID, element);
+  return GetReflectedValue(*found, subID, element);
 }
 
 inline ReflectedInstance Reflector::GetReflectedSubClass(JenHash hash,
@@ -193,7 +193,7 @@ inline ReflectedInstance Reflector::GetReflectedSubClass(JenHash hash,
   if (!found)
     return {};
 
-  return GetReflectedSubClass(found->index, subID);
+  return GetReflectedSubClass(*found, subID);
 }
 
 inline ReflectedInstance Reflector::GetReflectedSubClass(JenHash hash,
@@ -269,7 +269,7 @@ inline bool Reflector::IsArray(JenHash hash) const {
   if (!found)
     return false;
 
-  return IsArray(found->index);
+  return found->type == REFType::Array || found->type == REFType::ArrayClass;
 }
 
 inline bool Reflector::IsArray(size_t id) const {
@@ -279,4 +279,50 @@ inline bool Reflector::IsArray(size_t id) const {
   const ReflType fl = GetReflectedInstance().rfStatic->types[id];
 
   return fl.type == REFType::Array || fl.type == REFType::ArrayClass;
+}
+
+inline std::string Reflector::GetReflectedValue(size_t id) const {
+  if (id >= GetNumReflectedValues())
+    return "";
+
+  auto inst = GetReflectedInstance();
+  const ReflType &reflValue = inst.rfStatic->types[id];
+  return GetReflectedValue(reflValue);
+}
+
+inline std::string Reflector::GetReflectedValue(size_t id, size_t subID) const {
+  if (id >= GetNumReflectedValues())
+    return "";
+
+  auto inst = GetReflectedInstance();
+  const ReflType &reflValue = inst.rfStatic->types[id];
+  return GetReflectedValue(reflValue, subID);
+}
+
+inline std::string Reflector::GetReflectedValue(size_t id, size_t subID,
+                                         size_t element) const {
+  if (id >= GetNumReflectedValues() || !IsArray(id))
+    return "";
+
+  auto inst = GetReflectedInstance();
+  const ReflType &reflValue = inst.rfStatic->types[id];
+  return GetReflectedValue(reflValue, subID, element);
+}
+
+inline ReflectedInstance Reflector::GetReflectedSubClass(size_t id,
+                                                  size_t subID) const {
+  if (id >= GetNumReflectedValues())
+    return {};
+
+  auto inst = GetReflectedInstance();
+  const ReflType &reflValue = inst.rfStatic->types[id];
+  return GetReflectedSubClass(reflValue, subID);
+}
+
+inline ReflectedInstance Reflector::GetReflectedSubClass(ReflType type, size_t subID) {
+  return const_cast<const Reflector *>(this)->GetReflectedSubClass(type, subID);
+}
+
+inline ReflectedInstance Reflector::GetReflectedSubClass(size_t id, size_t subID) {
+  return const_cast<const Reflector *>(this)->GetReflectedSubClass(id, subID);
 }
