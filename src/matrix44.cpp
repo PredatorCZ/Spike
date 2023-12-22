@@ -124,7 +124,7 @@ void Matrix44::TransposeFull() {
 
 namespace es {
 Vector4A16 operator*(const Vector4A16 &point, const es::Matrix44 &mtx) {
-  auto result = AsVec(point) * AsMat4(mtx);
+  auto result = AsMat4(mtx) * AsVec(point);
   return AsVec(result);
 }
 } // namespace es
