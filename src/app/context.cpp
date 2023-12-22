@@ -76,7 +76,7 @@ REFLECT(CLASS(MainAppConfFriend),
         MEMBERNAME(texelSettings, "texel-settings"))
 
 REFLECT(CLASS(CLISettings),
-        MEMBERNAME(out, "output-directory",
+        MEMBER(out,
                    ReflDesc{"Output folder for processed files", "FOLDER"}))
 
 REFLECT(
@@ -388,7 +388,11 @@ int APPContext::ApplySetting(std::string_view key, std::string_view value) {
   };
 
   for (auto s : settings) {
-    rType = Settings().GetReflectedType(keyHash);
+    if (!s) {
+      continue;
+    }
+
+    rType = s->GetReflectedType(keyHash);
     if (rType) {
       refl = s;
       break;
