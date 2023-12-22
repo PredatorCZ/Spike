@@ -127,10 +127,11 @@ struct UILines {
   }
 };
 
-void ScanModules(const std::string &appFolder, const std::string &appName) {
+bool ScanModules(const std::string &appFolder, const std::string &appName) {
   DirectoryScanner sc;
   sc.AddFilter(std::string_view(".spk$"));
   sc.Scan(appFolder);
+  bool isOkay = true;
 
   for (auto &m : sc) {
     try {
@@ -142,8 +143,11 @@ void ScanModules(const std::string &appFolder, const std::string &appName) {
       ctx.FromConfig();
     } catch (const std::runtime_error &e) {
       printerror(e.what());
+      isOkay = false;
     }
   }
+
+  return isOkay;
 }
 
 void GenerateDocumentation(const std::string &appFolder,
@@ -341,8 +345,7 @@ int Main(int argc, TCHAR *argv[]) {
   if (argc < 2) {
     printwarning(
         "No parameters provided, entering scan mode and generating config.");
-    ScanModules(appFolder, appName);
-    return 0;
+    return !ScanModules(appFolder, appName);
   }
 
   auto moduleName = std::to_string(argv[1]);
