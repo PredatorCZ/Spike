@@ -76,8 +76,7 @@ REFLECT(CLASS(MainAppConfFriend),
         MEMBERNAME(texelSettings, "texel-settings"))
 
 REFLECT(CLASS(CLISettings),
-        MEMBER(out,
-                   ReflDesc{"Output folder for processed files", "FOLDER"}))
+        MEMBER(out, ReflDesc{"Output folder for processed files", "FOLDER"}))
 
 REFLECT(
     CLASS(ExtractConf),
@@ -549,6 +548,40 @@ void APPContext::GetMarkdownDoc(std::ostream &out, pugi::xml_node node) const {
   out << "## " << className << "\n\n### Module command: " << moduleName
       << "\n\n"
       << description << "\n\n";
+
+  if (info->filters.size() > 0) {
+    if (info->batchControlFilters.size() > 0) {
+      out << "NOTE: The following file patterns apply to `batch.json` which is "
+             "described "
+             "[HERE](https://github.com/PredatorCZ/Spike/wiki/"
+             "Spike---Batching)\n\n";
+
+      out << "### Main file patterns: ";
+
+      for (auto &filter : info->batchControlFilters) {
+        out << '`' << filter << "`, ";
+      }
+
+      out.seekp(size_t(out.tellp()) - 2);
+      out << "\n\n### Secondary file patterns: ";
+
+      for (auto &filter : info->filters) {
+        out << '`' << filter << "`, ";
+      }
+
+      out.seekp(size_t(out.tellp()) - 2);
+    } else {
+      out << "### Input file patterns: ";
+
+      for (auto &filter : info->filters) {
+        out << '`' << filter << "`, ";
+      }
+
+      out.seekp(size_t(out.tellp()) - 2);
+    }
+
+    out << "\n\n";
+  }
 
   if (!info->settings) {
     return;
