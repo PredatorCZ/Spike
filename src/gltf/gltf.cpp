@@ -13,6 +13,7 @@ void GLTF::FinishAndSave(BinWritterRef wr, const std::string & docPath)
 
         for (auto & a : streams)
         {
+            a.byteLength = a.wr.Tell();
             a.wr.ApplyPadding();
             retval += a.wr.Tell();
         }
@@ -39,7 +40,6 @@ void GLTF::FinishAndSave(BinWritterRef wr, const std::string & docPath)
         for (auto & a : streams)
         {
             a.buffer = 0;
-            a.byteLength = a.wr.Tell();
             a.byteOffset = curOffset;
             curOffset += a.byteLength;
             bufferViews.at(a.index) = std::move(a);
@@ -55,8 +55,8 @@ void GLTF::FinishAndSave(BinWritterRef wr, const std::string & docPath)
         for (auto & a : streams)
         {
             char buffer[0x80000];
-            const size_t numChunks = a.byteLength / sizeof(buffer);
-            const size_t restBytes = a.byteLength % sizeof(buffer);
+            const size_t numChunks = a.wr.Tell() / sizeof(buffer);
+            const size_t restBytes = a.wr.Tell() % sizeof(buffer);
 
             for (size_t i = 0; i < numChunks; i++)
             {
