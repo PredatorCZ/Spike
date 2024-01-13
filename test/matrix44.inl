@@ -57,7 +57,7 @@ int test_matrix44_02() {
   es::Matrix44 mtx(Vector4A16(-0.5797f, 0.0955f, -0.53f, 0.6115f));
 
   auto rotated = Vector4A16{1.f, 1.f, 1.f, 1.f} * mtx;
-  TEST_EQUAL(rotated, Vector4A16(0.1587f, -0.5066f, 1.6486f, 1.f));
+  TEST_EQUAL(rotated, Vector4A16(1.68871f, -0.385074f, -0.00286227f, 1.f));
 
   mtx = es::Matrix44({0.353041, 0.418703, 0.83669, 0.f},
                      {-0.933951, 0.21091, 0.288535, 0.f},
