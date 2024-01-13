@@ -126,7 +126,7 @@ public:
   C *operator->() { return *this; }
 
   operator const C *() const { return Get(); }
-  const C &operator*() const { return *static_cast<C *>(*this); }
+  const C &operator*() const { return *static_cast<const C *>(*this); }
   const C *operator->() const { return *this; }
 
   template <class container> bool Check(container &store) const {
