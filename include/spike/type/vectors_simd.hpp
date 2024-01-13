@@ -146,7 +146,9 @@ public:
                            static_cast<T>(Z), static_cast<T>(W));
   }
 
-  bool operator==(vec_cref input) const { return Compare(input._data, _data) == 0xF; }
+  bool operator==(vec_cref input) const {
+    return Compare(input._data, _data) == 0xF;
+  }
   bool operator!=(vec_cref input) const { return !(*this == input); }
 
   bool operator<(vec_cref input) const {
@@ -156,10 +158,12 @@ public:
     return _mm_movemask_ps(_mm_cmpgt_ps(_data, input._data)) == 0xF;
   }
   bool operator<=(vec_cref input) const {
-    return (_mm_movemask_ps(_mm_cmplt_ps(_data, input._data)) | Compare(_data, input._data)) == 0xF;
+    return (_mm_movemask_ps(_mm_cmplt_ps(_data, input._data)) |
+            Compare(_data, input._data)) == 0xF;
   }
   bool operator>=(vec_cref input) const {
-    return (_mm_movemask_ps(_mm_cmpgt_ps(_data, input._data)) | Compare(_data, input._data)) == 0xF;
+    return (_mm_movemask_ps(_mm_cmpgt_ps(_data, input._data)) |
+            Compare(_data, input._data)) == 0xF;
   }
 
   bool operator<(value_type input) const { return *this < vector(input); }
@@ -212,17 +216,17 @@ public:
     return *this / len;
   }
 
-  vec_ref Normalize() {
-    return *this = Normalized();
-  }
+  vec_ref Normalize() { return *this = Normalized(); }
 
   vector QConjugate() const {
     return *this * vector(-1.0f, -1.0f, -1.0f, 1.0f);
   }
 
   template <size_t elementIndex = 3> vec_ref QComputeElement() {
-    const auto res0 = vector(1.f) - DotV(*this);
-    const auto res1 = _mm_sqrt_ss(res0._data);
+    const vector res0 = vector(1.f) - DotV(*this);
+    const store_type test0 = _mm_cmple_ps(res0._data, Vector4A16(0.0001)._data);
+    const store_type res1 =
+        _mm_movemask_ps(test0) == 0 ? _mm_sqrt_ss(res0._data) : vector()._data;
 
     _data = _mm_insert_ps(_data, res1, _MM_MK_INSERTPS_NDX(0, elementIndex, 0));
 
@@ -230,7 +234,8 @@ public:
   }
 
   vec_ref QComputeElementVar(int elementIndex = 3) {
-    _arr[elementIndex] = sqrtf(1.0f - Dot(*this));
+    const float result = 1.0f - Dot(*this);
+    _arr[elementIndex] = result < 0.0001 ? 0 : sqrtf(result);
 
     return *this;
   }
