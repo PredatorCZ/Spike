@@ -16,6 +16,7 @@
     limitations under the License.
 */
 
+#include "nlohmann/json.hpp"
 #include "project.h"
 #include "spike/app/batch.hpp"
 #include "spike/app/console.hpp"
@@ -248,6 +249,25 @@ void PackModeBatch(Batch &batch) {
   };
 }
 
+void MergePackModeBatch(Batch &batch, const std::string &folderPath,
+                        AppPackContext *archiveContext) {
+  uint8 consoleDetail = 1 | uint8(batch.ctx->info->multithreaded) << 1;
+  ConsolePrintDetail(consoleDetail);
+  printline("Processing: " << folderPath);
+
+  batch.forEachFile = [=](AppContextShare *iCtx) {
+    if (iCtx->workingFile.GetFullPath().starts_with(folderPath)) {
+      int notSlash = !folderPath.ends_with('/');
+      archiveContext->SendFile(
+          iCtx->workingFile.GetFullPath().substr(folderPath.size() + notSlash),
+          iCtx->GetStream());
+    } else {
+      archiveContext->SendFile(iCtx->workingFile.GetFullPath(),
+                               iCtx->GetStream());
+    }
+  };
+}
+
 auto ExtractStatBatch(Batch &batch) {
   struct ExtractStatsMaker : ExtractStats {
     std::mutex mtx;
@@ -336,6 +356,132 @@ void ProcessBatch(Batch &batch, size_t numFiles) {
   };
 }
 
+int CreateContent(const std::string &moduleName, const std::string &appFolder,
+                  const std::string &appName, APPContext &ctx) {
+  try {
+    ctx = APPContext(moduleName.c_str(), appFolder, appName);
+  } catch (const std::exception &e) {
+    printerror(e.what());
+    return 2;
+  }
+
+  ConsolePrintDetail(0);
+
+  printline(ctx.info->header);
+  printline(appHeader0 << appName << ' ' << moduleName << appHeader1);
+
+  return 0;
+}
+
+int LoadProject(const std::string &path, const std::string &appFolder,
+                const std::string &appName) {
+  std::ifstream str(path);
+  nlohmann::json project(nlohmann::json::parse(str));
+
+  APPContext ctx;
+  std::string moduleName = project["module"];
+
+  if (int ret = CreateContent(moduleName, appFolder, appName, ctx); ret != 0) {
+    return ret;
+  }
+
+  ConsolePrintDetail(1);
+
+  std::string outputDir;
+
+  if (!project["output_dir"].is_null()) {
+    std::string outputDir = project["output_dir"];
+    ctx.ApplySetting("out", outputDir);
+  }
+
+  bool noConfig = !project["no_config"].is_null() && project["no_config"];
+
+  if (!noConfig) {
+    printinfo("Loading config: " << appName << ".config");
+    ctx.FromConfig();
+  }
+
+  nlohmann::json settings = project["settings"];
+
+  for (auto &s : settings.items()) {
+    std::string dumped = s.value().dump();
+    if (dumped.front() == '"') {
+      dumped.erase(0, 1);
+    }
+    if (dumped.back() == '"') {
+      dumped.erase(dumped.size() - 1);
+    }
+    ctx.ApplySetting(s.key(), dumped);
+  }
+
+  nlohmann::json inputs = project["inputs"];
+
+  InitTempStorage();
+  ctx.SetupModule();
+  std::unique_ptr<AppPackContext> archiveContext;
+
+  {
+    Batch batch(&ctx, ctx.info->multithreaded * 50);
+    AFileInfo batchPath(path);
+    std::string batchBase(batchPath.GetFolder());
+
+    if (ctx.NewArchive) {
+      std::string folder(batchPath.GetFolder());
+      std::string archive(batchPath.GetFullPathNoExt());
+      archiveContext.reset(batch.ctx->NewArchive(archive));
+      MergePackModeBatch(batch, folder, archiveContext.get());
+    } else {
+      if (ctx.ExtractStat) {
+        auto stats = ExtractStatBatch(batch);
+        for (std::string input : inputs) {
+          batch.AddFile(batchBase + input);
+        }
+
+        batch.FinishBatch();
+        batch.Clean();
+        stats.get()->totalFiles += inputs.size();
+        ProcessBatch(batch, stats.get());
+      } else {
+        ProcessBatch(batch, inputs.size());
+      }
+    }
+
+    if (ctx.info->batchControlFilters.size() > 0) {
+      std::string pathDir(AFileInfo(path).GetFolder());
+      for (nlohmann::json input : inputs) {
+        if (input.is_array()) {
+          batch.AddBatch(input, pathDir);
+        } else {
+          printwarning("Expected group, got " << input.type_name()
+                                              << " instead. Skipping input.");
+        }
+      }
+    } else {
+      for (nlohmann::json input : inputs) {
+        if (input.is_string()) {
+          batch.AddFile(batchBase + std::string(input));
+        } else {
+          printwarning("Expected path string, got "
+                       << input.type_name() << " instead. Skipping input.");
+        }
+      }
+    }
+
+    batch.FinishBatch();
+  }
+
+  if (archiveContext) {
+    ConsolePrintDetail(1);
+    archiveContext->Finish();
+  }
+
+  if (ctx.FinishContext) {
+    ctx.FinishContext();
+  }
+
+  return 0;
+}
+
 int Main(int argc, TCHAR *argv[]) {
   ConsolePrintDetail(1);
   AFileInfo appLocation(std::to_string(*argv));
@@ -362,6 +508,8 @@ int Main(int argc, TCHAR *argv[]) {
 
     GenerateDocumentation(appFolder, appName, templatePath);
     return 0;
+  } else if (moduleName.ends_with(".json")) {
+    return LoadProject(moduleName, appFolder, appName);
   }
 
   if (argc < 3) {
@@ -371,18 +519,9 @@ int Main(int argc, TCHAR *argv[]) {
 
   APPContext ctx;
 
-  try {
-    ctx = APPContext(moduleName.data(), appFolder, appName);
-  } catch (const std::exception &e) {
-    printerror(e.what());
-    return 2;
+  if (int ret = CreateContent(moduleName, appFolder, appName, ctx); ret != 0) {
+    return ret;
   }
-
-  ConsolePrintDetail(0);
-
-  printline(ctx.info->header);
-  printline(appHeader0 << appLocation.GetFilename() << ' ' << moduleName
-                       << appHeader1);
 
   if (IsHelp(argv[2])) {
     ctx.PrintCLIHelp();
