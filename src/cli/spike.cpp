@@ -214,13 +214,13 @@ void PackModeBatch(Batch &batch) {
   auto payload = std::make_shared<PackData>();
 
   batch.forEachFolder = [payload, ctx = batch.ctx](const std::string &path,
-                                                   AppPackStats stats) {
+                                                   size_t numFiles) {
     payload->folderPath = path;
-    payload->archiveContext.reset(ctx->NewArchive(path, stats));
+    payload->archiveContext.reset(ctx->NewArchive(path));
     payload->pbarLabel = "Folder id " + std::to_string(payload->index++);
     payload->progBar =
         AppendNewLogLine<DetailedProgressBar>(payload->pbarLabel);
-    payload->progBar->ItemCount(stats.numFiles);
+    payload->progBar->ItemCount(numFiles);
     uint8 consoleDetail = 1 | uint8(ctx->info->multithreaded) << 1;
     ConsolePrintDetail(consoleDetail);
     printline("Processing: " << path);
@@ -229,9 +229,10 @@ void PackModeBatch(Batch &batch) {
   batch.forEachFile = [payload](AppContextShare *iCtx) {
     if (iCtx->workingFile.GetFullPath().starts_with(payload->folderPath)) {
       int notSlash = !payload->folderPath.ends_with('/');
-      payload->archiveContext->SendFile(iCtx->workingFile.GetFullPath().substr(
-                                            payload->folderPath.size() + notSlash),
-                                        iCtx->GetStream());
+      payload->archiveContext->SendFile(
+          iCtx->workingFile.GetFullPath().substr(payload->folderPath.size() +
+                                                 notSlash),
+          iCtx->GetStream());
     } else {
       payload->archiveContext->SendFile(iCtx->workingFile.GetFullPath(),
                                         iCtx->GetStream());

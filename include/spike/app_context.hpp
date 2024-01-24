@@ -57,7 +57,7 @@ protected:
 };
 
 struct AppInfo_s {
-  static constexpr uint32 CONTEXT_VERSION = 6;
+  static constexpr uint32 CONTEXT_VERSION = 7;
   uint32 contextVersion = CONTEXT_VERSION;
   // No RequestFile or FindFile is being called
   bool filteredLoad = false;
@@ -92,11 +92,6 @@ struct AppPackContext {
   virtual ~AppPackContext() = default;
   virtual void SendFile(std::string_view path, std::istream &stream) = 0;
   virtual void Finish() = 0;
-};
-
-struct AppPackStats {
-  size_t numFiles;
-  size_t totalSizeFileNames;
 };
 
 struct AppHelpContext {
@@ -349,7 +344,6 @@ bool AC_EXTERN AppInitContext(const std::string &dataFolder);
 void AC_EXTERN AppProcessFile(AppContext *ctx);
 // Returns total number of files within archive
 size_t AC_EXTERN AppExtractStat(request_chunk requester);
-AppPackContext AC_EXTERN *AppNewArchive(const std::string &folder,
-                                        const AppPackStats &stats);
+AppPackContext AC_EXTERN *AppNewArchive(const std::string &folder);
 void AC_EXTERN AppFinishContext();
 };

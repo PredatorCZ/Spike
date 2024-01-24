@@ -8,7 +8,7 @@
 #include <deque>
 #include <future>
 
-static constexpr bool CATCH_EXCEPTIONS = false;
+static constexpr bool CATCH_EXCEPTIONS = true;
 
 struct WorkerThread {
   MultiThreadManagerImpl &manager;
@@ -194,6 +194,33 @@ Batch::Batch(APPContext *ctx_, size_t queueCapacity)
   }
 }
 
+void Batch::AddBatch(nlohmann::json &batch, const std::string &batchPath) {
+  for (auto &group : batch) {
+    std::vector<std::string> supplementals;
+    std::string controlPath;
+
+    for (std::string item : group) {
+      if (batchControlFilter.IsFiltered(item)) {
+        if (!controlPath.empty()) {
+          printerror("Dupicate main file for batch: " << item);
+          continue;
+        }
+
+        controlPath = batchPath + item;
+        continue;
+      }
+
+      supplementals.emplace_back(batchPath + item);
+    }
+
+    manager.Push(
+        [&, iCtx{MakeIOContext(controlPath, std::move(supplementals))}] {
+          forEachFile(iCtx.get());
+          iCtx->Finish();
+        });
+  }
+}
+
 void Batch::AddFile(std::string path) {
   auto type = FileType(path);
   switch (type) {
@@ -219,14 +246,7 @@ void Batch::AddFile(std::string path) {
     }
 
     if (forEachFolder) {
-      AppPackStats stats{};
-      stats.numFiles = scanner.Files().size();
-
-      for (auto &f : scanner) {
-        stats.totalSizeFileNames += f.size() + 1;
-      }
-
-      forEachFolder(path, stats);
+      forEachFolder(path, scanner.Files().size());
     }
 
     for (auto &f : scanner) {
@@ -292,14 +312,11 @@ void Batch::AddFile(std::string path) {
 
         if (forEachFolder) {
           auto zipPath = path.substr(0, path.size() - 4);
-          AppPackStats stats{};
+          size_t numFiles = 0;
 
-          Iterate([&](auto &f) {
-            stats.numFiles++;
-            stats.totalSizeFileNames += f.AsView().size() + 1;
-          });
+          Iterate([&](auto &) { numFiles++; });
 
-          forEachFolder(zipPath, stats);
+          forEachFolder(zipPath, numFiles);
         }
 
         Iterate([&](auto &f) {
@@ -352,30 +369,7 @@ void Batch::AddFile(std::string path) {
           updateFileCount(batch.size());
         }
 
-        for (auto &group : batch) {
-          std::vector<std::string> supplementals;
-          std::string controlPath;
-
-          for (std::string item : group) {
-            if (batchControlFilter.IsFiltered(item)) {
-              if (!controlPath.empty()) {
-                printerror("Dupicate main file for batch: " << item);
-                continue;
-              }
-
-              controlPath = pathDir + item;
-              continue;
-            }
-
-            supplementals.emplace_back(pathDir + item);
-          }
-
-          manager.Push(
-              [&, iCtx{MakeIOContext(controlPath, std::move(supplementals))}] {
-                forEachFile(iCtx.get());
-                iCtx->Finish();
-              });
-        }
+        AddBatch(batch, pathDir);
       } else {
         manager.Push([&, iCtx{MakeIOContext(path)}] {
           forEachFile(iCtx.get());
@@ -426,14 +420,11 @@ void Batch::FinishBatch() {
 
     if (forEachFolder) {
       auto zipPath = zip.substr(0, zip.size() - 4);
-      AppPackStats stats{};
+      size_t numFiles = 0;
 
-      Iterate([&](auto &f) {
-        stats.numFiles++;
-        stats.totalSizeFileNames += f.AsView().size() + 1;
-      });
+      Iterate([&](auto &) { numFiles++; });
 
-      forEachFolder(std::move(zipPath), stats);
+      forEachFolder(std::move(zipPath), numFiles);
     }
 
     Iterate([&](auto &f) {

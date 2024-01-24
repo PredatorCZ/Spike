@@ -1,4 +1,5 @@
 #include "context.hpp"
+#include "nlohmann/json_fwd.hpp"
 #include "spike/io/directory_scanner.hpp"
 #include <functional>
 #include <memory>
@@ -51,7 +52,7 @@ struct WorkerManager {
 
 struct Batch {
   APPContext *ctx;
-  std::function<void(const std::string &path, AppPackStats)> forEachFolder;
+  std::function<void(const std::string &path, size_t)> forEachFolder;
   std::function<void()> forEachFolderFinish;
   std::function<void(AppContextShare *)> forEachFile;
   std::function<void(size_t)> updateFileCount;
@@ -62,6 +63,7 @@ struct Batch {
   Batch(APPContext *ctx_, size_t queueCapacity);
 
   void AddFile(std::string path);
+  void AddBatch(nlohmann::json &batch, const std::string &batchPath);
 
   void FinishBatch();
   void Clean() {
