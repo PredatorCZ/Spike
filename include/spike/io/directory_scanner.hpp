@@ -24,6 +24,10 @@
 
 class PathFilter {
 public:
+  PathFilter() = default;
+
+  template <class... C> PathFilter(C... items) { (AddFilter(items), ...); }
+
   bool PC_EXTERN IsFiltered(std::string_view name) const;
 
   /*
@@ -39,9 +43,11 @@ public:
     filters.push_back(filterHolders.back());
   }
   void AddFilter(std::string_view val) { filters.push_back(val); }
+  void AddFilter(const char *val) { filters.push_back(val); }
   void ClearFilters() { filters.clear(); }
 
 private:
+  friend class PathFilterFriend;
   std::vector<std::string> filterHolders;
   std::vector<std::string_view> filters;
 };
