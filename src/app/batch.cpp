@@ -8,7 +8,7 @@
 #include <deque>
 #include <future>
 
-static constexpr bool CATCH_EXCEPTIONS = true;
+static constexpr bool CATCH_EXCEPTIONS = false;
 
 struct WorkerThread {
   MultiThreadManagerImpl &manager;

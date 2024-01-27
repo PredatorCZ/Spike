@@ -41,7 +41,7 @@ void GLTF::FinishAndSave(BinWritterRef wr, const std::string & docPath)
         {
             a.buffer = 0;
             a.byteOffset = curOffset;
-            curOffset += a.byteLength;
+            curOffset += a.byteLength + GetPadding(a.byteLength, 16);
             bufferViews.at(a.index) = std::move(a);
         }
 
