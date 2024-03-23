@@ -116,9 +116,9 @@ void WorkerThread::operator()() {
         try {
           item();
         } catch (const std::exception &e) {
-          printerror(e.what());
+          PrintError(e.what());
         } catch (...) {
-          printerror("Uncaught exception");
+          PrintError("Uncaught exception");
         }
       }
     }
@@ -146,7 +146,7 @@ void SimpleManager::Push(SimpleManager::FuncType item) {
     try {
       item();
     } catch (const std::exception &e) {
-      printerror(e.what());
+      PrintError(e.what());
     }
   }
 }
@@ -202,7 +202,7 @@ void Batch::AddBatch(nlohmann::json &batch, const std::string &batchPath) {
     for (std::string item : group) {
       if (batchControlFilter.IsFiltered(item)) {
         if (!controlPath.empty()) {
-          printerror("Dupicate main file for batch: " << item);
+          PrintError("Dupicate main file in batch group: ", item);
           continue;
         }
 
@@ -211,6 +211,11 @@ void Batch::AddBatch(nlohmann::json &batch, const std::string &batchPath) {
       }
 
       supplementals.emplace_back(batchPath + item);
+    }
+
+    if (controlPath.empty()) {
+      PrintError("Main file not provided for batch group");
+      continue;
     }
 
     manager.Push(
@@ -357,7 +362,7 @@ void Batch::AddFile(std::string path) {
     if (type == FileType_e::File) {
       if (!ctx->info->batchControlFilters.empty()) {
         if (!path.ends_with("batch.json")) {
-          printerror("Expected json bach, got: " << path);
+          PrintError("Expected json bach, got: ", path);
           break;
         }
 
@@ -378,7 +383,7 @@ void Batch::AddFile(std::string path) {
       }
       break;
     }
-    printerror("Invalid path: " << path);
+    PrintError("Invalid path: ", path);
     break;
   }
   }
