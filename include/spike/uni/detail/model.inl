@@ -51,11 +51,11 @@ inline void PrimitiveDescriptor::Resample(FormatCodec::fvec &data) const {
 }
 
 inline void PrimitiveDescriptor::Resample(FormatCodec::fvec &data,
-                                   const es::Matrix44 &transform) const {
+                                          const es::Matrix44 &transform) const {
   switch (UnpackDataType()) {
   case UnpackDataType_e::None:
     for (auto &d : data) {
-      d = d * transform;
+      d = ((d * Vector4A16(1, 1, 1, 0)) + Vector4A16(0, 0, 0, 1)) * transform;
     }
     break;
 
@@ -63,7 +63,8 @@ inline void PrimitiveDescriptor::Resample(FormatCodec::fvec &data,
     auto udata = UnpackData();
 
     for (auto &d : data) {
-      d = (d * udata.min) * transform;
+      d = d * udata.min;
+      d = ((d * Vector4A16(1, 1, 1, 0)) + Vector4A16(0, 0, 0, 1)) * transform;
     }
     break;
   }
@@ -72,7 +73,8 @@ inline void PrimitiveDescriptor::Resample(FormatCodec::fvec &data,
     auto udata = UnpackData();
 
     for (auto &d : data) {
-      d = (udata.max + d * udata.min) * transform;
+      d = udata.max + d * udata.min;
+      d = ((d * Vector4A16(1, 1, 1, 0)) + Vector4A16(0, 0, 0, 1)) * transform;
     }
     break;
   }
@@ -81,7 +83,8 @@ inline void PrimitiveDescriptor::Resample(FormatCodec::fvec &data,
     auto udata = UnpackData();
 
     for (auto &d : data) {
-      d = (d + udata.min) * transform;
+      d = d + udata.min;
+      d = ((d * Vector4A16(1, 1, 1, 0)) + Vector4A16(0, 0, 0, 1)) * transform;
     }
     break;
   }
