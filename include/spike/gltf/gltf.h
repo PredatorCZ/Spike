@@ -501,6 +501,8 @@ namespace gltf
 
     FX_GLTF_NODISCARD StreamState GLTF_EXTERN StreamBinaryHeaders(Document & document, std::ostream & output, size_t inputSize);
     void GLTF_EXTERN StreamBinaryFinish(const Document & document, const StreamState & state, std::ostream & output, const std::string & documentRootPath);
+    void GLTF_EXTERN to_json(nlohmann::json & json, Document const & document);
+    void GLTF_EXTERN from_json(nlohmann::json const & json, Document & document);
 
 } // namespace gltf
 } // namespace fx

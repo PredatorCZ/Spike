@@ -1,12 +1,12 @@
 cmake_minimum_required(VERSION 3.9)
-project(gltf VERSION 1)
+project(gltf VERSION 2)
 set(CMAKE_CXX_STANDARD 20)
 
 add_library(gltf-interface INTERFACE)
 target_include_directories(gltf-interface INTERFACE include ${SPIKE_SOURCE_DIR}/3rd_party/json)
 
 if(NOT NO_OBJECTS)
-  add_library(gltf-objects OBJECT gltf.cpp fx_gltf.cpp)
+  add_library(gltf-objects OBJECT gltf.cpp fx/fx_gltf.cpp)
   target_link_libraries(gltf-objects PUBLIC gltf-interface spike-objects)
   set_target_properties(gltf-objects PROPERTIES POSITION_INDEPENDENT_CODE
                                                 ${OBJECTS_PID})
@@ -16,7 +16,7 @@ if(NOT NO_OBJECTS)
 endif()
 
 if (BUILD_SHARED_LIBS)
-  add_library(gltf SHARED gltf.cpp fx_gltf.cpp)
+  add_library(gltf SHARED gltf.cpp fx/fx_gltf.cpp)
   target_link_libraries(gltf gltf-interface spike)
   target_compile_definitions(gltf INTERFACE GLTF_IMPORT PRIVATE GLTF_EXPORT)
 

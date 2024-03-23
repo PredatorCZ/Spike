@@ -17,6 +17,7 @@
 
 #pragma once
 #include "gltf/gltf.h"
+#include "gltf_attribute.hpp"
 #include "io/binwritter_stream.hpp"
 #include "type/matrix44.hpp"
 #include "type/vectors_simd.hpp"
@@ -81,27 +82,46 @@ struct GLTF : gltf::Document {
   }
 
   void GLTF_EXTERN FinishAndSave(BinWritterRef wr, const std::string &docPath);
+  void GLTF_EXTERN StripBuffers();
 
 private:
   std::vector<GLTFStream> streams;
 };
 
+struct SavedIndices {
+  size_t accessorIndex;
+  uint32 minIndex;
+  uint32 maxIndex;
+};
+
 struct GLTFModel : GLTF {
   std::optional<es::Matrix44> transform;
-  size_t GLTF_EXTERN SaveIndices(const uni::IndexArray &idArray);
-  void GLTF_EXTERN WritePositions(gltf::Attributes &attrs,
-                                  const uni::PrimitiveDescriptor &d,
-                                  size_t numVertices);
-  void GLTF_EXTERN WriteTexCoord(gltf::Attributes &attrs,
-                                 const uni::PrimitiveDescriptor &d,
-                                 size_t numVertices);
-  void GLTF_EXTERN WriteVertexColor(gltf::Attributes &attrs,
-                                    const uni::PrimitiveDescriptor &d,
-                                    size_t numVertices);
-  size_t GLTF_EXTERN WriteNormals8(const uni::PrimitiveDescriptor &d,
-                                   size_t numVertices);
-  size_t GLTF_EXTERN WriteNormals16(const uni::PrimitiveDescriptor &d,
-                                    size_t numVertices);
+  bool quantizeMesh = false;
+
+  SavedIndices GLTF_EXTERN SaveIndices(const void *data, size_t numIndices,
+                                       size_t indexSize = 2);
+  [[deprecated("Use other")]] size_t GLTF_EXTERN
+  SaveIndices(const uni::IndexArray &idArray);
+
+  gltf::Attributes GLTF_EXTERN
+  SaveVertices(const void *data, size_t numVertices,
+               std::span<const Attribute> attributes, size_t stride = 0);
+  size_t GLTF_EXTERN SaveVertices(const void *data, size_t numVertices,
+                                  Attribute attribute, size_t stride = 0);
+
+  [[deprecated("Use SaveVertices")]] void GLTF_EXTERN
+  WritePositions(gltf::Attributes &attrs, const uni::PrimitiveDescriptor &d,
+                 size_t numVertices);
+  [[deprecated("Use SaveVertices")]] void GLTF_EXTERN
+  WriteTexCoord(gltf::Attributes &attrs, const uni::PrimitiveDescriptor &d,
+                size_t numVertices);
+  [[deprecated("Use SaveVertices")]] void GLTF_EXTERN
+  WriteVertexColor(gltf::Attributes &attrs, const uni::PrimitiveDescriptor &d,
+                   size_t numVertices);
+  [[deprecated("Use SaveVertices")]] size_t GLTF_EXTERN
+  WriteNormals8(const uni::PrimitiveDescriptor &d, size_t numVertices);
+  [[deprecated("Use SaveVertices")]] size_t GLTF_EXTERN
+  WriteNormals16(const uni::PrimitiveDescriptor &d, size_t numVertices);
 
   GLTFStream &SkinStream() {
     if (ibmStream < 0) {
