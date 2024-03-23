@@ -745,10 +745,22 @@ void DecodeToRGB(const char *data, NewTexelContextCreate ctx,
     });
 
     size_t curTexel = 0;
-    for (auto &t : outData) {
-      Vector4A16 value;
-      codec.GetValue(value, data + tiler->get(curTexel++) * 2);
-      t = Vector(Vector4A16(value * 0xff)).Convert<uint8>();
+    if (ctx.baseFormat.swapPacked) {
+      const uint16 *iData = reinterpret_cast<const uint16 *>(data);
+      for (auto &t : outData) {
+        Vector4A16 value;
+        uint32 col = *(iData + tiler->get(curTexel++));
+        FByteswapper(col);
+
+        codec.GetValue(value, reinterpret_cast<const char *>(&col));
+        t = Vector(Vector4A16(value * 0xff)).Convert<uint8>();
+      }
+    } else {
+      for (auto &t : outData) {
+        Vector4A16 value;
+        codec.GetValue(value, data + tiler->get(curTexel++) * 2);
+        t = Vector(Vector4A16(value * 0xff)).Convert<uint8>();
+      }
     }
 
     break;
@@ -844,10 +856,22 @@ void DecodeToRGBA(const char *data, NewTexelContextCreate ctx,
     });
 
     size_t curTexel = 0;
-    for (auto &t : outData) {
-      Vector4A16 value;
-      codec.GetValue(value, data + tiler->get(curTexel++) * 4);
-      t = (value * 0xff).Convert<uint8>();
+    if (ctx.baseFormat.swapPacked) {
+      const uint32 *iData = reinterpret_cast<const uint32 *>(data);
+      for (auto &t : outData) {
+        Vector4A16 value;
+        uint32 col = *(iData + tiler->get(curTexel++));
+        FByteswapper(col);
+
+        codec.GetValue(value, reinterpret_cast<const char *>(&col));
+        t = (value * 0xff).Convert<uint8>();
+      }
+    } else {
+      for (auto &t : outData) {
+        Vector4A16 value;
+        codec.GetValue(value, data + tiler->get(curTexel++) * 4);
+        t = (value * 0xff).Convert<uint8>();
+      }
     }
     break;
   }
@@ -855,9 +879,19 @@ void DecodeToRGBA(const char *data, NewTexelContextCreate ctx,
   case F::RGBA4: {
     const uint16 *iData = reinterpret_cast<const uint16 *>(data);
     size_t curTexel = 0;
-    for (auto &t : outData) {
-      uint16 col = *(iData + tiler->get(curTexel++));
-      t = UCVector4(col << 4, col & 0xf0, (col >> 4) & 0xf0, (col >> 8) & 0xf0);
+    if (ctx.baseFormat.swapPacked) {
+      for (auto &t : outData) {
+        uint16 col = *(iData + tiler->get(curTexel++));
+        FByteswapper(col);
+        t = UCVector4(col << 4, col & 0xf0, (col >> 4) & 0xf0,
+                      (col >> 8) & 0xf0);
+      }
+    } else {
+      for (auto &t : outData) {
+        uint16 col = *(iData + tiler->get(curTexel++));
+        t = UCVector4(col << 4, col & 0xf0, (col >> 4) & 0xf0,
+                      (col >> 8) & 0xf0);
+      }
     }
 
     break;
@@ -866,10 +900,20 @@ void DecodeToRGBA(const char *data, NewTexelContextCreate ctx,
   case F::RGB5A1: {
     const uint16 *iData = reinterpret_cast<const uint16 *>(data);
     size_t curTexel = 0;
-    for (auto &t : outData) {
-      uint16 col = *(iData + tiler->get(curTexel++));
-      t = UCVector4(col << 3, (col >> 2) & 0xf8, (col >> 7) & 0xf8,
-                    int16(col) >> 15);
+
+    if (ctx.baseFormat.swapPacked) {
+      for (auto &t : outData) {
+        uint16 col = *(iData + tiler->get(curTexel++));
+        FByteswapper(col);
+        t = UCVector4(col << 3, (col >> 2) & 0xf8, (col >> 7) & 0xf8,
+                      int16(col) >> 15);
+      }
+    } else {
+      for (auto &t : outData) {
+        uint16 col = *(iData + tiler->get(curTexel++));
+        t = UCVector4(col << 3, (col >> 2) & 0xf8, (col >> 7) & 0xf8,
+                      int16(col) >> 15);
+      }
     }
 
     break;
@@ -1253,7 +1297,8 @@ struct NewTexelContextDDS : NewTexelContextImpl {
         }
 
         ectx->NewFile(std::string(pathOverride.ChangeExtension2("dds")));
-        ectx->SendData({reinterpret_cast<const char *>(&dds), size_t(dds.DDS_SIZE)});
+        ectx->SendData(
+            {reinterpret_cast<const char *>(&dds), size_t(dds.DDS_SIZE)});
         ectx->SendData(yasBuffer);
       } else {
         AFileInfo &workingPath = pathOverride.GetFullPath().empty()
@@ -1416,7 +1461,8 @@ struct NewTexelContextDDSLegacy : NewTexelContextDDS {
         }
 
         ectx->NewFile(std::string(pathOverride.ChangeExtension(suffix)));
-        ectx->SendData({reinterpret_cast<const char *>(&dds), size_t(dds.LEGACY_SIZE)});
+        ectx->SendData(
+            {reinterpret_cast<const char *>(&dds), size_t(dds.LEGACY_SIZE)});
         ectx->SendData(buffar);
       } else {
         AFileInfo &workingPath = pathOverride.GetFullPath().empty()

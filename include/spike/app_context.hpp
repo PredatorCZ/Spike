@@ -57,7 +57,7 @@ protected:
 };
 
 struct AppInfo_s {
-  static constexpr uint32 CONTEXT_VERSION = 7;
+  static constexpr uint32 CONTEXT_VERSION = 8;
   uint32 contextVersion = CONTEXT_VERSION;
   // No RequestFile or FindFile is being called
   bool filteredLoad = false;
@@ -170,6 +170,7 @@ struct TexelInputFormat {
   bool snorm = false;
   bool srgb = false;
   bool premultAlpha = false;
+  bool swapPacked = false;
 };
 
 enum class CubemapFace : uint8 {
