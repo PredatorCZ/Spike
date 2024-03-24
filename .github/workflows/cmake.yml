@@ -21,9 +21,10 @@ jobs:
             CC: gcc-12
             CXX: g++-12
             use-gcov: true
-          - name: Clang 13
-            CC: clang-13
-            CXX: clang++-13
+          # clang 13 not supporting libstdc 13
+          #- name: Clang 13
+          #  CC: clang-13
+          #  CXX: clang++-13
 
     env:
       CC: ${{matrix.CC}}
@@ -39,7 +40,6 @@ jobs:
 
       - name: Configure stuff
         run: |
-          sudo apt install g++-12
           mkdir ${{github.workspace}}/build
           cd ${{github.workspace}}/build
           cmake -DCMAKE_BUILD_TYPE=$BUILD_TYPE -DUSE_GCOV=$USE_GCOV -DCLI=TRUE -DGLTF=TRUE -DCMAKE_INSTALL_PREFIX=${{github.workspace}} -DCMAKE_INSTALL_RPATH=${{github.workspace}}/lib ..

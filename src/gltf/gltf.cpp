@@ -3,6 +3,7 @@
 #include "spike/uni/motion.hpp"
 #include "spike/uni/rts.hpp"
 #include "spike/util/aabb.hpp"
+#include <algorithm>
 
 void GLTF::FinishAndSave(BinWritterRef wr, const std::string &docPath) {
   size_t totalBufferSize = [&] {
