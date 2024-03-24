@@ -20,6 +20,7 @@ test_odr(
 )
 
 target_link_libraries(test_odr spike)
+target_include_directories(test_odr PRIVATE ${SPIKE_SOURCE_DIR}/3rd_party/json)
 
 build_target(
   NAME
