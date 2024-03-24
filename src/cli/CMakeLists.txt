@@ -9,6 +9,8 @@ build_target(
   APP
   LINKS
   spike-app-objects
+  INCLUDES
+  ${SPIKE_SOURCE_DIR}/3rd_party/json
   SOURCES
   spike.cpp
   console.cpp

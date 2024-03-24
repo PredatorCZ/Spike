@@ -166,7 +166,7 @@ void GLTF::StripBuffers() {
         });
       }
     }
-    GLTFStream *stream = [&]() -> GLTFStream * {
+    GLTFStream *stream = [&, &bw = bw]() -> GLTFStream * {
       for (auto &s : streams) {
         if (s.index == bw) {
           return &s;
