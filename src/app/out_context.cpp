@@ -87,6 +87,7 @@ void ZIPExtactContext::FinishZIP(cache_begin_cb cacheBeginCB) {
   }
 
   records.Write(zCentral);
+  records.BaseStream().flush();
 
   if (cache) {
     cacheBeginCB();
