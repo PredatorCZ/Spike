@@ -266,12 +266,19 @@ void InitConsole() {
   pthread_setname_np(logger.native_handle(), "console_logger");
   auto terminate = [](int sig) {
     TerminateConsoleDontWait();
+    printf("+------------------------------------------------+\n");
+    printf("| APPLICATION HAVE CLOSED UNEXPECTEDLY, CODE: %.2i |\n", sig);
+    printf("+------------------------------------------------+\n");
     std::exit(sig);
   };
 
   std::signal(SIGTERM, terminate);
   std::signal(SIGABRT, terminate);
   std::signal(SIGINT, terminate);
+  std::signal(SIGSEGV, terminate);
+#ifdef SIGBUS
+  std::signal(SIGBUS, terminate);
+#endif
 }
 
 void TerminateConsole() {
