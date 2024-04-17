@@ -108,6 +108,7 @@ struct APPContext : APPContextCopyData {
   void SetupModule();
   void FromConfig();
   void ResetSwitchSettings();
+  std::string GetClassName(pugi::xml_node node) const;
   void GetMarkdownDoc(std::ostream &out, pugi::xml_node node) const;
   int ApplySetting(std::string_view key, std::string_view value);
 

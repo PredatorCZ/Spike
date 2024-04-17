@@ -177,11 +177,6 @@ void GenerateDocumentation(const std::string &appFolder,
   }
 
   BinWritter_t<BinCoreOpenMode::Text> wr(appFolder + "/README.md");
-  const char *toolsetName = "[[TOOLSET NAME]]";
-
-  if (auto child = doc.child("toolset_name"); child) {
-    toolsetName = child.text().as_string();
-  }
 
   const char *toolsetDescription = "[[TOOLSET DESCRIPTION]]";
 
@@ -189,14 +184,24 @@ void GenerateDocumentation(const std::string &appFolder,
     toolsetDescription = child.text().as_string();
   }
 
-  wr.BaseStream() << "# " << toolsetName << "\n\n"
-                  << toolsetDescription << "\n\n";
+  wr.BaseStream() << toolsetDescription << "<h2>Module list</h2>\n<ul>\n";
+  std::stringstream str;
 
   for (auto &m : modules) {
     pugi::xml_node node = doc.child(m.data());
     APPContext ctx(m.data(), appFolder, appName);
-    ctx.GetMarkdownDoc(wr.BaseStream(), node);
+    ctx.GetMarkdownDoc(str, node);
+    std::string className = ctx.GetClassName(node);
+    std::string classNameLink = className;
+    std::replace_if(
+        classNameLink.begin(), classNameLink.end(),
+        [](char c) { return c == ' '; }, '-');
+
+    wr.BaseStream() << "<li><a href=\"#" << classNameLink << "\">" << className
+                    << "</a></li>\n";
   }
+
+  wr.BaseStream() << "</ul>\n\n" << str.str() << "\n\n";
 
   if (auto child = doc.child("toolset_footer"); child) {
     wr.BaseStream() << child.text().as_string();

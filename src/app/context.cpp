@@ -530,9 +530,8 @@ void DumpTypeMD(std::ostream &out, const ReflectorFriend &info,
   }
 }
 
-void APPContext::GetMarkdownDoc(std::ostream &out, pugi::xml_node node) const {
+std::string APPContext::GetClassName(pugi::xml_node node) const {
   const char *className = "[[MODULE CLASS NAME]]";
-  const char *description = "[[MODULE DESCRIPTION]]";
 
   if (info->settings) {
     className = RTTI()->className;
@@ -542,16 +541,26 @@ void APPContext::GetMarkdownDoc(std::ostream &out, pugi::xml_node node) const {
     if (auto child = node.attribute("name"); child) {
       className = child.as_string();
     }
+  }
+
+  return className;
+}
+
+void APPContext::GetMarkdownDoc(std::ostream &out, pugi::xml_node node) const {
+  const char *description = "[[MODULE DESCRIPTION]]";
+
+  if (node) {
     description = node.text().as_string();
   }
 
-  out << "## " << className << "\n\n### Module command: " << moduleName
+  out << "## " << GetClassName(node) << "\n\n### Module command: " << moduleName
       << "\n\n"
       << description << "\n\n";
 
   if (info->filters.size() > 0) {
     if (info->batchControlFilters.size() > 0) {
-      out << "NOTE: The following file patterns apply to `batch.json` which is "
+      out << "> [!NOTE]\n> The following file patterns apply to `batch.json` "
+             "which is "
              "described "
              "[HERE](https://github.com/PredatorCZ/Spike/wiki/"
              "Spike---Batching)\n\n";
