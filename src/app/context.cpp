@@ -30,6 +30,7 @@
 #if defined(_MSC_VER) || defined(__MINGW64__)
 #include "spike/type/tchar.hpp"
 #include <windows.h>
+#undef GetClassName
 auto dlsym(void *handle, const char *name) {
   return GetProcAddress((HMODULE)handle, name);
 }
