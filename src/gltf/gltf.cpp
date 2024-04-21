@@ -981,8 +981,14 @@ gltf::Attributes GLTFModel::SaveVertices(const void *data, size_t numVertices,
     acc1.componentType = gltf::Accessor::ComponentType::UnsignedByte;
     acc1.type = gltf::Accessor::Type::Vec4;
 
-    for (auto &b : weightsBuffer) {
-      stream.wr.WriteBuffer(reinterpret_cast<const char *>(b.data), 4);
+    if (weightElement == 0) {
+      for (size_t v = 0; v < numVertices; v++) {
+        stream.wr.Write(0xff);
+      }
+    } else {
+      for (auto &b : weightsBuffer) {
+        stream.wr.WriteBuffer(reinterpret_cast<const char *>(b.data), 4);
+      }
     }
 
     attrs["WEIGHTS_0"] = index1;
