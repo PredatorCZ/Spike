@@ -30,6 +30,7 @@ enum class AttributeType : uint8 {
 };
 
 struct AttributeCodec {
+  virtual ~AttributeCodec() = default;
   virtual void Sample(uni::FormatCodec::fvec &out, const char *input,
                       size_t stride = 0) const = 0;
   virtual void Transform(uni::FormatCodec::fvec &in) const = 0;
