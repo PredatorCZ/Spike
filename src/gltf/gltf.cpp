@@ -378,6 +378,7 @@ SavedIndices GLTFModel::SaveIndices(const void *data, size_t numIndices,
 
 size_t WritePositions16s(GLTFModel &main,
                          uni::FormatCodec::fvec &basePosition) {
+  main.useMeshQuantize = true;
   auto &stream = main.GetVt8();
   auto [acc, index] = main.NewAccessor(stream, 4);
   acc.count = basePosition.size();
@@ -404,6 +405,7 @@ size_t WritePositions16s(GLTFModel &main,
 
 size_t WritePositions16u(GLTFModel &main,
                          uni::FormatCodec::fvec &basePosition) {
+  main.useMeshQuantize = true;
   auto &stream = main.GetVt8();
   auto [acc, index] = main.NewAccessor(stream, 4);
   acc.count = basePosition.size();
@@ -467,10 +469,10 @@ size_t WriteNormals32(GLTFModel &main, uni::FormatCodec::fvec &normals) {
 }
 
 size_t WriteTangents32(GLTFModel &main, uni::FormatCodec::fvec &tangents) {
-  auto &stream = main.GetVt12();
+  auto &stream = main.GetVt16();
   auto [acc, index] = main.NewAccessor(stream, 4);
   acc.count = tangents.size();
-  acc.type = gltf::Accessor::Type::Vec3;
+  acc.type = gltf::Accessor::Type::Vec4;
   acc.componentType = gltf::Accessor::ComponentType::Float;
 
   for (auto &v : tangents) {
@@ -484,6 +486,7 @@ size_t WriteTangents32(GLTFModel &main, uni::FormatCodec::fvec &tangents) {
 }
 
 size_t WriteNormals16(GLTFModel &main, uni::FormatCodec::fvec &normals) {
+  main.useMeshQuantize = true;
   auto &stream = main.GetVt8();
   auto [acc, index] = main.NewAccessor(stream, 4);
   acc.count = normals.size();
@@ -504,6 +507,7 @@ size_t WriteNormals16(GLTFModel &main, uni::FormatCodec::fvec &normals) {
 }
 
 size_t WriteNormals8(GLTFModel &main, uni::FormatCodec::fvec &normals) {
+  main.useMeshQuantize = true;
   auto &stream = main.GetVt4();
   auto [acc, index] = main.NewAccessor(stream, 4);
   acc.count = normals.size();
@@ -524,6 +528,7 @@ size_t WriteNormals8(GLTFModel &main, uni::FormatCodec::fvec &normals) {
 }
 
 size_t WriteTexcoord16s(GLTFModel &main, uni::FormatCodec::fvec &coords) {
+  main.useMeshQuantize = true;
   auto &stream = main.GetVt4();
   auto [acc, index] = main.NewAccessor(stream, 4);
   acc.count = coords.size();
@@ -657,12 +662,17 @@ size_t SaveTangents(GLTFModel &main, const char *data, size_t numVertices,
     return WriteTangents32(main, tangents);
   }
 
-  switch (attribute.type) {
-  case uni::DataType::R8G8B8A8:
-    return WriteNormals8(main, tangents);
-  default:
-    return WriteNormals16(main, tangents);
-  }
+  size_t accIndex = [&] {
+    switch (attribute.type) {
+    case uni::DataType::R8G8B8A8:
+      return WriteNormals8(main, tangents);
+    default:
+      return WriteNormals16(main, tangents);
+    }
+  }();
+
+  main.accessors.at(accIndex).type = gltf::Accessor::Type::Vec4;
+  return accIndex;
 }
 
 size_t SaveTexcoords(GLTFModel &main, const char *data, size_t numVertices,
@@ -670,19 +680,19 @@ size_t SaveTexcoords(GLTFModel &main, const char *data, size_t numVertices,
   uni::FormatCodec::fvec coords =
       SampleAttribute(data, numVertices, attribute, stride);
 
-  if (!main.quantizeMesh ||
-      (attribute.customCodec && !attribute.customCodec->IsNormalized())) {
+  if (attribute.customCodec && !attribute.customCodec->IsNormalized()) {
     return WriteTexcoord32(main, coords);
   }
 
-  switch (attribute.format) {
-  case uni::FormatType::NORM:
-    return WriteTexcoord16s(main, coords);
-  case uni::FormatType::UNORM:
+  if (attribute.format == uni::FormatType::UNORM) {
     return WriteTexcoord16u(main, coords);
-  default:
-    return WriteTexcoord32(main, coords);
   }
+
+  if (main.quantizeMesh && attribute.format == uni::FormatType::NORM) {
+    return WriteTexcoord16s(main, coords);
+  }
+
+  return WriteTexcoord32(main, coords);
 }
 
 size_t SaveColor(GLTFModel &main, const char *data, size_t numVertices,
@@ -938,6 +948,33 @@ gltf::Attributes GLTFModel::SaveVertices(const void *data, size_t numVertices,
     }
   }
 
+  if (weightElement > 1) {
+    for (size_t idx = 0; auto &bw : weightsBuffer) {
+      BWBuffer &bones = bonesBuffer.at(idx++);
+      BWBuffer newBones{};
+      BWBuffer newWeights{};
+      uint8 curBone = 0;
+
+      for (int16 ci = -1; uint8 c : bones.data) {
+        if (c == 0xff || bw.data[++ci] == 0) {
+          continue;
+        }
+
+        for (uint8 b = 0; b < 8; b++) {
+          if (bones.data[b] == c) {
+            bones.data[b] = -1;
+            newWeights.data[curBone] += bw.data[b];
+          }
+        }
+
+        newBones.data[curBone++] = c;
+      }
+
+      bw = newWeights;
+      bones = newBones;
+    }
+  }
+
   if (boneElement > 4) {
     auto &stream = GetVt8();
     auto [acc0, index0] = NewAccessor(stream, 4);
@@ -981,7 +1018,7 @@ gltf::Attributes GLTFModel::SaveVertices(const void *data, size_t numVertices,
     acc1.componentType = gltf::Accessor::ComponentType::UnsignedByte;
     acc1.type = gltf::Accessor::Type::Vec4;
 
-    if (weightElement == 0) {
+    if (weightsBuffer.empty()) {
       for (size_t v = 0; v < numVertices; v++) {
         stream.wr.Write(0xff);
       }

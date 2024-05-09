@@ -96,7 +96,6 @@ struct SavedIndices {
 
 struct GLTFModel : GLTF {
   std::optional<es::Matrix44> transform;
-  bool quantizeMesh = false;
 
   SavedIndices GLTF_EXTERN SaveIndices(const void *data, size_t numIndices,
                                        size_t indexSize = 2);
@@ -143,6 +142,17 @@ struct GLTFModel : GLTF {
     return Stream(indexStream);
   }
 
+  GLTFStream &GetVt16() {
+    if (vt16Stream < 0) {
+      auto &str = NewStream("vtStride16", 16);
+      str.target = gltf::BufferView::TargetType::ArrayBuffer;
+      vt16Stream = str.slot;
+      return str;
+    }
+
+    return Stream(vt16Stream);
+  }
+
   GLTFStream &GetVt12() {
     if (vt12Stream < 0) {
       auto &str = NewStream("vtStride12", 12);
@@ -176,9 +186,30 @@ struct GLTFModel : GLTF {
     return Stream(vt4Stream);
   }
 
+  void FinishAndSave(BinWritterRef wr, const std::string &docPath) {
+    if (useMeshQuantize) {
+      if (!quantizeFake) {
+        extensionsRequired.emplace_back("KHR_mesh_quantization");
+      }
+      extensionsUsed.emplace_back("KHR_mesh_quantization");
+    }
+
+    GLTF::FinishAndSave(wr, docPath);
+  }
+
+  void QuantizeMesh(bool fake) {
+    quantizeMesh = true;
+    quantizeFake = fake;
+  }
+
+  bool quantizeMesh = false;
+  bool useMeshQuantize = false;
+
 private:
+  bool quantizeFake = false;
   int32 ibmStream = -1;
   int32 indexStream = -1;
+  int32 vt16Stream = -1;
   int32 vt12Stream = -1;
   int32 vt8Stream = -1;
   int32 vt4Stream = -1;
