@@ -1070,7 +1070,7 @@ std::vector<float> MakeSamples(float sampleRate, float duration) {
     cdur += fraction;
   }
 
-  times.back() = duration;
+  times.emplace_back(duration);
   return times;
 }
 
