@@ -6,12 +6,15 @@
 #include "pvr_decompress.hpp"
 #include "qoi.h"
 #include "spike/app/context.hpp"
+#include "spike/crypto/crc32.hpp"
 #include "spike/format/DDS.hpp"
 #include "spike/gpu/BlockDecoder.inl"
 #include "spike/gpu/addr_ps3.hpp"
 #include "spike/io/binwritter_stream.hpp"
 #include "spike/reflect/reflector.hpp"
 #include "spike/uni/format.hpp"
+#include "spike/util/endian.hpp"
+#include <sstream>
 #include <variant>
 
 bool BlockCompression(TexelInputFormatType fmt) {
@@ -33,7 +36,7 @@ TexelContextFormat OutputFormat() {
   return mainSettings.texelSettings.outputFormat;
 }
 
-bool MustDecode(TexelInputFormatType fmt) {
+bool MustDecode(TexelContextFormat ofmt, TexelInputFormatType fmt) {
   using F = TexelInputFormatType;
 
   switch (fmt) {
@@ -47,8 +50,9 @@ bool MustDecode(TexelInputFormatType fmt) {
   case F::BC1:
   case F::BC2:
   case F::BC3:
-    return OutputFormat() == TexelContextFormat::QOI ||
-           OutputFormat() == TexelContextFormat::QOI_BMP;
+    return ofmt == TexelContextFormat::UPNG ||
+           ofmt == TexelContextFormat::QOI ||
+           ofmt == TexelContextFormat::QOI_BMP;
 
     // DDS only
   case F::BC4:
@@ -58,33 +62,37 @@ bool MustDecode(TexelInputFormatType fmt) {
   case F::RGBA16:
   case F::BC6:
   case F::RGB9E5:
-    return OutputFormat() != TexelContextFormat::DDS;
+    return ofmt != TexelContextFormat::DDS;
 
     // BMP, DDS only
   case F::RGB10A2:
   case F::RGB5A1:
-    return OutputFormat() == TexelContextFormat::QOI ||
-           OutputFormat() == TexelContextFormat::DDS_Legacy;
+    return ofmt == TexelContextFormat::UPNG ||
+           ofmt == TexelContextFormat::QOI ||
+           ofmt == TexelContextFormat::DDS_Legacy;
 
     // BMP only
   case F::P8:
   case F::P4:
-    return OutputFormat() != TexelContextFormat::QOI_BMP;
+    return ofmt != TexelContextFormat::QOI_BMP;
 
   // DDS, DDS_Legacy, BMP only
   case F::RGBA4:
   case F::R5G6B5:
+    return ofmt == TexelContextFormat::UPNG || ofmt == TexelContextFormat::QOI;
+
+  // DDS, DDS_Legacy, BMP, UPNG only
   case F::R8:
-    return OutputFormat() == TexelContextFormat::QOI;
+    return ofmt == TexelContextFormat::QOI;
 
     // Supported for all
   case F::RGBA8:
   case F::INVALID:
     return false;
 
-  // QOI, DDS_Legacy only
+  // QOI, DDS_Legacy, UPNG only
   case F::RGB8:
-    return OutputFormat() == TexelContextFormat::DDS;
+    return ofmt == TexelContextFormat::DDS;
   }
 
   return false;
@@ -476,6 +484,69 @@ uint8 GetQOIChannels(TexelInputFormatType fmt) {
   }
 
   return 4;
+}
+
+enum class PngColorType : uint8 {
+  Gray = 0,
+  RGB = 2,
+  Palette = 3,
+  GrayAlpha = 4,
+  RGBA = 6,
+};
+
+uint32 GetPngChannels(PngColorType fmt) {
+  switch (fmt) {
+  case PngColorType::Gray:
+    return 1;
+  case PngColorType::GrayAlpha:
+    return 2;
+  case PngColorType::RGB:
+    return 3;
+  case PngColorType::RGBA:
+    return 4;
+  }
+
+  return 0;
+}
+
+PngColorType GetPngColorType(TexelInputFormatType fmt) {
+  switch (fmt) {
+    using F = TexelInputFormatType;
+  case F::R8:
+  case F::BC4:
+    return PngColorType::Gray;
+
+  case F::BC5:
+  case F::RG8:
+    // return PngColorType::GrayAlpha;
+
+  case F::R5G6B5:
+  case F::RGB8:
+    return PngColorType::RGB;
+
+  case F::BC1:
+  case F::BC2:
+  case F::BC3:
+  case F::RGBA4:
+  case F::RGBA8:
+  case F::BC7:
+  case F::RGB5A1:
+  case F::RGB10A2:
+  case F::P8:
+  case F::P4:
+  case F::PVRTC2:
+  case F::PVRTC4:
+  case F::ETC1:
+  case F::RGBA16:
+  case F::BC6:
+  case F::RGB9E5:
+    return PngColorType::RGBA;
+
+  case F::INVALID:
+    return PngColorType::RGBA;
+  }
+
+  return PngColorType::RGBA;
 }
 
 uint8 GetDDSChannels(TexelInputFormatType fmt) {
@@ -1052,14 +1123,21 @@ struct NewTexelContextQOI : NewTexelContextImpl {
   }
 
   void InitBuffer() {
-    uint32 widthPadding = qoiDesc.width % 4;
-    widthPadding = widthPadding ? 4 - widthPadding : 0;
-    uint32 heightPadding = qoiDesc.height % 4;
-    heightPadding = heightPadding ? 4 - heightPadding : 0;
+    if (BlockCompression(ctx.baseFormat.type)) {
+      uint32 widthPadding = qoiDesc.width % 4;
+      widthPadding = widthPadding ? 4 - widthPadding : 0;
+      uint32 heightPadding = qoiDesc.height % 4;
+      heightPadding = heightPadding ? 4 - heightPadding : 0;
 
-    const uint32 rasterDataSize = (qoiDesc.width + widthPadding) *
-                                  (qoiDesc.height + heightPadding) *
-                                  qoiDesc.channels;
+      const uint32 rasterDataSize = (qoiDesc.width + widthPadding) *
+                                    (qoiDesc.height + heightPadding) *
+                                    qoiDesc.channels;
+      yasBuffer.resize(rasterDataSize);
+      return;
+    }
+
+    const uint32 rasterDataSize =
+        qoiDesc.width * qoiDesc.height * qoiDesc.channels;
     yasBuffer.resize(rasterDataSize);
   }
 
@@ -1115,27 +1193,13 @@ struct NewTexelContextQOI : NewTexelContextImpl {
 
       suffix.append(".qoi");
 
-      if (ectx) {
-        if (pathOverride.GetFullPath().empty()) {
-          throw std::logic_error("Expected path");
-        }
-
-        ectx->NewFile(std::string(pathOverride.ChangeExtension(suffix)));
-        ectx->SendData({static_cast<char *>(buffa), size_t(encodedSize)});
-      } else {
-        AFileInfo &workingPath = pathOverride.GetFullPath().empty()
-                                     ? actx->workingFile
-                                     : pathOverride;
-
-        BinWritterRef wr(
-            actx->NewFile(workingPath.ChangeExtension(suffix)).str);
-        wr.WriteBuffer(static_cast<char *>(buffa), encodedSize);
-      }
+      outCtx->NewFile(std::string(pathOverride.ChangeExtension(suffix)));
+      outCtx->SendData({static_cast<char *>(buffa), size_t(encodedSize)});
 
       free(buffa);
     };
 
-    if (MustDecode(ctx.baseFormat.type)) {
+    if (MustDecode(ctx.formatOverride, ctx.baseFormat.type)) {
       DecodeStream();
       Write(yasBuffer.data());
     } else if (ctx.baseFormat.tile == TexelTile::Linear) {
@@ -1280,7 +1344,7 @@ struct NewTexelContextDDS : NewTexelContextImpl {
       }
     };
 
-    const bool mustDecode = MustDecode(ctx.baseFormat.type);
+    const bool mustDecode = MustDecode(ctx.formatOverride, ctx.baseFormat.type);
 
     if (mustDecode) {
       DecodeStream();
@@ -1291,24 +1355,11 @@ struct NewTexelContextDDS : NewTexelContextImpl {
     }
 
     if (ShouldWrite()) {
-      if (ectx) {
-        if (pathOverride.GetFullPath().empty()) {
-          throw std::logic_error("Expected path");
-        }
+      outCtx->NewFile(std::string(pathOverride.ChangeExtension2("dds")));
+      outCtx->SendData(
+          {reinterpret_cast<const char *>(&dds), size_t(dds.DDS_SIZE)});
+      outCtx->SendData(yasBuffer);
 
-        ectx->NewFile(std::string(pathOverride.ChangeExtension2("dds")));
-        ectx->SendData(
-            {reinterpret_cast<const char *>(&dds), size_t(dds.DDS_SIZE)});
-        ectx->SendData(yasBuffer);
-      } else {
-        AFileInfo &workingPath = pathOverride.GetFullPath().empty()
-                                     ? actx->workingFile
-                                     : pathOverride;
-        BinWritterRef wr(
-            actx->NewFile(workingPath.ChangeExtension2("dds")).str);
-        wr.WriteBuffer(reinterpret_cast<const char *>(&dds), dds.DDS_SIZE);
-        wr.WriteContainer(yasBuffer);
-      }
       es::Dispose(yasBuffer);
     }
   }
@@ -1436,7 +1487,7 @@ struct NewTexelContextDDSLegacy : NewTexelContextDDS {
       }
     };
 
-    const bool mustDecode = MustDecode(ctx.baseFormat.type);
+    const bool mustDecode = MustDecode(ctx.formatOverride, ctx.baseFormat.type);
 
     if (mustDecode) {
       DecodeStream();
@@ -1455,24 +1506,11 @@ struct NewTexelContextDDSLegacy : NewTexelContextDDS {
       }
       suffix.append(".dds");
 
-      if (ectx) {
-        if (pathOverride.GetFullPath().empty()) {
-          throw std::logic_error("Expected path");
-        }
+      outCtx->NewFile(std::string(pathOverride.ChangeExtension(suffix)));
+      outCtx->SendData(
+          {reinterpret_cast<const char *>(&dds), size_t(dds.LEGACY_SIZE)});
+      outCtx->SendData(buffar);
 
-        ectx->NewFile(std::string(pathOverride.ChangeExtension(suffix)));
-        ectx->SendData(
-            {reinterpret_cast<const char *>(&dds), size_t(dds.LEGACY_SIZE)});
-        ectx->SendData(buffar);
-      } else {
-        AFileInfo &workingPath = pathOverride.GetFullPath().empty()
-                                     ? actx->workingFile
-                                     : pathOverride;
-        BinWritterRef wr(
-            actx->NewFile(workingPath.ChangeExtension(suffix)).str);
-        wr.WriteBuffer(reinterpret_cast<const char *>(&dds), dds.LEGACY_SIZE);
-        wr.WriteContainer(buffar);
-      }
       es::Dispose(buffar);
     }
   }
@@ -1484,9 +1522,276 @@ struct NewTexelContextDDSLegacy : NewTexelContextDDS {
   }
 };
 
+struct PngIHDR {
+  uint32 id = CompileFourCC("IHDR");
+  uint32 width;
+  uint32 height;
+  uint8 bitDepth = 8;
+  PngColorType colorType = PngColorType::RGBA;
+  uint8 compressionMethod = 0;
+  uint8 filterMethod = 0;
+  uint8 interlaceMethod = 0;
+};
+
+void FByteswapper(PngIHDR &item) {
+  FByteswapper(item.width);
+  FByteswapper(item.height);
+}
+
+struct DeflateBlock {
+  int16 blockSize;
+  int16 blockSizeComplement;
+
+  void BlockSize(int16 size) {
+    blockSize = size;
+    blockSizeComplement = ~size;
+  }
+
+  void SwapEndian() {}
+};
+
+struct Png {
+  uint64 id = 0x0A1A0A0D474E5089;
+  uint32 ihdrSize = 13;
+  PngIHDR ihdr;
+};
+
+struct PngData {
+  uint32 ihdrCRC;
+  uint32 idatSize;
+  uint32 idat = CompileFourCC("IDAT");
+};
+
+void FByteswapper(Png &item) {
+  FByteswapper(item.ihdrSize);
+  FByteswapper(item.ihdr);
+}
+
+void FByteswapper(PngData &item) {
+  FByteswapper(item.ihdrCRC);
+  FByteswapper(item.idatSize);
+}
+
+struct PngEnd {
+  uint32 idatCrc;
+  uint32 iendSize = 0;
+  uint32 iend = CompileFourCC("IEND");
+  uint32 iendCrc = crc32b(0, "IEND", 4);
+};
+
+void FByteswapper(PngEnd &item) {
+  FByteswapper(item.idatCrc);
+  FByteswapper(item.iendSize);
+  FByteswapper(item.iendCrc);
+}
+
+std::string MakeZlibStream(const char *buffer_, PngIHDR &hdr) {
+  std::stringstream str;
+  BinWritterRef_e wr(str);
+  wr.Write(uint16(0x178));
+  wr.SwapEndian(true);
+  const uint32 numChannels = GetPngChannels(hdr.colorType);
+  const uint32 pitch = hdr.width * numChannels;
+  const uint32 scanLine = pitch + 1;
+  uint32 adlerA = 1;
+  uint32 adlerB = 0;
+
+  auto Adler = [&](uint8 c) {
+    adlerA = (c + adlerA) % 65521;
+    adlerB = (adlerA + adlerB) % 65521;
+  };
+
+  auto AdlerL = [&](const char *data, size_t size) {
+    for (size_t i = 0; i < size; i++) {
+      Adler(data[i]);
+    }
+  };
+
+  DeflateBlock block;
+  block.BlockSize(scanLine);
+
+  if (numChannels < 3) {
+    for (uint32 h = 0; h < hdr.height; h++) {
+      str.put(h == hdr.height - 1);
+      wr.Write(block);
+      str.put(0); // filter type
+      Adler(0);
+      AdlerL(buffer_ + pitch * h, pitch);
+      str.write(buffer_ + pitch * h, pitch);
+    }
+  } else if (numChannels == 3) {
+    for (uint32 h = 0; h < hdr.height; h++) {
+      str.put(h == hdr.height - 1);
+      wr.Write(block);
+      str.put(0); // filter type
+      Adler(0);
+      const char *startLine = buffer_ + pitch * h;
+
+      for (uint32 w = 0; w < hdr.width; w++) {
+        char rgb[3];
+        memcpy(rgb, startLine + w * 3, 3);
+        std::swap(rgb[0], rgb[2]);
+        AdlerL(rgb, 3);
+        str.write(rgb, 3);
+      }
+    }
+  } else {
+    for (uint32 h = 0; h < hdr.height; h++) {
+      str.put(h == hdr.height - 1);
+      wr.Write(block);
+      str.put(0); // filter type
+      Adler(0);
+      const char *startLine = buffer_ + pitch * h;
+
+      for (uint32 w = 0; w < hdr.width; w++) {
+        char rgb[4];
+        memcpy(rgb, startLine + w * 4, 4);
+        std::swap(rgb[0], rgb[2]);
+        AdlerL(rgb, 4);
+        str.write(rgb, 4);
+      }
+    }
+  }
+
+  adlerA |= adlerB << 16;
+  wr.Write(adlerA);
+  return std::move(str).str();
+}
+
+struct NewTexelContextPNG : NewTexelContextImpl {
+  std::string yasBuffer;
+  Png hdr;
+  uint32 numChannels;
+
+  NewTexelContextPNG(NewTexelContextCreate ctx_) : NewTexelContextImpl(ctx_) {
+    hdr.ihdr.width = ctx.width;
+    hdr.ihdr.height = ctx.height * std::max(uint16(1), ctx.depth);
+    hdr.ihdr.colorType = GetPngColorType(ctx.baseFormat.type);
+    numChannels = GetPngChannels(hdr.ihdr.colorType);
+  }
+
+  void InitBuffer() {
+    if (BlockCompression(ctx.baseFormat.type)) {
+      uint32 widthPadding = hdr.ihdr.width % 4;
+      widthPadding = widthPadding ? 4 - widthPadding : 0;
+      uint32 heightPadding = hdr.ihdr.height % 4;
+      heightPadding = heightPadding ? 4 - heightPadding : 0;
+
+      const uint32 rasterDataSize = (hdr.ihdr.width + widthPadding) *
+                                    (hdr.ihdr.height + heightPadding) *
+                                    numChannels;
+      yasBuffer.resize(rasterDataSize);
+      return;
+    }
+
+    const uint32 rasterDataSize =
+        hdr.ihdr.width * hdr.ihdr.height * numChannels;
+    yasBuffer.resize(rasterDataSize);
+  }
+
+  void SendRasterData(const void *data, TexelInputLayout layout,
+                      TexelInputFormat *) override {
+    if (layout.mipMap > 0) {
+      return;
+    }
+
+    auto mctx = ctx;
+    mctx.height *= std::max(mctx.depth, uint16(1));
+
+    auto DecodeStream = [&] {
+      InitBuffer();
+
+      if (numChannels == 4) {
+        UCVector4 *bgn = reinterpret_cast<UCVector4 *>(yasBuffer.data());
+        UCVector4 *edn =
+            reinterpret_cast<UCVector4 *>(yasBuffer.data() + yasBuffer.size());
+
+        DecodeToRGBA(static_cast<const char *>(data), mctx, {bgn, edn});
+      } else if (numChannels == 3) {
+        UCVector *bgn = reinterpret_cast<UCVector *>(yasBuffer.data());
+        UCVector *edn =
+            reinterpret_cast<UCVector *>(yasBuffer.data() + yasBuffer.size());
+
+        DecodeToRGB(static_cast<const char *>(data), mctx, {bgn, edn});
+
+      } else if (numChannels == 1) {
+        DecodeToGray(static_cast<const char *>(data), mctx,
+                     {yasBuffer.data(), yasBuffer.size()});
+
+      } else {
+        throw std::logic_error("Implement channel");
+      }
+    };
+
+    auto Write = [&](const void *buffer) {
+      std::string suffix;
+
+      if (ctx.arraySize > 1) {
+        suffix.push_back('_');
+        suffix.append(std::to_string(layout.layer));
+      }
+
+      if (layout.face != CubemapFace::NONE) {
+        suffix.push_back('_');
+        static const ReflectedEnum *refl = GetReflectedEnum<CubemapFace>();
+        suffix.append(refl->names[uint32(layout.face)]);
+      }
+
+      suffix.append(".png");
+
+      std::string encodedData =
+          MakeZlibStream(static_cast<const char *>(buffer), hdr.ihdr);
+
+      Png hdrCopy = hdr;
+      FByteswapper(hdrCopy);
+      PngData hdrData{
+          .ihdrCRC = crc32b(0, reinterpret_cast<const char *>(&hdrCopy.ihdr),
+                            sizeof(hdrCopy.ihdr) - 3),
+          .idatSize = uint32(encodedData.size()),
+
+      };
+      FByteswapper(hdrData);
+
+      PngEnd tail{
+          .idatCrc = crc32b(crc32b(0, "IDAT", 4), encodedData.data(),
+                            encodedData.size()),
+      };
+
+      FByteswapper(tail);
+
+      outCtx->NewFile(std::string(pathOverride.ChangeExtension(suffix)));
+      outCtx->SendData(
+          {reinterpret_cast<const char *>(&hdrCopy), sizeof(hdrCopy) - 3});
+      outCtx->SendData(
+          {reinterpret_cast<const char *>(&hdrData), sizeof(hdrData)});
+      outCtx->SendData(encodedData);
+      outCtx->SendData({reinterpret_cast<const char *>(&tail), sizeof(tail)});
+    };
+
+    if (MustDecode(ctx.formatOverride, ctx.baseFormat.type)) {
+      DecodeStream();
+      Write(yasBuffer.data());
+    } else if (ctx.baseFormat.tile == TexelTile::Linear) {
+      Write(data);
+    } else {
+      InitBuffer();
+      RetileData(static_cast<const char *>(data), mctx, yasBuffer.data());
+      Write(yasBuffer.data());
+    }
+  }
+
+  bool ShouldDoMipmaps() override { return false; }
+
+  void Finish() override {}
+};
+
 std::unique_ptr<NewTexelContextImpl>
 CreateTexelContext(NewTexelContextCreate ctx) {
-  switch (OutputFormat()) {
+  if (ctx.formatOverride == TexelContextFormat::Config) {
+    ctx.formatOverride = OutputFormat();
+  }
+
+  switch (ctx.formatOverride) {
   case TexelContextFormat::DDS:
     return std::make_unique<NewTexelContextDDS>(ctx);
   case TexelContextFormat::DDS_Legacy:
@@ -1495,6 +1800,8 @@ CreateTexelContext(NewTexelContextCreate ctx) {
     return std::make_unique<NewTexelContextQOIBMP>(ctx);
   case TexelContextFormat::QOI:
     return std::make_unique<NewTexelContextQOI>(ctx);
+  case TexelContextFormat::UPNG:
+    return std::make_unique<NewTexelContextPNG>(ctx);
   default:
     throw std::logic_error("Image format not supported");
   }
@@ -1535,7 +1842,16 @@ void NewTexelContextImpl::ProcessContextData() {
 std::unique_ptr<NewTexelContextImpl>
 CreateTexelContext(NewTexelContextCreate ctx, AppContext *actx) {
   auto retVal = CreateTexelContext(ctx);
-  retVal->actx = actx;
+  if (ctx.texelOutput) {
+    retVal->outCtx = ctx.texelOutput;
+  } else {
+    TexelOutputContext otx;
+    otx.ctx = actx;
+    retVal->outVariant = otx;
+    retVal->outCtx = &std::get<TexelOutputContext>(retVal->outVariant);
+  }
+
+  retVal->pathOverride = actx->workingFile;
   if (ctx.data) {
     retVal->ProcessContextData();
     return {};
@@ -1548,11 +1864,27 @@ std::unique_ptr<NewTexelContextImpl>
 CreateTexelContext(NewTexelContextCreate ctx, AppExtractContext *ectx,
                    const std::string &path) {
   auto retVal = CreateTexelContext(ctx);
-  retVal->ectx = ectx;
+  if (ctx.texelOutput) {
+    retVal->outCtx = ctx.texelOutput;
+  } else {
+    TexelOutputExtractContext otx;
+    otx.ctx = ectx;
+    retVal->outVariant = otx;
+    retVal->outCtx = &std::get<TexelOutputExtractContext>(retVal->outVariant);
+  }
+
   retVal->pathOverride.Load(path);
+
   if (ctx.data) {
     retVal->ProcessContextData();
     return {};
   }
   return retVal;
+}
+
+void TexelOutputContext::SendData(std::string_view data) {
+  str->write(data.data(), data.size());
+}
+void TexelOutputContext::NewFile(std::string filePath) {
+  str = &ctx->NewFile(filePath).str;
 }

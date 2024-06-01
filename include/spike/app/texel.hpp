@@ -1,13 +1,7 @@
 #pragma once
 #include "spike/app_context.hpp"
 #include <memory>
-
-enum class TexelContextFormat {
-  DDS_Legacy,
-  DDS,
-  QOI_BMP,
-  QOI,
-};
+#include <variant>
 
 struct TexelConf {
   TexelContextFormat outputFormat = TexelContextFormat::DDS_Legacy;
@@ -16,11 +10,30 @@ struct TexelConf {
   void ReflectorTag();
 };
 
+struct TexelOutputContext : TexelOutput {
+  AppContext *ctx;
+  std::ostream *str = nullptr;
+
+  void SendData(std::string_view data) override;
+  void NewFile(std::string filePath) override;
+};
+
+struct TexelOutputExtractContext : TexelOutput {
+  AppExtractContext *ctx;
+
+  void SendData(std::string_view data) override { ctx->SendData(data); }
+  void NewFile(std::string filePath) override { ctx->NewFile(filePath); }
+};
+
+using TexelOutputVariant =
+    std::variant<TexelOutputContext, TexelOutputExtractContext>;
+
 struct NewTexelContextImpl : NewTexelContext {
   NewTexelContextCreate ctx;
   AFileInfo pathOverride;
-  AppContext *actx = nullptr;
-  AppExtractContext *ectx = nullptr;
+  TexelOutputVariant outVariant;
+  TexelOutput *outCtx = nullptr;
+
   NewTexelContextImpl(NewTexelContextCreate ctx_) : ctx(ctx_) {}
 
   virtual void Finish() = 0;
@@ -35,4 +48,5 @@ std::unique_ptr<NewTexelContextImpl>
 CreateTexelContext(NewTexelContextCreate ctx, AppContext *actx);
 
 std::unique_ptr<NewTexelContextImpl>
-CreateTexelContext(NewTexelContextCreate ctx, AppExtractContext *ectx, const std::string &path);
+CreateTexelContext(NewTexelContextCreate ctx, AppExtractContext *ectx,
+                   const std::string &path);
