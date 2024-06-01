@@ -362,8 +362,6 @@ SavedIndices GLTFModel::SaveIndices(const void *data, size_t numIndices,
         WriteIndex(i);
       }
     } else {
-      std::span<const uint16> indices(static_cast<const uint16 *>(data),
-                                      numIndices);
       Process(indices, 0xffffffff);
     }
   } else {
@@ -619,6 +617,12 @@ size_t SavePositions(GLTFModel &main, const char *data, size_t numVertices,
   uni::FormatCodec::fvec basePosition =
       SampleAttribute(data, numVertices, attribute, stride);
 
+  if (main.transform) {
+    for (auto &n : basePosition) {
+      n = n * *main.transform;
+    }
+  }
+
   if (!main.quantizeMesh ||
       (attribute.customCodec && !attribute.customCodec->IsNormalized())) {
     return WritePositions32(main, basePosition);
@@ -638,6 +642,12 @@ size_t SaveNormals(GLTFModel &main, const char *data, size_t numVertices,
                    Attribute attribute, size_t stride) {
   uni::FormatCodec::fvec normals =
       SampleAttribute(data, numVertices, attribute, stride);
+
+  if (main.transform) {
+    for (auto &n : normals) {
+      n = n * *main.transform;
+    }
+  }
 
   if (!main.quantizeMesh) {
     return WriteNormals32(main, normals);
