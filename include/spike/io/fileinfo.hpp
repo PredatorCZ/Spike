@@ -100,7 +100,7 @@ public:
 
   string_type CatchBranch(const stringref_type &path) const {
     explode_type exVec = Explode();
-    const size_t found = path.find(exVec[0]);
+    const size_t found = path.find('/' + std::string(exVec[0]) + '/');
 
     if (found == path.npos) {
       return string_type(path).append(GetFilenameExt());
@@ -109,7 +109,7 @@ public:
     } else {
       auto nextPath = GetFullPath();
       size_t sub = nextPath.front() == '/';
-      return std::string(path.substr(0, found - sub)).append(nextPath);
+      return std::string(path.substr(0, found - sub + 1)).append(nextPath);
     }
   }
 };
