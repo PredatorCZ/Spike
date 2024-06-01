@@ -57,7 +57,7 @@ protected:
 };
 
 struct AppInfo_s {
-  static constexpr uint32 CONTEXT_VERSION = 8;
+  static constexpr uint32 CONTEXT_VERSION = 9;
   uint32 contextVersion = CONTEXT_VERSION;
   // No RequestFile or FindFile is being called
   bool filteredLoad = false;
@@ -225,6 +225,20 @@ struct TexelInputLayout {
   uint16 layer = 0;
 };
 
+enum class TexelContextFormat {
+  Config,
+  DDS_Legacy,
+  DDS,
+  QOI_BMP,
+  QOI,
+  UPNG,
+};
+
+struct TexelOutput {
+  virtual void SendData(std::string_view) = 0;
+  virtual void NewFile(std::string filePath) = 0;
+};
+
 struct NewTexelContextCreate {
   uint16 width;
   uint16 height;
@@ -245,6 +259,10 @@ struct NewTexelContextCreate {
   // class, otherwise SendRasterData must be called for each face, mipmap and
   // layer
   const void *data = nullptr;
+
+  // Override output data endpoint
+  TexelOutput *texelOutput = nullptr;
+  TexelContextFormat formatOverride = TexelContextFormat::Config;
 };
 
 struct NewTexelContext {
