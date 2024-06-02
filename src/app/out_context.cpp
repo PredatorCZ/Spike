@@ -277,7 +277,20 @@ void IOExtractContext::NewFile(const std::string &path) {
   }
   AFileInfo cfleWrap(path);
   std::string cfle(cfleWrap.GetFullPath());
-  Open(outDir + cfle);
+  try {
+    Open(outDir + cfle);
+  } catch (const es::FileInvalidAccessError &) {
+    auto folders = cfleWrap.Explode();
+    folders.pop_back();
+    std::string cpath;
+    for (auto &f : folders) {
+      cpath.append(f);
+      cpath.push_back('/');
+      es::mkdir(outDir + cpath);
+    }
+
+    Open(outDir + cfle);
+  }
 
   if (forEachFile) {
     forEachFile();
