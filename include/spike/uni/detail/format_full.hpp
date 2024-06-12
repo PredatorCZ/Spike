@@ -1,6 +1,6 @@
 /*  uni format internal module
     part of uni module
-    Copyright 2020-2023 Lukas Cone
+    Copyright 2020-2024 Lukas Cone
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@
 #include "../format.hpp"
 #include "spike/type/float.hpp"
 #include "spike/util/supercore.hpp"
+#include <stdexcept>
 
 namespace _uni_ {
 static constexpr size_t fmtStrides[]{0,  128, 96, 64, 64, 48, 32, 32, 32,

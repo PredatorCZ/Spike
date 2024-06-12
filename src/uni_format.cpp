@@ -1,6 +1,6 @@
 /*  uni format module source
     part of uni module
-    Copyright 2020-2023 Lukas Cone
+    Copyright 2020-2024 Lukas Cone
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -17,7 +17,6 @@
 
 #include "spike/uni/detail/format_full.hpp"
 #include "spike/util/macroLoop.hpp"
-#include <stdexcept>
 #include <unordered_map>
 
 using namespace uni;
