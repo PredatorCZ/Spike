@@ -41,8 +41,8 @@ inline void DecodeRGB565Block(const char *data, Vector &color) {
       UCVector(col << 3, (col >> 3) & 0xFC, (col >> 8) & 0xF8).Convert<float>();
 }
 
-inline void ComputeBC5Blue(char *buffer, uint32 size) {
-  for (uint32 p = 0; p < size; p += 3) {
+inline void ComputeBC5Blue(char *buffer, uint32 size, uint32 stride) {
+  for (uint32 p = 0; p < size; p += stride) {
     const Vector2 RG(
         (reinterpret_cast<UCVector2 *>(buffer + p + 1)->Convert<float>() *
          (2.0f / UCHAR_MAX)) -
