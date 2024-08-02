@@ -154,11 +154,17 @@ enum class TexelSwizzleType : uint8 {
   Black,
   White,
   // Takes R and G channels and derives Z normal
+  // Fallback to Blue if blue chanel is used
+  // Only applies to blue swizzle component
+  DeriveZOrBlue,
+  // Fallback to BlueInverted if blue chanel is used
+  DeriveZOrBlueInverted,
+  // Force derive Z normal, even if blue channel is used
   DeriveZ,
 };
 
 union TexelSwizzle {
-  TexelSwizzleType types[4]{TexelSwizzleType::Blue, TexelSwizzleType::Green,
+  TexelSwizzleType types[4]{TexelSwizzleType::DeriveZOrBlue, TexelSwizzleType::Green,
                             TexelSwizzleType::Red, TexelSwizzleType::Alpha};
   struct {
     TexelSwizzleType b;
@@ -186,9 +192,6 @@ struct TexelInputFormat {
   TexelInputFormatType type;
   TexelSwizzle swizzle;
   TexelTile tile = TexelTile::Linear;
-  // Derive Z (blue) from 2 channel ts normal map
-  // This does nothing for dds formats
-  bool deriveZNormal = true;
   // Texel values are in SNORM [-1, 1]
   bool snorm = false;
   bool srgb = false;

@@ -113,6 +113,21 @@ bool MustSwap(TexelInputFormatType fmt, bool shouldSwap) {
   }
 }
 
+bool MustSwizzle(TexelSwizzle swizzle, uint32 numChannels) {
+  if (swizzle.a != TexelSwizzleType::Alpha ||
+      swizzle.r != TexelSwizzleType::Red ||
+      swizzle.g != TexelSwizzleType::Green) {
+    return true;
+  }
+
+  if (numChannels > 2) {
+    return swizzle.b != TexelSwizzleType::Blue &&
+           swizzle.b != TexelSwizzleType::DeriveZOrBlue;
+  }
+
+  return swizzle.b != TexelSwizzleType::Blue;
+};
+
 uint32 GetBPT(TexelInputFormatType fmt) {
   using F = TexelInputFormatType;
 
@@ -582,6 +597,23 @@ PngColorType DesiredPngColorType(PngColorType type, TexelSwizzle &swizzle) {
 
     return type;
   }
+
+  case PngColorType::RGB: {
+    if (swizzle.r == swizzle.g && swizzle.g == swizzle.b) {
+      if (swizzle.a == TexelSwizzleType::White) {
+        return PngColorType::Gray;
+      }
+
+      swizzle.g = swizzle.a;
+      return PngColorType::GrayAlpha;
+    }
+
+    if (swizzle.a != TexelSwizzleType::White) {
+      return PngColorType::RGBA;
+    }
+
+    return type;
+  }
   }
 
   return type;
@@ -1006,11 +1038,6 @@ void DecodeToRGB(const char *data, NewTexelContextCreate ctx,
         t = UCVector(0, tData->y, tData->x);
       }
     }
-
-    /*if (ctx.baseFormat.deriveZNormal) {
-      ComputeBC5Blue(reinterpret_cast<char *>(outData.data()),
-                     outData.size() * 3);
-    }*/
     break;
   }
 
@@ -1020,11 +1047,6 @@ void DecodeToRGB(const char *data, NewTexelContextCreate ctx,
                      reinterpret_cast<char *>(outData.data()), p % ctx.width,
                      p / ctx.width, ctx.width);
     }
-
-    /*if (ctx.baseFormat.deriveZNormal) {
-      ComputeBC5Blue(reinterpret_cast<char *>(outData.data()),
-                     outData.size() * 3);
-    }*/
     break;
 
   case F::BC4:
@@ -1355,9 +1377,11 @@ void Reencode(NewTexelContextCreate ctx, uint32 numDesiredChannels,
       swizzleData[index] = outDataBegin.data() + 1;
       break;
     case TexelSwizzleType::BlueInverted:
+    case TexelSwizzleType::DeriveZOrBlueInverted:
       invert[index] = 0xff;
       [[fallthrough]];
     case TexelSwizzleType::Blue:
+    case TexelSwizzleType::DeriveZOrBlue:
       swizzleData[index] = outDataBegin.data();
       break;
     case TexelSwizzleType::AlphaInverted:
@@ -1429,8 +1453,12 @@ void Reencode(NewTexelContextCreate ctx, uint32 numDesiredChannels,
     memcpy(outData_.data() + t * numDesiredChannels, texel, numDesiredChannels);
   }
 
-  if (numDesiredChannels > 2 &&
-      ctx.baseFormat.swizzle.b == TexelSwizzleType::DeriveZ) {
+  if ((numDesiredChannels > 2 &&
+       ctx.baseFormat.swizzle.b == TexelSwizzleType::DeriveZ) ||
+      numDesiredChannels == 2 &&
+          (ctx.baseFormat.swizzle.b == TexelSwizzleType::DeriveZOrBlue ||
+           ctx.baseFormat.swizzle.b ==
+               TexelSwizzleType::DeriveZOrBlueInverted)) {
     ComputeBC5Blue(outData_.data(), numTexels * numDesiredChannels,
                    numDesiredChannels);
   }
@@ -1506,14 +1534,8 @@ struct NewTexelContextQOI : NewTexelContextImpl {
     bool mustDecode =
         IsFormatSupported(ctx.formatOverride, ctx.baseFormat.type) ||
         MustSwap(ctx.baseFormat.type, ctx.baseFormat.swapPacked) ||
-        ctx.baseFormat.tile != TexelTile::Linear;
-
-    for (uint32 s = 0; s < qoiDesc.channels; s++) {
-      if (ctx.baseFormat.swizzle.types[s] != TexelSwizzleType(s)) {
-        mustDecode = true;
-        break;
-      }
-    }
+        ctx.baseFormat.tile != TexelTile::Linear ||
+        MustSwizzle(ctx.baseFormat.swizzle, qoiDesc.channels);
 
     if (mustDecode) {
       InitBuffer();
@@ -2108,14 +2130,8 @@ struct NewTexelContextPNG : NewTexelContextImpl {
     bool mustDecode =
         IsFormatSupported(ctx.formatOverride, ctx.baseFormat.type) ||
         MustSwap(ctx.baseFormat.type, ctx.baseFormat.swapPacked) ||
-        ctx.baseFormat.tile != TexelTile::Linear;
-
-    for (uint32 s = 0; s < numChannels; s++) {
-      if (ctx.baseFormat.swizzle.types[s] != TexelSwizzleType(s)) {
-        mustDecode = true;
-        break;
-      }
-    }
+        ctx.baseFormat.tile != TexelTile::Linear ||
+        MustSwizzle(ctx.baseFormat.swizzle, numChannels);
 
     if (mustDecode) {
       InitBuffer();
