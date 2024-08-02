@@ -31,8 +31,8 @@ public:
 
 private:
   string_type fullPath;
-  size_t endFolder;
-  size_t lastDot;
+  size_t endFolder = 0;
+  size_t lastDot = 0;
 
 public:
   FileInfo(stringref_type input) { Load(input); }
