@@ -8,11 +8,11 @@
 Spike is a powerful foundation for batch processing of files.\
 Spike can:
 
-* Handle large amount of files and make something from them.
-* Extract archives as well as make them from large amount of files.
-* Also convert lasrge amount of files into something else.
-* Respect your HDD heath by creating single ZIP archive for extracted files, erasing directory and file fragmentation.
-* Squeze every possbile watt from your CPU in order to process everything as fast as possible.
+* Transmute/convert large quantities of files.
+* Provides framework for archive and vfs extraction and creation.
+* Respects your HDD heath by creating a single ZIP archive for extracted files, removing directory and file fragmentation inside OS's filesystem.
+* Uses extensive multithreading for maximum performance.
+* Mount uncompressed ZIP files as it's own virtual filesystem.
 
 Spike also provides library for:
 
