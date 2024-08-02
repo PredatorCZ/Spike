@@ -36,7 +36,7 @@ TexelContextFormat OutputFormat() {
   return mainSettings.texelSettings.outputFormat;
 }
 
-bool MustDecode(TexelContextFormat ofmt, TexelInputFormatType fmt) {
+bool IsFormatSupported(TexelContextFormat ofmt, TexelInputFormatType fmt) {
   using F = TexelInputFormatType;
 
   switch (fmt) {
@@ -97,6 +97,36 @@ bool MustDecode(TexelContextFormat ofmt, TexelInputFormatType fmt) {
 
   return false;
 }
+
+bool MustSwap(TexelInputFormatType fmt, bool shouldSwap) {
+  using F = TexelInputFormatType;
+
+  switch (fmt) {
+  case F::R5G6B5:
+  case F::RGBA4:
+  case F::RGB10A2:
+  case F::RGB5A1:
+    return shouldSwap;
+  default:
+    return false;
+    break;
+  }
+}
+
+bool MustSwizzle(TexelSwizzle swizzle, uint32 numChannels) {
+  if (swizzle.a != TexelSwizzleType::Alpha ||
+      swizzle.r != TexelSwizzleType::Red ||
+      swizzle.g != TexelSwizzleType::Green) {
+    return true;
+  }
+
+  if (numChannels > 2) {
+    return swizzle.b != TexelSwizzleType::Blue &&
+           swizzle.b != TexelSwizzleType::DeriveZOrBlue;
+  }
+
+  return swizzle.b != TexelSwizzleType::Blue;
+};
 
 uint32 GetBPT(TexelInputFormatType fmt) {
   using F = TexelInputFormatType;
@@ -229,13 +259,14 @@ union BMPMask {
   uint32 data[4];
 };
 
-BMPMask SwizzleMask(BMPMask bits, TexelSwizzle swizzle[4]) {
+BMPMask SwizzleMask(BMPMask bits, TexelSwizzle swizzle) {
   uint32 currentOffset = 0;
   BMPMask retVal{};
 
   for (uint32 c = 0; c < 4; c++) {
-    uint32 swizzleIndex =
-        swizzle[c] > TexelSwizzle::Alpha ? c : uint32(swizzle[c]);
+    uint32 swizzleIndex = swizzle.types[c] > TexelSwizzleType::Alpha
+                              ? c
+                              : uint32(swizzle.types[c]);
 
     uint32 numBits = bits.data[swizzleIndex];
     uint32 mask = (1 << numBits) - 1;
@@ -393,8 +424,8 @@ void SetDDSFormat(DDS &dds, TexelInputFormat fmt) {
   }
 }
 
-void SetDDSLegacyFormat(DDS &dds, TexelInputFormat fmt) {
-  switch (fmt.type) {
+void SetDDSLegacyFormat(DDS &dds, TexelInputFormatType fmt) {
+  switch (fmt) {
     using F = TexelInputFormatType;
   case F::BC1:
     dds = DDSFormat_DXT1;
@@ -450,7 +481,7 @@ void SetDDSLegacyFormat(DDS &dds, TexelInputFormat fmt) {
   }
 }
 
-uint8 GetQOIChannels(TexelInputFormatType fmt) {
+uint8 DesiredQOIChannels(TexelInputFormatType fmt) {
   switch (fmt) {
     using F = TexelInputFormatType;
   case F::BC4:
@@ -509,7 +540,7 @@ uint32 GetPngChannels(PngColorType fmt) {
   return 0;
 }
 
-PngColorType GetPngColorType(TexelInputFormatType fmt) {
+PngColorType DesiredPngColorType(TexelInputFormatType fmt) {
   switch (fmt) {
     using F = TexelInputFormatType;
   case F::R8:
@@ -549,7 +580,121 @@ PngColorType GetPngColorType(TexelInputFormatType fmt) {
   return PngColorType::RGBA;
 }
 
-uint8 GetDDSChannels(TexelInputFormatType fmt) {
+PngColorType DesiredPngColorType(PngColorType type, TexelSwizzle &swizzle) {
+  switch (type) {
+  case PngColorType::RGBA: {
+    if (swizzle.r == swizzle.g && swizzle.g == swizzle.b) {
+      if (swizzle.a == TexelSwizzleType::White) {
+        return PngColorType::Gray;
+      }
+
+      swizzle.g = swizzle.a;
+      return PngColorType::GrayAlpha;
+    }
+    if (swizzle.a == TexelSwizzleType::White) {
+      return PngColorType::RGB;
+    }
+
+    return type;
+  }
+
+  case PngColorType::RGB: {
+    if (swizzle.r == swizzle.g && swizzle.g == swizzle.b) {
+      if (swizzle.a == TexelSwizzleType::White) {
+        return PngColorType::Gray;
+      }
+
+      swizzle.g = swizzle.a;
+      return PngColorType::GrayAlpha;
+    }
+
+    if (swizzle.a != TexelSwizzleType::White) {
+      return PngColorType::RGBA;
+    }
+
+    return type;
+  }
+  }
+
+  return type;
+}
+
+/*
+PngColorType DesiredPngColorType(PngColorType type, TexelSwizzle swizzle) {
+  switch (type) {
+  case PngColorType::Gray: {
+    int8 factors[4]{0, 0, 0, 0};
+
+    for (uint32 f = 0; f < 4; f++) {
+      switch (swizzle.types[f]) {
+      case TexelSwizzleType::Red:
+        factors[f] = 1;
+        break;
+      case TexelSwizzleType::RedInverted:
+        factors[f] = -1;
+        break;
+
+      default:
+        break;
+      }
+    }
+
+    if ((factors[0] == factors[1] &&
+         factors[1] == factors[2]) ||           // rgb == red || redinverted
+        (factors[0] == 0 && factors[1] == 0) || // r == red || redinverted
+        (factors[0] == 0 && factors[2] == 0) || // g == red || redinverted
+        (factors[1] == 0 && factors[2] == 0)) { // // b == red || redinverted
+      if (factors[3]) {
+        return PngColorType::GrayAlpha;
+      }
+      return type;
+    } else {
+      if (factors[3]) {
+        return PngColorType::RGBA;
+      }
+      return PngColorType::RGB;
+    }
+  }
+
+  case PngColorType::GrayAlpha: {
+    int8 factors[4]{0, 0, 0, 0};
+
+    for (uint32 f = 0; f < 4; f++) {
+      switch (swizzle.types[f]) {
+      case TexelSwizzleType::Red:
+      case TexelSwizzleType::Alpha:
+        factors[f] = 1;
+        break;
+      case TexelSwizzleType::RedInverted:
+      case TexelSwizzleType::AlphaInverted:
+        factors[f] = -1;
+        break;
+
+      default:
+        break;
+      }
+    }
+
+    if ((factors[0] == factors[1] &&
+         factors[1] == factors[2]) ||           // rgb == red || redinverted
+        (factors[0] == 0 && factors[1] == 0) || // r == red || redinverted
+        (factors[0] == 0 && factors[2] == 0) || // g == red || redinverted
+        (factors[1] == 0 && factors[2] == 0)) { // // b == red || redinverted
+      if (factors[3]) {
+        return PngColorType::GrayAlpha;
+      }
+      return type;
+    } else {
+      if (factors[3]) {
+        return PngColorType::RGBA;
+      }
+      return PngColorType::RGB;
+    }
+  }
+  }
+}*/
+
+uint8 DesiredDDSChannels(TexelInputFormatType fmt) {
   switch (fmt) {
     using F = TexelInputFormatType;
   case F::BC4:
@@ -589,7 +734,7 @@ uint8 GetDDSChannels(TexelInputFormatType fmt) {
   return 4;
 }
 
-uint8 GetDDSLegacyChannels(TexelInputFormatType fmt) {
+uint8 DesiredDDSLegacyChannels(TexelInputFormatType fmt) {
   switch (fmt) {
     using F = TexelInputFormatType;
   case F::BC4:
@@ -625,6 +770,46 @@ uint8 GetDDSLegacyChannels(TexelInputFormatType fmt) {
   }
 
   return 4;
+}
+
+uint8 FormatChannels(TexelInputFormatType fmt) {
+  switch (fmt) {
+    using F = TexelInputFormatType;
+  case F::BC4:
+  case F::R8:
+    return 1;
+
+  case F::BC5:
+  case F::RG8:
+    return 2;
+
+  case F::R5G6B5:
+  case F::RGB8:
+    return 3;
+
+  case F::BC1:
+  case F::BC2:
+  case F::BC3:
+  case F::RGBA4:
+  case F::RGBA8:
+  case F::BC7:
+  case F::RGB5A1:
+  case F::RGB10A2:
+  case F::P8:
+  case F::P4:
+  case F::PVRTC2:
+  case F::PVRTC4:
+  case F::ETC1:
+  case F::RGBA16:
+  case F::BC6:
+  case F::RGB9E5:
+    return 4;
+
+  case F::INVALID:
+    return 0;
+  }
+
+  return 0;
 }
 
 struct LinearTile : TileBase {
@@ -820,7 +1005,7 @@ void DecodeToRGB(const char *data, NewTexelContextCreate ctx,
       const uint16 *iData = reinterpret_cast<const uint16 *>(data);
       for (auto &t : outData) {
         Vector4A16 value;
-        uint32 col = *(iData + tiler->get(curTexel++));
+        uint16 col = *(iData + tiler->get(curTexel++));
         FByteswapper(col);
 
         codec.GetValue(value, reinterpret_cast<const char *>(&col));
@@ -853,11 +1038,6 @@ void DecodeToRGB(const char *data, NewTexelContextCreate ctx,
         t = UCVector(0, tData->y, tData->x);
       }
     }
-
-    if (ctx.baseFormat.deriveZNormal) {
-      ComputeBC5Blue(reinterpret_cast<char *>(outData.data()),
-                     outData.size() * 3);
-    }
     break;
   }
 
@@ -865,12 +1045,7 @@ void DecodeToRGB(const char *data, NewTexelContextCreate ctx,
     for (size_t p = 0; p < numBlocks; p++) {
       DecodeBC5Block(data + tiler->get(p) * 16,
                      reinterpret_cast<char *>(outData.data()), p % ctx.width,
-                     p / ctx.width, ctx.width);
-    }
-
-    if (ctx.baseFormat.deriveZNormal) {
-      ComputeBC5Blue(reinterpret_cast<char *>(outData.data()),
-                     outData.size() * 3);
+                     p / ctx.width, ctx.width, 3);
     }
     break;
 
@@ -1057,6 +1232,37 @@ void DecodeToRGBA(const char *data, NewTexelContextCreate ctx,
   }
 }
 
+void DecodeToRG(const char *data, NewTexelContextCreate ctx,
+                std::span<UCVector2> outData) {
+  if (BlockCompression(ctx.baseFormat.type)) {
+    ctx.width = (ctx.width + 3) / 4;
+    ctx.height = (ctx.height + 3) / 4;
+  }
+  TileVariant tvar(TileVariantFromCtx(ctx));
+  const TileBase *tiler =
+      ctx.customTile && ctx.baseFormat.tile == TexelTile::Custom
+          ? [&] {
+              ctx.customTile->reset(ctx.width, ctx.height, ctx.depth);
+              return ctx.customTile;
+            }()
+          : std::visit([](auto &item) -> const TileBase * { return &item; }, tvar);
+  const size_t numBlocks = ctx.width * ctx.height;
+
+  switch (ctx.baseFormat.type) {
+    using F = TexelInputFormatType;
+  case F::BC5:
+    for (size_t p = 0; p < numBlocks; p++) {
+      DecodeBC5Block(data + tiler->get(p) * 16,
+                     reinterpret_cast<char *>(outData.data()), p % ctx.width,
+                     p / ctx.width, ctx.width, 2);
+    }
+    break;
+
+  default:
+    break;
+  }
+}
+
 void DecodeToGray(const char *data, NewTexelContextCreate ctx,
                   std::span<char> outData) {
   if (BlockCompression(ctx.baseFormat.type)) {
@@ -1106,8 +1312,186 @@ void RetileData(const char *data, NewTexelContextCreate ctx, char *outData) {
           : std::visit([](auto &item) -> const TileBase * { return &item; }, tvar);
 
   const size_t numBlocks = ctx.width * ctx.height;
+
+  if (ctx.baseFormat.swapPacked) {
+    if (ctx.baseFormat.type == TexelInputFormatType::R5G6B5 ||
+        ctx.baseFormat.type == TexelInputFormatType::RGBA4) {
+      uint16 *oData = reinterpret_cast<uint16 *>(outData);
+      for (size_t p = 0; p < numBlocks; p++, oData++) {
+        memcpy(oData, data + tiler->get(p) * BPT, BPT);
+        FByteswapper(*oData);
+      }
+
+      return;
+    } else if (ctx.baseFormat.type == TexelInputFormatType::RGB10A2) {
+      uint32 *oData = reinterpret_cast<uint32 *>(outData);
+      for (size_t p = 0; p < numBlocks; p++, oData++) {
+        memcpy(oData, data + tiler->get(p) * BPT, BPT);
+        FByteswapper(*oData);
+      }
+
+      return;
+    }
+  }
+
   for (size_t p = 0; p < numBlocks; p++) {
     memcpy(outData + p * BPT, data + tiler->get(p) * BPT, BPT);
+  }
+}
+
+void Reencode(NewTexelContextCreate ctx, uint32 numDesiredChannels,
+              const char *data, std::span<char> outData_) {
+  const uint32 numInputChannels = FormatChannels(ctx.baseFormat.type);
+  const uint32 numTexels = ctx.width * ctx.height;
+  std::string tempBuffer;
+  std::span<char> outData = outData_;
+  uint32 outDataOffset = numTexels * (numDesiredChannels - numInputChannels);
+
+  if (numDesiredChannels < numInputChannels) {
+    tempBuffer.resize(numTexels * numInputChannels);
+    outData = tempBuffer;
+    outDataOffset = 0;
+  }
+
+  char *outDataBegin = outData.data() + outDataOffset;
+
+  char white = 0xff;
+  char black = 0;
+
+  const char *swizzleData[4];
+  uint8 factors[4]{1, 1, 1, 1};
+  uint8 invert[4]{};
+
+  for (uint8 index = 0; TexelSwizzleType t : ctx.baseFormat.swizzle.types) {
+    switch (t) {
+    case TexelSwizzleType::RedInverted:
+      invert[index] = 0xff;
+      [[fallthrough]];
+    case TexelSwizzleType::Red:
+      swizzleData[index] = outDataBegin + 2;
+      break;
+    case TexelSwizzleType::GreenInverted:
+      invert[index] = 0xff;
+      [[fallthrough]];
+    case TexelSwizzleType::Green:
+      swizzleData[index] = outDataBegin + 1;
+      break;
+    case TexelSwizzleType::BlueInverted:
+    case TexelSwizzleType::DeriveZOrBlueInverted:
+      invert[index] = 0xff;
+      [[fallthrough]];
+    case TexelSwizzleType::Blue:
+    case TexelSwizzleType::DeriveZOrBlue:
+      swizzleData[index] = outDataBegin;
+      break;
+    case TexelSwizzleType::AlphaInverted:
+      invert[index] = 0xff;
+      [[fallthrough]];
+    case TexelSwizzleType::Alpha:
+      swizzleData[index] = outDataBegin + 3;
+      break;
+    case TexelSwizzleType::Black:
+    case TexelSwizzleType::DeriveZ:
+      swizzleData[index] = &black;
+      factors[index] = 0;
+      break;
+    case TexelSwizzleType::White:
+      swizzleData[index] = &white;
+      factors[index] = 0;
+      break;
+
+    default:
+      break;
+    }
+
+    index++;
+  }
+
+  if (numInputChannels == 1) {
+    for (uint32 i = 1; i < numDesiredChannels; i++) {
+      if (swizzleData[i] != &white && swizzleData[i] != &black) {
+        invert[i] = invert[0];
+        swizzleData[i] = swizzleData[0];
+        factors[i] = factors[0];
+      }
+    }
+
+    if (ctx.baseFormat.type == TexelInputFormatType::R8) {
+      RetileData(data, ctx, outDataBegin);
+    } else {
+      DecodeToGray(
+          data, ctx,
+          outData.subspan(numTexels * (numDesiredChannels - 1), numTexels));
+    }
+  } else if (numInputChannels == 2) {
+    if (ctx.baseFormat.type == TexelInputFormatType::RG8) {
+      RetileData(data, ctx, outDataBegin);
+    } else {
+      DecodeToRG(data, ctx,
+                 {reinterpret_cast<UCVector2 *>(outDataBegin), numTexels});
+    }
+  } else if (numInputChannels == 3) {
+    if (ctx.baseFormat.type == TexelInputFormatType::RGB8) {
+      RetileData(data, ctx, outDataBegin);
+    } else {
+      DecodeToRGB(data, ctx,
+                  {reinterpret_cast<UCVector *>(outDataBegin), numTexels});
+    }
+  } else if (numInputChannels == 4) {
+    if (ctx.baseFormat.type == TexelInputFormatType::RGBA8) {
+      RetileData(data, ctx, outDataBegin);
+    } else {
+      DecodeToRGBA(data, ctx,
+                   {reinterpret_cast<UCVector4 *>(outDataBegin), numTexels});
+    }
+  }
+
+  for (uint32 t = 0; t < numTexels; t++) {
+    char texel[4];
+
+    for (uint32 s = 0; s < numDesiredChannels; s++) {
+      texel[s] = (invert[s] - uint8(*swizzleData[s])) * int8(~invert[s] | 1);
+
+      swizzleData[s] += factors[s] * numInputChannels;
+    }
+
+    memcpy(outData_.data() + t * numDesiredChannels, texel, numDesiredChannels);
+  }
+
+  [&] {
+    if (numDesiredChannels < 3) {
+      return;
+    }
+
+    if (ctx.baseFormat.swizzle.b == TexelSwizzleType::DeriveZ) {
+      ComputeBC5Blue(outData_.data(), numTexels * numDesiredChannels,
+                     numDesiredChannels);
+      return;
+    }
+
+    if (numInputChannels == 2) {
+      if (ctx.baseFormat.swizzle.b != TexelSwizzleType::DeriveZOrBlue &&
+          ctx.baseFormat.swizzle.b != TexelSwizzleType::DeriveZOrBlueInverted) {
+        return;
+      }
+
+      ComputeBC5Blue(outData_.data(), numTexels * numDesiredChannels,
+                     numDesiredChannels);
+    }
+  }();
+
+  if ((numDesiredChannels > 2 &&
+       ctx.baseFormat.swizzle.b == TexelSwizzleType::DeriveZ) ||
+      numDesiredChannels == 2 &&
+          (ctx.baseFormat.swizzle.b == TexelSwizzleType::DeriveZOrBlue ||
+           ctx.baseFormat.swizzle.b ==
+               TexelSwizzleType::DeriveZOrBlueInverted)) {
+    ComputeBC5Blue(outData_.data(), numTexels * numDesiredChannels,
+                   numDesiredChannels);
+  }
+
+  if (ctx.postProcess) {
+    ctx.postProcess(outData_.data(), numDesiredChannels, numTexels);
   }
 }
 
@@ -1119,7 +1503,7 @@ struct NewTexelContextQOI : NewTexelContextImpl {
     qoiDesc.width = ctx.width;
     qoiDesc.height = ctx.height * std::max(uint16(1), ctx.depth);
     qoiDesc.colorspace = !ctx.baseFormat.srgb;
-    qoiDesc.channels = GetQOIChannels(ctx.baseFormat.type);
+    qoiDesc.channels = DesiredQOIChannels(ctx.baseFormat.type);
   }
 
   void InitBuffer() {
@@ -1150,31 +1534,6 @@ struct NewTexelContextQOI : NewTexelContextImpl {
     auto mctx = ctx;
     mctx.height *= std::max(mctx.depth, uint16(1));
 
-    auto DecodeStream = [&] {
-      InitBuffer();
-
-      if (qoiDesc.channels == 4) {
-        UCVector4 *bgn = reinterpret_cast<UCVector4 *>(yasBuffer.data());
-        UCVector4 *edn =
-            reinterpret_cast<UCVector4 *>(yasBuffer.data() + yasBuffer.size());
-
-        DecodeToRGBA(static_cast<const char *>(data), mctx, {bgn, edn});
-      } else if (qoiDesc.channels == 3) {
-        UCVector *bgn = reinterpret_cast<UCVector *>(yasBuffer.data());
-        UCVector *edn =
-            reinterpret_cast<UCVector *>(yasBuffer.data() + yasBuffer.size());
-
-        DecodeToRGB(static_cast<const char *>(data), mctx, {bgn, edn});
-
-      } else if (qoiDesc.channels == 1) {
-        DecodeToGray(static_cast<const char *>(data), mctx,
-                     {yasBuffer.data(), yasBuffer.size()});
-
-      } else {
-        throw std::logic_error("Implement channel");
-      }
-    };
-
     auto Write = [&](const void *buffer) {
       int encodedSize = 0;
       void *buffa = qoi_encode(buffer, &qoiDesc, &encodedSize);
@@ -1199,15 +1558,19 @@ struct NewTexelContextQOI : NewTexelContextImpl {
       free(buffa);
     };
 
-    if (MustDecode(ctx.formatOverride, ctx.baseFormat.type)) {
-      DecodeStream();
-      Write(yasBuffer.data());
-    } else if (ctx.baseFormat.tile == TexelTile::Linear) {
-      Write(data);
-    } else {
+    bool mustDecode =
+        IsFormatSupported(ctx.formatOverride, ctx.baseFormat.type) ||
+        MustSwap(ctx.baseFormat.type, ctx.baseFormat.swapPacked) ||
+        ctx.baseFormat.tile != TexelTile::Linear ||
+        MustSwizzle(ctx.baseFormat.swizzle, qoiDesc.channels);
+
+    if (mustDecode) {
       InitBuffer();
-      RetileData(static_cast<const char *>(data), mctx, yasBuffer.data());
+      Reencode(mctx, qoiDesc.channels, static_cast<const char *>(data),
+               yasBuffer);
       Write(yasBuffer.data());
+    } else {
+      Write(data);
     }
   }
 
@@ -1236,9 +1599,11 @@ struct NewTexelContextDDS : NewTexelContextImpl {
   DDS::Mips ddsMips{};
   std::vector<std::vector<bool>> mipmaps;
   std::string yasBuffer;
+  bool mustDecode;
 
   NewTexelContextDDS(NewTexelContextCreate ctx_, bool isBase = false)
-      : NewTexelContextImpl(ctx_), dds(MakeDDS(ctx)) {
+      : NewTexelContextImpl(ctx_), dds(MakeDDS(ctx)),
+        mustDecode(IsFormatSupported(ctx.formatOverride, ctx.baseFormat.type)) {
     mipmaps.resize(std::max(1U, dds.mipMapCount));
     const int8 numFaces = std::max(ctx.numFaces, int8(1));
     const uint32 arraySize = dds.arraySize * numFaces;
@@ -1255,7 +1620,30 @@ struct NewTexelContextDDS : NewTexelContextImpl {
     }
 
     if (!isBase) {
-      SetDDSFormat(dds, ctx.baseFormat);
+      TexelInputFormat baseFmt = ctx.baseFormat;
+
+      if (mustDecode) {
+        uint8 numChannels = DesiredDDSChannels(ctx.baseFormat.type);
+
+        switch (numChannels) {
+        case 1:
+          baseFmt.type = TexelInputFormatType::R8;
+          break;
+        case 2:
+          baseFmt.type = TexelInputFormatType::RG8;
+          break;
+        case 3:
+          baseFmt.type = TexelInputFormatType::RGB8;
+          break;
+        case 4:
+          baseFmt.type = TexelInputFormatType::RGBA8;
+          break;
+        default:
+          break;
+        }
+      }
+
+      SetDDSFormat(dds, baseFmt);
       dds.ComputeBPP();
       yasBuffer.resize(dds.ComputeBufferSize(ddsMips));
       for (int32 i = 0; i < ctx.numFaces; i++) {
@@ -1322,7 +1710,7 @@ struct NewTexelContextDDS : NewTexelContextImpl {
     mctx.height *= mctx.depth;
 
     auto DecodeStream = [&] {
-      uint8 numChannels = GetDDSChannels(ctx.baseFormat.type);
+      uint8 numChannels = DesiredDDSChannels(ctx.baseFormat.type);
       if (numChannels == 4) {
         UCVector4 *bgn = reinterpret_cast<UCVector4 *>(yasBuffer.data());
         UCVector4 *edn =
@@ -1344,11 +1732,13 @@ struct NewTexelContextDDS : NewTexelContextImpl {
       }
     };
 
-    const bool mustDecode = MustDecode(ctx.formatOverride, ctx.baseFormat.type);
+    const bool mustDecode =
+        IsFormatSupported(ctx.formatOverride, ctx.baseFormat.type);
 
     if (mustDecode) {
       DecodeStream();
-    } else if (ctx.baseFormat.tile == TexelTile::Linear) {
+    } else if (ctx.baseFormat.tile == TexelTile::Linear &&
+               !ctx.baseFormat.swapPacked) {
       memcpy(rData, data, rDataSize);
     } else {
       RetileData(static_cast<const char *>(data), mctx, rData);
@@ -1382,8 +1772,29 @@ struct NewTexelContextDDSLegacy : NewTexelContextDDS {
       : NewTexelContextDDS(ctx_, true) {
     arrayMipmapBuffers.resize(dds.arraySize);
     dds.arraySize = 1;
+    TexelInputFormat baseFmt = ctx.baseFormat;
 
-    SetDDSLegacyFormat(dds, ctx.baseFormat);
+    if (mustDecode) {
+      uint8 numChannels = DesiredDDSLegacyChannels(ctx.baseFormat.type);
+      switch (numChannels) {
+      case 1:
+        baseFmt.type = TexelInputFormatType::R8;
+        break;
+      case 2:
+        baseFmt.type = TexelInputFormatType::RG8;
+        break;
+      case 3:
+        baseFmt.type = TexelInputFormatType::RGB8;
+        break;
+      case 4:
+        baseFmt.type = TexelInputFormatType::RGBA8;
+        break;
+      default:
+        break;
+      }
+    }
+
+    SetDDSLegacyFormat(dds, baseFmt.type);
     dds.ComputeBPP();
     dds.ComputeBufferSize(ddsMips);
 
@@ -1466,7 +1877,7 @@ struct NewTexelContextDDSLegacy : NewTexelContextDDS {
     mctx.height *= mctx.depth;
 
     auto DecodeStream = [&] {
-      uint8 numChannels = GetDDSLegacyChannels(ctx.baseFormat.type);
+      uint8 numChannels = DesiredDDSLegacyChannels(ctx.baseFormat.type);
       if (numChannels == 4) {
         UCVector4 *bgn = reinterpret_cast<UCVector4 *>(buffar.data());
         UCVector4 *edn =
@@ -1487,11 +1898,10 @@ struct NewTexelContextDDSLegacy : NewTexelContextDDS {
       }
     };
 
-    const bool mustDecode = MustDecode(ctx.formatOverride, ctx.baseFormat.type);
-
     if (mustDecode) {
       DecodeStream();
-    } else if (ctx.baseFormat.tile == TexelTile::Linear) {
+    } else if (ctx.baseFormat.tile == TexelTile::Linear &&
+               !ctx.baseFormat.swapPacked) {
       memcpy(rData, data, rDataSize);
     } else {
       RetileData(static_cast<const char *>(data), mctx, rData);
@@ -1666,7 +2076,8 @@ struct NewTexelContextPNG : NewTexelContextImpl {
   NewTexelContextPNG(NewTexelContextCreate ctx_) : NewTexelContextImpl(ctx_) {
     hdr.ihdr.width = ctx.width;
     hdr.ihdr.height = ctx.height * std::max(uint16(1), ctx.depth);
-    hdr.ihdr.colorType = GetPngColorType(ctx.baseFormat.type);
+    hdr.ihdr.colorType = DesiredPngColorType(
+        DesiredPngColorType(ctx.baseFormat.type), ctx.baseFormat.swizzle);
     numChannels = GetPngChannels(hdr.ihdr.colorType);
   }
 
@@ -1697,31 +2108,6 @@ struct NewTexelContextPNG : NewTexelContextImpl {
 
     auto mctx = ctx;
     mctx.height *= std::max(mctx.depth, uint16(1));
-
-    auto DecodeStream = [&] {
-      InitBuffer();
-
-      if (numChannels == 4) {
-        UCVector4 *bgn = reinterpret_cast<UCVector4 *>(yasBuffer.data());
-        UCVector4 *edn =
-            reinterpret_cast<UCVector4 *>(yasBuffer.data() + yasBuffer.size());
-
-        DecodeToRGBA(static_cast<const char *>(data), mctx, {bgn, edn});
-      } else if (numChannels == 3) {
-        UCVector *bgn = reinterpret_cast<UCVector *>(yasBuffer.data());
-        UCVector *edn =
-            reinterpret_cast<UCVector *>(yasBuffer.data() + yasBuffer.size());
-
-        DecodeToRGB(static_cast<const char *>(data), mctx, {bgn, edn});
-
-      } else if (numChannels == 1) {
-        DecodeToGray(static_cast<const char *>(data), mctx,
-                     {yasBuffer.data(), yasBuffer.size()});
-
-      } else {
-        throw std::logic_error("Implement channel");
-      }
-    };
 
     auto Write = [&](const void *buffer) {
       std::string suffix;
@@ -1768,15 +2154,18 @@ struct NewTexelContextPNG : NewTexelContextImpl {
       outCtx->SendData({reinterpret_cast<const char *>(&tail), sizeof(tail)});
     };
 
-    if (MustDecode(ctx.formatOverride, ctx.baseFormat.type)) {
-      DecodeStream();
-      Write(yasBuffer.data());
-    } else if (ctx.baseFormat.tile == TexelTile::Linear) {
-      Write(data);
-    } else {
+    bool mustDecode =
+        IsFormatSupported(ctx.formatOverride, ctx.baseFormat.type) ||
+        MustSwap(ctx.baseFormat.type, ctx.baseFormat.swapPacked) ||
+        ctx.baseFormat.tile != TexelTile::Linear ||
+        MustSwizzle(ctx.baseFormat.swizzle, numChannels);
+
+    if (mustDecode) {
       InitBuffer();
-      RetileData(static_cast<const char *>(data), mctx, yasBuffer.data());
+      Reencode(mctx, numChannels, static_cast<const char *>(data), yasBuffer);
       Write(yasBuffer.data());
+    } else {
+      Write(data);
     }
   }
 

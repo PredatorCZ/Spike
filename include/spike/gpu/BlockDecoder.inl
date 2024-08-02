@@ -201,9 +201,9 @@ inline void DecodeBC4Block(const char *data, char *obuffer, uint32 w, uint32 h,
 }
 
 inline void DecodeBC5Block(const char *data, char *obuffer, uint32 w, uint32 h,
-                           uint32 width) {
-  _DecodeBC4Block(data, obuffer + 1, w, h, width, 3);
-  _DecodeBC4Block(data + 8, obuffer + 2, w, h, width, 3);
+                           uint32 width, uint32 stride) {
+  _DecodeBC4Block(data, obuffer + 1, w, h, width, stride);
+  _DecodeBC4Block(data + 8, obuffer + 2, w, h, width, stride);
 }
 
 inline void DecodeBC5BlockGA(const char *data, char *obuffer, uint32 w,
