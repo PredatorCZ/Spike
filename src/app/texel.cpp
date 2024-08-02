@@ -1045,7 +1045,7 @@ void DecodeToRGB(const char *data, NewTexelContextCreate ctx,
     for (size_t p = 0; p < numBlocks; p++) {
       DecodeBC5Block(data + tiler->get(p) * 16,
                      reinterpret_cast<char *>(outData.data()), p % ctx.width,
-                     p / ctx.width, ctx.width);
+                     p / ctx.width, ctx.width, 3);
     }
     break;
 
@@ -1254,7 +1254,7 @@ void DecodeToRG(const char *data, NewTexelContextCreate ctx,
     for (size_t p = 0; p < numBlocks; p++) {
       DecodeBC5Block(data + tiler->get(p) * 16,
                      reinterpret_cast<char *>(outData.data()), p % ctx.width,
-                     p / ctx.width, ctx.width);
+                     p / ctx.width, ctx.width, 2);
     }
     break;
 
@@ -1353,7 +1353,7 @@ void Reencode(NewTexelContextCreate ctx, uint32 numDesiredChannels,
     outDataOffset = 0;
   }
 
-  std::span<char> outDataBegin = outData.subspan(outDataOffset, numTexels);
+  char *outDataBegin = outData.data() + outDataOffset;
 
   char white = 0xff;
   char black = 0;
@@ -1368,13 +1368,13 @@ void Reencode(NewTexelContextCreate ctx, uint32 numDesiredChannels,
       invert[index] = 0xff;
       [[fallthrough]];
     case TexelSwizzleType::Red:
-      swizzleData[index] = outDataBegin.data() + 2;
+      swizzleData[index] = outDataBegin + 2;
       break;
     case TexelSwizzleType::GreenInverted:
       invert[index] = 0xff;
       [[fallthrough]];
     case TexelSwizzleType::Green:
-      swizzleData[index] = outDataBegin.data() + 1;
+      swizzleData[index] = outDataBegin + 1;
       break;
     case TexelSwizzleType::BlueInverted:
     case TexelSwizzleType::DeriveZOrBlueInverted:
@@ -1382,13 +1382,13 @@ void Reencode(NewTexelContextCreate ctx, uint32 numDesiredChannels,
       [[fallthrough]];
     case TexelSwizzleType::Blue:
     case TexelSwizzleType::DeriveZOrBlue:
-      swizzleData[index] = outDataBegin.data();
+      swizzleData[index] = outDataBegin;
       break;
     case TexelSwizzleType::AlphaInverted:
       invert[index] = 0xff;
       [[fallthrough]];
     case TexelSwizzleType::Alpha:
-      swizzleData[index] = outDataBegin.data() + 3;
+      swizzleData[index] = outDataBegin + 3;
       break;
     case TexelSwizzleType::Black:
     case TexelSwizzleType::DeriveZ:
@@ -1408,8 +1408,16 @@ void Reencode(NewTexelContextCreate ctx, uint32 numDesiredChannels,
   }
 
   if (numInputChannels == 1) {
+    for (uint32 i = 1; i < numDesiredChannels; i++) {
+      if (swizzleData[i] != &white && swizzleData[i] != &black) {
+        invert[i] = invert[0];
+        swizzleData[i] = swizzleData[0];
+        factors[i] = factors[0];
+      }
+    }
+
     if (ctx.baseFormat.type == TexelInputFormatType::R8) {
-      RetileData(data, ctx, outDataBegin.data());
+      RetileData(data, ctx, outDataBegin);
     } else {
       DecodeToGray(
           data, ctx,
@@ -1417,27 +1425,24 @@ void Reencode(NewTexelContextCreate ctx, uint32 numDesiredChannels,
     }
   } else if (numInputChannels == 2) {
     if (ctx.baseFormat.type == TexelInputFormatType::RG8) {
-      RetileData(data, ctx, outDataBegin.data());
+      RetileData(data, ctx, outDataBegin);
     } else {
-      DecodeToRG(
-          data, ctx,
-          {reinterpret_cast<UCVector2 *>(outDataBegin.data()), numTexels});
+      DecodeToRG(data, ctx,
+                 {reinterpret_cast<UCVector2 *>(outDataBegin), numTexels});
     }
   } else if (numInputChannels == 3) {
     if (ctx.baseFormat.type == TexelInputFormatType::RGB8) {
-      RetileData(data, ctx, outDataBegin.data());
+      RetileData(data, ctx, outDataBegin);
     } else {
-      DecodeToRGB(
-          data, ctx,
-          {reinterpret_cast<UCVector *>(outDataBegin.data()), numTexels});
+      DecodeToRGB(data, ctx,
+                  {reinterpret_cast<UCVector *>(outDataBegin), numTexels});
     }
   } else if (numInputChannels == 4) {
     if (ctx.baseFormat.type == TexelInputFormatType::RGBA8) {
-      RetileData(data, ctx, outDataBegin.data());
+      RetileData(data, ctx, outDataBegin);
     } else {
-      DecodeToRGBA(
-          data, ctx,
-          {reinterpret_cast<UCVector4 *>(outDataBegin.data()), numTexels});
+      DecodeToRGBA(data, ctx,
+                   {reinterpret_cast<UCVector4 *>(outDataBegin), numTexels});
     }
   }
 
@@ -1452,6 +1457,28 @@ void Reencode(NewTexelContextCreate ctx, uint32 numDesiredChannels,
 
     memcpy(outData_.data() + t * numDesiredChannels, texel, numDesiredChannels);
   }
+
+  [&] {
+    if (numDesiredChannels < 3) {
+      return;
+    }
+
+    if (ctx.baseFormat.swizzle.b == TexelSwizzleType::DeriveZ) {
+      ComputeBC5Blue(outData_.data(), numTexels * numDesiredChannels,
+                     numDesiredChannels);
+      return;
+    }
+
+    if (numInputChannels == 2) {
+      if (ctx.baseFormat.swizzle.b != TexelSwizzleType::DeriveZOrBlue &&
+          ctx.baseFormat.swizzle.b != TexelSwizzleType::DeriveZOrBlueInverted) {
+        return;
+      }
+
+      ComputeBC5Blue(outData_.data(), numTexels * numDesiredChannels,
+                     numDesiredChannels);
+    }
+  }();
 
   if ((numDesiredChannels > 2 &&
        ctx.baseFormat.swizzle.b == TexelSwizzleType::DeriveZ) ||
