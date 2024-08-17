@@ -68,7 +68,7 @@ struct AppContextShareImpl : AppContextShare {
     return texelContext.get();
   }
 
-  NewFileContext NewFile(const std::string &path) override {
+  std::pair<std::string, size_t> IdealPath(const std::string &path) {
     std::string filePath;
     size_t delimeter = 0;
 
@@ -76,7 +76,12 @@ struct AppContextShareImpl : AppContextShare {
       filePath = std::string(basePath.GetFullPath()) + path;
       delimeter = basePath.GetFullPath().size();
     } else {
-      AFileInfo pathInfo(path);
+      std::string pathCopy(path);
+
+      if (substPath.size() && path.starts_with(substPath)) {
+        pathCopy.erase(0, substPath.size());
+      }
+      AFileInfo pathInfo(pathCopy);
       auto exploded = pathInfo.Explode();
       const size_t numItems = std::min(exploded.size(), basePathParts.size());
 
@@ -111,6 +116,12 @@ struct AppContextShareImpl : AppContextShare {
       filePath.pop_back();
     }
 
+    return {filePath, delimeter};
+  }
+
+  NewFileContext NewFile(const std::string &path) override {
+    const auto [filePath, delimeter] = IdealPath(path);
+
     try {
       outFile = BinWritter(filePath);
     } catch (const es::FileInvalidAccessError &e) {
@@ -121,6 +132,15 @@ struct AppContextShareImpl : AppContextShare {
   }
 
   void BaseOutputPath(std::string basePath_) override {
+    if (size_t found = basePath_.find_first_of(':'); found != basePath_.npos) {
+      substPath = basePath_.substr(0, found);
+      basePath_.erase(0, found + 1);
+    }
+
+    if (basePath_.empty()) {
+      throw std::runtime_error("Output path cannot be empty");
+    }
+
     if (basePath_.back() != '/') {
       basePath_.push_back('/');
     }
@@ -143,6 +163,7 @@ struct AppContextShareImpl : AppContextShare {
 
   BinWritter outFile;
   AFileInfo basePath;
+  std::string substPath;
   std::vector<std::string_view> basePathParts;
   std::unique_ptr<NewTexelContextImpl> texelContext;
 };
@@ -174,9 +195,10 @@ struct SimpleIOContext : AppContextShareImpl {
       return ectx.get();
     }
 
-    std::string outPath(basePath.GetFullPath());
-    outPath += workingFile.GetFolder();
-    outPath += name;
+    std::string arcPath(workingFile.GetFolder());
+    arcPath.append(name);
+
+    auto [outPath, delimeter] = IdealPath(arcPath);
 
     if (mainSettings.extractSettings.makeZIP) {
       if (workingFile.GetExtension() == ".zip") {
