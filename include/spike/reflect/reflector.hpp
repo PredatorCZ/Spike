@@ -22,6 +22,7 @@
 #include "detail/reflector_class.hpp"
 #include "detail/reflector_enum.hpp"
 #include "detail/reflector_type.hpp"
+#include <string>
 
 class Reflector {
   friend class ReflectorFriend;
