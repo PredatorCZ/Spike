@@ -19,6 +19,7 @@
 #include "format.hpp"
 #include "list.hpp"
 #include "spike/type/matrix44.hpp"
+#include <string>
 
 namespace uni {
 struct RTSValue;
