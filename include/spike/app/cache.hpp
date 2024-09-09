@@ -22,6 +22,8 @@
 #include <string_view>
 #include <thread>
 #include <variant>
+#include <variant_type>
+
 
 struct CacheGeneratorImpl;
 struct HybridLeaf;
