@@ -20,6 +20,7 @@
 #include "../reflector_fwd.hpp"
 #include "spike/crypto/jenkinshash.hpp"
 #include "spike/util/supercore.hpp"
+#include <string>
 
 struct ReflType;
 

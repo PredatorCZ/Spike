@@ -19,6 +19,7 @@
 #include "reflector.hpp"
 #include "spike/io/bincore_fwd.hpp"
 #include <vector>
+#include <string>
 
 class ReflectorIO {
   typedef std::vector<const reflectorStatic *> classes_type;

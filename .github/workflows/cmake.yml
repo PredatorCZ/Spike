@@ -36,7 +36,7 @@ jobs:
         shell: bash
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
 
       - name: Configure stuff
         run: |
@@ -86,7 +86,7 @@ jobs:
   build-widle:
     runs-on: windows-2022
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
       - name: Configure stuff
         run: |
           choco install ninja

@@ -19,9 +19,11 @@
 #include "spike/io/bincore_fwd.hpp"
 #include "spike/util/supercore.hpp"
 #include <memory>
+#include <string>
 #include <string_view>
 #include <thread>
 #include <variant>
+
 
 struct CacheGeneratorImpl;
 struct HybridLeaf;
