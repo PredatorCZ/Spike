@@ -1,6 +1,6 @@
 /*  De/Serializing Reflector data from stream
 
-    Copyright 2020-2023 Lukas Cone
+    Copyright 2020-2024 Lukas Cone
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -18,30 +18,6 @@
 #pragma once
 #include "reflector.hpp"
 #include "spike/io/bincore_fwd.hpp"
-#include <vector>
-#include <string>
-
-class ReflectorIO {
-  typedef std::vector<const reflectorStatic *> classes_type;
-  typedef std::vector<const ReflectedEnum *> enums_type;
-  std::string data;
-  classes_type classes;
-  enums_type enums;
-
-public:
-  int PC_EXTERN Load(BinReaderRef rd);
-  int PC_EXTERN Save(BinWritterRef wr);
-
-  void AddClass(const reflectorStatic *ref) { classes.push_back(ref); }
-  template <class C> void AddClass() {
-    classes.push_back(GetReflectedClass<C>());
-  }
-  void AddEnum(const ReflectedEnum *enumRef) { enums.push_back(enumRef); }
-  template <class C> void AddEnum() { enums.push_back(GetReflectedEnum<C>()); }
-
-  const classes_type &Classes() const { return classes; }
-  const enums_type &Enums() const { return enums; }
-};
 
 class ReflectorBinUtil {
   friend class ReflectorBinUtilFriend;
