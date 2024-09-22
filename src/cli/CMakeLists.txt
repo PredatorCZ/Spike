@@ -1,5 +1,5 @@
 set(CMAKE_CXX_STANDARD 23)
-project(SpikeCLI VERSION 2.0)
+project(SpikeCLI VERSION 3.0)
 set(CMAKE_INSTALL_RPATH "$ORIGIN/lib")
 
 build_target(

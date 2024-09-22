@@ -1,6 +1,6 @@
 /*  Class reflection definitions
 
-    Copyright 2018-2023 Lukas Cone
+    Copyright 2018-2024 Lukas Cone
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -38,22 +38,28 @@ struct ReflDesc {
 struct NoName {};
 
 struct VectorMethods {
-  using ResizeWrap = void (*)(void *, size_t);
-  using AtWrap = void *(*)(void *, size_t);
-  ResizeWrap resize;
-  AtWrap at;
+  using ResizeWrap = void (*)(const void *, size_t);
+  using AtWrap = void *(*)(const void *, size_t);
+  using SizeWrap = size_t (*)(const void *);
+  ResizeWrap resize = nullptr;
+  AtWrap at = nullptr;
+  SizeWrap size = nullptr;
 };
 
 template <class C> consteval VectorMethods MakeVectorClass() {
-  using Vector = std::vector<C>;
   VectorMethods retval{
-      .resize = [](void *ptr_,
-                   size_t n) { static_cast<Vector *>(ptr_)->resize(n); },
-      .at = [](void *ptr_, size_t n) -> void * {
-        auto &ref = static_cast<Vector *>(ptr_)->at(n);
+      .resize =
+          [](const void *ptr_, size_t n) {
+            static_cast<C *>(const_cast<void *>(ptr_))->resize(n);
+          },
+      .at = [](const void *ptr_, size_t n) -> void * {
+        auto &ref = static_cast<C *>(const_cast<void *>(ptr_))->at(n);
         return &ref;
       },
-  };
+      .size =
+          [](const void *ptr_) {
+            return static_cast<const C *>(ptr_)->size();
+          }};
 
   return retval;
 }
@@ -64,6 +70,7 @@ struct MemberProxy {
   JenHash aliasHash;
   ReflType type;
   ReflDesc description;
+  VectorMethods vectorMethods;
 
 private:
   void setup(const char *aliasName_) {
@@ -79,12 +86,18 @@ public:
   template <class... Input, class type_>
   explicit MemberProxy(type_ getter, Input... inputs) {
     auto [offset, name, hash, rtfn, isbitmember] = getter();
+    using MemberType = std::remove_pointer_t<decltype(rtfn)>;
     if constexpr (std::is_same_v<decltype(isbitmember), std::true_type>) {
-      type = BuildBFReflType<std::remove_pointer_t<decltype(offset)>,
-                             std::remove_pointer_t<decltype(rtfn)>>(hash);
-    } else {
       type =
-          BuildReflType<std::remove_pointer_t<decltype(rtfn)>>(hash, 0, offset);
+          BuildBFReflType<std::remove_pointer_t<decltype(offset)>, MemberType>(
+              hash);
+    } else {
+      constexpr REFContainer mainContainer = REFContainerType<MemberType>();
+      type = BuildReflType<MemberType>(hash, 0, offset);
+      if constexpr (mainContainer == REFContainer::ContainerVector ||
+                    mainContainer == REFContainer::ContainerVectorMap) {
+        vectorMethods = MakeVectorClass<MemberType>();
+      }
     }
 
     typeName = name;
@@ -120,17 +133,24 @@ struct reflectorStatic {
   const char *className;
   const char *const *typeAliases = nullptr;
   const JenHash *typeAliasHashes = nullptr;
-  const ReflDesc *typeDescs;
-  const ClassMethods methods;
+  const ReflDesc *typeDescs = nullptr;
+  const ClassMethods methods{};
   const uint32 classSize;
-  const JenHash baseClass;
+  const JenHash baseClass{};
+  const VectorMethods *vectorMethods = nullptr;
+
+  constexpr reflectorStatic(uint32 nTypes, const ReflType *types,
+                            const char *const *typeNames, uint32 totalSize)
+      : classHash(0), nTypes(nTypes), types(types), typeNames(typeNames),
+        className("_unnamed_"), classSize(totalSize) {}
 
   template <class ClassType, class BaseType, class... C, size_t cs>
   reflectorStatic(JenHash baseClassHash, const BaseType *, const ClassType *,
                   const char (&className_)[cs], C... members)
       : classHash(JenHash(className_)), nTypes(sizeof...(C)),
         className(className_), methods(MakeClassMethods<ClassType>()),
-        classSize(sizeof(ClassType)), baseClass(baseClassHash) {
+        classSize(sizeof(ClassType)),
+        baseClass(baseClassHash == JenHash("void") ? JenHash{} : baseClassHash) {
 
     static_assert(std::is_same_v<BaseType, void> ||
                       std::is_base_of_v<BaseType, ClassType>,
@@ -149,6 +169,21 @@ struct reflectorStatic {
         }
       };
       static const ReflType types_[]{reflType2{members.type, index++}...};
+
+      bool hasVector = false;
+      for (auto &t : types_) {
+        if (t.container == REFContainer::ContainerVector ||
+            t.container == REFContainer::ContainerVectorMap) {
+          hasVector = true;
+          break;
+        }
+      }
+
+      if (hasVector) {
+        static const VectorMethods vecMethods[]{members.vectorMethods...};
+        vectorMethods = vecMethods;
+      }
+
       types = types_;
       union mutate {
         const char *h;
@@ -183,11 +218,12 @@ struct reflectorStatic {
   static RegistryType PC_EXTERN &Registry();
 };
 
-static_assert(sizeof(reflectorStatic) == 80);
+static_assert(sizeof(reflectorStatic) == 88);
 
 struct ReflectedInstance {
 private:
   friend class Reflector;
+  friend class ReflectorMember;
   friend struct ReflectedInstanceFriend;
 
   const reflectorStatic *rfStatic = nullptr;

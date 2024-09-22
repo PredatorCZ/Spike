@@ -3,211 +3,76 @@ inline ReflectedInstance Reflector::GetReflectedInstance() {
   return const_cast<const Reflector *>(this)->GetReflectedInstance();
 }
 
-inline const ReflType *Reflector::GetReflectedType(size_t ID) const {
-  const reflectorStatic *inst = GetReflectedInstance().rfStatic;
-
-  if (ID >= inst->nTypes)
-    return nullptr;
-
-  return inst->types + ID;
-}
-
-inline Reflector::ErrorType
-Reflector::SetReflectedValue(JenHash hash, std::string_view value) {
-  const ReflType *reflValue = GetReflectedType(hash);
-
-  if (!reflValue)
-    return Reflector::ErrorType::InvalidDestination;
-
-  return SetReflectedValue(*reflValue, value);
-}
-
-inline Reflector::ErrorType
-Reflector::SetReflectedValue(size_t id, std::string_view value) {
-  const ReflType *reflValue = GetReflectedType(id);
-
-  if (!reflValue)
-    return Reflector::ErrorType::InvalidDestination;
-
-  return SetReflectedValue(*reflValue, value);
-}
-
-inline Reflector::ErrorType Reflector::SetReflectedValue(JenHash hash,
-                                                         std::string_view value,
-                                                         size_t subID) {
-  const ReflType *reflValue = GetReflectedType(hash);
-
-  if (!reflValue)
-    return Reflector::ErrorType::InvalidDestination;
-
-  switch (reflValue->type) {
-  case REFType::Array:
-  case REFType::Vector:
-  case REFType::ArrayClass:
-  case REFType::EnumFlags:
-    return SetReflectedValue(*reflValue, value, subID);
-  default:
-    return ErrorType::InvalidDestination;
-  }
-}
-
-inline Reflector::ErrorType
-Reflector::SetReflectedValue(size_t id, std::string_view value, size_t subID) {
-  const ReflType *reflValue = GetReflectedType(id);
-
-  if (!reflValue)
-    return Reflector::ErrorType::InvalidDestination;
-
-  switch (reflValue->type) {
-  case REFType::Array:
-  case REFType::Vector:
-  case REFType::ArrayClass:
-  case REFType::EnumFlags:
-    return SetReflectedValue(*reflValue, value, subID);
-  default:
-    return ErrorType::InvalidDestination;
-  }
-}
-
-inline Reflector::ErrorType Reflector::SetReflectedValue(JenHash hash,
-                                                         std::string_view value,
-                                                         size_t subID,
-                                                         size_t element) {
-  const ReflType *reflValue = GetReflectedType(hash);
-
-  if (!reflValue || !IsArray(hash))
-    return Reflector::ErrorType::InvalidDestination;
-
-  return SetReflectedValue(*reflValue, value, subID, element);
-}
-
-inline Reflector::ErrorType Reflector::SetReflectedValue(size_t id,
-                                                         std::string_view value,
-                                                         size_t subID,
-                                                         size_t element) {
-  const ReflType *reflValue = GetReflectedType(id);
-
-  if (!reflValue || !IsArray(id))
-    return Reflector::ErrorType::InvalidDestination;
-
-  return SetReflectedValue(*reflValue, value, subID, element);
-}
-
-inline Reflector::ErrorType
-Reflector::SetReflectedValueInt(JenHash hash, int64 value, size_t subID) {
-  const ReflType *reflValue = GetReflectedType(hash);
-
-  if (!reflValue)
-    return Reflector::ErrorType::InvalidDestination;
-
-  return SetReflectedValueInt(*reflValue, value, subID);
-}
-
-inline Reflector::ErrorType
-Reflector::SetReflectedValueInt(size_t id, int64 value, size_t subID) {
-  const ReflType *reflValue = GetReflectedType(id);
-
-  if (!reflValue)
-    return Reflector::ErrorType::InvalidDestination;
-
-  return SetReflectedValueInt(*reflValue, value, subID);
-}
-
-inline Reflector::ErrorType
-Reflector::SetReflectedValueUInt(JenHash hash, uint64 value, size_t subID) {
-  const ReflType *reflValue = GetReflectedType(hash);
-
-  if (!reflValue)
-    return Reflector::ErrorType::InvalidDestination;
-
-  return SetReflectedValueUInt(*reflValue, value, subID);
-}
-
-inline Reflector::ErrorType
-Reflector::SetReflectedValueUInt(size_t id, uint64 value, size_t subID) {
-  const ReflType *reflValue = GetReflectedType(id);
-
-  if (!reflValue)
-    return Reflector::ErrorType::InvalidDestination;
-
-  return SetReflectedValueUInt(*reflValue, value, subID);
-}
-
-inline Reflector::ErrorType
-Reflector::SetReflectedValueFloat(JenHash hash, double value, size_t subID) {
-  const ReflType *reflValue = GetReflectedType(hash);
-
-  if (!reflValue)
-    return Reflector::ErrorType::InvalidDestination;
-
-  return SetReflectedValueFloat(*reflValue, value, subID);
-}
-
-inline Reflector::ErrorType
-Reflector::SetReflectedValueFloat(size_t id, double value, size_t subID) {
-  const ReflType *reflValue = GetReflectedType(id);
-
-  if (!reflValue)
-    return Reflector::ErrorType::InvalidDestination;
-
-  return SetReflectedValueFloat(*reflValue, value, subID);
-}
-
-inline size_t Reflector::GetNumReflectedValues() const {
+inline size_t Reflector::NumReflectedValues() const {
   return GetReflectedInstance().rfStatic->nTypes;
 }
 
-inline std::string Reflector::GetReflectedValue(JenHash hash) const {
-  const ReflType *found = GetReflectedType(hash);
-
-  if (!found)
-    return "";
-
-  return GetReflectedValue(*found);
+inline std::string_view Reflector::ClassName() const {
+  return GetReflectedInstance().rfStatic->className;
 }
 
-inline std::string Reflector::GetReflectedValue(JenHash hash,
-                                                size_t subID) const {
-  const ReflType *found = GetReflectedType(hash);
+inline ReflectorMember Reflector::operator[](size_t ID) const {
+  ReflectedInstance inst = GetReflectedInstance();
+  if (!inst) {
+    return {inst, 0};
+  }
 
-  if (!found)
-    return "";
+  if (ID >= inst.rfStatic->nTypes) {
+    throw std::out_of_range("Reflected member index is out of range");
+  }
 
-  return GetReflectedValue(*found, subID);
+  return {inst, ID};
 }
 
-inline std::string Reflector::GetReflectedValue(JenHash hash, size_t subID,
-                                                size_t element) const {
-  const ReflType *found = GetReflectedType(hash);
+inline bool ReflectorMember::IsReflectedSubClass() const {
+  if (!data) {
+    return false;
+  }
+  const ReflType fl = data.rfStatic->types[id];
 
-  if (!found)
-    return "";
-
-  return GetReflectedValue(*found, subID, element);
+  return fl.type == REFType::Class || fl.type == REFType::BitFieldClass ||
+         (IsArray() && (fl.asArray.type == REFType::Class ||
+                        fl.asArray.type == REFType::BitFieldClass));
 }
 
-inline ReflectedInstance Reflector::GetReflectedSubClass(JenHash hash,
-                                                         size_t subID) const {
-  const ReflType *found = GetReflectedType(hash);
+inline bool ReflectorMember::IsArray() const {
+  if (!data) {
+    return false;
+  }
+  const ReflType fl = data.rfStatic->types[id];
 
-  if (!found)
-    return {};
-
-  return GetReflectedSubClass(*found, subID);
+  return !(fl.container == REFContainer::None ||
+           fl.container == REFContainer::Pointer);
 }
 
-inline ReflectedInstance Reflector::GetReflectedSubClass(JenHash hash,
-                                                         size_t subID) {
-  return const_cast<const Reflector *>(this)->GetReflectedSubClass(hash, subID);
+inline size_t ReflectorMember::Size() const {
+  if (!data) {
+    return 0;
+  }
+
+  const ReflType fl = data.rfStatic->types[id];
+
+  if (fl.container == REFContainer::InlineArray) {
+    return fl.asArray.numItems;
+  }
+
+  if (fl.container == REFContainer::ContainerVector ||
+      fl.container == REFContainer::ContainerVectorMap) {
+    VectorMethods methods(data.rfStatic->vectorMethods[id]);
+    return methods.size(
+        static_cast<const char *>(data.constInstance) + fl.offset);
+  }
+
+  return 0;
 }
 
-inline Reflector::KVPair
-Reflector::GetReflectedPair(size_t id, const KVPairFormat &settings) const {
-  if (id >= GetNumReflectedValues())
-    return {};
-
+inline ReflectorMember::KVPair
+ReflectorMember::ReflectedPair(KVPairFormat settings) const {
   KVPair retval;
-  const auto refInt = GetReflectedInstance().rfStatic;
+  if (!data) {
+    return retval;
+  }
+  const auto refInt = data.rfStatic;
 
   if (settings.aliasName && refInt->typeAliases && refInt->typeAliases[id]) {
     retval.name = refInt->typeAliases[id];
@@ -216,113 +81,15 @@ Reflector::GetReflectedPair(size_t id, const KVPairFormat &settings) const {
   }
 
   if (settings.formatValue && refInt->typeDescs[id].part1) {
-    retval.value = refInt->typeDescs[id].part1 + (' ' + GetReflectedValue(id));
+    retval.value = refInt->typeDescs[id].part1 + (' ' + ReflectedValue());
 
     if (refInt->typeDescs[id].part2) {
       retval.value += ' ';
       retval.value += refInt->typeDescs[id].part2;
     }
   } else {
-    retval.value = GetReflectedValue(id);
+    retval.value = ReflectedValue();
   }
 
   return retval;
-}
-
-inline Reflector::KVPair
-Reflector::GetReflectedPair(JenHash hash, const KVPairFormat &settings) const {
-  const ReflType *found = GetReflectedType(hash);
-
-  if (!found)
-    return {};
-
-  return GetReflectedPair(found->index, settings);
-}
-
-inline std::string_view Reflector::GetClassName() const {
-  return GetReflectedInstance().rfStatic->className;
-}
-
-inline bool Reflector::IsReflectedSubClass(JenHash hash) const {
-  const ReflType *found = GetReflectedType(hash);
-
-  if (!found)
-    return false;
-
-  return IsReflectedSubClass(found->index);
-}
-
-inline bool Reflector::IsReflectedSubClass(size_t id) const {
-  if (id >= GetNumReflectedValues())
-    return false;
-
-  const ReflType fl = GetReflectedInstance().rfStatic->types[id];
-
-  return fl.type == REFType::Class || fl.type == REFType::BitFieldClass ||
-         (IsArray(fl.index) && (fl.asArray.type == REFType::Class ||
-                                fl.asArray.type == REFType::BitFieldClass));
-}
-
-inline bool Reflector::IsArray(JenHash hash) const {
-  const ReflType *found = GetReflectedType(hash);
-
-  if (!found)
-    return false;
-
-  return found->type == REFType::Array || found->type == REFType::ArrayClass;
-}
-
-inline bool Reflector::IsArray(size_t id) const {
-  if (id >= GetNumReflectedValues())
-    return false;
-
-  const ReflType fl = GetReflectedInstance().rfStatic->types[id];
-
-  return fl.type == REFType::Array || fl.type == REFType::ArrayClass;
-}
-
-inline std::string Reflector::GetReflectedValue(size_t id) const {
-  if (id >= GetNumReflectedValues())
-    return "";
-
-  auto inst = GetReflectedInstance();
-  const ReflType &reflValue = inst.rfStatic->types[id];
-  return GetReflectedValue(reflValue);
-}
-
-inline std::string Reflector::GetReflectedValue(size_t id, size_t subID) const {
-  if (id >= GetNumReflectedValues())
-    return "";
-
-  auto inst = GetReflectedInstance();
-  const ReflType &reflValue = inst.rfStatic->types[id];
-  return GetReflectedValue(reflValue, subID);
-}
-
-inline std::string Reflector::GetReflectedValue(size_t id, size_t subID,
-                                         size_t element) const {
-  if (id >= GetNumReflectedValues() || !IsArray(id))
-    return "";
-
-  auto inst = GetReflectedInstance();
-  const ReflType &reflValue = inst.rfStatic->types[id];
-  return GetReflectedValue(reflValue, subID, element);
-}
-
-inline ReflectedInstance Reflector::GetReflectedSubClass(size_t id,
-                                                  size_t subID) const {
-  if (id >= GetNumReflectedValues())
-    return {};
-
-  auto inst = GetReflectedInstance();
-  const ReflType &reflValue = inst.rfStatic->types[id];
-  return GetReflectedSubClass(reflValue, subID);
-}
-
-inline ReflectedInstance Reflector::GetReflectedSubClass(ReflType type, size_t subID) {
-  return const_cast<const Reflector *>(this)->GetReflectedSubClass(type, subID);
-}
-
-inline ReflectedInstance Reflector::GetReflectedSubClass(size_t id, size_t subID) {
-  return const_cast<const Reflector *>(this)->GetReflectedSubClass(id, subID);
 }

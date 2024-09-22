@@ -1,6 +1,6 @@
 /*  Spike is universal dedicated module handler
 
-    Copyright 2021-2023 Lukas Cone
+    Copyright 2021-2024 Lukas Cone
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -323,8 +323,13 @@ APPContext::~APPContext() {
 class ReflectorFriend : public Reflector {
 public:
   using Reflector::GetReflectedInstance;
-  using Reflector::GetReflectedType;
-  using Reflector::SetReflectedValue;
+};
+
+class ReflectorMemberFriend : public ReflectorMember {
+public:
+  using ReflectorMember::operator=;
+  ReflectedInstanceFriend Ref() const { return ReflectedInstanceFriend{data}; }
+  operator const ReflType &() const { return Ref().Refl()->types[id]; }
 };
 
 static auto &MainSettings() {
@@ -359,12 +364,12 @@ static const reflectorStatic *RTTI(const ReflectorFriend &ref) {
 
 void APPContext::ResetSwitchSettings() {
   if (info->settings) {
-    const size_t numValues = Settings().GetNumReflectedValues();
+    const size_t numValues = Settings().NumReflectedValues();
     for (size_t i = 0; i < numValues; i++) {
-      auto rType = Settings().GetReflectedType(i);
+      ReflType rType = ReflectorMemberFriend{Settings()[i]};
 
-      if (rType->type == REFType::Bool) {
-        Settings().SetReflectedValue(i, "false");
+      if (rType.type == REFType::Bool) {
+        Settings()[i] = "false";
       }
     }
   }
@@ -376,7 +381,6 @@ void APPContext::ResetSwitchSettings() {
 int APPContext::ApplySetting(std::string_view key, std::string_view value) {
   JenHash keyHash(key);
   ReflectorFriend *refl = nullptr;
-  const ReflType *rType = nullptr;
   static ReflectorFriend *settings[]{
       /**/ //
       &Settings(),
@@ -392,19 +396,23 @@ int APPContext::ApplySetting(std::string_view key, std::string_view value) {
       continue;
     }
 
-    rType = s->GetReflectedType(keyHash);
-    if (rType) {
+    ReflectorMemberFriend member{(*s)[keyHash]};
+
+    if (member) {
       refl = s;
       break;
     }
   }
 
-  if (rType) {
-    if (rType->type == REFType::Bool) {
-      refl->SetReflectedValue(*rType, "true");
+  if (refl) {
+    ReflectorMemberFriend member{(*refl)[keyHash]};
+    ReflType rType = member;
+
+    if (rType.type == REFType::Bool) {
+      member = "true";
       return 0;
     } else {
-      refl->SetReflectedValue(*rType, value);
+      member = value;
       return 1;
     }
   } else {
@@ -453,9 +461,10 @@ void DumpTypeMD(std::ostream &out, const ReflectorFriend &info,
 
   for (size_t i = 0; i < rtti->nTypes; i++) {
     gi() << "- **" << rtti->typeNames[i] << "**\n\n";
+    ReflectorMember member = info[i];
 
-    if (info.IsReflectedSubClass(i)) {
-      auto sub = info.GetReflectedSubClass(i);
+    if (member.IsReflectedSubClass()) {
+      auto sub = member.ReflectedSubClass();
       ReflectorPureWrap subRef(sub);
       DumpTypeMD(
           out, static_cast<ReflectorFriend &>(static_cast<Reflector &>(subRef)),
@@ -469,7 +478,7 @@ void DumpTypeMD(std::ostream &out, const ReflectorFriend &info,
       gi() << "  **CLI Short:** ***-" << rtti->typeAliases[i] << "***\n\n";
     }
 
-    if (auto val = info.GetReflectedValue(i); !val.empty()) {
+    if (auto val = member.ReflectedValue(); !val.empty()) {
       gi() << "  **Default value:** " << val << "\n\n";
     }
 
@@ -644,17 +653,18 @@ void APPContext::CreateLog() {
   GetLogger() << "Configuration:" << std::endl;
 
   auto PrintStuff = [](auto &what) {
-    const size_t numSettings = what.GetNumReflectedValues();
+    const size_t numSettings = what.NumReflectedValues();
     auto rtti = ::RTTI(what);
 
     for (size_t t = 0; t < numSettings; t++) {
+      ReflectorMember member = what[t];
       std::string_view desc2;
 
       if (rtti->typeDescs && rtti->typeDescs[t].part2) {
         desc2 = rtti->typeDescs[t].part2;
       }
 
-      Reflector::KVPair pair = what.GetReflectedPair(t);
+      ReflectorMember::KVPair pair = member.ReflectedPair();
 
       GetLogger() << '\t' << pair.name << ": ";
 
@@ -706,7 +716,7 @@ void GetHelp(std::ostream &str, const reflectorStatic *ref, size_t level = 1) {
     if (fl.type == REFType::Class || fl.type == REFType::BitFieldClass) {
       GetHelp(str, reflectorStatic::Registry().at(JenHash(fl.asClass.typeHash)),
               level + 1);
-    } else if (fl.type == REFType::Array || fl.type == REFType::ArrayClass) {
+    } else if (fl.container == REFContainer::InlineArray) {
       const auto &arr = fl.asArray;
 
       if (arr.type == REFType::Class || arr.type == REFType::BitFieldClass) {
@@ -806,10 +816,10 @@ void APPContext::FromConfig() {
     auto flags = XMLDefaultParseFlags;
     flags += XMLParseFlag::Comments;
     doc = XMLFromFile(configName, flags);
-    ReflectorXMLUtil::LoadV2(MainSettings(), doc.child("common"));
+    ReflectorXMLUtil::Load(MainSettings(), doc.child("common"));
 
     if (info->settings) {
-      ReflectorXMLUtil::LoadV2(Settings(), doc.child(moduleName));
+      ReflectorXMLUtil::Load(Settings(), doc.child(moduleName));
     }
   });
 
@@ -883,8 +893,8 @@ void APPContext::FromConfig() {
       } else {
         commonNode = doc.append_child("common");
       }
-      ReflectorXMLUtil::SaveV2a(MainSettings(), commonNode,
-                                ReflectorXMLUtil::Flags_StringAsAttribute);
+      ReflectorXMLUtil::Save(MainSettings(), commonNode,
+                             ReflectorXMLUtil::Flags_StringAsAttribute);
     }
 
     if (info->settings) {
@@ -908,8 +918,8 @@ void APPContext::FromConfig() {
       } else {
         node = doc.append_child(moduleName);
       }
-      ReflectorXMLUtil::SaveV2a(Settings(), node,
-                                {ReflectorXMLUtil::Flags_StringAsAttribute});
+      ReflectorXMLUtil::Save(Settings(), node,
+                             {ReflectorXMLUtil::Flags_StringAsAttribute});
     }
 
     TryFile([&] {
