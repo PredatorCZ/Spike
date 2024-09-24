@@ -215,6 +215,7 @@ function(build_target)
       TARGETS ${_arg_NAME}
       LIBRARY DESTINATION $<IF:$<BOOL:${UNIX}>,modules,lib>
       RUNTIME DESTINATION bin/modules)
+    install(FILES $<TARGET_PDB_FILE:${_arg_NAME}> CONFIGURATIONS "RelWithDebInfo" DESTINATION bin)
   endif()
 
   if(${_is_python_module})
