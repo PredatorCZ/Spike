@@ -33,7 +33,9 @@ if(NOT BUILD_SHARED_LIBS)
 endif()
 
 install(TARGETS spike_cli RUNTIME DESTINATION $<IF:$<AND:$<BOOL:${UNIX}>,$<NOT:$<BOOL:${SPIKE_NODOT}>>>,.,bin>)
-install(FILES $<TARGET_PDB_FILE:spike_cli> CONFIGURATIONS "RelWithDebInfo" DESTINATION bin)
+if(WIN32 OR MINGW)
+  install(FILES $<TARGET_PDB_FILE:spike_cli> CONFIGURATIONS "RelWithDebInfo" DESTINATION bin)
+endif()
 
 function(add_spike_subdir name_)
   add_subdirectory(${name_} ${SpikeCLI_BINARY_DIR}/${name_})

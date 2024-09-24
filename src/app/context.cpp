@@ -415,31 +415,31 @@ int APPContext::ApplySetting(std::string_view key, std::string_view value) {
 
 void APPContext::PrintCLIHelp() const {
   printline("Options:" << std::endl);
+  es::print::PrintFn(es::print::MPType::PREV, [&](std::ostream &str) {
+    auto printStuff = [&](auto rtti) {
+      for (size_t i = 0; i < rtti->nTypes; i++) {
+        if (rtti->typeAliases && rtti->typeAliases[i]) {
+          str << "-" << rtti->typeAliases[i] << ", ";
+        }
 
-  auto printStuff = [](auto rtti) {
-    for (size_t i = 0; i < rtti->nTypes; i++) {
-      if (rtti->typeAliases && rtti->typeAliases[i]) {
-        es::print::Get() << "-" << rtti->typeAliases[i] << ", ";
+        str << "--" << rtti->typeNames[i];
+        str << "  = " << rtti->typeDescs[i].part1 << std::endl;
       }
+    };
 
-      es::print::Get() << "--" << rtti->typeNames[i];
-      es::print::Get() << "  = " << rtti->typeDescs[i].part1 << std::endl;
+    printStuff(::RTTI(MainSettings()));
+    printStuff(::RTTI(TexelSettings()));
+
+    if (ProcessFile) {
+      printStuff(::RTTI(ExtractSettings()));
+    } else if (NewArchive) {
+      printStuff(::RTTI(CompressSettings()));
     }
-  };
 
-  printStuff(::RTTI(MainSettings()));
-  printStuff(::RTTI(TexelSettings()));
-
-  if (ProcessFile) {
-    printStuff(::RTTI(ExtractSettings()));
-  } else if (NewArchive) {
-    printStuff(::RTTI(CompressSettings()));
-  }
-
-  if (info->settings) {
-    printStuff(RTTI());
-  }
-  printline("");
+    if (info->settings) {
+      printStuff(RTTI());
+    }
+  });
 }
 
 void DumpTypeMD(std::ostream &out, const ReflectorFriend &info,

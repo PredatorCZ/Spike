@@ -19,27 +19,32 @@
 #include "util/settings.hpp"
 #include <ostream>
 #include <string>
+#include <functional>
 
 #define printerror(...)                                                        \
   {                                                                            \
-    es::print::Get(es::print::MPType::ERR) << __VA_ARGS__ << std::endl;        \
-    es::print::FlushAll();                                                     \
+    es::print::PrintFn(es::print::MPType::ERR, [&](std::ostream &str) {        \
+      str << __VA_ARGS__ << std::endl;                                         \
+    });                                                                        \
   }
 #define printwarning(...)                                                      \
   {                                                                            \
-    es::print::Get(es::print::MPType::WRN) << __VA_ARGS__ << std::endl;        \
-    es::print::FlushAll();                                                     \
+    es::print::PrintFn(es::print::MPType::WRN, [&](std::ostream &str) {        \
+      str << __VA_ARGS__ << std::endl;                                         \
+    });                                                                        \
   }
 #define printline(...)                                                         \
   {                                                                            \
-    es::print::Get(es::print::MPType::MSG) << __VA_ARGS__ << std::endl;        \
-    es::print::FlushAll();                                                     \
+    es::print::PrintFn(es::print::MPType::MSG, [&](std::ostream &str) {        \
+      str << __VA_ARGS__ << std::endl;                                         \
+    });                                                                        \
   }
 
 #define printinfo(...)                                                         \
   {                                                                            \
-    es::print::Get(es::print::MPType::INF) << __VA_ARGS__ << std::endl;        \
-    es::print::FlushAll();                                                     \
+    es::print::PrintFn(es::print::MPType::INF, [&](std::ostream &str) {        \
+      str << __VA_ARGS__ << std::endl;                                         \
+    });                                                                        \
   }
 
 namespace es::print {
@@ -52,22 +57,18 @@ struct Queuer {
 };
 
 using queue_func = void (*)(const Queuer &);
+using stream_func = std::function<void(std::ostream &)>;
 
-// Calling this will lock other threads that will try to access stream until
-// FlushAll is called!
-std::ostream PC_EXTERN &Get(MPType type = MPType::PREV);
+void PC_EXTERN PrintFn(MPType type, stream_func fn);
 void PC_EXTERN AddPrinterFunction(print_func func, bool useColor = true);
 void PC_EXTERN AddQueuer(queue_func func);
-// Unlocks other threads access to Get
-void PC_EXTERN FlushAll();
 void PC_EXTERN PrintThreadID(bool yn);
 
 template <class... C> void Print(es::print::MPType type, C... args) {
-  auto &printStream = es::print::Get(type);
   // todo?, add detectors and to_string converters
-  ((printStream << std::forward<C>(args)), ...) << '\n';
-
-  es::print::FlushAll();
+  PrintFn(type, [&](std::ostream &str) {
+    ((str << std::forward<C>(args)), ...) << '\n';
+  });
 }
 
 } // namespace es::print

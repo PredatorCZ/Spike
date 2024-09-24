@@ -34,9 +34,6 @@ static struct MasterPrinter {
 
   std::vector<FuncType> functions;
   std::vector<queue_func> queues;
-  std::stringstream buffer;
-  std::mutex mutex;
-  std::thread::id lockedThread;
   bool printThreadID = false;
   MPType cType = MPType::MSG;
 } MASTER_PRINTER;
@@ -54,25 +51,22 @@ void AddPrinterFunction(print_func func, bool useColor) {
 
 void AddQueuer(queue_func func) { MASTER_PRINTER.queues.push_back(func); }
 
-std::ostream &Get(MPType type) {
-  if (auto threadID = std::this_thread::get_id();
-      !(MASTER_PRINTER.lockedThread == threadID)) {
-    MASTER_PRINTER.mutex.lock();
-    MASTER_PRINTER.lockedThread = threadID;
-  }
-
+void PrintFn(MPType type, stream_func fn) {
   if (type != MPType::PREV) {
     MASTER_PRINTER.cType = type;
   }
-  return MASTER_PRINTER.buffer;
-}
 
-void FlushAll() {
+  std::stringstream buffer;
+  fn(buffer);
+
   Queuer que;
-  que.payload = std::move(MASTER_PRINTER.buffer).str();
+  que.payload = std::move(buffer).str();
   std::thread::id threadID = std::this_thread::get_id();
   que.threadId = reinterpret_cast<uint32 &>(threadID);
   que.type = MASTER_PRINTER.cType;
+
+  static std::mutex mutex;
+  std::lock_guard<std::mutex> lg(mutex);
 
   for (auto &[func, useColor] : MASTER_PRINTER.functions) {
     if (useColor) {
@@ -111,8 +105,6 @@ void FlushAll() {
   }
 
   MASTER_PRINTER.cType = MPType::MSG;
-  MASTER_PRINTER.mutex.unlock();
-  MASTER_PRINTER.lockedThread = {};
 }
 
 void PrintThreadID(bool yn) { MASTER_PRINTER.printThreadID = yn; }
