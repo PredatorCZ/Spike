@@ -272,12 +272,12 @@ void InitConsole() {
     std::exit(sig);
   };
 
-  std::signal(SIGTERM, terminate);
-  std::signal(SIGABRT, terminate);
-  std::signal(SIGINT, terminate);
-  std::signal(SIGSEGV, terminate);
+  //std::signal(SIGTERM, terminate);
+  //std::signal(SIGABRT, terminate);
+  //std::signal(SIGINT, terminate);
+  //std::signal(SIGSEGV, terminate);
 #ifdef SIGBUS
-  std::signal(SIGBUS, terminate);
+  //std::signal(SIGBUS, terminate);
 #endif
 }
 
