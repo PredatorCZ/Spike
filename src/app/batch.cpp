@@ -8,7 +8,11 @@
 #include <deque>
 #include <future>
 
+#ifdef NDEBUG
 static constexpr bool CATCH_EXCEPTIONS = false;
+#else
+static constexpr bool CATCH_EXCEPTIONS = true;
+#endif
 
 struct WorkerThread {
   MultiThreadManagerImpl &manager;
