@@ -259,6 +259,25 @@ void TerminateConsoleDontWait() {
   es::Print("\033[?25h"); // Enable cursor
 }
 
+const char *SignalName(int sig) {
+  switch (sig) {
+  case SIGTERM:
+    return "(SIGTERM)";
+  case SIGABRT:
+    return "(SIGABRT)";
+  case SIGINT:
+    return "(SIGINT) ";
+  case SIGSEGV:
+    return "(SIGSEGV)";
+#ifdef SIGBUS
+  case SIGBUS:
+    return "(SIGBUS) ";
+#endif
+  default:
+    return "         ";
+  }
+}
+
 void InitConsole() {
   es::Print("\033[?25l"); // Disable cursor
   es::print::AddQueuer(ReceiveQueue);
@@ -266,19 +285,22 @@ void InitConsole() {
   pthread_setname_np(logger.native_handle(), "console_logger");
   auto terminate = [](int sig) {
     TerminateConsoleDontWait();
-    printf("+------------------------------------------------+\n");
-    printf("| APPLICATION HAVE CLOSED UNEXPECTEDLY, CODE: %.2i |\n", sig);
-    printf("+------------------------------------------------+\n");
+    printf("+----------------------------------------------------------+\n");
+    printf("| APPLICATION HAVE CLOSED UNEXPECTEDLY, CODE: %.2i %s |\n", sig,
+           SignalName(sig));
+    printf("+----------------------------------------------------------+\n");
     std::exit(sig);
   };
 
-  std::signal(SIGTERM, terminate);
-  std::signal(SIGABRT, terminate);
-  std::signal(SIGINT, terminate);
-  std::signal(SIGSEGV, terminate);
+  if (!getenv("NO_SIGNAL")) {
+    std::signal(SIGTERM, terminate);
+    std::signal(SIGABRT, terminate);
+    std::signal(SIGINT, terminate);
+    std::signal(SIGSEGV, terminate);
 #ifdef SIGBUS
-  std::signal(SIGBUS, terminate);
+    std::signal(SIGBUS, terminate);
 #endif
+  }
 }
 
 void TerminateConsole() {
