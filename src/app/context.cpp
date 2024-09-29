@@ -831,7 +831,7 @@ void APPContext::FromConfig() {
 
           if (!lastTag.empty()) {
             std::string tagName(lastTag);
-            lastTag.substr(0, comment.size());
+            lastTag = {lastTag.begin(), comment.end()};
             size_t dataBegin = lastTag.find_first_of('\n');
 
             if (dataBegin != lastTag.npos) {
