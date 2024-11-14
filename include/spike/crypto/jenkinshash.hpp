@@ -47,7 +47,8 @@ template <typename I> struct JenHash_t {
   constexpr JenHash_t() : value_() {}
   constexpr JenHash_t(JenHash_t &&) = default;
   constexpr JenHash_t(const JenHash_t &) = default;
-  constexpr explicit JenHash_t(uint32 in) : value_(in) {}
+  template<class C> requires std::is_integral_v<C>
+  constexpr JenHash_t(C in) : value_(in) {}
   template <size_t n>
   constexpr JenHash_t(const char (&input)[n])
       : value_(JenkinsHash_<I>({input, n - 1})) {}

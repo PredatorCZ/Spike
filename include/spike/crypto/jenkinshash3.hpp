@@ -138,7 +138,9 @@ struct JenHash3 {
   constexpr JenHash3() : value_() {}
   constexpr JenHash3(JenHash3 &&) = default;
   constexpr JenHash3(const JenHash3 &) = default;
-  constexpr explicit JenHash3(uint32_t in) : value_(in) {}
+
+  template<class C> requires std::is_integral_v<C>
+  constexpr JenHash3(C in) : value_(in) {}
   template <size_t n>
   constexpr JenHash3(const char (&input)[n])
       : value_(JenkinsHash3_({input, n - 1})) {}
@@ -148,6 +150,8 @@ struct JenHash3 {
   constexpr JenHash3 &operator=(JenHash3 &&) = default;
 
   constexpr operator uint32_t() const { return value_; }
+
+  constexpr auto raw() const { return value_; }
 
 private:
   uint32_t value_;
