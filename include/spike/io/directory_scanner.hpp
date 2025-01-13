@@ -39,11 +39,21 @@ public:
   otherwise: free substring search
   */
   void AddFilter(const std::string &val) {
-    filterHolders.push_back(val);
-    filters.push_back(filterHolders.back());
+    if (val.size() > 0) {
+      filterHolders.push_back(val);
+      filters.push_back(filterHolders.back());
+    }
   }
-  void AddFilter(std::string_view val) { filters.push_back(val); }
-  void AddFilter(const char *val) { filters.push_back(val); }
+  void AddFilter(std::string_view val) {
+    if (val.size() > 0) {
+      filters.push_back(val);
+    }
+  }
+  void AddFilter(const char *val) {
+    if (val && *val) {
+      filters.push_back(val);
+    }
+  }
   void ClearFilters() { filters.clear(); }
 
 private:
