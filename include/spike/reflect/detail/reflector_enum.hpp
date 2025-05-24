@@ -46,7 +46,7 @@ struct ReflectedEnum {
 
     union mutate {
       const char *h;
-      uintptr_t i;
+      uintptr i;
     };
 
     if ((mutate{members.description}.i | ...)) {

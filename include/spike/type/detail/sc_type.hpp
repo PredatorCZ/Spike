@@ -1,6 +1,6 @@
 /*  Supercore data types
 
-    Copyright 2018-2020 Lukas Cone
+    Copyright 2018-2025 Lukas Cone
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -35,3 +35,19 @@ static_assert(sizeof(int64) == 8, "Unexpected integer size!");
 static_assert(sizeof(int32) == 4, "Unexpected integer size!");
 static_assert(sizeof(int16) == 2, "Unexpected integer size!");
 static_assert(sizeof(int8) == 1, "Unexpected integer size!");
+
+template <int size> struct TypeFromSize { typedef void type; };
+template <> struct TypeFromSize<1> { typedef uint8 type; };
+template <> struct TypeFromSize<2> { typedef uint16 type; };
+template <> struct TypeFromSize<4> { typedef uint32 type; };
+template <> struct TypeFromSize<8> { typedef uint64 type; };
+template <> struct TypeFromSize<-1> { typedef int8 type; };
+template <> struct TypeFromSize<-2> { typedef int16 type; };
+template <> struct TypeFromSize<-4> { typedef int32 type; };
+template <> struct TypeFromSize<-8> { typedef int64 type; };
+
+using intptr = TypeFromSize<-int(sizeof(void*))>::type;
+using uintptr = TypeFromSize<sizeof(void*)>::type;
+
+static_assert(sizeof(intptr) == sizeof(void*));
+static_assert(sizeof(uintptr) == sizeof(void*));
