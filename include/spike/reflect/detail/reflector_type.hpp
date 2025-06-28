@@ -21,6 +21,7 @@
 #include "spike/crypto/jenkinshash.hpp"
 #include "spike/util/supercore.hpp"
 #include <string>
+#include <vector>
 
 struct ReflType;
 
@@ -83,6 +84,7 @@ struct ReflType {
   };
   JenHash valueNameHash;
   uint16 size;
+  REFContainer container;
 
   union {
     uint32 raw[3]{};
@@ -159,7 +161,7 @@ template <typename _Ty> struct _getType : reflTypeDefault_ {
       return ClassHash<_Ty>();
     }
   }
-  static constexpr uint8 SIZE = sizeof(_Ty);
+  static constexpr uint8 SIZE = uint8(sizeof(_Ty));
 };
 template <> struct _getType<bool> : reflTypeDefault_ {
   static constexpr REFType TYPE = REFType::Bool;
@@ -194,10 +196,35 @@ template <class C, size_t _Size> struct _getType<C[_Size]> : reflTypeDefault_ {
   using child_type = C;
 };
 
+template <class C> struct _getType<std::vector<C>> : _getType<C> {};
+
+template <typename Container> struct is_container : std::false_type {};
+template <typename... Ts>
+struct is_container<std::vector<Ts...>> : std::true_type {};
+
+template <class T>
+using refl_is_vectormap = decltype(std::declval<T>().ReflectorMap());
+template <class C>
+constexpr bool refl_is_vectormap_v = es::is_detected_v<refl_is_vectormap, C>;
+
+template <class C> consteval REFContainer REFContainerType() {
+  if constexpr (std::is_pointer_v<C>) {
+    return REFContainer::Pointer;
+  } else if constexpr (is_container<C>::value) {
+    if constexpr (std::is_same_v<C, std::vector<typename C::value_type>>) {
+      return refl_is_vectormap_v<typename C::value_type>
+                 ? REFContainer::ContainerVectorMap
+                 : REFContainer::ContainerVector;
+    }
+  }
+
+  return REFContainer::None;
+};
+
 template <class type_>
 ReflType BuildReflType(JenHash typeHash, uint8 index, size_t offset) {
   using unref_type = std::remove_reference_t<type_>;
-  using type_class = _getType<unref_type>;
+  using type_class = _getType<std::remove_pointer_t<unref_type>>;
   static_assert(type_class::TYPE != REFType::None,
                 "Undefined type to reflect. Did you forget void "
                 "ReflectorTag(); tag method for subclass member?");
@@ -209,6 +236,7 @@ ReflType BuildReflType(JenHash typeHash, uint8 index, size_t offset) {
   mainType.valueNameHash = typeHash;
   mainType.offset = static_cast<decltype(ReflType::offset)>(offset);
   mainType.size = type_class::SIZE;
+  mainType.container = REFContainerType<unref_type>();
 
   auto ParsePrimitive = [](auto &value) {
     constexpr auto type = type_class::TYPE;
@@ -222,6 +250,16 @@ ReflType BuildReflType(JenHash typeHash, uint8 index, size_t offset) {
       }
     } else if constexpr (es::is_detected_v<refl_has_hash, type_class>) {
       constexpr auto vHash = type_class::Hash();
+      if constexpr (type == REFType::Array || type == REFType::ArrayClass) {
+        if constexpr (type_class::SUBTYPE == REFType::Class) {
+          static_assert(vHash.raw() > 0, "Subclass for member must be "
+                                         "reflected before class that uses it");
+        }
+      } else if constexpr (type == REFType::Class) {
+        static_assert(
+            vHash.raw() > 0,
+            "Subclass for member must be reflected before class that uses it");
+      }
 
       if constexpr (vHash.raw() > 0) {
         value.asClass.typeHash = vHash.raw();

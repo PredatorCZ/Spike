@@ -37,6 +37,27 @@ struct ReflDesc {
 
 struct NoName {};
 
+struct VectorMethods {
+  using ResizeWrap = void (*)(void *, size_t);
+  using AtWrap = void *(*)(void *, size_t);
+  ResizeWrap resize;
+  AtWrap at;
+};
+
+template <class C> consteval VectorMethods MakeVectorClass() {
+  using Vector = std::vector<C>;
+  VectorMethods retval{
+      .resize = [](void *ptr_,
+                   size_t n) { static_cast<Vector *>(ptr_)->resize(n); },
+      .at = [](void *ptr_, size_t n) -> void * {
+        auto &ref = static_cast<Vector *>(ptr_)->at(n);
+        return &ref;
+      },
+  };
+
+  return retval;
+}
+
 struct MemberProxy {
   const char *typeName;
   const char *aliasName = nullptr;
@@ -72,6 +93,24 @@ public:
   }
 };
 
+struct ClassMethods {
+  using ConstructorWrap = void (*)(void *);
+  using DestructorWrap = void (*)(void *);
+
+  ConstructorWrap constructor = nullptr;
+  DestructorWrap destructor;
+};
+
+template <class C> consteval ClassMethods MakeClassMethods() {
+  ClassMethods retval{
+      .destructor = [](void *ptr_) { static_cast<C *>(ptr_)->~C(); },
+  };
+  if constexpr (std::is_default_constructible_v<C>) {
+    retval.constructor = [](void *ptr_) { ::new (ptr_) C(); };
+  }
+  return retval;
+};
+
 struct reflectorStatic {
   using RegistryType = std::map<JenHash, const reflectorStatic *>;
   const JenHash classHash;
@@ -82,11 +121,26 @@ struct reflectorStatic {
   const char *const *typeAliases = nullptr;
   const JenHash *typeAliasHashes = nullptr;
   const ReflDesc *typeDescs;
+  const ClassMethods methods;
+  const uint32 classSize;
+  const JenHash baseClass;
 
-  template <class ClassType, class... C, size_t cs>
-  reflectorStatic(const ClassType *, const char (&className_)[cs], C... members)
+  template <class ClassType, class BaseType, class... C, size_t cs>
+  reflectorStatic(JenHash baseClassHash, const BaseType *, const ClassType *,
+                  const char (&className_)[cs], C... members)
       : classHash(JenHash(className_)), nTypes(sizeof...(C)),
-        className(className_) {
+        className(className_), methods(MakeClassMethods<ClassType>()),
+        classSize(sizeof(ClassType)), baseClass(baseClassHash) {
+
+    static_assert(std::is_same_v<BaseType, void> ||
+                      std::is_base_of_v<BaseType, ClassType>,
+                  "Provided base class is not actual base");
+    static_assert(!std::is_same_v<ClassType, BaseType>,
+                  "Base class cannot be same as class");
+    static_assert(std::is_void_v<BaseType> ||
+                      _getType<BaseType>::TYPE == REFType::Class,
+                  "Base class must be class type and have ReflectorTag();");
+
     if constexpr (sizeof...(C) > 0) {
       size_t index = 0;
       struct reflType2 : ReflType {
@@ -129,7 +183,7 @@ struct reflectorStatic {
   static RegistryType PC_EXTERN &Registry();
 };
 
-static_assert(sizeof(reflectorStatic) == 56);
+static_assert(sizeof(reflectorStatic) == 80);
 
 struct ReflectedInstance {
 private:
@@ -180,7 +234,9 @@ template <class C> class InvokeGuard;
 
 #define BITMEMBER(member, ...) BITMEMBERNAME(member, #member, __VA_ARGS__)
 
-#define CLASS(...)                                                             \
+#define CLASS(...) BASEDCLASS(void, __VA_ARGS__)
+
+#define BASEDCLASS(base, ...)                                                  \
   template <> constexpr JenHash ClassHash<__VA_ARGS__>() {                     \
     return #__VA_ARGS__;                                                       \
   }                                                                            \
@@ -188,9 +244,11 @@ template <class C> class InvokeGuard;
   const reflectorStatic REF_EXPORT_ *GetReflectedClass<__VA_ARGS__>() {        \
     using class_type = __VA_ARGS__;                                            \
     static const reflectorStatic reflectedClass {                              \
-      std::add_pointer_t<class_type>{nullptr}, #__VA_ARGS__,
+      JenHash(#base), std::add_pointer_t<base>{nullptr},                       \
+          std::add_pointer_t<class_type>{nullptr}, #__VA_ARGS__,
 
 // internal, do not use
+#define END_BASEDCLASS(base, ...) END_CLASS(__VA_ARGS__)
 #define END_CLASS(...)                                                         \
   }                                                                            \
   ;                                                                            \
@@ -227,7 +285,17 @@ template <class C> class InvokeGuard;
   };
 
 // Create reflection definition (use only in TU)
-// what: CLASS() or ENUMERATION()
+// what: CLASS(), ENUMERATION() or BASEDCLASS()
 // args: MEMBER, MEMBERNAME or BITMEMBER, BITMEMBERNAME, invokes MemberProxy
 // contructor
 #define REFLECT(what, ...) what __VA_ARGS__ END_##what
+
+// Create forward class reflection definition (use only in TU)
+#define FWDREFLECTCLASS(...)                                                   \
+  template <> constexpr JenHash ClassHash<__VA_ARGS__>() {                     \
+    return #__VA_ARGS__;                                                       \
+  }
+
+// Create forward enum reflection definition (use only in TU)
+#define FWDREFLECTENUMERATION(...)                                             \
+  template <> constexpr JenHash EnumHash<__VA_ARGS__>() { return #__VA_ARGS__; }

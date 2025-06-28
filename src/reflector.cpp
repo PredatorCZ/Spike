@@ -37,22 +37,42 @@ static bool IsArrayVec(REFType type) {
 static Reflector::ErrorType
 SetReflectedMember(ReflType reflValue, std::string_view value, char *objAddr);
 
-const ReflType *Reflector::GetReflectedType(const JenHash hash) const {
-  const reflectorStatic *inst = GetReflectedInstance().rfStatic;
-  const size_t _ntypes = GetNumReflectedValues();
+static const ReflType *GetReflectedType(const reflectorStatic *inst,
+                                        const JenHash hash) {
+  const size_t _ntypes = inst->nTypes;
 
   for (size_t t = 0; t < _ntypes; t++) {
     if (inst->types[t].valueNameHash == hash) {
-      return GetReflectedType(t);
+      return inst->types + t;
     }
   }
 
-  if (inst->typeAliasHashes)
+  if (inst->typeAliasHashes) {
     for (size_t t = 0; t < _ntypes; t++) {
       if (inst->typeAliasHashes[t] == hash) {
-        return GetReflectedType(t);
+        return inst->types + t;
       }
     }
+  }
+
+  return nullptr;
+}
+
+const ReflType *Reflector::GetReflectedType(const JenHash hash) const {
+  const reflectorStatic *inst = GetReflectedInstance().rfStatic;
+  const ReflType *retVal = ::GetReflectedType(inst, hash);
+
+  if (retVal) {
+    return retVal;
+  }
+
+  while (inst->baseClass != JenHash("void")) {
+    inst = reflectorStatic::Registry().at(inst->baseClass);
+    retVal = ::GetReflectedType(inst, hash);
+    if (retVal) {
+      return retVal;
+    }
+  }
 
   return nullptr;
 }
@@ -976,33 +996,25 @@ static std::string GetReflectedPrimitive(const char *objAddr, ReflType type) {
   return "";
 }
 
-std::string Reflector::GetReflectedValue(size_t id) const {
-  if (id >= GetNumReflectedValues())
-    return "";
-
+std::string Reflector::GetReflectedValue(ReflType type) const {
   auto inst = GetReflectedInstance();
   const char *thisAddr = static_cast<const char *>(inst.constInstance);
-  const ReflType &reflValue = inst.rfStatic->types[id];
   const int valueOffset =
-      reflValue.type == REFType::BitFieldMember ? 0 : reflValue.offset;
+      type.type == REFType::BitFieldMember ? 0 : type.offset;
 
-  return GetReflectedPrimitive(thisAddr + valueOffset, reflValue);
+  return GetReflectedPrimitive(thisAddr + valueOffset, type);
 }
 
-std::string Reflector::GetReflectedValue(size_t id, size_t subID) const {
-  if (id >= GetNumReflectedValues())
-    return "";
-
+std::string Reflector::GetReflectedValue(ReflType type, size_t subID) const {
   auto inst = GetReflectedInstance();
   const char *thisAddr = static_cast<const char *>(inst.constInstance);
-  const ReflType &reflValue = inst.rfStatic->types[id];
-  const char *objAddr = thisAddr + reflValue.offset;
+  const char *objAddr = thisAddr + type.offset;
 
-  switch (reflValue.type) {
+  switch (type.type) {
   case REFType::Array:
   case REFType::Vector:
   case REFType::ArrayClass: {
-    const auto &arr = reflValue.asArray;
+    const auto &arr = type.asArray;
     if (arr.numItems <= subID) {
       return "";
     }
@@ -1010,13 +1022,13 @@ std::string Reflector::GetReflectedValue(size_t id, size_t subID) const {
     return GetReflectedPrimitive(objAddr + arr.stride * subID, arr);
   }
   case REFType::EnumFlags: {
-    if (reflValue.size * 8 <= subID) {
+    if (type.size * 8 <= subID) {
       return "";
     }
 
     uint64 eValue;
 
-    memcpy(reinterpret_cast<char *>(&eValue), objAddr, reflValue.size);
+    memcpy(reinterpret_cast<char *>(&eValue), objAddr, type.size);
 
     return (eValue & (1ULL << subID)) ? "true" : "false";
   }
@@ -1026,16 +1038,12 @@ std::string Reflector::GetReflectedValue(size_t id, size_t subID) const {
   }
 }
 
-std::string Reflector::GetReflectedValue(size_t id, size_t subID,
+std::string Reflector::GetReflectedValue(ReflType type, size_t subID,
                                          size_t element) const {
-  if (id >= GetNumReflectedValues() || !IsArray(id))
-    return "";
-
   auto inst = GetReflectedInstance();
   const char *thisAddr = static_cast<const char *>(inst.constInstance);
-  const ReflType &reflValue = inst.rfStatic->types[id];
-  const char *objAddr = thisAddr + reflValue.offset;
-  const auto &arr = reflValue.asArray;
+  const char *objAddr = thisAddr + type.offset;
+  const auto &arr = type.asArray;
 
   switch (arr.type) {
   case REFType::Vector: {
@@ -1066,22 +1074,19 @@ std::string Reflector::GetReflectedValue(size_t id, size_t subID,
   }
 }
 
-ReflectedInstance Reflector::GetReflectedSubClass(size_t id,
+ReflectedInstance Reflector::GetReflectedSubClass(ReflType type,
                                                   size_t subID) const {
-  if (id >= GetNumReflectedValues())
-    return {};
-
   auto inst = GetReflectedInstance();
-  const ReflType &reflValue = inst.rfStatic->types[id];
   const char *thisAddr =
-      static_cast<const char *>(inst.constInstance) + reflValue.offset;
-  REFType cType = reflValue.type;
-  const bool isArray = IsArray(id);
-  ReflTypeClass classType = reflValue.asClass;
+      static_cast<const char *>(inst.constInstance) + type.offset;
+  REFType cType = type.type;
+  const bool isArray =
+      type.type == REFType::Array || type.type == REFType::ArrayClass;
+  ReflTypeClass classType = type.asClass;
 
   if (isArray) {
-    const auto &arr = reflValue.asArray;
-    if (subID >= reflValue.asArray.numItems) {
+    const auto &arr = type.asArray;
+    if (subID >= type.asArray.numItems) {
       return {};
     }
 
@@ -1096,10 +1101,6 @@ ReflectedInstance Reflector::GetReflectedSubClass(size_t id,
 
   return {reflectorStatic::Registry().at(JenHash(classType.typeHash)),
           thisAddr};
-}
-
-ReflectedInstance Reflector::GetReflectedSubClass(size_t id, size_t subID) {
-  return const_cast<const Reflector *>(this)->GetReflectedSubClass(id, subID);
 }
 
 reflectorStatic::RegistryType &reflectorStatic::Registry() {

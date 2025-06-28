@@ -36,6 +36,13 @@ enum class REFType : uint8 {
   BitFieldClass,
 };
 
+enum class REFContainer : uint8 {
+  None,
+  Pointer,
+  ContainerVector,
+  ContainerVectorMap,
+};
+
 struct reflTypeDefault_ {
   static constexpr JenHash Hash() { return {}; }
   static constexpr JenHash SubHash() { return {}; }

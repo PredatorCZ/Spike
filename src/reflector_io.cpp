@@ -54,7 +54,7 @@ struct Fixups {
 
 struct ReflectorIOHeader {
   static constexpr uint32 ID = CompileFourCC("RFDB");
-  static constexpr uint32 VERSION = 3000;
+  static constexpr uint32 VERSION = 3001;
 
   uint32 id, version, numClasses, numEnums, enumsOffset, bufferSize;
 
@@ -70,6 +70,9 @@ struct reflectorStatic_io {
   uintptr_t typeAliases;
   uintptr_t typeAliasHashes;
   uintptr_t typeDescs;
+  uintptr_t constructor = 0;
+  uintptr_t destructor = 0;
+  size_t size = 0;
 
   void Fixup(uintptr_t base) {
     auto fixup = [base](uintptr_t &item) {
