@@ -104,12 +104,6 @@ sview TrimWhitespace(sview input, bool inclNewLine = false) noexcept {
 
 template <class C> void Dispose(C &item) { auto removed = std::move(item); }
 
-template <size_t size> struct TypeFromSize { typedef std::false_type type; };
-template <> struct TypeFromSize<1> { typedef uint8 type; };
-template <> struct TypeFromSize<2> { typedef uint16 type; };
-template <> struct TypeFromSize<4> { typedef uint32 type; };
-template <> struct TypeFromSize<8> { typedef uint64 type; };
-
 template <class, template <class...> class Op, class... Args>
 struct detector_ : std::false_type {};
 
