@@ -1,6 +1,6 @@
 /*  Contains forward declarations for reflector
 
-    Copyright 2018-2023 Lukas Cone
+    Copyright 2018-2024 Lukas Cone
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -28,9 +28,7 @@ enum class REFType : uint8 {
   Bool,
   CString,
   String,
-  Array,      // {} braces
   Vector,     // [] braces
-  ArrayClass, // () braces
   EnumFlags,
   BitFieldMember,
   BitFieldClass,
@@ -41,6 +39,7 @@ enum class REFContainer : uint8 {
   Pointer,
   ContainerVector,
   ContainerVectorMap,
+  InlineArray,
 };
 
 struct reflTypeDefault_ {
@@ -53,3 +52,7 @@ struct reflTypeDefault_ {
 template <typename _Ty> struct _getType;
 template <class C> constexpr JenHash ClassHash() { return {}; }
 template <class C> constexpr JenHash EnumHash() { return {}; }
+
+template <typename Container> struct is_inline_array : std::false_type {};
+template <typename T, size_t N>
+struct is_inline_array<T[N]> : std::true_type {};

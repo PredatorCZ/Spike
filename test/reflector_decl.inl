@@ -298,3 +298,71 @@ int test_reflector_decl09(
 
   return 0;
 }
+
+struct ReflVectors {
+  Vector vec;
+  Vector vecArr[10];
+  void ReflectorTag();
+};
+
+REFLECT(CLASS(ReflVectors), MEMBER(vec), MEMBER(vecArr));
+
+int test_reflector_decl10(
+    const reflectorStatic *mainRefl = GetReflectedClass<ReflVectors>()) {
+  ReflType vecType = mainRefl->types[0];
+
+  TEST_EQUAL(vecType.size, sizeof(ReflVectors::vec));
+
+  ReflTypeVector asVec = vecType.asVector;
+
+  TEST_EQUAL(asVec.numItems, 3);
+  TEST_EQUAL(asVec.stride, 4);
+  TEST_EQUAL(asVec.type, REFType::FloatingPoint);
+
+  ReflType vecArrType = mainRefl->types[1];
+
+  TEST_EQUAL(vecArrType.size, sizeof(ReflVectors::vecArr));
+  TEST_EQUAL(vecArrType.type, REFType::Vector);
+
+  ReflTypeArray asVecArr = vecArrType.asArray;
+
+  TEST_EQUAL(asVecArr.numItems, 10);
+  TEST_EQUAL(asVecArr.stride, 12);
+  TEST_EQUAL(asVecArr.type, REFType::Vector);
+
+  ReflTypeVector asVecArrVec = asVecArr.asVector;
+
+  TEST_EQUAL(asVecArrVec.numItems, 3);
+  TEST_EQUAL(asVecArrVec.stride, 4);
+  TEST_EQUAL(asVecArrVec.type, REFType::FloatingPoint);
+
+  return 0;
+}
+
+struct ReflVector {
+  std::vector<float> flVector;
+  std::vector<float> flVectors[2];
+  std::vector<ReflVectors> vectots;
+};
+
+REFLECT(CLASS(ReflVector), MEMBER(flVector), MEMBER(flVectors[0]),
+        MEMBER(flVectors[1]), MEMBER(vectots));
+
+int test_reflector_decl11(
+    const reflectorStatic *mainRefl = GetReflectedClass<ReflVector>()) {
+  ReflType vecType = mainRefl->types[0];
+
+  TEST_EQUAL(vecType.size, 4);
+  TEST_EQUAL(vecType.type, REFType::FloatingPoint);
+  TEST_EQUAL(vecType.container, REFContainer::ContainerVector);
+
+  vecType = mainRefl->types[3];
+
+  TEST_EQUAL(vecType.size, sizeof(ReflVectors));
+  TEST_EQUAL(vecType.type, REFType::Class);
+  TEST_EQUAL(vecType.container, REFContainer::ContainerVector);
+  TEST_EQUAL(vecType.asClass.typeHash,
+             GetReflectedClass<ReflVectors>()->classHash);
+
+  return 0;
+}

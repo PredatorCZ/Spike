@@ -1,6 +1,6 @@
 /*  Define reflected enumerations
 
-    Copyright 2018-2023 Lukas Cone
+    Copyright 2018-2024 Lukas Cone
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -30,6 +30,7 @@ struct ReflectedEnum {
   using RegistryType = std::map<JenHash, const ReflectedEnum *>;
   JenHash enumHash;
   uint32 numMembers;
+  uint32 size;
   const char *enumName;
   const char *const *names;
   const uint64 *values;
@@ -38,7 +39,7 @@ struct ReflectedEnum {
   template <class... C, size_t cs, class guard>
   ReflectedEnum(const guard *, const char (&enumName_)[cs], C... members)
       : enumHash(JenHash(enumName_)), numMembers(sizeof...(C)),
-        enumName(enumName_) {
+        size(sizeof(guard)), enumName(enumName_) {
     static const char *names_[]{members.name...};
     names = names_;
     static const uint64 values_[]{members.value...};
