@@ -80,20 +80,20 @@ public:
   ErrorType SetReflectedValueFloat(JenHash hashName, double value, size_t subID = 0);
   ErrorType SetReflectedValueFloat(size_t id, double value, size_t subID = 0);
 
-  std::string PC_EXTERN GetReflectedValue(size_t id) const;
+  std::string GetReflectedValue(size_t id) const;
   std::string GetReflectedValue(JenHash hashName) const;
 
-  std::string PC_EXTERN GetReflectedValue(size_t id, size_t subID) const;
+  std::string GetReflectedValue(size_t id, size_t subID) const;
   std::string GetReflectedValue(JenHash hashName, size_t subID) const;
 
-  std::string PC_EXTERN GetReflectedValue(size_t id, size_t subID, size_t element) const;
+  std::string GetReflectedValue(size_t id, size_t subID, size_t element) const;
   std::string GetReflectedValue(JenHash hashName, size_t subID, size_t element) const;
 
   ReflectedInstance GetReflectedSubClass(JenHash hashName, size_t subID = 0) const;
-  ReflectedInstance PC_EXTERN GetReflectedSubClass(size_t id, size_t subID = 0) const;
+  ReflectedInstance GetReflectedSubClass(size_t id, size_t subID = 0) const;
 
   ReflectedInstance GetReflectedSubClass(JenHash hashName, size_t subID = 0);
-  ReflectedInstance PC_EXTERN GetReflectedSubClass(size_t id, size_t subID = 0);
+  ReflectedInstance GetReflectedSubClass(size_t id, size_t subID = 0);
 
   KVPair GetReflectedPair(size_t id, const KVPairFormat &settings = {}) const;
   KVPair GetReflectedPair(JenHash hashName, const KVPairFormat &settings = {}) const;
@@ -107,6 +107,13 @@ protected:
   ErrorType PC_EXTERN SetReflectedValueUInt(ReflType type, uint64 value, size_t subID = 0);
   ErrorType PC_EXTERN SetReflectedValueInt(ReflType type, int64 value, size_t subID = 0);
   ErrorType PC_EXTERN SetReflectedValueFloat(ReflType type, double value, size_t subID = 0);
+
+  std::string PC_EXTERN GetReflectedValue(ReflType type) const;
+  std::string PC_EXTERN GetReflectedValue(ReflType type, size_t subID) const;
+  std::string PC_EXTERN GetReflectedValue(ReflType type, size_t subID, size_t element) const;
+
+  ReflectedInstance PC_EXTERN GetReflectedSubClass(ReflType type, size_t subID = 0) const;
+  ReflectedInstance PC_EXTERN GetReflectedSubClass(ReflType type, size_t subID = 0);
   // clang-format on
 private:
   virtual ReflectedInstance GetReflectedInstance() const = 0;
