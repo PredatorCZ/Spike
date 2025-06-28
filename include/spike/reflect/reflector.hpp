@@ -1,6 +1,6 @@
 /*  Contains macros/classes for reflection of classes/enums
 
-    Copyright 2018-2023 Lukas Cone
+    Copyright 2018-2024 Lukas Cone
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -22,12 +22,21 @@
 #include "detail/reflector_class.hpp"
 #include "detail/reflector_enum.hpp"
 #include "detail/reflector_type.hpp"
+
+#include <concepts>
+#include <stdexcept>
 #include <string>
+#include <variant>
 
-class Reflector {
-  friend class ReflectorFriend;
+class ReflectorPureWrap;
 
+using ReflectorInputValue =
+    std::variant<uint64, int64, float, double, std::string_view>;
+
+class ReflectorMember {
 public:
+  ReflectorMember(ReflectedInstance data_, size_t id_) : data(data_), id(id_) {}
+
   struct KVPairFormat {
     bool aliasName = false;
     bool formatValue = false;
@@ -50,76 +59,114 @@ public:
     ShortInput,         // Input string have insufficient number of elements.
   };
 
-  virtual ~Reflector() = default;
+  bool IsReflectedSubClass() const;
+  bool IsArray() const;
+  size_t Size() const;
+  operator bool() const { return data; }
 
-  size_t GetNumReflectedValues() const;
-  std::string_view GetClassName() const;
+  template <std::unsigned_integral C>
+  ErrorType ReflectValue(C value, size_t index = -1) {
+    return ReflectValue(ReflectorInputValue(uint64(value)), index);
+  }
 
-  bool IsReflectedSubClass(JenHash hashName) const;
-  bool IsReflectedSubClass(size_t id) const;
+  template <std::signed_integral C>
+  ErrorType ReflectValue(C value, size_t index = -1) {
+    return ReflectValue(ReflectorInputValue(int64(value)), index);
+  }
 
-  bool IsArray(JenHash hashName) const;
-  bool IsArray(size_t id) const;
+  ErrorType PC_EXTERN ReflectValue(ReflectorInputValue value,
+                                   size_t index = -1);
+  std::string PC_EXTERN ReflectedValue(size_t index = -1) const;
 
-  // clang-format off
-  ErrorType SetReflectedValue(size_t id, std::string_view  value);
-  ErrorType SetReflectedValue(JenHash hashName, std::string_view  value);
+  ReflectorMember &operator=(ReflectorInputValue value) {
+    lastError = ReflectValue(value);
+    return *this;
+  }
 
-  ErrorType SetReflectedValue(size_t id, std::string_view  value, size_t subID);
-  ErrorType SetReflectedValue(JenHash hashName, std::string_view  value, size_t subID);
+  operator std::string() const { return ReflectedValue(); }
 
-  ErrorType SetReflectedValue(size_t id, std::string_view  value, size_t subID, size_t element);
-  ErrorType SetReflectedValue(JenHash hashName, std::string_view  value, size_t subID, size_t element);
+  ReflectorPureWrap PC_EXTERN ReflectedSubClass(size_t index = 0) const;
 
-  ErrorType SetReflectedValueInt(JenHash hashName, int64 value, size_t subID = 0);
-  ErrorType SetReflectedValueInt(size_t id, int64 value, size_t subID = 0);
+  KVPair ReflectedPair(KVPairFormat settings = {}) const;
 
-  ErrorType SetReflectedValueUInt(JenHash hashName, uint64 value, size_t subID = 0);
-  ErrorType SetReflectedValueUInt(size_t id, uint64 value, size_t subID = 0);
-
-  ErrorType SetReflectedValueFloat(JenHash hashName, double value, size_t subID = 0);
-  ErrorType SetReflectedValueFloat(size_t id, double value, size_t subID = 0);
-
-  std::string GetReflectedValue(size_t id) const;
-  std::string GetReflectedValue(JenHash hashName) const;
-
-  std::string GetReflectedValue(size_t id, size_t subID) const;
-  std::string GetReflectedValue(JenHash hashName, size_t subID) const;
-
-  std::string GetReflectedValue(size_t id, size_t subID, size_t element) const;
-  std::string GetReflectedValue(JenHash hashName, size_t subID, size_t element) const;
-
-  ReflectedInstance GetReflectedSubClass(JenHash hashName, size_t subID = 0) const;
-  ReflectedInstance GetReflectedSubClass(size_t id, size_t subID = 0) const;
-
-  ReflectedInstance GetReflectedSubClass(JenHash hashName, size_t subID = 0);
-  ReflectedInstance GetReflectedSubClass(size_t id, size_t subID = 0);
-
-  KVPair GetReflectedPair(size_t id, const KVPairFormat &settings = {}) const;
-  KVPair GetReflectedPair(JenHash hashName, const KVPairFormat &settings = {}) const;
+  ErrorType lastError = ErrorType::None;
 
 protected:
-  const ReflType PC_EXTERN *GetReflectedType(JenHash hashName) const;
-  const ReflType *GetReflectedType(size_t ID) const;
-  ErrorType PC_EXTERN SetReflectedValue(ReflType type, std::string_view  value);
-  ErrorType PC_EXTERN SetReflectedValue(ReflType type, std::string_view  value, size_t subID);
-  ErrorType PC_EXTERN SetReflectedValue(ReflType type, std::string_view  value, size_t subID, size_t element);
-  ErrorType PC_EXTERN SetReflectedValueUInt(ReflType type, uint64 value, size_t subID = 0);
-  ErrorType PC_EXTERN SetReflectedValueInt(ReflType type, int64 value, size_t subID = 0);
-  ErrorType PC_EXTERN SetReflectedValueFloat(ReflType type, double value, size_t subID = 0);
+  ReflectedInstance data;
+  size_t id;
+};
 
-  std::string PC_EXTERN GetReflectedValue(ReflType type) const;
-  std::string PC_EXTERN GetReflectedValue(ReflType type, size_t subID) const;
-  std::string PC_EXTERN GetReflectedValue(ReflType type, size_t subID, size_t element) const;
+class ReflectorMemberIterator {
+public:
+  explicit ReflectorMemberIterator(ReflectedInstance data_, size_t num_,
+                                   size_t id_)
+      : data(data_), id(id_), num(num_) {}
+  ReflectorMemberIterator &operator++() {
+    id++;
+    return *this;
+  }
+  ReflectorMemberIterator operator++(int) {
+    ReflectorMemberIterator retval = *this;
+    ++(*this);
+    return retval;
+  }
+  ReflectorMemberIterator &operator--() {
+    id++;
+    return *this;
+  }
+  ReflectorMemberIterator operator--(int) {
+    ReflectorMemberIterator retval = *this;
+    --(*this);
+    return retval;
+  }
+  bool operator==(ReflectorMemberIterator other) const {
+    return id == other.id;
+  }
+  bool operator!=(ReflectorMemberIterator other) const {
+    return !(*this == other);
+  }
+  ReflectorMember operator*() const { return ReflectorMember{data, id}; }
 
-  ReflectedInstance PC_EXTERN GetReflectedSubClass(ReflType type, size_t subID = 0) const;
-  ReflectedInstance PC_EXTERN GetReflectedSubClass(ReflType type, size_t subID = 0);
-  // clang-format on
+private:
+  ReflectedInstance data;
+  size_t id = 0;
+  size_t num;
+};
+
+class Reflector {
+  friend class ReflectorFriend;
+
+public:
+  virtual ~Reflector() = default;
+
+  size_t NumReflectedValues() const;
+  std::string_view ClassName() const;
+  ReflectorMember PC_EXTERN operator[](JenHash memberName) const;
+  ReflectorMember operator[](size_t id) const;
+
+  ReflectorMemberIterator begin() const {
+    return ReflectorMemberIterator{GetReflectedInstance(), NumReflectedValues(),
+                                   0};
+  }
+  ReflectorMemberIterator end() const {
+    return ReflectorMemberIterator{GetReflectedInstance(), NumReflectedValues(),
+                                   NumReflectedValues()};
+  }
+  ReflectorMemberIterator begin() {
+    return ReflectorMemberIterator{GetReflectedInstance(), NumReflectedValues(),
+                                   0};
+  }
+  ReflectorMemberIterator end() {
+    return ReflectorMemberIterator{GetReflectedInstance(), NumReflectedValues(),
+                                   NumReflectedValues()};
+  }
+
 private:
   virtual ReflectedInstance GetReflectedInstance() const = 0;
   ReflectedInstance GetReflectedInstance();
 };
 
+// Wrap around concrete class instance
 template <class C> class ReflectorWrap : public Reflector {
   ReflectedInstance GetReflectedInstance() const override {
     return {GetReflectedClass<std::decay_t<C>>(), &data};
@@ -132,16 +179,16 @@ public:
   ReflectorWrap() = delete;
 };
 
+// Wrap around raw data
 class ReflectorPureWrap : public Reflector {
   ReflectedInstance GetReflectedInstance() const override { return data; }
 
 public:
-  ReflectedInstance &data;
-  ReflectorPureWrap(ReflectedInstance *_data) : data(*_data) {}
-  ReflectorPureWrap(ReflectedInstance &_data) : data(_data) {}
-  ReflectorPureWrap() = delete;
+  ReflectedInstance data;
+  ReflectorPureWrap(ReflectedInstance _data) : data(_data) {}
 };
 
+// Used in inheritance
 template <class C> class ReflectorBase : public Reflector {
 public:
   ReflectedInstance GetReflectedInstance() const override {

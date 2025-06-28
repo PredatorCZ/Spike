@@ -443,7 +443,6 @@ struct ReflectedInstanceFriend : ReflectedInstance {
 class ReflectorFriend : public Reflector {
 public:
   using Reflector::GetReflectedInstance;
-  using Reflector::GetReflectedType;
 };
 
 static int SaveClass(const Reflector &ri, ReflectedInstanceFriend inst,
@@ -451,7 +450,31 @@ static int SaveClass(const Reflector &ri, ReflectedInstanceFriend inst,
 
 static int WriteDataItem(const Reflector &ri, BinWritterRef wr,
                          const char *objAddr, ReflType type, size_t index,
-                         size_t element = 0) {
+                         const reflectorStatic *refl) {
+  switch (type.container) {
+  case REFContainer::ContainerVector: {
+    const VectorMethods methods = refl->vectorMethods[type.index];
+    const uint32 numItems = methods.size(objAddr);
+    bint128 tvar(numItems);
+    wr.Write(numItems);
+
+    for (uint32 i = 0; i < numItems; i++) {
+      if (WriteDataItem(ri, wr,
+                        static_cast<const char *>(methods.at(objAddr, i)), type,
+                        type.index, refl))
+        return 2;
+    }
+    return 0;
+  }
+  case REFContainer::InlineArray: {
+    for (uint32 i = 0; i < type.asArray.numItems; i++) {
+      if (WriteDataItem(ri, wr, objAddr + (type.asArray.stride * i),
+                        type.asArray, type.index, refl))
+        return 2;
+    }
+    return 0;
+  }
+  }
   switch (type.type) {
   case REFType::Integer:
   case REFType::Enum:
@@ -481,12 +504,10 @@ static int WriteDataItem(const Reflector &ri, BinWritterRef wr,
     wr.WriteBuffer(objAddr, type.size);
     return 0;
 
-  case REFType::Array:
-  case REFType::ArrayClass:
   case REFType::Vector: {
     for (uint32 i = 0; i < type.asArray.numItems; i++) {
       if (WriteDataItem(ri, wr, objAddr + (type.asArray.stride * i),
-                        type.asArray, type.index, i))
+                        type.asArray, type.index, refl))
         return 2;
     }
     return 0;
@@ -499,9 +520,15 @@ static int WriteDataItem(const Reflector &ri, BinWritterRef wr,
   }
 
   case REFType::Class: {
-    auto sri = static_cast<ReflectedInstanceFriend &&>(
-        ri.GetReflectedSubClass(index, element));
-    return SaveClass(ri, sri, wr);
+    auto found =
+        reflectorStatic::Registry().find(JenHash(type.asClass.typeHash));
+
+    if (found == reflectorStatic::Registry().end()) {
+      return 2;
+    }
+
+    ReflectedInstance subInst(found->second, objAddr);
+    return SaveClass(ri, ReflectedInstanceFriend{subInst}, wr);
   }
   default:
     return 1;
@@ -524,8 +551,9 @@ static int SaveClass(const Reflector &ri, ReflectedInstanceFriend inst,
     std::stringstream tmpValueBuffer;
     BinWritterRef wrTmp(tmpValueBuffer);
 
-    int rVal = WriteDataItem(ri, wrTmp, thisAddr + refData->types[i].offset,
-                             refData->types[i], refData->types[i].index);
+    int rVal =
+        WriteDataItem(ri, wrTmp, thisAddr + refData->types[i].offset,
+                      refData->types[i], refData->types[i].index, refData);
 
     if (rVal)
       return rVal;
@@ -551,10 +579,42 @@ int ReflectorBinUtil::Save(const Reflector &ri, BinWritterRef wr) {
   return SaveClass(ri, inst, wr);
 }
 
-static int LoadClass(ReflectedInstanceFriend inst, BinReaderRef rd);
+static int LoadClass(ReflectorPureWrap inst, BinReaderRef rd);
 
-static int LoadDataItem(Reflector &ri, BinReaderRef rd, char *objAddr,
-                        ReflType type, size_t index, size_t element = 0) {
+class ReflectorMemberFriend : public ReflectorMember {
+public:
+  using ReflectorMember::data;
+  using ReflectorMember::id;
+  ReflectedInstanceFriend Ref() const { return ReflectedInstanceFriend{data}; }
+  operator const ReflType &() const { return Ref().Refl()->types[id]; }
+};
+
+static int LoadDataItem(BinReaderRef rd, ReflType type, char *objAddr,
+                        const reflectorStatic *refl) {
+  switch (type.container) {
+  case REFContainer::ContainerVector: {
+    const VectorMethods methods = refl->vectorMethods[type.index];
+    bint128 tvar;
+    rd.Read(tvar);
+    uint32 numItems = tvar;
+
+    for (uint32 i = 0; i < numItems; i++) {
+      if (LoadDataItem(rd, type, static_cast<char *>(methods.at(objAddr, i)),
+                       refl))
+        return 2;
+    }
+    return 0;
+  }
+  case REFContainer::InlineArray: {
+    for (uint32 i = 0; i < type.asArray.numItems; i++) {
+      if (LoadDataItem(rd, type.asArray, objAddr + (type.asArray.stride * i),
+                       refl))
+        return 2;
+    }
+    return 0;
+  }
+  }
+
   switch (type.type) {
   case REFType::Integer:
   case REFType::Enum:
@@ -582,12 +642,10 @@ static int LoadDataItem(Reflector &ri, BinReaderRef rd, char *objAddr,
     rd.ReadBuffer(objAddr, type.size);
     return 0;
 
-  case REFType::Array:
-  case REFType::ArrayClass:
   case REFType::Vector: {
     for (uint32 i = 0; i < type.asArray.numItems; i++) {
-      if (LoadDataItem(ri, rd, objAddr + (type.asArray.stride * i),
-                       type.asArray, type.index, i))
+      if (LoadDataItem(rd, type.asArray, objAddr + (type.asArray.stride * i),
+                       refl))
         return 2;
     }
     return 0;
@@ -600,35 +658,31 @@ static int LoadDataItem(Reflector &ri, BinReaderRef rd, char *objAddr,
   }
 
   case REFType::Class: {
-    auto sri = static_cast<ReflectedInstanceFriend &&>(
-        ri.GetReflectedSubClass(index, element));
-    return LoadClass(sri, rd);
+    auto found =
+        reflectorStatic::Registry().find(JenHash(type.asClass.typeHash));
+
+    if (found == reflectorStatic::Registry().end()) {
+      return 2;
+    }
+
+    ReflectedInstance subInst(found->second, objAddr);
+    return LoadClass(subInst, rd);
   }
   default:
     return 1;
   }
 }
 
-static int LoadClass(ReflectedInstanceFriend inst, BinReaderRef rd) {
-  auto refData = inst.Refl();
-  const uint32 numItems = refData->nTypes;
-  char *thisAddr = static_cast<char *>(inst.Instance());
+static int LoadClass(ReflectorPureWrap rfWrap, BinReaderRef rd) {
   buint128 chunkSize;
   rd.Read(chunkSize);
   rd.Push();
-
   buint128 numIOItems;
   rd.Read(numIOItems);
 
-  if (numIOItems != numItems) {
-    rd.Pop();
-    rd.Skip(chunkSize);
-    return 1;
-  }
-
   int errType = 0;
 
-  for (uint32 i = 0; i < numItems; i++) {
+  for (uint32 i = 0; i < numIOItems; i++) {
     BinReaderRef rf(rd);
     JenHash valueNameHash;
     buint128 valueChunkSize;
@@ -636,18 +690,19 @@ static int LoadClass(ReflectedInstanceFriend inst, BinReaderRef rd) {
     rd.Read(valueChunkSize);
     rd.Push();
 
-    ReflectorPureWrap ri(inst);
-    auto &&rif = static_cast<ReflectorFriend &>(static_cast<Reflector &>(ri));
-    const ReflType *cType = rif.GetReflectedType(valueNameHash);
+    ReflectorMemberFriend mem{rfWrap[valueNameHash]};
 
-    if (!cType) {
+    if (!mem) {
       rd.Pop();
       rd.Skip(valueChunkSize);
       continue;
     }
 
-    errType =
-        LoadDataItem(ri, rf, thisAddr + cType->offset, *cType, cType->index);
+    ReflType refl = mem;
+
+    char *objAddr = static_cast<char *>(mem.Ref().Instance()) + refl.offset;
+
+    errType = LoadDataItem(rf, refl, objAddr, mem.Ref().Refl());
 
     if (errType) {
       rd.Pop();

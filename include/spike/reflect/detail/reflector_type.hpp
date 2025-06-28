@@ -1,7 +1,7 @@
 /*  Interfaces for reflected types
     internal file
 
-    Copyright 2018-2023 Lukas Cone
+    Copyright 2018-2024 Lukas Cone
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -84,7 +84,7 @@ struct ReflType {
   };
   JenHash valueNameHash;
   uint16 size;
-  REFContainer container;
+  REFContainer container = REFContainer::None;
 
   union {
     uint32 raw[3]{};
@@ -163,6 +163,7 @@ template <typename _Ty> struct _getType : reflTypeDefault_ {
   }
   static constexpr uint8 SIZE = uint8(sizeof(_Ty));
 };
+
 template <> struct _getType<bool> : reflTypeDefault_ {
   static constexpr REFType TYPE = REFType::Bool;
   static constexpr uint8 SIZE = 1;
@@ -181,7 +182,8 @@ template <> struct _getType<std::string> : reflTypeDefault_ {
 template <class T> using refl_has_hash = decltype(std::declval<T>().Hash());
 
 template <class C, size_t _Size> struct _getType<C[_Size]> : reflTypeDefault_ {
-  static constexpr REFType TYPE = REFType::Array;
+  static constexpr REFType TYPE = _getType<C>::TYPE;
+  static constexpr REFType SUBTYPE = _getType<C>::TYPE;
   static constexpr JenHash Hash() {
     if constexpr (es::is_detected_v<refl_has_hash, _getType<C>>) {
       return _getType<C>::Hash();
@@ -191,7 +193,6 @@ template <class C, size_t _Size> struct _getType<C[_Size]> : reflTypeDefault_ {
   }
   static constexpr size_t SIZE = sizeof(C[_Size]);
   static constexpr uint8 SUBSIZE = sizeof(C);
-  static constexpr REFType SUBTYPE = _getType<C>::TYPE;
   static constexpr uint16 NUMITEMS = _Size;
   using child_type = C;
 };
@@ -216,19 +217,24 @@ template <class C> consteval REFContainer REFContainerType() {
                  ? REFContainer::ContainerVectorMap
                  : REFContainer::ContainerVector;
     }
+  } else if constexpr (is_inline_array<C>::value) {
+    return REFContainer::InlineArray;
   }
 
   return REFContainer::None;
 };
 
+static_assert(REFContainerType<int[8]>() == REFContainer::InlineArray);
+
 template <class type_>
-ReflType BuildReflType(JenHash typeHash, uint8 index, size_t offset) {
+constexpr ReflType BuildReflType(JenHash typeHash, uint8 index, size_t offset) {
   using unref_type = std::remove_reference_t<type_>;
   using type_class = _getType<std::remove_pointer_t<unref_type>>;
   static_assert(type_class::TYPE != REFType::None,
                 "Undefined type to reflect. Did you forget void "
                 "ReflectorTag(); tag method for subclass member?");
   constexpr auto type = type_class::TYPE;
+  constexpr REFContainer mainContainer = REFContainerType<unref_type>();
 
   ReflType mainType{};
   mainType.type = type;
@@ -236,7 +242,7 @@ ReflType BuildReflType(JenHash typeHash, uint8 index, size_t offset) {
   mainType.valueNameHash = typeHash;
   mainType.offset = static_cast<decltype(ReflType::offset)>(offset);
   mainType.size = type_class::SIZE;
-  mainType.container = REFContainerType<unref_type>();
+  mainType.container = mainContainer;
 
   auto ParsePrimitive = [](auto &value) {
     constexpr auto type = type_class::TYPE;
@@ -244,14 +250,21 @@ ReflType BuildReflType(JenHash typeHash, uint8 index, size_t offset) {
       constexpr auto vHash = type_class::Hash();
       if constexpr (vHash.raw()) {
         value.asFloat.customFormat = true;
-        value.asFloat.mantissa = type_class::MANTISSA;
-        value.asFloat.exponent = type_class::EXPONENT;
-        value.asFloat.sign = type_class::SIGN;
+        if constexpr (mainContainer == REFContainer::InlineArray) {
+          using child_type = _getType<typename type_class::child_type>;
+          value.asFloat.mantissa = child_type::MANTISSA;
+          value.asFloat.exponent = child_type::EXPONENT;
+          value.asFloat.sign = child_type::SIGN;
+        } else {
+          value.asFloat.mantissa = type_class::MANTISSA;
+          value.asFloat.exponent = type_class::EXPONENT;
+          value.asFloat.sign = type_class::SIGN;
+        }
       }
     } else if constexpr (es::is_detected_v<refl_has_hash, type_class>) {
       constexpr auto vHash = type_class::Hash();
-      if constexpr (type == REFType::Array || type == REFType::ArrayClass) {
-        if constexpr (type_class::SUBTYPE == REFType::Class) {
+      if constexpr (mainContainer == REFContainer::InlineArray) {
+        if constexpr (type_class::TYPE == REFType::Class) {
           static_assert(vHash.raw() > 0, "Subclass for member must be "
                                          "reflected before class that uses it");
         }
@@ -267,23 +280,25 @@ ReflType BuildReflType(JenHash typeHash, uint8 index, size_t offset) {
     }
   };
 
-  if constexpr (type == REFType::Array || type == REFType::ArrayClass ||
+  if constexpr (mainContainer == REFContainer::InlineArray ||
                 type == REFType::Vector) {
     mainType.asArray.numItems = type_class::NUMITEMS;
-    mainType.asArray.type = type_class::SUBTYPE;
     mainType.asArray.stride = type_class::SUBSIZE;
+    mainType.asArray.type = type_class::SUBTYPE;
+  }
 
-    if constexpr (type_class::SUBTYPE == REFType::Vector) {
+  if constexpr (mainContainer == REFContainer::InlineArray) {
+    if constexpr (type == REFType::Vector) {
       using vec_type = _getType<typename type_class::child_type>;
-
       mainType.asArray.asVector.numItems = vec_type::NUMITEMS;
       mainType.asArray.asVector.stride = vec_type::SUBSIZE;
       mainType.asArray.asVector.type = vec_type::SUBTYPE;
       ParsePrimitive(mainType.asArray.asVector);
-
     } else {
       ParsePrimitive(mainType.asArray);
     }
+
+    static_assert(REFContainerType<typename type_class::child_type>() == REFContainer::None);
   } else {
     ParsePrimitive(mainType);
   }

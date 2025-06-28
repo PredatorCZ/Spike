@@ -1,8 +1,8 @@
-#include "spike/io/stat.hpp"
 #include "reflector.inl"
 #include "reflector_bindump.inl"
 #include "reflector_extended.inl"
 #include "reflector_io.inl"
+#include "spike/io/stat.hpp"
 
 int main() {
   es::SetupWinApiConsole();
@@ -18,7 +18,9 @@ int main() {
       TEST_FUNC(test_reflector_decl02), TEST_FUNC(test_reflector_decl03),
       TEST_FUNC(test_reflector_decl04), TEST_FUNC(test_reflector_decl05),
       TEST_FUNC(test_reflector_decl06), TEST_FUNC(test_reflector_decl07),
-      TEST_FUNC(test_reflector_decl09), TEST_FUNC(test_reflector_decl_io),
+      TEST_FUNC(test_reflector_decl09), TEST_FUNC(test_reflector_decl10),
+      TEST_FUNC(test_reflector_decl11),
+      TEST_FUNC(test_reflector_container_vector),
       TEST_FUNC(test_reflector, rClass), TEST_FUNC(test_reflector_bool, rClass),
       TEST_FUNC(test_reflector_int8, rClass),
       TEST_FUNC(test_reflector_uint8, rClass),
