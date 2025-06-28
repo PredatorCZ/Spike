@@ -1,6 +1,6 @@
 /*  De/Serializing Reflector data XML format
 
-    Copyright 2020-2023 Lukas Cone
+    Copyright 2020-2024 Lukas Cone
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -30,16 +30,8 @@ public:
   };
   using flag_type = es::Flags<Flags>;
   static pugi::xml_node PC_EXTERN Save(const Reflector &ri,
-                                       pugi::xml_node iNode,
-                                       bool asNewNode = false);
-  static pugi::xml_node PC_EXTERN SaveV2(const Reflector &ri,
-                                         pugi::xml_node iNode,
-                                         bool asNewNode = false);
-  static pugi::xml_node PC_EXTERN SaveV2a(const Reflector &ri,
                                           pugi::xml_node iNode,
                                           flag_type options = {});
   static pugi::xml_node PC_EXTERN Load(Reflector &ri, pugi::xml_node iNode,
-                                       bool lookupClassNode = false);
-  static pugi::xml_node PC_EXTERN LoadV2(Reflector &ri, pugi::xml_node iNode,
                                          bool lookupClassNode = false);
 };
