@@ -38,19 +38,56 @@ struct ReflDesc {
 struct NoName {};
 
 struct VectorMethods {
-  using ResizeWrap = void (*)(const void *, size_t);
+  enum Signal {
+    // id0 = new size, id1 = unused
+    Resize,
+    // swap id0 with id1
+    Swap,
+    // id0 = insert after index, id1 = num items
+    InsertNew,
+    // id0 = duplicate index, id1 = num items
+    DuplicateInsert,
+    // id0 = duplicate index, id1 = num items
+    DuplicateAppend,
+    // id0 = start index, id1 = end index
+    Erase,
+  };
+  using SignalWrap = void (*)(const void *, Signal, size_t id0, size_t id1);
   using AtWrap = void *(*)(const void *, size_t);
   using SizeWrap = size_t (*)(const void *);
-  ResizeWrap resize = nullptr;
+  SignalWrap signal = nullptr;
   AtWrap at = nullptr;
   SizeWrap size = nullptr;
 };
 
 template <class C> consteval VectorMethods MakeVectorClass() {
   VectorMethods retval{
-      .resize =
-          [](const void *ptr_, size_t n) {
-            static_cast<C *>(const_cast<void *>(ptr_))->resize(n);
+      .signal =
+          [](const void *ptr_, VectorMethods::Signal sig, size_t id0,
+             size_t id1) {
+            C *recVec = static_cast<C *>(const_cast<void *>(ptr_));
+            switch (sig) {
+            case VectorMethods::Resize:
+              recVec->resize(id0);
+              break;
+            case VectorMethods::Swap:
+              std::swap(recVec->at(id0), recVec->at(id1));
+              break;
+            case VectorMethods::InsertNew:
+              recVec->insert(std::next(recVec->begin(), id0 + 1), id1, {});
+              break;
+            case VectorMethods::DuplicateInsert:
+              recVec->insert(std::next(recVec->begin(), id0), id1,
+                             recVec->at(id0));
+              break;
+            case VectorMethods::DuplicateAppend:
+              recVec->insert(recVec->end(), id1, recVec->at(id0));
+              break;
+            case VectorMethods::Erase:
+              recVec->erase(std::next(recVec->begin(), id0),
+                            std::next(recVec->begin(), id1));
+              break;
+            }
           },
       .at = [](const void *ptr_, size_t n) -> void * {
         auto &ref = static_cast<C *>(const_cast<void *>(ptr_))->at(n);
@@ -150,7 +187,8 @@ struct reflectorStatic {
       : classHash(JenHash(className_)), nTypes(sizeof...(C)),
         className(className_), methods(MakeClassMethods<ClassType>()),
         classSize(sizeof(ClassType)),
-        baseClass(baseClassHash == JenHash("void") ? JenHash{} : baseClassHash) {
+        baseClass(baseClassHash == JenHash("void") ? JenHash{}
+                                                   : baseClassHash) {
 
     static_assert(std::is_same_v<BaseType, void> ||
                       std::is_base_of_v<BaseType, ClassType>,

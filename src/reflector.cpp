@@ -555,7 +555,7 @@ SetReflectedMember(ReflType reflValue, std::string_view value, char *objAddr,
              reflValue.container == REFContainer::ContainerVectorMap) {
     const VectorMethods methods = refl->vectorMethods[reflValue.index];
     const size_t numItems = ReflectedArraySize(startBrace, endBrace, value);
-    methods.resize(objAddr, numItems);
+    methods.signal(objAddr, VectorMethods::Resize, numItems, 0);
     if (numItems > 0) {
       char *vData = static_cast<char *>(methods.at(objAddr, 0));
       reflValue.asArray.type = reflValue.type;
@@ -731,7 +731,7 @@ ReflectorMember::ReflectValue(ReflectorInputValue value, size_t index) {
   thisAddr =
       thisAddr + (type.type == REFType::BitFieldMember ? 0 : type.offset);
 
-  if (index != -1) {
+  if (index != size_t(-1)) {
     if (type.container == REFContainer::InlineArray) {
       ReflTypeArray arrType = type.asArray;
       thisAddr += index * arrType.stride;
@@ -755,7 +755,7 @@ ReflectorMember::ReflectValue(ReflectorInputValue value, size_t index) {
       type.asArray.numItems = methods.size(thisAddr);
       type.asArray.stride = type.size;
       if (type.asArray.numItems <= index) {
-        methods.resize(thisAddr, index + 1);
+        methods.signal(thisAddr, VectorMethods::Resize, index + 1, 0);
         type.asArray.numItems = methods.size(thisAddr);
       }
 
@@ -1082,7 +1082,7 @@ std::string ReflectorMember::ReflectedValue(size_t index) const {
 
   const char *objAddr = thisAddr + valueOffset;
 
-  if (index != -1) {
+  if (index != size_t(-1)) {
     if (type.container == REFContainer::InlineArray) {
       const auto &arr = type.asArray;
       if (arr.numItems <= index) {
@@ -1193,7 +1193,8 @@ ReflectorPureWrap ReflectorMember::ReflectedSubClass(size_t index) const {
              type.container == REFContainer::ContainerVectorMap) {
     const VectorMethods methods = data.rfStatic->vectorMethods[type.index];
     if (methods.size(objAddr) <= index) {
-      methods.resize(const_cast<char *>(objAddr), index + 1);
+      methods.signal(const_cast<char *>(objAddr), VectorMethods::Resize,
+                     index + 1, 0);
     }
 
     objAddr =
