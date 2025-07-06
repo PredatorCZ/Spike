@@ -96,6 +96,7 @@ struct SavedIndices {
 
 struct GLTFModel : GLTF {
   std::optional<es::Matrix44> transform;
+  std::optional<std::vector<uint8>> boneRemaps;
 
   SavedIndices GLTF_EXTERN SaveIndices(const void *data, size_t numIndices,
                                        size_t indexSize = 2);
