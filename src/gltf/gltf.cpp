@@ -958,6 +958,14 @@ gltf::Attributes GLTFModel::SaveVertices(const void *data, size_t numVertices,
     }
   }
 
+  if (boneRemaps) {
+    for (auto &bi : bonesBuffer) {
+      for (uint8 b = 0; b < 8; b++) {
+        bi.data[b] = boneRemaps->at(bi.data[b]);
+      }
+    }
+  }
+
   if (weightElement > 1) {
     for (size_t idx = 0; auto &bw : weightsBuffer) {
       BWBuffer &bones = bonesBuffer.at(idx++);
@@ -1080,7 +1088,9 @@ std::vector<float> MakeSamples(float sampleRate, float duration) {
     cdur += fraction;
   }
 
-  times.emplace_back(duration);
+  if (!fltcmp(times.back(), duration, fraction * 0.01f)) {
+    times.emplace_back(duration);
+  }
   return times;
 }
 
