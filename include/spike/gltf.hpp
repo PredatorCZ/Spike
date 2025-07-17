@@ -95,6 +95,8 @@ struct SavedIndices {
 };
 
 struct GLTFModel : GLTF {
+  using GLTF::GLTF;
+
   std::optional<es::Matrix44> transform;
   std::optional<std::vector<uint8>> boneRemaps;
 
