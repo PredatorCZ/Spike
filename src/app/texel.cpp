@@ -1482,10 +1482,10 @@ void Reencode(NewTexelContextCreate ctx, uint32 numDesiredChannels,
 
   if ((numDesiredChannels > 2 &&
        ctx.baseFormat.swizzle.b == TexelSwizzleType::DeriveZ) ||
-      numDesiredChannels == 2 &&
+      (numDesiredChannels == 2 &&
           (ctx.baseFormat.swizzle.b == TexelSwizzleType::DeriveZOrBlue ||
            ctx.baseFormat.swizzle.b ==
-               TexelSwizzleType::DeriveZOrBlueInverted)) {
+               TexelSwizzleType::DeriveZOrBlueInverted))) {
     ComputeBC5Blue(outData_.data(), numTexels * numDesiredChannels,
                    numDesiredChannels);
   }

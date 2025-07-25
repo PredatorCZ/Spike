@@ -95,16 +95,16 @@ struct ZIPLocalFile {
   static constexpr uint32 ID = CompileFourCC("PK\x03\x04");
   uint32 id;
   uint16 extractVersion;
-  ZIPLocalFlags flags;
-  ZIPCompressionMethod compression;
-  uint16 lastModFileTime;
-  uint16 lastModFileDate;
-  uint16 _pad;
-  uint32 crc;
-  uint32 compressedSize;
-  uint32 uncompressedSize;
-  uint16 fileNameSize;
-  uint16 extraFieldSize;
+  ZIPLocalFlags flags{};
+  ZIPCompressionMethod compression{};
+  uint16 lastModFileTime{};
+  uint16 lastModFileDate{};
+  uint16 _pad{};
+  uint32 crc{};
+  uint32 compressedSize{};
+  uint32 uncompressedSize{};
+  uint16 fileNameSize{};
+  uint16 extraFieldSize{};
 
   void Read(BinReaderRef rd);
   void Write(BinWritterRef wr) const;

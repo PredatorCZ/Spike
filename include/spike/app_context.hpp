@@ -190,7 +190,7 @@ struct TileBase {
 
 struct TexelInputFormat {
   TexelInputFormatType type;
-  TexelSwizzle swizzle;
+  TexelSwizzle swizzle{};
   TexelTile tile = TexelTile::Linear;
   // Texel values are in SNORM [-1, 1]
   bool snorm = false;
