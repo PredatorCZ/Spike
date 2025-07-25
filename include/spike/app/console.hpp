@@ -35,6 +35,8 @@ struct CounterLine {
     return *this;
   }
 
+  operator size_t() const { return curitem.load(std::memory_order_relaxed); }
+
 protected:
   std::atomic_size_t curitem{0};
 };
@@ -129,5 +131,5 @@ template <class... Lines> void RemoveLogLines(Lines *...item) {
 }
 
 #ifdef USEWIN
-inline void pthread_setname_np(auto &&, const char*){}
+inline void pthread_setname_np(auto &&, const char *) {}
 #endif

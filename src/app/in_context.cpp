@@ -128,6 +128,11 @@ struct AppContextShareImpl : AppContextShare {
       mkdirs(filePath);
       outFile = BinWritter(filePath);
     }
+
+    if (forEachFile) {
+      forEachFile();
+    }
+
     return {outFile.BaseStream(), filePath, delimeter};
   }
 
@@ -292,7 +297,7 @@ AppContextFoundStream SimpleIOContext::FindFile(const std::string &rootFolder,
         minFolder = foundIdx;
         minLevel = std::count(f.begin(), f.end(), '/');
       } else if (foundIdx == minFolder) {
-        if (auto clevel = std::count(f.begin(), f.end(), '/');
+        if (size_t clevel = std::count(f.begin(), f.end(), '/');
             clevel < minLevel) {
           winner = &f;
           minFolder = foundIdx;

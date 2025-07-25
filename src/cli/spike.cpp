@@ -37,11 +37,13 @@ static const char appHeader1[] =
 
 struct ProcessedFiles : LoadingBar, CounterLine {
   char buffer[128]{};
+  CounterLine producedFiles;
 
   ProcessedFiles() : LoadingBar({buffer, sizeof(buffer)}) {}
   void PrintLine() override {
-    snprintf(buffer, sizeof(buffer), "Processed %4" PRIuMAX " files.",
-             curitem.load(std::memory_order_relaxed));
+    snprintf(buffer, sizeof(buffer),
+             "Processed %4" PRIuMAX " files. Produced %4" PRIuMAX " files.",
+             size_t(curitem), size_t(producedFiles));
     LoadingBar::PrintLine();
   }
 };
@@ -54,6 +56,7 @@ struct ExtractStats {
 struct UILines {
   ProgressBar *totalProgress{nullptr};
   CounterLine *totalCount{nullptr};
+  CounterLine *totalOutCount{nullptr};
   std::map<uint32, ProgressBar *> bars;
   std::mutex barsMutex;
 
@@ -102,7 +105,9 @@ struct UILines {
   }
 
   UILines(size_t totalInputFiles) {
-    totalCount = AppendNewLogLine<ProcessedFiles>();
+    auto procFiles = AppendNewLogLine<ProcessedFiles>();
+    totalCount = procFiles;
+    totalOutCount = &procFiles->producedFiles;
     auto prog = AppendNewLogLine<DetailedProgressBar>("Total: ");
     prog->ItemCount(totalInputFiles);
     totalProgress = prog;
@@ -343,6 +348,11 @@ void ProcessBatch(Batch &batch, size_t numFiles) {
   auto payload = std::make_shared<UILines>(numFiles);
   batch.forEachFile = [payload = payload,
                        ctx = batch.ctx](AppContextShare *iCtx) {
+    iCtx->forEachFile = [=] {
+      if (payload->totalOutCount) {
+        (*payload->totalOutCount)++;
+      }
+    };
     printline("Processing: " << iCtx->FullPath());
     ctx->ProcessFile(iCtx);
     if (payload->totalProgress) {
