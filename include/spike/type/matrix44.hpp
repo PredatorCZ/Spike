@@ -65,5 +65,7 @@ public:
   Matrix44 PC_EXTERN operator-() const;
 
   void SwapEndian() { FByteswapper(v); }
+
+  void ReflectorTag();
 };
 } // namespace es

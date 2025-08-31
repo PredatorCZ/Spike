@@ -225,7 +225,7 @@ struct reflectorStatic {
       types = types_;
       union mutate {
         const char *h;
-        uintptr_t i;
+        uintptr i;
       };
 
       if ((mutate{members.typeName}.i | ...)) {

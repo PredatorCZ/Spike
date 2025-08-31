@@ -18,6 +18,7 @@
 
 #pragma once
 #include <string_view>
+#include <cstdint>
 
 struct JenTriplet_ {
   uint32_t a, b, c;

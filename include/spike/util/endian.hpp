@@ -50,7 +50,7 @@ static_assert(_fbswap<uint64>(0x0123456789abcdef) == 0xefcdab8967452301);
 
 template <IsSwapableArith C> void FByteswapper(C &input, bool) {
   auto rType = _fbswap(
-      reinterpret_cast<typename es::TypeFromSize<sizeof(C)>::type &>(input));
+      reinterpret_cast<typename TypeFromSize<sizeof(C)>::type &>(input));
   memcpy(reinterpret_cast<char *>(&input), &rType, sizeof(input));
 }
 
