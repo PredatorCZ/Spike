@@ -37,10 +37,9 @@ FileType_e FileType(const std::string &path) {
 }
 
 namespace es {
-MappedFile::MappedFile(const std::string &path, size_t allocSize) {
-  uint32 mapFlags = PROT_READ;
-  if (allocSize) {
-    mapFlags |= PROT_WRITE;
+MappedFile::MappedFile(const std::string &path, MappedFileSettings settings_)
+    : settings(settings_) {
+  if (settings.writeToFile) {
     fd = open(path.c_str(), O_RDWR | O_CREAT,
               S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH);
   } else {
@@ -57,13 +56,16 @@ MappedFile::MappedFile(const std::string &path, size_t allocSize) {
   }
 
   fileSize = fileStat.st_size;
-  mappedSize = std::max(fileSize, allocSize);
+  settings.mappedSize = std::max(fileSize, settings.mappedSize);
+  settings.writeToMap |= settings.writeToFile;
 
-  data = mmap(nullptr, mappedSize, mapFlags, MAP_SHARED, fd, 0);
+  data = mmap(nullptr, settings.mappedSize,
+              PROT_READ | (settings.writeToMap * PROT_WRITE),
+              MAP_PRIVATE - settings.share, fd, 0);
 
-  madvise(data, mappedSize, MADV_RANDOM);
-  madvise(data, mappedSize, MADV_WILLNEED);
-  madvise(data, mappedSize, MADV_DONTDUMP);
+  madvise(data, settings.mappedSize, MADV_RANDOM);
+  madvise(data, settings.mappedSize, MADV_WILLNEED);
+  madvise(data, settings.mappedSize, MADV_DONTDUMP);
 
   if (data == MAP_FAILED) {
     throw std::runtime_error("Cannot map file " + path);
@@ -82,7 +84,7 @@ void MappedFile::ReserveFileSize(size_t newSize) {
 
 MappedFile::~MappedFile() {
   if (data && data != MAP_FAILED) {
-    munmap(data, mappedSize);
+    munmap(data, settings.mappedSize);
   }
 
   if (fd != -1) {

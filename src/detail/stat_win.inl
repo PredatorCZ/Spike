@@ -88,10 +88,11 @@ void SetDllRunPath(const std::string &path) {
 #endif
 }
 
-MappedFile::MappedFile(const std::string &path, size_t allocSize) {
+MappedFile::MappedFile(const std::string &path, MappedFileSettings settings_)
+    : settings(settings_) {
   auto cvted = es::ToUTF1632(path);
-  auto accessFlags = GENERIC_READ | (allocSize ? GENERIC_WRITE : 0);
-  auto openFlags = allocSize ? OPEN_ALWAYS : OPEN_EXISTING;
+  auto accessFlags = GENERIC_READ | (settings.writeToFile * GENERIC_WRITE);
+  auto openFlags = settings.writeToFile ? OPEN_ALWAYS : OPEN_EXISTING;
 
   hdl = CreateFileW(cvted.c_str(), accessFlags, FILE_SHARE_READ, NULL,
                     openFlags, FILE_ATTRIBUTE_NORMAL, NULL);
@@ -100,13 +101,10 @@ MappedFile::MappedFile(const std::string &path, size_t allocSize) {
   }
 
   fileSize = GetFileSize(hdl, NULL);
-  mappedSize = std::max(fileSize, allocSize);
+  settings.mappedSize = std::max(fileSize, settings.mappedSize);
+  settings.writeToMap |= settings.writeToFile;
 
-  if (!allocSize) {
-    ReserveFileSize(0);
-  } else {
-    ReserveFileSize(0x1000);
-  }
+  ReserveFileSize(0);
 }
 
 void MappedFile::ReserveFileSize(size_t newSize) {
@@ -114,24 +112,32 @@ void MappedFile::ReserveFileSize(size_t newSize) {
     return;
   }
 
-  fileSize = newSize;
+  settings.mappedSize = std::max(newSize, settings.mappedSize);
+  fileSize = settings.mappedSize;
 
   if (data) {
     UnmapViewOfFile(data);
   }
 
-  auto mappingFlags = newSize ? PAGE_READWRITE : PAGE_READONLY;
+  auto mappingFlags = settings.writeToMap ? PAGE_READWRITE : PAGE_WRITECOPY;
 
-  HANDLE mapping = CreateFileMapping(hdl, NULL, mappingFlags, 0, newSize, NULL);
+  HANDLE mapping =
+      CreateFileMapping(hdl, NULL, mappingFlags, 0, settings.mappedSize, NULL);
 
   if (!mapping) {
     auto errCode = GetLastError();
     throw std::runtime_error("WinApi call error " + std::to_string(errCode));
   }
+  auto mappingViewFlags = [this] -> DWORD {
+    if (settings.writeToFile) {
+      return FILE_MAP_ALL_ACCESS;
+    } else if (settings.writeToMap) {
+      return FILE_MAP_COPY;
+    }
+    return FILE_MAP_READ;
+  }();
 
-  auto mappingViewFlags = newSize ? FILE_MAP_ALL_ACCESS : FILE_MAP_READ;
-
-  data = MapViewOfFileEx(mapping, mappingViewFlags, 0, 0, newSize, NULL);
+  data = MapViewOfFileEx(mapping, mappingViewFlags, 0, 0, settings.mappedSize, NULL);
   CloseHandle(mapping);
 
   if (!data) {

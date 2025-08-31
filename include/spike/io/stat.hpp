@@ -48,34 +48,53 @@ void RemoveFile(const std::string &path);
 void MKDIR_EXTERN_ SetupWinApiConsole();
 void MKDIR_EXTERN_ SetDllRunPath(const std::string &folder);
 
+struct MappedFileSettings {
+  // Do not flush dirty pages into file
+  uint32 writeToFile : 1;
+  // Mapped pages can be modified
+  uint32 writeToMap : 1;
+  // Virtual data address can be shared among processes (unix only)
+  uint32 share : 1;
+  // Reserved virtual data area (only when writeToFile)
+  // On Unix, only reserve virtual space, need to call ReserveFileSize if file
+  // size is smaller othervise page fault on access
+  // On Win, reserve virtual space and resize file
+  size_t mappedSize = 0;
+};
+
 struct MappedFile {
   void *data = nullptr;
-  size_t mappedSize = 0;
   size_t fileSize = 0;
   union {
     int64 fd = -1;
     void *hdl;
   };
 
-  // When allocSize = 0, opened in read only state
+  MappedFileSettings settings;
+
   PC_EXTERN
-  MappedFile(const std::string &path, size_t allocSize = 0);
+  MappedFile(const std::string &path, MappedFileSettings settings = {});
   MappedFile() = default;
   MappedFile(const MappedFile &) = delete;
   MappedFile(MappedFile &&other)
-      : data(other.data), fileSize(other.fileSize), fd(other.fd) {
+      : data(other.data), fileSize(other.fileSize), fd(other.fd),
+        settings(other.settings) {
     other.data = nullptr;
     other.fd = -1;
   }
 
   // File size cannot be decreased
-  // Win only: data member can be a new address
+  // Data are preserved
+  // Win only: recreates mapping, data member can be a new address
+  // Unix only: Only resizes file, newSize > mappedSize has no effect and might
+  // result in page fault when accessed out of mappedSize bounds
   void PC_EXTERN ReserveFileSize(size_t newSize);
 
   MappedFile &operator=(MappedFile &&other) {
     data = other.data;
     fileSize = other.fileSize;
     fd = other.fd;
+    settings = other.settings;
     other.data = nullptr;
     other.fd = -1;
     return *this;
