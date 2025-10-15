@@ -158,7 +158,7 @@ bool ScanModules(const std::string &appFolder, const std::string &appName) {
 
 void GenerateDocumentation(const std::string &appFolder,
                            const std::string &appName,
-                           const std::string &templatePath) {
+                           const std::string &templatePath, bool tableModList) {
   DirectoryScanner sc;
   sc.AddFilter(std::string_view(".spk$"));
   sc.Scan(appFolder);
@@ -189,7 +189,10 @@ void GenerateDocumentation(const std::string &appFolder,
     toolsetDescription = child.text().as_string();
   }
 
-  wr.BaseStream() << toolsetDescription << "<h2>Module list</h2>\n<ul>\n";
+  const char *tag = tableModList ? "table" : "ul";
+
+  wr.BaseStream() << toolsetDescription << "<h2>Module list</h2>\n<" << tag
+                  << ">\n";
   std::stringstream str;
 
   for (auto &m : modules) {
@@ -202,11 +205,24 @@ void GenerateDocumentation(const std::string &appFolder,
         classNameLink.begin(), classNameLink.end(),
         [](char c) { return c == ' '; }, '-');
 
-    wr.BaseStream() << "<li><a href=\"#" << classNameLink << "\">" << className
-                    << "</a></li>\n";
+    if (tableModList) {
+      std::string_view desc = ctx.info->header;
+
+      if (size_t foundv = desc.find(" v"); foundv != desc.npos &&
+                                           desc.at(foundv + 2) >= '0' &&
+                                           desc.at(foundv + 2) <= '9') {
+        desc = desc.substr(0, foundv);
+      }
+
+      wr.BaseStream() << "<tr><td><a href=\"#" << classNameLink << "\">"
+                      << className << "</a></td><td>" << desc << "</td></tr>\n";
+    } else {
+      wr.BaseStream() << "<li><a href=\"#" << classNameLink << "\">"
+                      << className << "</a></li>\n";
+    }
   }
 
-  wr.BaseStream() << "</ul>\n\n" << str.str() << "\n\n";
+  wr.BaseStream() << "</" << tag << ">\n\n" << str.str() << "\n\n";
 
   if (auto child = doc.child("toolset_footer"); child) {
     wr.BaseStream() << child.text().as_string();
@@ -521,7 +537,9 @@ int Main(int argc, TCHAR *argv[]) {
       templatePath = std::to_string(argv[2]);
     }
 
-    GenerateDocumentation(appFolder, appName, templatePath);
+    GenerateDocumentation(appFolder, appName, templatePath,
+                          argc > 3 &&
+                              std::string_view(argv[3]) == "use_table");
     return 0;
   } else if (moduleName.ends_with(".json")) {
     return LoadProject(moduleName, appFolder, appName);
