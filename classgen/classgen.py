@@ -630,7 +630,7 @@ class ClassData:
             settings.permutators, settings.current_perm)
         cur_loc = TypeLocation(cur_offset, cur_offset, 0)
         max_align = 0
-        min_begin = cur_offset
+        min_begin = cur_offset + 256 # add artificial padding
 
         for i in inherits:
             cur_loc = i.get_location(cur_loc.end, settings)
