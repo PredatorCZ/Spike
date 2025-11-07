@@ -60,10 +60,11 @@ static const ReflType VECTOR_TYPES[4]{
 
 template <REFType type, int numElements, int size>
 consteval std::pair<VectorKey, reflectorStatic> MakeVectorRefl() {
-  VectorKey key;
-  key.type = type;
-  key.numElements = numElements;
-  key.size = size;
+  VectorKey key {
+    .type = type,
+    .numElements = numElements,
+    .size = size,
+  };
 
   return {key, reflectorStatic(numElements, VECTOR_TYPES<type, size>,
                                TYPE_NAMES, numElements * size)};
