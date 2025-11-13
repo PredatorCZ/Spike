@@ -217,12 +217,12 @@ struct SimpleIOContext : AppContextShareImpl {
       ectx = std::move(uniq);
     } else {
       if (!mainSettings.extractSettings.folderPerArc) {
-        outPath = workingFile.GetFolder();
+        outPath = AFileInfo(outPath).GetFolder();
       } else {
-        es::mkdir(outPath);
         outPath.push_back('/');
       }
 
+      mkdirs(outPath);
       auto uniq = std::make_unique<IOExtractContext>(outPath);
       uniq->forEachFile = forEachFile;
       ectx = std::move(uniq);
