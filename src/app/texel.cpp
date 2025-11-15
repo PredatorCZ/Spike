@@ -813,7 +813,7 @@ uint8 FormatChannels(TexelInputFormatType fmt) {
 }
 
 struct LinearTile : TileBase {
-  void reset(uint32, uint32, uint32) {}
+  void reset(uint32, uint32, uint32) override {}
   uint32 get(uint32 inTexel) const override { return inTexel; }
 };
 
@@ -822,7 +822,7 @@ struct MortonTile : TileBase {
 
   MortonTile(uint32 width, uint32 height) : settings(width, height) {}
 
-  void reset(uint32, uint32, uint32) {}
+  void reset(uint32, uint32, uint32) override {}
 
   uint32 get(uint32 inTexel) const override {
     return MortonAddr(inTexel % settings.width, inTexel / settings.height,
@@ -850,7 +850,7 @@ struct MortonPow2Tile : TileBase {
       : width(width_), height(height_),
         widthp2(RoundToPow2(std::max(width_, size_t(8)))) {}
 
-  void reset(uint32, uint32, uint32) {}
+  void reset(uint32, uint32, uint32) override {}
 
   static size_t MortonAddr(size_t x, size_t y, size_t width) {
     const size_t x0 = x & 1;
@@ -912,7 +912,7 @@ struct NXTile : TileBase {
     yTailOffset = macroTileHeight + 2;
   }
 
-  void reset(uint32, uint32, uint32) {}
+  void reset(uint32, uint32, uint32) override {}
 
   uint32 get(uint32 inTexel) const override {
     // 12 11 10 9  8  7  6  5  4  3  2  1  0
@@ -1483,9 +1483,8 @@ void Reencode(NewTexelContextCreate ctx, uint32 numDesiredChannels,
   if ((numDesiredChannels > 2 &&
        ctx.baseFormat.swizzle.b == TexelSwizzleType::DeriveZ) ||
       (numDesiredChannels == 2 &&
-          (ctx.baseFormat.swizzle.b == TexelSwizzleType::DeriveZOrBlue ||
-           ctx.baseFormat.swizzle.b ==
-               TexelSwizzleType::DeriveZOrBlueInverted))) {
+       (ctx.baseFormat.swizzle.b == TexelSwizzleType::DeriveZOrBlue ||
+        ctx.baseFormat.swizzle.b == TexelSwizzleType::DeriveZOrBlueInverted))) {
     ComputeBC5Blue(outData_.data(), numTexels * numDesiredChannels,
                    numDesiredChannels);
   }
@@ -1600,10 +1599,12 @@ struct NewTexelContextDDS : NewTexelContextImpl {
   std::vector<std::vector<bool>> mipmaps;
   std::string yasBuffer;
   bool mustDecode;
+  uint8 numChannels;
 
   NewTexelContextDDS(NewTexelContextCreate ctx_, bool isBase = false)
       : NewTexelContextImpl(ctx_), dds(MakeDDS(ctx)),
-        mustDecode(IsFormatSupported(ctx.formatOverride, ctx.baseFormat.type)) {
+        mustDecode(IsFormatSupported(ctx.formatOverride, ctx.baseFormat.type)),
+        numChannels(DesiredDDSChannels(ctx.baseFormat.type)) {
     mipmaps.resize(std::max(1U, dds.mipMapCount));
     const int8 numFaces = std::max(ctx.numFaces, int8(1));
     const uint32 arraySize = dds.arraySize * numFaces;
@@ -1621,10 +1622,9 @@ struct NewTexelContextDDS : NewTexelContextImpl {
 
     if (!isBase) {
       TexelInputFormat baseFmt = ctx.baseFormat;
+      mustDecode |= MustSwizzle(baseFmt.swizzle, numChannels);
 
       if (mustDecode) {
-        uint8 numChannels = DesiredDDSChannels(ctx.baseFormat.type);
-
         switch (numChannels) {
         case 1:
           baseFmt.type = TexelInputFormatType::R8;
@@ -1709,34 +1709,9 @@ struct NewTexelContextDDS : NewTexelContextImpl {
 
     mctx.height *= mctx.depth;
 
-    auto DecodeStream = [&] {
-      uint8 numChannels = DesiredDDSChannels(ctx.baseFormat.type);
-      if (numChannels == 4) {
-        UCVector4 *bgn = reinterpret_cast<UCVector4 *>(yasBuffer.data());
-        UCVector4 *edn =
-            reinterpret_cast<UCVector4 *>(yasBuffer.data() + rDataSize);
-
-        DecodeToRGBA(static_cast<const char *>(data), mctx, {bgn, edn});
-      } else if (numChannels == 3) {
-        UCVector *bgn = reinterpret_cast<UCVector *>(yasBuffer.data());
-        UCVector *edn =
-            reinterpret_cast<UCVector *>(yasBuffer.data() + rDataSize);
-
-        DecodeToRGB(static_cast<const char *>(data), mctx, {bgn, edn});
-
-      } else if (numChannels == 1) {
-        DecodeToGray(static_cast<const char *>(data), mctx,
-                     {yasBuffer.data(), rDataSize});
-      } else {
-        throw std::logic_error("Implement channel");
-      }
-    };
-
-    const bool mustDecode =
-        IsFormatSupported(ctx.formatOverride, ctx.baseFormat.type);
-
     if (mustDecode) {
-      DecodeStream();
+      Reencode(mctx, numChannels, static_cast<const char *>(data),
+               {rData, rDataSize});
     } else if (ctx.baseFormat.tile == TexelTile::Linear &&
                !ctx.baseFormat.swapPacked) {
       memcpy(rData, data, rDataSize);
@@ -1767,15 +1742,17 @@ struct NewTexelContextDDS : NewTexelContextImpl {
 
 struct NewTexelContextDDSLegacy : NewTexelContextDDS {
   std::vector<std::string> arrayMipmapBuffers;
+  uint8 numChannels;
 
   NewTexelContextDDSLegacy(NewTexelContextCreate ctx_)
-      : NewTexelContextDDS(ctx_, true) {
+      : NewTexelContextDDS(ctx_, true),
+        numChannels(DesiredDDSLegacyChannels(ctx_.baseFormat.type)) {
     arrayMipmapBuffers.resize(dds.arraySize);
     dds.arraySize = 1;
     TexelInputFormat baseFmt = ctx.baseFormat;
+    mustDecode |= MustSwizzle(ctx.baseFormat.swizzle, numChannels);
 
     if (mustDecode) {
-      uint8 numChannels = DesiredDDSLegacyChannels(ctx.baseFormat.type);
       switch (numChannels) {
       case 1:
         baseFmt.type = TexelInputFormatType::R8;
@@ -1876,30 +1853,9 @@ struct NewTexelContextDDSLegacy : NewTexelContextDDS {
 
     mctx.height *= mctx.depth;
 
-    auto DecodeStream = [&] {
-      uint8 numChannels = DesiredDDSLegacyChannels(ctx.baseFormat.type);
-      if (numChannels == 4) {
-        UCVector4 *bgn = reinterpret_cast<UCVector4 *>(buffar.data());
-        UCVector4 *edn =
-            reinterpret_cast<UCVector4 *>(buffar.data() + rDataSize);
-
-        DecodeToRGBA(static_cast<const char *>(data), mctx, {bgn, edn});
-      } else if (numChannels == 3) {
-        UCVector *bgn = reinterpret_cast<UCVector *>(buffar.data());
-        UCVector *edn = reinterpret_cast<UCVector *>(buffar.data() + rDataSize);
-
-        DecodeToRGB(static_cast<const char *>(data), mctx, {bgn, edn});
-
-      } else if (numChannels == 1) {
-        DecodeToGray(static_cast<const char *>(data), mctx,
-                     {buffar.data(), rDataSize});
-      } else {
-        throw std::logic_error("Implement channel");
-      }
-    };
-
     if (mustDecode) {
-      DecodeStream();
+      Reencode(mctx, numChannels, static_cast<const char *>(data),
+               {rData, rDataSize});
     } else if (ctx.baseFormat.tile == TexelTile::Linear &&
                !ctx.baseFormat.swapPacked) {
       memcpy(rData, data, rDataSize);
