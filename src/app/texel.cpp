@@ -1323,7 +1323,8 @@ void RetileData(const char *data, NewTexelContextCreate ctx, char *outData) {
       }
 
       return;
-    } else if (ctx.baseFormat.type == TexelInputFormatType::RGB10A2) {
+    } else if (ctx.baseFormat.type == TexelInputFormatType::RGB10A2 ||
+               ctx.baseFormat.type == TexelInputFormatType::RGBA8) {
       uint32 *oData = reinterpret_cast<uint32 *>(outData);
       for (size_t p = 0; p < numBlocks; p++, oData++) {
         memcpy(oData, data + tiler->get(p) * BPT, BPT);
