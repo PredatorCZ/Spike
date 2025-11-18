@@ -248,12 +248,12 @@ void ZIPExtactContext::SendData(std::string_view data) {
 bool ZIPExtactContext::RequiresFolders() const { return false; }
 
 void ZIPExtactContext::AddFolderPath(const std::string &) {
-  throw std::logic_error(
+  throw es::ImplementationError(
       "AddFolderPath not supported, use RequiresFolders to check.");
 }
 
 void ZIPExtactContext::GenerateFolders() {
-  throw std::logic_error(
+  throw es::ImplementationError(
       "GenerateFolders not supported, use RequiresFolders to check.");
 }
 

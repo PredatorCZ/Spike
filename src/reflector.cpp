@@ -16,6 +16,7 @@
 */
 
 #include "spike/reflect/reflector.hpp"
+#include "spike/except.hpp"
 #include "spike/master_printer.hpp"
 #include "spike/type/bitfield.hpp"
 #include "spike/type/float.hpp"
@@ -789,7 +790,7 @@ ReflectorMember::ReflectValue(ReflectorInputValue value, size_t index) {
         double cvtItem = item;
         memcpy(thisAddr, &cvtItem, type.size);
       } else {
-        throw std::logic_error("Invlid floating point size");
+        throw es::ImplementationError("Invlid floating point size");
       }
 
       break;

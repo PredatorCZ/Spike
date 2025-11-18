@@ -1199,7 +1199,7 @@ void DecodeToRGB(const char *data, NewTexelContextCreate ctx,
   }
 
   default:
-    throw std::logic_error("Implement rgb decode");
+    throw es::ImplementationError("Implement rgb decode");
   }
 }
 
@@ -1416,7 +1416,7 @@ void DecodeToRGBA(const char *data, NewTexelContextCreate ctx,
     break;
 
   default:
-    throw std::logic_error("Implement rgba decode");
+    throw es::ImplementationError("Implement rgba decode");
   }
 }
 
@@ -2362,7 +2362,7 @@ CreateTexelContext(NewTexelContextCreate ctx) {
   case TexelContextFormat::UPNG:
     return std::make_unique<NewTexelContextPNG>(ctx);
   default:
-    throw std::logic_error("Image format not supported");
+    throw es::ImplementationError("Image format not supported");
   }
 }
 

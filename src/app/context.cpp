@@ -288,7 +288,7 @@ APPContext::APPContext(const char *moduleName_, const std::string &appFolder_,
   tryAssign(ExtractStat, "AppExtractStat");
 
   if (NewArchive && ProcessFile) {
-    throw std::logic_error("Module uses 2 or more contexts!");
+    throw es::ImplementationError("Module uses 2 or more contexts!");
   }
 }
 

@@ -1189,7 +1189,7 @@ size_t FindTimeEndIndex(std::span<float> times, float duration) {
   }
 
   if (upperLimit == -1U) {
-    throw std::logic_error("Floating point mismatch");
+    throw es::ImplementationError("Floating point mismatch");
   }
 
   return upperLimit;
