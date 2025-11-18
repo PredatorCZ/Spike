@@ -24,6 +24,31 @@
 #include <string_view>
 
 namespace es {
+
+class RuntimeError : public std::exception {
+  const char *data;
+
+public:
+  explicit RuntimeError(const char *msg) : data(msg) {}
+  const char *what() const noexcept override { return data; }
+};
+
+class ImplementationError : public std::exception {
+  const char *data;
+
+public:
+  explicit ImplementationError(const char *msg) : data(msg) {}
+  const char *what() const noexcept override { return data; }
+};
+
+class LengthError : public std::exception {
+  const char *data;
+
+public:
+  explicit LengthError(const char *msg) : data(msg) {}
+  const char *what() const noexcept override { return data; }
+};
+
 class FileNotFoundError : public std::runtime_error {
   using parent = std::runtime_error;
 
@@ -91,8 +116,8 @@ public:
       : parent("Invalid version: " + std::to_string(version)) {}
 };
 
-class UnexpectedEOS : public std::runtime_error {
-  using parent = std::runtime_error;
+class UnexpectedEOS : public RuntimeError {
+  using parent = RuntimeError;
 
 public:
   UnexpectedEOS() : parent("Unexpected end of stream.") {}

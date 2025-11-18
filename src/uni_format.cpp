@@ -80,19 +80,19 @@ static const std::unordered_map<FormatDescr, variant> registry = {
 };
 
 void FormatCodec::GetValue(IVector4A16 &, const char *) const {
-  throw std::runtime_error("Invalid call for uni::format codec!");
+  throw es::RuntimeError("Invalid call for uni::format codec!");
 }
 
 void FormatCodec::GetValue(Vector4A16 &, const char *) const {
-  throw std::runtime_error("Invalid call for uni::format codec!");
+  throw es::RuntimeError("Invalid call for uni::format codec!");
 }
 
 void FormatCodec::Sample(ivec &, const char *, size_t, size_t) const {
-  throw std::runtime_error("Invalid call for uni::format codec!");
+  throw es::RuntimeError("Invalid call for uni::format codec!");
 }
 
 void FormatCodec::Sample(fvec &, const char *, size_t, size_t) const {
-  throw std::runtime_error("Invalid call for uni::format codec!");
+  throw es::RuntimeError("Invalid call for uni::format codec!");
 }
 
 FormatCodec &FormatCodec::Get(const FormatDescr &input) {

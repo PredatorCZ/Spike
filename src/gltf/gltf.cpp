@@ -1,4 +1,5 @@
 #include "spike/gltf.hpp"
+#include "spike/except.hpp"
 #include "spike/uni//model.hpp"
 #include "spike/uni/motion.hpp"
 #include "spike/uni/rts.hpp"
@@ -727,7 +728,7 @@ void SaveWeights(const char *data, size_t numVertices, Attribute attribute,
   const size_t numElements = fmtNumElements[uint32(attribute.type)];
 
   if (numElements + usedBufferElements > 8) {
-    throw std::runtime_error("Too many bone weights for vertex, max is 8");
+    throw es::RuntimeError("Too many bone weights for vertex, max is 8");
   }
 
   uni::FormatCodec::fvec weights =
@@ -747,7 +748,7 @@ void SaveBones(const char *data, size_t numVertices, Attribute attribute,
   const size_t numElements = fmtNumElements[uint32(attribute.type)];
 
   if (numElements + usedBufferElements > 8) {
-    throw std::runtime_error("Too many bone weights for vertex, max is 8");
+    throw es::RuntimeError("Too many bone weights for vertex, max is 8");
   }
 
   if (attribute.format == uni::FormatType::UINT) {

@@ -18,6 +18,7 @@
 #include "spike/app/cache.hpp"
 #include "spike/app/console.hpp"
 #include "spike/app/tmp_storage.hpp"
+#include "spike/except.hpp"
 #include "spike/io/binwritter_stream.hpp"
 #include "spike/io/fileinfo.hpp"
 #include <algorithm>
@@ -495,10 +496,10 @@ struct WALThread {
       : walFile(RequestTempFile()), walStreamIn(walFile), walStreamOut(walFile),
         exception(state.get_future()) {
     if (walStreamIn.fail()) {
-      throw std::runtime_error("Failed to create wal file.");
+      throw es::RuntimeError("Failed to create wal file.");
     }
     if (walStreamOut.fail()) {
-      throw std::runtime_error("Failed to open wal file.");
+      throw es::RuntimeError("Failed to open wal file.");
     }
   }
 
@@ -563,7 +564,7 @@ void CacheGenerator::AddFile(std::string_view fileName, size_t zipOffset,
   workThread->walStreamIn << fileName << ';' << std::hex << zipOffset << ';'
                           << fileSize << '\n';
   if (workThread->walStreamIn.fail()) {
-    throw std::runtime_error("Failed to add file to WAL stream");
+    throw es::RuntimeError("Failed to add file to WAL stream");
   }
   workThread->sharedCounter++;
 }

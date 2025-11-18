@@ -16,6 +16,7 @@
 */
 
 #include "spike/app/tmp_storage.hpp"
+#include "spike/except.hpp"
 #include "spike/io/directory_scanner.hpp"
 #include "spike/io/fileinfo.hpp"
 #include "spike/io/stat.hpp"
@@ -83,7 +84,7 @@ void CleanTempStorages() {
 
 std::string RequestTempFile() {
   if (localPath.empty()) {
-    throw std::runtime_error(
+    throw es::RuntimeError(
         "InitTempStorage() not called before RequestTempFile()!");
   }
 

@@ -16,9 +16,9 @@
 */
 
 #include "spike/crypto/blowfish2.h"
+#include "spike/except.hpp"
 #include <cstring>
 #include <random>
-#include <stdexcept>
 
 #define _BF_SBKEY(_item, _id) sboxes[(_id * 256) + _item.b[3 - _id]]
 #define BF_SBKEY(_item)                                                        \
@@ -338,10 +338,10 @@ void BlowfishEncoder::Decode(char *buffer, size_t size) const {
 
 size_t CheckInputs(const char *buffer, size_t size) {
   if (reinterpret_cast<uintptr_t>(buffer) % 8) {
-    throw std::runtime_error("Buffer's address must be 8 byte aligned.");
+    throw es::RuntimeError("Buffer's address must be 8 byte aligned.");
   }
   if (size % 8) {
-    throw std::length_error("Buffer length expected to be multiple of 8.");
+    throw es::LengthError("Buffer length expected to be multiple of 8.");
   }
 
   return size / 8;

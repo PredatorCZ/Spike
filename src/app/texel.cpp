@@ -7,6 +7,7 @@
 #include "qoi.h"
 #include "spike/app/context.hpp"
 #include "spike/crypto/crc32.hpp"
+#include "spike/except.hpp"
 #include "spike/format/DDS.hpp"
 #include "spike/gpu/BlockDecoder.inl"
 #include "spike/gpu/addr_ps3.hpp"
@@ -1052,7 +1053,7 @@ struct NXTile : TileBase {
     uint32 wholeTile = (microTile | macroTile) / BPT;
 
     /*if (wholeTile >= upperBound) [[unlikely]] {
-      throw std::runtime_error("NX tile error, accessing block out of range");
+      throw es::RuntimeError("NX tile error, accessing block out of range");
     }*/
 
     return wholeTile;
@@ -1363,7 +1364,7 @@ void DecodeToRGBA(const char *data, NewTexelContextCreate ctx,
         }
       }
     } else {
-      throw std::runtime_error("ETC1A4 is only supported for TexelTile::N3DS");
+      throw es::RuntimeError("ETC1A4 is only supported for TexelTile::N3DS");
     }
     break;
 
@@ -1373,7 +1374,7 @@ void DecodeToRGBA(const char *data, NewTexelContextCreate ctx,
       if (!detexDecompressBlockBPTC(
               reinterpret_cast<const uint8_t *>(data) + tiler->get(p) * 16, -1,
               0, reinterpret_cast<uint8_t *>(localBlock))) [[unlikely]] {
-        throw std::runtime_error("Failed to decompress BC7 block");
+        throw es::RuntimeError("Failed to decompress BC7 block");
       }
       uint32 x = p % ctx.width;
       uint32 y = p / ctx.width;
@@ -1909,7 +1910,7 @@ struct NewTexelContextDDS : NewTexelContextImpl {
 
     ptrdiff_t boundDiff = (&yasBuffer.back() + 1) - (rData + rDataSize);
     if (boundDiff < 0) {
-      throw std::runtime_error("Writing image data beyond buffer's bounds");
+      throw es::RuntimeError("Writing image data beyond buffer's bounds");
     }
 
     auto mctx = ctx;
@@ -1948,7 +1949,7 @@ struct NewTexelContextDDS : NewTexelContextImpl {
 
   void Finish() override {
     if (!ShouldWrite()) {
-      throw std::runtime_error("Incomplete dds file");
+      throw es::RuntimeError("Incomplete dds file");
     }
   }
 };
@@ -2053,7 +2054,7 @@ struct NewTexelContextDDSLegacy : NewTexelContextDDS {
 
     ptrdiff_t boundDiff = (&buffar.back() + 1) - (rData + rDataSize);
     if (boundDiff < 0) {
-      throw std::runtime_error("Writing image data beyond buffer's bounds");
+      throw es::RuntimeError("Writing image data beyond buffer's bounds");
     }
 
     auto mctx = ctx;
@@ -2096,7 +2097,7 @@ struct NewTexelContextDDSLegacy : NewTexelContextDDS {
 
   void Finish() override {
     if (!ShouldWrite(-1)) {
-      throw std::runtime_error("Incomplete dds file");
+      throw es::RuntimeError("Incomplete dds file");
     }
   }
 };

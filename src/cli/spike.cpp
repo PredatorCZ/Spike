@@ -147,7 +147,7 @@ bool ScanModules(const std::string &appFolder, const std::string &appName) {
       std::string moduleNameStr(moduleName.substr(0, firstDotPos));
       APPContext ctx(moduleNameStr.data(), appFolder, appName);
       ctx.FromConfig();
-    } catch (const std::runtime_error &e) {
+    } catch (const std::exception &e) {
       printerror(e.what());
       isOkay = false;
     }
@@ -176,7 +176,7 @@ void GenerateDocumentation(const std::string &appFolder,
       const size_t firstDotPos = moduleName.find_first_of('.');
       std::string moduleNameStr(moduleName.substr(0, firstDotPos));
       modules.emplace(moduleNameStr);
-    } catch (const std::runtime_error &e) {
+    } catch (const std::exception &e) {
       printerror(e.what());
     }
   }

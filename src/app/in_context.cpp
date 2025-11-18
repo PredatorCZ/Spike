@@ -36,7 +36,7 @@ static std::mutex simpleIOLock;
 
 const std::vector<std::string> &AppContextShare::SupplementalFiles() {
   if (!supplementals) {
-    throw std::runtime_error(
+    throw es::RuntimeError(
         "Invalid call of SupplementalFiles, module is not for batch.");
   }
 
@@ -45,7 +45,7 @@ const std::vector<std::string> &AppContextShare::SupplementalFiles() {
 
 const std::vector<std::string> &ZIPIOContext::SupplementalFiles() {
   if (!supplementals) {
-    throw std::runtime_error(
+    throw es::RuntimeError(
         "Invalid call of SupplementalFiles, module is not for batch.");
   }
 
@@ -143,7 +143,7 @@ struct AppContextShareImpl : AppContextShare {
     }
 
     if (basePath_.empty()) {
-      throw std::runtime_error("Output path cannot be empty");
+      throw es::RuntimeError("Output path cannot be empty");
     }
 
     if (basePath_.back() != '/') {
@@ -327,7 +327,7 @@ void SimpleIOContext::DisposeFile(std::istream *str) {
       uint32 bit = 1 << index;
 
       if (!(usedFiles & bit)) {
-        throw std::runtime_error("Stream already freed.");
+        throw es::RuntimeError("Stream already freed.");
       }
 
       es::Dispose(f);
@@ -338,7 +338,7 @@ void SimpleIOContext::DisposeFile(std::istream *str) {
     index++;
   }
 
-  throw std::runtime_error("Requested stream not found!");
+  throw es::RuntimeError("Requested stream not found!");
 }
 
 std::istream &SimpleIOContext::GetStream() { return mainFile.BaseStream(); }
@@ -650,7 +650,7 @@ void ZIPIOContext_impl::Read() {
   }
 
   if (curLocator->id != ZIPCentralDir::ID) {
-    throw std::runtime_error("Cannot find ZIP central directory");
+    throw es::RuntimeError("Cannot find ZIP central directory");
   }
 
   uint64 dirOffset = 0;
@@ -675,7 +675,7 @@ void ZIPIOContext_impl::Read() {
     }
 
     if (curLocatorX64->id != ZIP64CentralDir::ID) {
-      throw std::runtime_error("Cannot find ZIPx64 central directory");
+      throw es::RuntimeError("Cannot find ZIPx64 central directory");
     }
 
     std::spanstream entriesSpan(
@@ -725,15 +725,15 @@ void ZIPIOContext_impl::Read() {
         }
 
         if (hdr.flags[ZIPLocalFlag::Encrypted]) {
-          throw std::runtime_error("ZIP cannot have encrypted files!");
+          throw es::RuntimeError("ZIP cannot have encrypted files!");
         }
 
         if (hdr.compression != ZIPCompressionMethod::Store) {
-          throw std::runtime_error("ZIP cannot have compressed files!");
+          throw es::RuntimeError("ZIP cannot have compressed files!");
         }
 
         if (!hdr.fileNameSize) {
-          throw std::runtime_error("ZIP local file's path must be specified!");
+          throw es::RuntimeError("ZIP local file's path must be specified!");
         }
 
         size_t entrySize = hdr.compressedSize;
@@ -842,7 +842,7 @@ struct ZIPIOContextCached : ZIPIOContext_implbase {
         zipData + cacheHdr.zipCheckupOffset);
 
     if (memcmp(zipHeader, &cacheHdr, sizeof(cacheHdr))) {
-      throw std::runtime_error("Cache header and zip checkup are different.");
+      throw es::RuntimeError("Cache header and zip checkup are different.");
     }
   }
 

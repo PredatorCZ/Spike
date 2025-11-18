@@ -275,7 +275,7 @@ APPContext::APPContext(const char *moduleName_, const std::string &appFolder_,
   info = info_;
 
   if (info->contextVersion != AppInfo_s::CONTEXT_VERSION) {
-    throw std::runtime_error("Module context version mismatch!");
+    throw es::RuntimeError("Module context version mismatch!");
   }
 
   info_->internalSettings = &mainSettings;
@@ -617,7 +617,7 @@ void APPContext::SetupModule() {
   }
 
   if (InitContext && !InitContext(appFolder + "data/")) {
-    throw std::runtime_error("Error while initializing context.");
+    throw es::RuntimeError("Error while initializing context.");
   }
 }
 
@@ -808,7 +808,7 @@ void APPContext::FromConfig() {
     }
 
     if (curTry == numTries) {
-      throw std::runtime_error("Cannot access config. File is locked.");
+      throw es::RuntimeError("Cannot access config. File is locked.");
     }
   };
 

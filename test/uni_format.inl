@@ -9,12 +9,12 @@ int test_format_00() {
   Vector4 vc0(12.f, 4.85f, 6.75f, -9.14f);
   Vector4A16 out;
 
-  TEST_THROW(std::runtime_error, {
+  TEST_THROW(std::exception, {
     IVector4A16 outWrong;
     cdec.GetValue(outWrong, nullptr);
   });
 
-  TEST_THROW(std::runtime_error, {
+  TEST_THROW(std::exception, {
     uni::FormatCodec::ivec outWrong;
     cdec.Sample(outWrong, nullptr, 1);
   });
@@ -29,7 +29,7 @@ int test_format_00() {
 
   TEST_EQUAL(outVec[0], Vector4A16(12.f, 4.85f, 6.75f, -9.14f));
 
-  TEST_THROW(std::runtime_error, {
+  TEST_THROW(std::exception, {
     cdec.Sample(outVec, reinterpret_cast<const char *>(&vc0), 1, 1);
   });
 
@@ -84,12 +84,12 @@ int test_format_01() {
   UIVector4 vc0(123456, 7891011, 1213141516, 1718192021);
   IVector4A16 out;
 
-  TEST_THROW(std::runtime_error, {
+  TEST_THROW(std::exception, {
     Vector4A16 outWrong;
     cdec.GetValue(outWrong, nullptr);
   });
 
-  TEST_THROW(std::runtime_error, {
+  TEST_THROW(std::exception, {
     uni::FormatCodec::fvec outWrong;
     cdec.Sample(outWrong, nullptr, 1);
   });
@@ -104,7 +104,7 @@ int test_format_01() {
 
   TEST_EQUAL(outVec[0], IVector4A16(123456, 7891011, 1213141516, 1718192021));
 
-  TEST_THROW(std::runtime_error, {
+  TEST_THROW(std::exception, {
     cdec.Sample(outVec, reinterpret_cast<const char *>(&vc0), 1, 1);
   });
 

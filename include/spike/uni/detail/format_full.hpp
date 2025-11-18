@@ -16,9 +16,9 @@
 */
 
 #include "../format.hpp"
+#include "spike/except.hpp"
 #include "spike/type/float.hpp"
 #include "spike/util/supercore.hpp"
-#include <stdexcept>
 
 namespace _uni_ {
 static constexpr size_t fmtStrides[]{0,  128, 96, 64, 64, 48, 32, 32, 32,
@@ -58,7 +58,7 @@ static void _fmtSampler(C &out, const char *input, size_t count,
                         size_t stride) {
   static const size_t fmtStride = fmtStrides[static_cast<size_t>(cType)] / 8;
   if (stride && stride < fmtStride) {
-    throw std::runtime_error(
+    throw es::RuntimeError(
         "Provided stride for uni::format was less than format's stride!");
   }
 

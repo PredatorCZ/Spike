@@ -201,7 +201,7 @@ inline std::tm localtime(std::time_t t) {
 
 void ZIPExtactContext::NewFile(const std::string &path) {
   if (path.empty()) [[unlikely]] {
-    throw std::runtime_error("NewFile path is empty");
+    throw es::RuntimeError("NewFile path is empty");
   }
   AFileInfo pathInfo(path);
   auto pathSv = pathInfo.GetFullPath();
@@ -273,7 +273,7 @@ NewTexelContext *ZIPExtactContext::NewImage(const std::string &path,
 void IOExtractContext::NewFile(const std::string &path) {
   Close_();
   if (path.empty()) [[unlikely]] {
-    throw std::runtime_error("NewFile path is empty");
+    throw es::RuntimeError("NewFile path is empty");
   }
   AFileInfo cfleWrap(path);
   std::string cfle(cfleWrap.GetFullPath());
