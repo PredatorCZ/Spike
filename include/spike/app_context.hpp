@@ -140,6 +140,9 @@ enum class TexelInputFormatType : uint8 {
   PVRTC4 = 200,
   PVRTC2 = 201,
   ETC1 = 202,
+  ETC1A4 = 203,
+  R4 = 204,
+  RG4 = 205,
 };
 
 enum class TexelSwizzleType : uint8 {
@@ -177,10 +180,11 @@ union TexelSwizzle {
 enum class TexelTile : uint8 {
   Linear,
   Morton,
-  MortonForcePow2,
+  PS4,
   NX,
   PS2,
   Custom,
+  N3DS,
 };
 
 struct TileBase {

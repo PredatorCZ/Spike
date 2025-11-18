@@ -615,7 +615,7 @@ static uint32_t modifyPixel(int red, int green, int blue, int x, int y, uint32_t
 	return ((red << 16) + (green << 8) + blue) | 0xff000000;
 }
 
-static uint32_t ETCTextureDecompress(const void* pSrcData, uint32_t x, uint32_t y, void* pDestData, uint32_t /*nMode*/)
+static uint32_t ETCTextureDecompress(const void* pSrcData, uint32_t x, uint32_t y, void* pDestData, uint32_t nMode)
 {
 	uint32_t* output;
 	uint32_t blockTop, blockBot;
@@ -628,6 +628,7 @@ static uint32_t ETCTextureDecompress(const void* pSrcData, uint32_t x, uint32_t 
 	{
 		for (uint32_t m = 0; m < x; m += 4)
 		{
+			input += nMode & 0xff;
 			blockTop = *(input++);
 			blockBot = *(input++);
 
@@ -739,17 +740,19 @@ uint32_t PVRTDecompressETC(const void* pSrcData, uint32_t x, uint32_t y, void* p
 		i32read = ETCTextureDecompress(pSrcData, x, y, pDestData, nMode);
 	}
 
-	// swap r and b channels
-	unsigned char *pSwap = static_cast<unsigned char*>(pDestData), swap;
+	if (!(nMode & 0x100)) {
+		// swap r and b channels
+		unsigned char *pSwap = static_cast<unsigned char*>(pDestData), swap;
 
-	for (uint32_t i = 0; i < y; i++)
-		for (uint32_t j = 0; j < x; j++)
-		{
-			swap = pSwap[0];
-			pSwap[0] = pSwap[2];
-			pSwap[2] = swap;
-			pSwap += 4;
-		}
+		for (uint32_t i = 0; i < y; i++)
+			for (uint32_t j = 0; j < x; j++)
+			{
+				swap = pSwap[0];
+				pSwap[0] = pSwap[2];
+				pSwap[2] = swap;
+				pSwap += 4;
+			}
+	}
 
 	return i32read;
 }

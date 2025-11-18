@@ -44,6 +44,9 @@ bool IsFormatSupported(TexelContextFormat ofmt, TexelInputFormatType fmt) {
   case F::PVRTC2:
   case F::PVRTC4:
   case F::ETC1:
+  case F::ETC1A4:
+  case F::R4:
+  case F::RG4:
     return true;
 
     // DDS, DDS_Legacy only
@@ -139,6 +142,7 @@ uint32 GetBPT(TexelInputFormatType fmt) {
   case F::BC5:
   case F::BC7:
   case F::BC6:
+  case F::ETC1A4:
     return 16;
 
   case F::ETC1:
@@ -151,6 +155,7 @@ uint32 GetBPT(TexelInputFormatType fmt) {
   case F::RGB5A1:
   case F::RGBA4:
   case F::R5G6B5:
+  case F::R4:
     return 2;
 
   case F::RGB10A2:
@@ -161,6 +166,7 @@ uint32 GetBPT(TexelInputFormatType fmt) {
   case F::P8:
   case F::P4:
   case F::R8:
+  case F::RG4:
     return 1;
   case F::RGB8:
     return 3;
@@ -388,11 +394,19 @@ void SetDDSFormat(DDS &dds, TexelInputFormat fmt) {
     break;
 
   case F::RG8:
-    dds.dxgiFormat =
-        fmt.snorm ? DXGI_FORMAT_R8G8_SNORM : DXGI_FORMAT_R8G8_UNORM;
+  case F::RG4:
+    if (fmt.snorm) {
+      dds.dxgiFormat = DXGI_FORMAT_R8G8_SNORM;
+    } else if (fmt.swizzle.a == TexelSwizzleType::Green &&
+               fmt.swizzle.r == TexelSwizzleType::Red) {
+      dds.dxgiFormat = DXGI_FORMAT_A8P8;
+    } else {
+      dds.dxgiFormat = DXGI_FORMAT_R8G8_UNORM;
+    }
     break;
 
   case F::R8:
+  case F::R4:
     dds.dxgiFormat = fmt.snorm ? DXGI_FORMAT_R8_SNORM : DXGI_FORMAT_R8_UNORM;
     break;
 
@@ -403,6 +417,7 @@ void SetDDSFormat(DDS &dds, TexelInputFormat fmt) {
   case F::PVRTC4:
   case F::ETC1:
   case F::RGB8:
+  case F::ETC1A4:
     dds.dxgiFormat = DXGI_FORMAT(DXGI_FORMAT_R8G8B8A8_UNORM + fmt.srgb);
     break;
 
@@ -424,8 +439,8 @@ void SetDDSFormat(DDS &dds, TexelInputFormat fmt) {
   }
 }
 
-void SetDDSLegacyFormat(DDS &dds, TexelInputFormatType fmt) {
-  switch (fmt) {
+void SetDDSLegacyFormat(DDS &dds, TexelInputFormat fmt) {
+  switch (fmt.type) {
     using F = TexelInputFormatType;
   case F::BC1:
     dds = DDSFormat_DXT1;
@@ -441,6 +456,7 @@ void SetDDSLegacyFormat(DDS &dds, TexelInputFormatType fmt) {
 
   case F::BC4:
   case F::R8:
+  case F::R4:
     dds = DDSFormat_L8;
     break;
 
@@ -468,12 +484,19 @@ void SetDDSLegacyFormat(DDS &dds, TexelInputFormatType fmt) {
   case F::RGBA16:
   case F::BC6:
   case F::RGB9E5:
+  case F::ETC1A4:
     dds = DDSFormat_A8R8G8B8;
     break;
 
   case F::BC5:
   case F::RG8:
-    dds = DDSFormat_R8G8B8;
+  case F::RG4:
+    if (fmt.swizzle.a == TexelSwizzleType::Green &&
+        fmt.swizzle.r == TexelSwizzleType::Red) {
+      dds = DDSFormat_A8L8;
+    } else {
+      dds = DDSFormat_R8G8B8;
+    }
     break;
 
   case F::INVALID:
@@ -490,6 +513,8 @@ uint8 DesiredQOIChannels(TexelInputFormatType fmt) {
   case F::BC5:
   case F::RG8:
   case F::RGB8:
+  case F::R4:
+  case F::RG4:
     return 3;
 
   case F::BC1:
@@ -505,6 +530,7 @@ uint8 DesiredQOIChannels(TexelInputFormatType fmt) {
   case F::PVRTC2:
   case F::PVRTC4:
   case F::ETC1:
+  case F::ETC1A4:
   case F::RGBA16:
   case F::BC6:
   case F::RGB9E5:
@@ -545,10 +571,12 @@ PngColorType DesiredPngColorType(TexelInputFormatType fmt) {
     using F = TexelInputFormatType;
   case F::R8:
   case F::BC4:
+  case F::R4:
     return PngColorType::Gray;
 
   case F::BC5:
   case F::RG8:
+  case F::RG4:
     // return PngColorType::GrayAlpha;
 
   case F::R5G6B5:
@@ -568,6 +596,7 @@ PngColorType DesiredPngColorType(TexelInputFormatType fmt) {
   case F::PVRTC2:
   case F::PVRTC4:
   case F::ETC1:
+  case F::ETC1A4:
   case F::RGBA16:
   case F::BC6:
   case F::RGB9E5:
@@ -699,6 +728,7 @@ uint8 DesiredDDSChannels(TexelInputFormatType fmt) {
     using F = TexelInputFormatType;
   case F::BC4:
   case F::R8:
+  case F::R4:
     return 1;
 
   case F::R5G6B5:
@@ -706,6 +736,7 @@ uint8 DesiredDDSChannels(TexelInputFormatType fmt) {
 
   case F::BC5:
   case F::RG8:
+  case F::RG4:
     return 2;
 
   case F::BC1:
@@ -721,6 +752,7 @@ uint8 DesiredDDSChannels(TexelInputFormatType fmt) {
   case F::PVRTC2:
   case F::PVRTC4:
   case F::ETC1:
+  case F::ETC1A4:
   case F::RGB8:
   case F::RGBA16:
   case F::BC6:
@@ -734,16 +766,16 @@ uint8 DesiredDDSChannels(TexelInputFormatType fmt) {
   return 4;
 }
 
-uint8 DesiredDDSLegacyChannels(TexelInputFormatType fmt) {
-  switch (fmt) {
+uint8 DesiredDDSLegacyChannels(TexelInputFormat fmt) {
+  switch (fmt.type) {
     using F = TexelInputFormatType;
   case F::BC4:
   case F::R8:
+  case F::R4:
     return 1;
 
   case F::R5G6B5:
   case F::BC5:
-  case F::RG8:
   case F::RGB8:
     return 3;
 
@@ -760,11 +792,21 @@ uint8 DesiredDDSLegacyChannels(TexelInputFormatType fmt) {
   case F::PVRTC2:
   case F::PVRTC4:
   case F::ETC1:
+  case F::ETC1A4:
   case F::RGBA16:
   case F::BC6:
   case F::RGB9E5:
     return 4;
 
+  case F::RG8:
+  case F::RG4:
+    if (fmt.swizzle.a == TexelSwizzleType::Green &&
+        fmt.swizzle.r == TexelSwizzleType::Red) {
+      return 2;
+    } else {
+      return 3;
+    }
+    break;
   case F::INVALID:
     return 0;
   }
@@ -777,10 +819,12 @@ uint8 FormatChannels(TexelInputFormatType fmt) {
     using F = TexelInputFormatType;
   case F::BC4:
   case F::R8:
+  case F::R4:
     return 1;
 
   case F::BC5:
   case F::RG8:
+  case F::RG4:
     return 2;
 
   case F::R5G6B5:
@@ -800,6 +844,7 @@ uint8 FormatChannels(TexelInputFormatType fmt) {
   case F::PVRTC2:
   case F::PVRTC4:
   case F::ETC1:
+  case F::ETC1A4:
   case F::RGBA16:
   case F::BC6:
   case F::RGB9E5:
@@ -841,12 +886,12 @@ uint32 RoundToPow2(uint32 number) {
   return number;
 }
 
-struct MortonPow2Tile : TileBase {
+struct PS4Tile : TileBase {
   size_t width;
   size_t height;
   size_t widthp2;
 
-  MortonPow2Tile(size_t width_, size_t height_)
+  PS4Tile(size_t width_, size_t height_)
       : width(width_), height(height_),
         widthp2(RoundToPow2(std::max(width_, size_t(8)))) {}
 
@@ -875,6 +920,72 @@ struct MortonPow2Tile : TileBase {
   uint32 get(uint32 inTexel) const override {
     return MortonAddr(inTexel % width, inTexel / height, widthp2);
   }
+};
+
+struct N3DSTile : TileBase {
+  uint32 width;
+  uint32 height;
+  uint32 (*getter)(uint32, const N3DSTile &);
+
+  N3DSTile(size_t width_, size_t height_, TexelInputFormatType fmt)
+      : width(width_), height(height_) {
+    if (fmt == TexelInputFormatType::ETC1 ||
+        fmt == TexelInputFormatType::ETC1A4) {
+      width = (width + 3) / 4;
+      height = (height + 3) / 4;
+      getter = GetCompressed;
+    } else {
+      getter = GetRaw;
+    }
+  }
+
+  void reset(uint32, uint32, uint32) override {}
+
+  static uint32 GetRaw(uint32 inTexel, const N3DSTile &self) {
+    uint32 x = inTexel % self.width;
+    uint32 y = inTexel / self.width;
+    // y = self.height - y - 1;
+
+    const size_t x0 = x & 1;
+    const size_t x1 = (x & 2) << 1;
+    const size_t x2 = (x & 4) << 2;
+
+    const size_t y0 = (y & 1) << 1;
+    const size_t y1 = (y & 2) << 2;
+    const size_t y2 = (y & 4) << 3;
+
+    size_t retval = x0 | x1 | x2 | y0 | y1 | y2;
+
+    const size_t macroX = x / 8;
+    const size_t macroY = y / 8;
+    const size_t macroWidth = self.width / 8;
+
+    const size_t macroAddr = (macroWidth * macroY) + macroX;
+
+    return retval | (macroAddr << 6);
+  }
+
+  static uint32 GetCompressed(uint32 inTexel, const N3DSTile &self) {
+    uint32 x = inTexel % self.width;
+    uint32 y = inTexel / self.width;
+    // y = self.height - y - 1;
+
+    const size_t x0 = x & 1;
+
+    const size_t y0 = (y & 1) << 1;
+
+    size_t retval = x0 | y0;
+
+    const size_t macroX = x / 2;
+    const size_t macroY = y / 2;
+    const size_t macroWidth = self.width / 2;
+
+    const size_t macroAddr = (macroWidth * macroY) + macroX;
+
+    return retval | (macroAddr << 2);
+  }
+
+  uint32 get(uint32 inTexel) const override { return getter(inTexel, *this); }
 };
 
 struct NXTile : TileBase {
@@ -949,7 +1060,7 @@ struct NXTile : TileBase {
 };
 
 using TileVariant =
-    std::variant<LinearTile, MortonTile, MortonPow2Tile, NXTile>;
+    std::variant<LinearTile, MortonTile, PS4Tile, NXTile, N3DSTile>;
 
 TileVariant TileVariantFromCtx(NewTexelContextCreate ctx) {
   uint32 width = ctx.width;
@@ -962,11 +1073,14 @@ TileVariant TileVariantFromCtx(NewTexelContextCreate ctx) {
   case TexelTile::Morton:
     return MortonTile(width, height);
 
-  case TexelTile::MortonForcePow2:
-    return MortonPow2Tile(width, height);
+  case TexelTile::PS4:
+    return PS4Tile(width, height);
 
   case TexelTile::NX:
     return NXTile(width, height, ctx.baseFormat.type);
+
+  case TexelTile::N3DS:
+    return N3DSTile(width, height, ctx.baseFormat.type);
 
   case TexelTile::Custom:
     break;
@@ -1061,6 +1175,18 @@ void DecodeToRGB(const char *data, NewTexelContextCreate ctx,
     }
 
     break;
+
+  case F::RG4: {
+    const uint8 *iData = reinterpret_cast<const uint8 *>(data);
+    size_t curTexel = 0;
+
+    for (auto &t : outData) {
+      uint8 col = *(iData + tiler->get(curTexel++));
+      t = UCVector(0, col << 4, col & 0xf0);
+    }
+
+    break;
+  }
 
   case F::R8: {
     size_t curTexel = 0;
@@ -1176,8 +1302,69 @@ void DecodeToRGBA(const char *data, NewTexelContextCreate ctx,
     break;
 
   case F::ETC1:
-    pvr::PVRTDecompressETC(data, ctx.width, ctx.height,
-                           reinterpret_cast<uint8_t *>(outData.data()), 0);
+    if (ctx.baseFormat.tile != TexelTile::Linear) {
+      uint32 bwidth = (ctx.width + 3) / 4;
+      uint32 bheight = (ctx.height + 3) / 4;
+      uint32 bnumBlocks = bwidth * bheight;
+      std::vector<char> tmpBuffer(bwidth * bheight * 8);
+      for (size_t p = 0; p < bnumBlocks; p++) {
+        memcpy(tmpBuffer.data() + p * 8, data + tiler->get(p) * 8, 8);
+      }
+
+      if (ctx.baseFormat.tile == TexelTile::N3DS) {
+        for (uint32 b = 0; b < bnumBlocks; b++) {
+          FByteswapper(reinterpret_cast<uint64 *>(tmpBuffer.data())[b]);
+        }
+      }
+
+      pvr::PVRTDecompressETC(tmpBuffer.data(), ctx.width, ctx.height,
+                             reinterpret_cast<uint8_t *>(outData.data()),
+                             0x100);
+    } else {
+      pvr::PVRTDecompressETC(data, ctx.width, ctx.height,
+                             reinterpret_cast<uint8_t *>(outData.data()),
+                             0x100);
+    }
+    break;
+
+  case F::ETC1A4:
+    if (ctx.baseFormat.tile == TexelTile::N3DS) {
+      uint32 bwidth = (ctx.width + 3) / 4;
+      uint32 bheight = (ctx.height + 3) / 4;
+      uint32 bnumBlocks = bwidth * bheight;
+      std::vector<char> tmpBuffer(bwidth * bheight * 16);
+      for (size_t p = 0; p < bnumBlocks; p++) {
+        memcpy(tmpBuffer.data() + p * 16, data + tiler->get(p) * 16, 16);
+      }
+
+      for (uint32 b = 0; b < bnumBlocks * 2; b++) {
+        b++;
+        FByteswapper(reinterpret_cast<uint64 *>(tmpBuffer.data())[b]);
+      }
+
+      pvr::PVRTDecompressETC(tmpBuffer.data(), ctx.width, ctx.height,
+                             reinterpret_cast<uint8_t *>(outData.data()),
+                             0x102);
+
+      for (uint32 p = 0; p < bnumBlocks; p++) {
+        uint8 *iData = reinterpret_cast<uint8 *>(tmpBuffer.data() + p * 16);
+
+        uint32 x = p % bwidth;
+        uint32 y = p / bwidth;
+        uint32 blockOffset = bwidth * y * 16 + x * 4;
+
+        for (size_t h = 0; h < 4; h++) {
+          UCVector4 *addr = outData.data() + blockOffset + h * ctx.width;
+          for (size_t w = 0; w < 4; w++) {
+            uint32 tile = w * 4 + h;
+            uint8 col = *(iData + (tile >> 1));
+            addr[w].w = col << (4 * !(tile & 1)) & 0xf0;
+          }
+        }
+      }
+    } else {
+      throw std::runtime_error("ETC1A4 is only supported for TexelTile::N3DS");
+    }
     break;
 
   case F::BC7: {
@@ -1258,6 +1445,18 @@ void DecodeToRG(const char *data, NewTexelContextCreate ctx,
     }
     break;
 
+  case F::RG4: {
+    const uint8 *iData = reinterpret_cast<const uint8 *>(data);
+    size_t curTexel = 0;
+
+    for (auto &t : outData) {
+      uint8 col = *(iData + tiler->get(curTexel++));
+      t = UCVector2(col << 4, col & 0xf0);
+    }
+
+    break;
+  }
+
   default:
     break;
   }
@@ -1287,6 +1486,19 @@ void DecodeToGray(const char *data, NewTexelContextCreate ctx,
                      reinterpret_cast<char *>(outData.data()), p % ctx.width,
                      p / ctx.width, ctx.width);
     }
+    break;
+  }
+
+  case F::R4: {
+    const uint8 *iData = reinterpret_cast<const uint8 *>(data);
+    size_t curTexel = 0;
+
+    for (auto &t : outData) {
+      uint32 tile = tiler->get(curTexel++);
+      uint8 col = *(iData + (tile >> 1));
+      t = col << (4 * !(tile & 1)) & 0xf0;
+    }
+
     break;
   }
 
@@ -1747,7 +1959,7 @@ struct NewTexelContextDDSLegacy : NewTexelContextDDS {
 
   NewTexelContextDDSLegacy(NewTexelContextCreate ctx_)
       : NewTexelContextDDS(ctx_, true),
-        numChannels(DesiredDDSLegacyChannels(ctx_.baseFormat.type)) {
+        numChannels(DesiredDDSLegacyChannels(ctx_.baseFormat)) {
     arrayMipmapBuffers.resize(dds.arraySize);
     dds.arraySize = 1;
     TexelInputFormat baseFmt = ctx.baseFormat;
@@ -1772,7 +1984,7 @@ struct NewTexelContextDDSLegacy : NewTexelContextDDS {
       }
     }
 
-    SetDDSLegacyFormat(dds, baseFmt.type);
+    SetDDSLegacyFormat(dds, baseFmt);
     dds.ComputeBPP();
     dds.ComputeBufferSize(ddsMips);
 
