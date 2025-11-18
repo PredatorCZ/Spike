@@ -64,6 +64,7 @@ jobs:
 
       - name: Upload coverage report
         working-directory: ${{github.workspace}}
+        continue-on-error: true
         if: ${{matrix.use-gcov == true}}
         env:
           COVERALLS_REPO_TOKEN: ${{ secrets.CoverallsToken }}
