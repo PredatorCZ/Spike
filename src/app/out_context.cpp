@@ -135,9 +135,12 @@ void ZIPExtactContext::FinishFile(bool final) {
       records.Tell() + zLocalFile.extraFieldSize + zLocalFile.fileNameSize;
 
   if (cache) {
-    cache->AddFile(curFileName, fileDataBegin, curFileSize);
-    cache->meta.zipCRC = crc32b(
-        cache->meta.zipCRC, reinterpret_cast<const char *>(&zLocalFile.crc), 4);
+    if (curFileName.size() > 0) {
+      cache->AddFile(curFileName, fileDataBegin, curFileSize);
+      cache->meta.zipCRC =
+          crc32b(cache->meta.zipCRC,
+                 reinterpret_cast<const char *>(&zLocalFile.crc), 4);
+    }
   } else {
     fileOffsets.push_back(fileDataBegin);
   }
