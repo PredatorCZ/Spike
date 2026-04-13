@@ -90,6 +90,8 @@ public:
     rawPtr = root + varPtr;
   }
 
+  void Reset(uint64 value = 0) { varPtr = value; }
+
   void Swap();
 };
 
