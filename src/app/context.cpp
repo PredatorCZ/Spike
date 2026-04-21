@@ -613,6 +613,7 @@ void APPContext::GetMarkdownDoc(std::ostream &out, pugi::xml_node node) const {
 
 void APPContext::SetupModule() {
   if (mainSettings.generateLog) {
+    es::print::PrintThreadID(true);
     CreateLog();
   }
 
