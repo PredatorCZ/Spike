@@ -1886,8 +1886,8 @@ struct NewTexelContextDDS : NewTexelContextImpl {
 
     auto &mipLayers = mipmaps.at(layout.mipMap);
 
-    const uint32 layer =
-        layout.layer * std::max(int8(1), ctx.numFaces) + uint8(layout.face);
+    const uint32 layer = layout.layer * std::max(int8(1), ctx.numFaces) +
+                         std::max(int(layout.face) - 1, 0);
 
     if (mipLayers.empty() || mipLayers.at(layer)) {
       // mipmap already filled
