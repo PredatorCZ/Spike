@@ -714,6 +714,18 @@ size_t SaveColor(GLTFModel &main, const char *data, size_t numVertices,
   return WriteColor(main, color);
 }
 
+size_t SaveAlpha(GLTFModel &main, const char *data, size_t numVertices,
+                 Attribute attribute, size_t stride) {
+  uni::FormatCodec::fvec color =
+      SampleAttribute(data, numVertices, attribute, stride);
+
+  for (auto &c : color) {
+    c.y = c.z = c.w = c.x;
+  }
+
+  return WriteColor(main, color);
+}
+
 static constexpr size_t fmtNumElements[]{
     0, 4, 3, 4, 2, 3, 1, 2, 4, 3, 4, 2, 3, 2, 1, 3, 4, 1,
 };
@@ -915,7 +927,8 @@ gltf::Attributes GLTFModel::SaveVertices(const void *data, size_t numVertices,
                        numVertices, a, stride);
       break;
     }
-    case AttributeType::VertexColor: {
+    case AttributeType::VertexColor:
+    case AttributeType::VertexAlpha: {
       const std::string coordName = "COLOR_" + std::to_string(colorIndex++);
       attrs[coordName] =
           SaveVertices(static_cast<const char *>(data) + currentOffset,
@@ -1070,6 +1083,9 @@ size_t GLTFModel::SaveVertices(const void *data, size_t numVertices,
                          attribute, stride);
   case AttributeType::VertexColor:
     return SaveColor(*this, static_cast<const char *>(data), numVertices,
+                     attribute, stride);
+  case AttributeType::VertexAlpha:
+    return SaveAlpha(*this, static_cast<const char *>(data), numVertices,
                      attribute, stride);
   default:
     break;

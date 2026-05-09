@@ -27,6 +27,7 @@ enum class AttributeType : uint8 {
   BoneIndices,
   BoneWeights,
   VertexColor,
+  VertexAlpha,
 };
 
 struct AttributeCodec {
